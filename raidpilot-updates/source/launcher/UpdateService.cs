@@ -9,6 +9,7 @@ namespace RaidPilot.Launcher;
 internal sealed class UpdateService : IDisposable
 {
     private const int MaximumManifestBytes = 1024 * 1024;
+    internal const int AutomaticUpdateCheckIntervalMilliseconds = 120_000;
     private readonly HttpClient _httpClient = new()
     {
         Timeout = TimeSpan.FromSeconds(30),
@@ -17,7 +18,7 @@ internal sealed class UpdateService : IDisposable
     internal UpdateService()
     {
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.4"));
+            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.5"));
     }
 
     internal static bool IsAllowedManifestLocation(string? value)
@@ -42,6 +43,25 @@ internal sealed class UpdateService : IDisposable
             && Version.TryParse(availableVersion, out _);
         }
         return available > installed;
+    }
+
+    internal static bool HasAvailableUpdate(
+        string? installedRaidPilot,
+        string? installedBeacon,
+        string? installedLauncher,
+        UpdateManifest? manifest)
+    {
+        if (manifest is null)
+        {
+            return false;
+        }
+
+        return manifest.RaidPilot is { } raidPilot
+                && IsNewer(installedRaidPilot, raidPilot.Version)
+            || manifest.Beacon is { } beacon
+                && IsNewer(installedBeacon, beacon.Version)
+            || manifest.Launcher is { } launcher
+                && IsNewer(installedLauncher, launcher.Version);
     }
 
     internal static string? GetInstalledVersion(string exePath)

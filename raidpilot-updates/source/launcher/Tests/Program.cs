@@ -37,6 +37,27 @@ Run("canal Stable officiel intégré", () =>
     Require(LauncherSettings.StableManifestUrl.Contains("raidpilot-updates", StringComparison.Ordinal),
         "URL Stable ne vise pas le canal RaidPilot");
 });
+Run("détection automatique inclut le launcher", () =>
+{
+    var manifest = new UpdateManifest
+    {
+        SchemaVersion = 1,
+        Channel = "stable",
+        Launcher = new UpdateComponent
+        {
+            Version = "0.2.5",
+            Url = "https://example.com/launcher.zip",
+            Sha256 = new string('A', 64),
+        },
+    };
+    Require(UpdateService.HasAvailableUpdate("0.11.4", "0.2.1", "0.2.4", manifest),
+        "une mise à jour launcher seule n'est pas détectée");
+    Require(!UpdateService.HasAvailableUpdate("0.11.4", "0.2.1", "0.2.5", manifest),
+        "version launcher identique considérée nouvelle");
+    Require(UpdateService.AutomaticUpdateCheckIntervalMilliseconds >= 60_000
+        && UpdateService.AutomaticUpdateCheckIntervalMilliseconds <= 600_000,
+        "intervalle de vérification automatique déraisonnable");
+});
 Run("self-update relance et restaure en cas d'échec", () =>
 {
     var script = UpdateService.BuildLauncherSelfUpdateScript();
@@ -165,10 +186,10 @@ Run("profil d'escouade launcher persistant", () =>
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("10/10 tests launcher réussis.");
+    Console.WriteLine("11/11 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/10 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/11 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 

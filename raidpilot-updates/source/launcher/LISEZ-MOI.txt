@@ -1,5 +1,13 @@
-RAIDPILOT LAUNCHER 0.2.4
+RAIDPILOT LAUNCHER 0.2.5
 =========================
+
+SURVEILLANCE DES MISES À JOUR 0.2.5
+- Tant que le Launcher reste ouvert, il vérifie automatiquement le canal Stable toutes les 2 minutes.
+- La vérification se fait silencieusement en arrière-plan et ne désactive pas les boutons pendant le contrôle.
+- Lorsqu'une nouvelle version d'Overlay, Beacon ou du Launcher est détectée, le bouton INSTALLER LA MISE À JOUR clignote jusqu'à l'installation.
+- Le clignotement s'arrête automatiquement dès que tout est à jour ou pendant l'installation.
+- Une panne réseau temporaire ne supprime pas une alerte de mise à jour déjà connue.
+- Les mises à jour du Launcher lui-même sont maintenant incluses correctement dans le recalcul de disponibilité.
 
 REDÉMARRAGE AUTOMATIQUE 0.2.4
 - Après une mise à jour du Launcher lui-même, RaidPilot Launcher se ferme, installe la nouvelle version puis se rouvre automatiquement.

@@ -9,10 +9,15 @@ internal sealed class LauncherForm : Form
 {
     private readonly UpdateService _updates = new();
     private readonly LauncherSurface _surface = new();
+    private readonly System.Windows.Forms.Timer _automaticUpdateTimer = new()
+    {
+        Interval = UpdateService.AutomaticUpdateCheckIntervalMilliseconds,
+    };
     private LauncherSettings _settings;
     private SquadProfile _squadProfile;
     private UpdateManifest? _manifest;
     private bool _busy;
+    private bool _backgroundUpdateCheckInProgress;
 
     internal LauncherForm()
     {
@@ -38,8 +43,16 @@ internal sealed class LauncherForm : Form
         _surface.DragRequested += (_, _) => BeginWindowDrag();
         Controls.Add(_surface);
 
+        _automaticUpdateTimer.Tick += async (_, _) =>
+            await CheckUpdatesAsync(showErrors: false, background: true);
+
         Shown += OnShown;
-        FormClosed += (_, _) => _updates.Dispose();
+        FormClosed += (_, _) =>
+        {
+            _automaticUpdateTimer.Stop();
+            _automaticUpdateTimer.Dispose();
+            _updates.Dispose();
+        };
         KeyDown += (_, e) =>
         {
             if (e.KeyCode == Keys.Escape)
@@ -71,6 +84,8 @@ internal sealed class LauncherForm : Form
         {
             SetStatus("Tout est prêt !", LauncherStatus.Success);
         }
+
+        _automaticUpdateTimer.Start();
     }
 
     private async void OnActionRequested(object? sender, LauncherAction action)
@@ -168,21 +183,17 @@ internal sealed class LauncherForm : Form
     {
         var raidVersion = UpdateService.GetInstalledVersion(LauncherPaths.RaidPilotExe);
         var beaconVersion = UpdateService.GetInstalledVersion(LauncherPaths.BeaconExe);
+        var launcherVersion = Application.ProductVersion;
 
         _surface.CurrentRaidPilotVersion = raidVersion is null ? "—" : TrimVersion(raidVersion);
         _surface.CurrentBeaconVersion = beaconVersion is null ? "—" : TrimVersion(beaconVersion);
-
-        if (_manifest?.RaidPilot is { } raid)
-        {
-            _surface.LatestRaidPilotVersion = raid.Version;
-            _surface.UpdateAvailable = UpdateService.IsNewer(raidVersion, raid.Version)
-                || (_manifest.Beacon is { } beacon && UpdateService.IsNewer(beaconVersion, beacon.Version));
-        }
-        else
-        {
-            _surface.LatestRaidPilotVersion = _surface.CurrentRaidPilotVersion;
-            _surface.UpdateAvailable = false;
-        }
+        _surface.LatestRaidPilotVersion = _manifest?.RaidPilot?.Version
+            ?? _surface.CurrentRaidPilotVersion;
+        _surface.UpdateAvailable = UpdateService.HasAvailableUpdate(
+            raidVersion,
+            beaconVersion,
+            launcherVersion,
+            _manifest);
 
         _surface.CanLaunchRaidPilot = File.Exists(LauncherPaths.RaidPilotExe) && !_busy;
         _surface.CanLaunchBeacon = File.Exists(LauncherPaths.BeaconExe) && !_busy;
@@ -214,9 +225,9 @@ internal sealed class LauncherForm : Form
         _surface.Invalidate();
     }
 
-    private async Task CheckUpdatesAsync(bool showErrors)
+    private async Task CheckUpdatesAsync(bool showErrors, bool background = false)
     {
-        if (_busy)
+        if (_busy || _backgroundUpdateCheckInProgress)
         {
             return;
         }
@@ -230,65 +241,85 @@ internal sealed class LauncherForm : Form
             return;
         }
 
-        SetBusy(true);
-        _surface.Progress = 10;
+        if (background)
+        {
+            _backgroundUpdateCheckInProgress = true;
+        }
+        else
+        {
+            SetBusy(true);
+            _surface.Progress = 10;
+        }
+
         try
         {
-            SetStatus("Recherche d'une nouvelle version…", LauncherStatus.Info);
-            _manifest = await _updates.LoadManifestAsync(
+            if (!background)
+            {
+                SetStatus("Recherche d'une nouvelle version…", LauncherStatus.Info);
+            }
+
+            var latestManifest = await _updates.LoadManifestAsync(
                 _settings.ManifestUrl,
                 CancellationToken.None);
+            _manifest = latestManifest;
 
-            _surface.Progress = 100;
+            if (!background)
+            {
+                _surface.Progress = 100;
+            }
 
-            var raidInstalled = UpdateService.GetInstalledVersion(LauncherPaths.RaidPilotExe);
-            var beaconInstalled = UpdateService.GetInstalledVersion(LauncherPaths.BeaconExe);
-            var raidNew = _manifest.RaidPilot is { } raid
-                && UpdateService.IsNewer(raidInstalled, raid.Version);
-            var beaconNew = _manifest.Beacon is { } beacon
-                && UpdateService.IsNewer(beaconInstalled, beacon.Version);
-            var launcherNew = _manifest.Launcher is { } launcher
-                && UpdateService.IsNewer(Application.ProductVersion, launcher.Version);
+            RefreshInstalledVersions();
+            _surface.ReleaseNotes = BuildReleaseNotes(latestManifest);
 
-            _surface.LatestRaidPilotVersion = _manifest.RaidPilot?.Version
-                ?? _surface.CurrentRaidPilotVersion;
-            _surface.UpdateAvailable = raidNew || beaconNew || launcherNew;
-            _surface.ReleaseNotes = BuildReleaseNotes(_manifest);
-
-            SetStatus(
-                raidNew || beaconNew || launcherNew
-                    ? "Une nouvelle version est disponible."
-                    : "À jour · tout est prêt !",
-                raidNew || beaconNew || launcherNew
-                    ? LauncherStatus.Update
-                    : LauncherStatus.Success);
+            if (_surface.UpdateAvailable)
+            {
+                SetStatus("Une nouvelle version est disponible.", LauncherStatus.Update);
+            }
+            else if (!background)
+            {
+                SetStatus("À jour · tout est prêt !", LauncherStatus.Success);
+            }
         }
         catch (Exception exception)
         {
-            _manifest = null;
-            _surface.UpdateAvailable = false;
-            SetStatus("Impossible de vérifier les mises à jour.", LauncherStatus.Error);
-
-            if (showErrors)
+            // Une vérification automatique silencieuse ne doit jamais retirer
+            // une alerte déjà connue simplement parce que le réseau a eu un
+            // problème temporaire.
+            if (!background)
             {
-                MessageBox.Show(
-                    this,
-                    exception.Message,
-                    "RaidPilot Launcher",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                _manifest = null;
+                _surface.UpdateAvailable = false;
+                SetStatus("Impossible de vérifier les mises à jour.", LauncherStatus.Error);
+
+                if (showErrors)
+                {
+                    MessageBox.Show(
+                        this,
+                        exception.Message,
+                        "RaidPilot Launcher",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                }
             }
         }
         finally
         {
-            SetBusy(false);
+            if (background)
+            {
+                _backgroundUpdateCheckInProgress = false;
+            }
+            else
+            {
+                SetBusy(false);
+            }
+
             RefreshInstalledVersions();
         }
     }
 
     private async Task InstallUpdatesAsync()
     {
-        if (_busy || _manifest is null)
+        if (_busy || _backgroundUpdateCheckInProgress || _manifest is null)
         {
             return;
         }
@@ -893,7 +924,12 @@ internal sealed class LauncherSurface : Control
     private static readonly Color Red = Color.FromArgb(250, 104, 116);
 
     private readonly Dictionary<LauncherAction, Rectangle> _hitAreas = new();
+    private readonly System.Windows.Forms.Timer _updateAttentionTimer = new()
+    {
+        Interval = 550,
+    };
     private LauncherAction _hoverAction = LauncherAction.None;
+    private bool _updatePulseBright;
     private Bitmap? _appIcon;
 
     internal LauncherSurface()
@@ -902,6 +938,21 @@ internal sealed class LauncherSurface : Control
         ResizeRedraw = true;
         BackColor = Background;
         Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+
+        _updateAttentionTimer.Tick += (_, _) =>
+        {
+            if (UpdateAvailable && !Busy)
+            {
+                _updatePulseBright = !_updatePulseBright;
+                Invalidate();
+            }
+            else if (_updatePulseBright)
+            {
+                _updatePulseBright = false;
+                Invalidate();
+            }
+        };
+        _updateAttentionTimer.Start();
 
         try
         {
@@ -939,13 +990,14 @@ internal sealed class LauncherSurface : Control
     {
         if (disposing)
         {
+            _updateAttentionTimer.Stop();
+            _updateAttentionTimer.Dispose();
             _appIcon?.Dispose();
             _appIcon = null;
         }
 
         base.Dispose(disposing);
     }
-
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
@@ -1484,11 +1536,25 @@ internal sealed class LauncherSurface : Control
             _hitAreas[LauncherAction.InstallUpdates] = updateRect;
 
             using var updatePath = RoundedRect(updateRect, 6);
-            using var updateFill = new SolidBrush(Color.FromArgb(86, 69, 28));
+            var attention = !Busy
+                && (_updatePulseBright || _hoverAction == LauncherAction.InstallUpdates);
+            using var updateFill = new SolidBrush(
+                attention
+                    ? Color.FromArgb(224, 157, 35)
+                    : Color.FromArgb(86, 69, 28));
+            using var updateBorder = new Pen(
+                attention
+                    ? Color.FromArgb(255, 231, 142)
+                    : Color.FromArgb(133, 104, 39),
+                attention ? 2F : 1F);
             g.FillPath(updateFill, updatePath);
+            g.DrawPath(updateBorder, updatePath);
 
             using var updateFont = FontOf("Segoe UI Semibold", 8F, FontStyle.Bold);
-            using var updateBrush = new SolidBrush(Color.FromArgb(255, 226, 134));
+            using var updateBrush = new SolidBrush(
+                attention
+                    ? Color.White
+                    : Color.FromArgb(255, 226, 134));
             g.DrawString("INSTALLER LA MISE À JOUR", updateFont, updateBrush, updateRect.Left + 20, updateRect.Top + 4);
         }
     }
@@ -1930,8 +1996,7 @@ internal sealed class SquadLauncherDialog : Form
         {
             Text = codeReadOnly
                 ? "Modifie le nom qui sera visible par ton équipe."
-                : "Entre le code reçu du joueur qui a créé l'escouade.",
-            Location = new Point(24, 55),
+                : "Entre le code reçu du joueur qui a créé l'escouade.",            Location = new Point(24, 55),
             Size = new Size(510, 32),
             ForeColor = Color.FromArgb(166, 184, 193),
         });
