@@ -1,5 +1,15 @@
-RAIDPILOT BEACON 0.1.1
+RAIDPILOT BEACON 0.1.2
 =======================
+
+LOCALISATION ADAPTATIVE 0.1.2
+- Beacon apprend progressivement le joueur à partir de plusieurs F8 cohérents.
+- Les sensibilités de rotation hip/ADS et les vitesses marche/course/lente peuvent être ajustées de façon prudente.
+- Chaque identité Beacon possède son propre fichier de calibration local.
+- Un segment douteux, un strafe, une perte de focus ou une interruption ne peut pas modifier le profil appris.
+- Une correction acceptée est limitée à 3 % à la fois et exige plusieurs mesures cohérentes.
+- Lors d'un F8, Beacon mémorise maintenant la pose estimée au moment de l'appui. Quand le PNG arrive, il recale l'historique sans perdre le déplacement effectué entre l'appui et la détection du fichier.
+- Le pion est envoyé environ 10 fois/seconde pour un mouvement plus fluide.
+- Changer les sensibilités dans Control.ini invalide automatiquement l'ancienne calibration de rotation.
 
 BUT
 RaidPilot Beacon permet à un teammate d’apparaître sur la carte du joueur qui utilise RaidPilot Overlay sans installer l’overlay complet.
@@ -9,7 +19,7 @@ UTILISATION
 2. Il transmet le code RP-XXXX-XXXX-XXXX-XXXX au teammate.
 3. Le teammate ouvre RaidPilot.Beacon.exe, entre le code et son nom, puis clique CONNECTER LE BEACON.
 4. En raid, il appuie une fois sur F8. Beacon obtient alors une position exacte.
-5. Beacon suit ensuite localement les déplacements et envoie le pion à l’escouade environ 5 fois/seconde.
+5. Beacon suit ensuite localement les déplacements et envoie le pion à l’escouade environ 10 fois/seconde.
 6. Un nouveau raid remet automatiquement la position à zéro jusqu’au prochain F8.
 
 DONNÉES TRANSMISES
