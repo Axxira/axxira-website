@@ -164,7 +164,7 @@ jobs:
               url = "$base/RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
               sha256 = $env:BEACON_SHA
               sizeBytes = [int64]$env:BEACON_SIZE
-              releaseNotes = "Beacon léger avec profil d'escouade partagé et reconnexion automatique."
+              releaseNotes = "Beacon adaptatif : recalage F8 historique, calibration propre au joueur et envoi plus fluide."
             }
             launcher = [ordered]@{
               version = $env:LAUNCHER_VERSION
