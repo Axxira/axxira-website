@@ -1,0 +1,2341 @@
+(() => {
+    "use strict";
+
+    if (window.top !== window || location.origin !== "https://tarkov.dev") {
+        return;
+    }
+
+    // AddScriptToExecuteOnDocumentCreated and the post-navigation safety call can
+    // both execute in the same document. Keep one observer and one settings merge.
+    if (window.__raidPilotMapFilterInstalled === true) {
+        return;
+    }
+    window.__raidPilotMapFilterInstalled = true;
+
+    // A remote ID is a bearer-style secret. sessionStorage belongs to this
+    // WebView instance, so a crash/restart cannot silently reuse a persisted ID.
+    // tarkov.dev only enables its receiver when `connection` is present while
+    // React mounts. Restore it before the site scripts run after a reload or a
+    // same-origin map change, then the host strips it again once connected.
+    try {
+        const gpsEnabled = sessionStorage.getItem("__raidpilotGpsEnabled") === "1";
+        if (!gpsEnabled) {
+            localStorage.removeItem("sessionId");
+        } else {
+            let remoteId = null;
+            try {
+                remoteId = JSON.parse(localStorage.getItem("sessionId") ?? "null");
+            } catch {
+                remoteId = null;
+            }
+
+            if (typeof remoteId === "string"
+                && /^[A-HJ-NP-Z2-9]{16}$/.test(remoteId)) {
+                const receiverUrl = new URL(location.href);
+                if (!receiverUrl.searchParams.has("connection")) {
+                    receiverUrl.searchParams.set("connection", remoteId);
+                    history.replaceState(
+                        null,
+                        "",
+                        receiverUrl.pathname + receiverUrl.search + receiverUrl.hash);
+                }
+            }
+        }
+    } catch {
+        // The GPS activation path also clears the value on failure/exit.
+    }
+
+    const rareLootGroupKey = "Loose Loot";
+    const rareLootMarkerClass = "raidpilot-rare-loot-marker";
+    const rareLootItemKeys = new Set([
+        "ledx-skin-transilluminator",
+        "graphics-card",
+        "physical-bitcoin",
+        "intelligence-folder",
+        "military-cofdm-wireless-signal-transmitter",
+        "vpx-flash-storage-module",
+        "virtex-programmable-processor",
+        "phased-array-element",
+        "military-power-filter",
+        "advanced-current-converter",
+        "far-forward-gps-signal-amplifier-unit",
+        "microcontroller-board",
+        "uhf-rfid-reader",
+        "secure-magnetic-tape-cassette",
+        "portable-defibrillator",
+        "ophthalmoscope",
+        "military-flash-drive",
+        "terragroup-labs-keycard-red",
+        "terragroup-labs-keycard-green",
+        "terragroup-labs-keycard-blue",
+        "terragroup-labs-keycard-black",
+        "terragroup-labs-keycard-violet",
+        "terragroup-labs-keycard-yellow",
+        "keycard-with-a-blue-marking",
+        "dorm-room-314-marked-key",
+        "rb-bk-marked-key",
+        "rb-vo-marked-key",
+        "rb-pkpm-marked-key",
+        "abandoned-factory-marked-key",
+        "mysterious-room-marked-key",
+        "substation-marked-key",
+    ]);
+    const rareLootItemIds = new Set([
+        "5c0530ee86f774697952d952",
+        "57347ca924597744596b4e71",
+        "59faff1d86f7746c51718c9c",
+        "5c12613b86f7743bbe2c3f76",
+        "5c052f6886f7746b1e3db148",
+        "5c05300686f7746dce784e5d",
+        "5c05308086f7746b2101e90b",
+        "5d03775b86f774203e7e0c4b",
+        "5d0378d486f77420421a5ff4",
+        "6389c85357baa773a825b356",
+        "6389c7f115805221fb410466",
+        "6389c7750ef44505c87f5996",
+        "5c052fb986f7746b2101e909",
+        "61bf7c024770ee6f9c6b8b53",
+        "5c052e6986f7746b207bc3c9",
+        "5af0534a86f7743b6f354284",
+        "62a0a16d0b9d3c46de5b6e97",
+        "5c1d0efb86f7744baf2e7b7b",
+        "5c1d0dc586f7744baf2e7b79",
+        "5c1d0c5f86f7744bb2683cf0",
+        "5c1d0f4986f7744bb01837fa",
+        "5c1e495a86f7743109743dfb",
+        "5c1d0d6d86f7744bb2683e1f",
+        "5efde6b4f5448336730dbd61",
+        "5780cf7f2459777de4559322",
+        "5d80c60f86f77440373c4ece",
+        "5d80c62a86f7744036212b3f",
+        "5ede7a8229445733cb4c18e2",
+        "63a3a93f8a56922e82001f5d",
+        "64ccc25f95763a1ae376e447",
+        "62987dfc402c7f69bf010923",
+    ]);
+    const requiredLayers = new Set([
+        "place-names",
+        "extract_pmc",
+        "extract_shared",
+        "extract_scav",
+        "extract_transit",
+        "spawn_boss",
+        "player-position",
+    ]);
+    const hiddenSpawnLayers = new Set([
+        "spawn_pmc",
+        "spawn_scav",
+        "spawn_sniper_scav",
+        "spawn_cultist-priest",
+        "spawn_rogue",
+        "spawn_black-div",
+        "spawn_af",
+        "spawn_bloodhound",
+    ]);
+    const visibleGroups = new Set([
+        "Extracts",
+        "Landmarks",
+        "Levels",
+        "Spawns",
+    ]);
+
+    // tarkov.dev reads this value only once when its React map mounts. Merge
+    // instead of replacing it so unrelated site defaults remain forward-compatible.
+    try {
+        let settings = {};
+        const rawSettings = localStorage.getItem("savedMapSettings");
+        if (rawSettings) {
+            const parsed = JSON.parse(rawSettings);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                settings = parsed;
+            }
+        }
+
+        settings.style = "svg";
+        const preservedHiddenLayers = Array.isArray(settings.hiddenLayers)
+            ? settings.hiddenLayers.filter((key) => !requiredLayers.has(key))
+            : [];
+        settings.hiddenLayers = [...new Set([
+            ...preservedHiddenLayers,
+            ...hiddenSpawnLayers,
+        ])];
+        settings.hiddenGroups = Array.isArray(settings.hiddenGroups)
+            ? settings.hiddenGroups.filter((key) => !visibleGroups.has(key))
+            : [];
+        settings.alwaysShowExtracts = true;
+        settings.alwaysShowHazardBounds = false;
+        settings.alwaysShowSnipers = false;
+        settings.expandMapLegend = false;
+        settings.expandSearch = false;
+        localStorage.setItem("savedMapSettings", JSON.stringify(settings));
+    } catch {
+        // Storage can be unavailable in a transient renderer. The CSS whitelist
+        // below remains the authoritative visual boundary.
+    }
+
+    let updateScheduled = false;
+    let guidanceTargetLabels = [];
+    let guidanceTargetId = "";
+    let guidanceGeneration = 0;
+    let raidExtractionEntries = [];
+    let raidExtractionGeneration = 0;
+    let raidExtractionsConfirmed = false;
+    let raidQuestEntries = [];
+    let raidQuestGeneration = 0;
+    let raidQuestsConfirmed = false;
+    let raidQuestRetryTimer = 0;
+    let raidQuestRetryAttempts = 0;
+    let raidTimerGeneration = 0;
+    let raidTimerDeadline = null;
+    let raidTimerPending = false;
+    let raidTimerInterval = 0;
+    let raidTimerLastSecond = null;
+    const activeRaidQuestLayers = new Map();
+    const activeRareLootMarkers = new Map();
+    const localPlayerCoordinateLimit = 1_000_000;
+    const localPlayerEvents = ["move", "zoom", "resize", "viewreset"];
+    let localPlayerGeneration = 0;
+    let localPlayerPoseState = null;
+    let localPlayerBinding = null;
+    let localPlayerRetryTimer = 0;
+    let localPlayerRetryDelay = 75;
+    let localPlayerSnapResetFrame = 0;
+    const learnedRoutePointLimit = 512;
+    const learnedRouteCoordinateLimit = 1_000_000;
+    const learnedRouteEvents = ["move", "zoom", "resize", "viewreset"];
+    let learnedRouteGeneration = 0;
+    let learnedRouteState = null;
+    let learnedRouteBinding = null;
+    let learnedRouteRetryTimer = 0;
+    let learnedRouteRetryDelay = 100;
+
+    const isLeafletMapForContainer = (candidate, container) => {
+        if (!candidate
+            || typeof candidate !== "object"
+            || typeof candidate.panTo !== "function"
+            || typeof candidate.getContainer !== "function") {
+            return false;
+        }
+        try {
+            return candidate.getContainer() === container;
+        } catch {
+            return false;
+        }
+    };
+
+    // Leaflet is bundled as a module by tarkov.dev, so it is not reliably
+    // exposed as window.L. React keeps the live map in a useRef; locate that
+    // exact instance from the map element's Fiber chain without changing React.
+    const findLeafletMapInstance = () => {
+        const container = document.getElementById("leaflet-map");
+        if (!container) {
+            return null;
+        }
+
+        const fiberKey = Object.keys(container).find((key) => key.startsWith("__reactFiber$"));
+        if (!fiberKey) {
+            return null;
+        }
+
+        const pending = [container[fiberKey]];
+        const visitedFibers = new Set();
+        for (let inspectedFibers = 0; pending.length > 0 && inspectedFibers < 160; inspectedFibers += 1) {
+            const fiber = pending.shift();
+            if (!fiber || visitedFibers.has(fiber)) {
+                continue;
+            }
+            visitedFibers.add(fiber);
+
+            let hook = fiber.memoizedState;
+            const visitedHooks = new Set();
+            for (let inspectedHooks = 0; hook && inspectedHooks < 128; inspectedHooks += 1) {
+                if (visitedHooks.has(hook)) {
+                    break;
+                }
+                visitedHooks.add(hook);
+                const state = hook.memoizedState;
+                const candidate = state && typeof state === "object" && "current" in state
+                    ? state.current
+                    : state;
+                if (isLeafletMapForContainer(candidate, container)) {
+                    return candidate;
+                }
+                hook = hook.next;
+            }
+
+            if (fiber.return) {
+                pending.push(fiber.return);
+            }
+            if (fiber.alternate) {
+                pending.push(fiber.alternate);
+            }
+        }
+        return null;
+    };
+
+    const parseLocalPlayerGeneration = (value) => typeof value === "number"
+        && Number.isSafeInteger(value)
+        && value >= 0
+        ? value
+        : null;
+
+    const normalizeLocalPlayerPose = (payload) => {
+        const generation = parseLocalPlayerGeneration(payload?.generation);
+        const x = payload?.x;
+        const y = payload?.y;
+        const z = payload?.z;
+        const yaw = payload?.yaw;
+        const uncertainty = payload?.uncertainty;
+        if (generation === null
+            || ![x, y, z, yaw, uncertainty].every((value) => Number.isFinite(value))
+            || Math.abs(x) > localPlayerCoordinateLimit
+            || Math.abs(y) > localPlayerCoordinateLimit
+            || Math.abs(z) > localPlayerCoordinateLimit
+            || Math.abs(yaw) > 1_000_000
+            || uncertainty < 0
+            || uncertainty > 1000
+            || typeof payload?.map !== "string"
+            || payload.map.length < 1
+            || payload.map.length > 64) {
+            return null;
+        }
+
+        return {
+            generation,
+            map: payload.map,
+            x,
+            y,
+            z,
+            yaw: ((yaw % 360) + 360) % 360,
+            uncertainty,
+            snap: payload?.snap === true,
+        };
+    };
+
+    const removeOrphanedLocalPlayerMarkers = (preserved = null) => {
+        for (const marker of document.querySelectorAll("#raidpilot-local-player-marker")) {
+            if (marker !== preserved) {
+                marker.remove();
+            }
+        }
+    };
+
+    const makeLocalPlayerMarker = (container) => {
+        const marker = document.createElement("div");
+        marker.id = "raidpilot-local-player-marker";
+        marker.setAttribute("aria-hidden", "true");
+        marker.setAttribute("role", "presentation");
+
+        const heading = document.createElement("div");
+        heading.className = "raidpilot-local-player-heading";
+        const arrow = document.createElement("div");
+        arrow.className = "raidpilot-local-player-arrow";
+        const core = document.createElement("div");
+        core.className = "raidpilot-local-player-core";
+        const pulse = document.createElement("div");
+        pulse.className = "raidpilot-local-player-pulse";
+        heading.appendChild(arrow);
+        marker.append(pulse, core, heading);
+        container.appendChild(marker);
+        return marker;
+    };
+
+    const cancelLocalPlayerRetry = () => {
+        if (localPlayerRetryTimer) {
+            window.clearTimeout(localPlayerRetryTimer);
+            localPlayerRetryTimer = 0;
+        }
+        localPlayerRetryDelay = 75;
+    };
+
+    const detachLocalPlayerBinding = () => {
+        const binding = localPlayerBinding;
+        localPlayerBinding = null;
+        if (!binding) {
+            return;
+        }
+        if (binding.frame) {
+            window.cancelAnimationFrame(binding.frame);
+        }
+        if (typeof binding.map?.off === "function") {
+            for (const eventName of localPlayerEvents) {
+                binding.map.off(eventName, binding.schedule);
+            }
+        }
+        binding.resizeObserver?.disconnect?.();
+        if (binding.windowResize) {
+            window.removeEventListener("resize", binding.schedule);
+        }
+        binding.marker.remove();
+    };
+
+    const scheduleLocalPlayerRetry = () => {
+        if (!localPlayerPoseState || localPlayerRetryTimer) {
+            return;
+        }
+        const delay = localPlayerRetryDelay;
+        localPlayerRetryDelay = Math.min(1000, Math.ceil(localPlayerRetryDelay * 1.6));
+        localPlayerRetryTimer = window.setTimeout(() => {
+            localPlayerRetryTimer = 0;
+            window.__raidPilotApplyLocalPose?.();
+        }, delay);
+    };
+
+    const scheduleLocalPlayerRender = () => {
+        const binding = localPlayerBinding;
+        if (!binding || binding.frame) {
+            return;
+        }
+        binding.frame = window.requestAnimationFrame(() => {
+            if (localPlayerBinding !== binding) {
+                return;
+            }
+            binding.frame = 0;
+            window.__raidPilotApplyLocalPose?.();
+        });
+    };
+
+    const bindLocalPlayerMarker = (mapInstance, container) => {
+        detachLocalPlayerBinding();
+        removeOrphanedLocalPlayerMarkers();
+        const marker = makeLocalPlayerMarker(container);
+        const binding = {
+            map: mapInstance,
+            container,
+            marker,
+            frame: 0,
+            schedule: scheduleLocalPlayerRender,
+            resizeObserver: null,
+            windowResize: false,
+            lastPoint: null,
+        };
+        localPlayerBinding = binding;
+
+        if (typeof mapInstance.on === "function") {
+            for (const eventName of localPlayerEvents) {
+                mapInstance.on(eventName, binding.schedule);
+            }
+        }
+        if (typeof ResizeObserver === "function") {
+            binding.resizeObserver = new ResizeObserver(binding.schedule);
+            binding.resizeObserver.observe(container);
+        } else {
+            window.addEventListener("resize", binding.schedule, { passive: true });
+            binding.windowResize = true;
+        }
+        return binding;
+    };
+
+    window.__raidPilotApplyLocalPose = () => {
+        const pose = localPlayerPoseState;
+        if (!pose) {
+            cancelLocalPlayerRetry();
+            detachLocalPlayerBinding();
+            removeOrphanedLocalPlayerMarkers();
+            return false;
+        }
+
+        const mapInstance = findLeafletMapInstance();
+        const container = document.getElementById("leaflet-map");
+        if (!mapInstance
+            || !container
+            || typeof mapInstance.latLngToContainerPoint !== "function") {
+            if (localPlayerBinding) {
+                localPlayerBinding.marker.setAttribute("hidden", "");
+            }
+            scheduleLocalPlayerRetry();
+            return false;
+        }
+
+        let binding = localPlayerBinding;
+        if (!binding
+            || binding.map !== mapInstance
+            || binding.container !== container
+            || !binding.marker.isConnected
+            || binding.marker.parentElement !== container) {
+            binding = bindLocalPlayerMarker(mapInstance, container);
+        }
+
+        let screenPoint;
+        try {
+            screenPoint = mapInstance.latLngToContainerPoint([pose.z, pose.x]);
+        } catch {
+            binding.marker.setAttribute("hidden", "");
+            scheduleLocalPlayerRetry();
+            return false;
+        }
+        const x = Number(screenPoint?.x);
+        const y = Number(screenPoint?.y);
+        if (!Number.isFinite(x)
+            || !Number.isFinite(y)
+            || Math.abs(x) > 10_000_000
+            || Math.abs(y) > 10_000_000) {
+            binding.marker.setAttribute("hidden", "");
+            scheduleLocalPlayerRetry();
+            return false;
+        }
+
+        const previous = binding.lastPoint;
+        const shouldSnap = pose.snap
+            || !previous
+            || Math.hypot(x - previous.x, y - previous.y) >= 72;
+        if (shouldSnap) {
+            if (localPlayerSnapResetFrame) {
+                window.cancelAnimationFrame(localPlayerSnapResetFrame);
+            }
+            binding.marker.classList.add("raidpilot-local-player-snap");
+        }
+
+        binding.marker.style.transform =
+            `translate3d(${Math.round(x * 10) / 10}px, ${Math.round(y * 10) / 10}px, 0) translate(-50%, -50%)`;
+        binding.marker.style.setProperty("--raidpilot-local-yaw", `${pose.yaw}deg`);
+        binding.marker.dataset.quality = pose.snap
+            ? "exact"
+            : pose.uncertainty <= 3
+                ? "good"
+                : pose.uncertainty <= 8
+                    ? "estimated"
+                    : "uncertain";
+        binding.marker.dataset.uncertainty = pose.uncertainty.toFixed(1);
+        binding.marker.dataset.generation = String(pose.generation);
+        binding.marker.removeAttribute("hidden");
+        binding.lastPoint = { x, y };
+
+        if (shouldSnap) {
+            localPlayerSnapResetFrame = window.requestAnimationFrame(() => {
+                localPlayerSnapResetFrame = 0;
+                binding.marker.classList.remove("raidpilot-local-player-snap");
+            });
+        }
+
+        // The local pose is authoritative. Remote tarkov.dev marker nodes may
+        // still exist when sharing is enabled, but they must never create a
+        // second visible player marker.
+        document.querySelectorAll(
+            "#leaflet-map .leaflet-marker-pane > .marker:not(.raidpilot-player-marker)")
+            .forEach((marker) => marker.classList.add("raidpilot-player-marker-source"));
+        document.querySelector(
+            "#leaflet-map .leaflet-marker-pane > .raidpilot-player-marker")?.remove();
+
+        removeOrphanedLocalPlayerMarkers(binding.marker);
+        cancelLocalPlayerRetry();
+        return true;
+    };
+
+    window.__raidPilotSetLocalPose = (payload) => {
+        const pose = normalizeLocalPlayerPose(payload);
+        if (!pose || pose.generation < localPlayerGeneration) {
+            return false;
+        }
+        localPlayerGeneration = pose.generation;
+        localPlayerPoseState = pose;
+        cancelLocalPlayerRetry();
+        window.__raidPilotApplyLocalPose();
+        return true;
+    };
+
+    window.__raidPilotClearLocalPose = (generation = localPlayerGeneration) => {
+        const requestedGeneration = parseLocalPlayerGeneration(generation);
+        if (requestedGeneration === null || requestedGeneration < localPlayerGeneration) {
+            return false;
+        }
+        localPlayerGeneration = requestedGeneration;
+        localPlayerPoseState = null;
+        cancelLocalPlayerRetry();
+        detachLocalPlayerBinding();
+        removeOrphanedLocalPlayerMarkers();
+        window.queueMicrotask(() => {
+            try {
+                syncStablePlayerMarker?.();
+            } catch {
+                // Remote sharing is optional; local marker cleanup is complete.
+            }
+        });
+        return true;
+    };
+
+    const squadMemberLimit = 12;
+    const squadMemberExpiryMs = 8000;
+    const squadMemberStaleMs = 2500;
+    const squadEvents = ["move", "zoom", "resize", "viewreset"];
+    const squadMembers = new Map();
+    let squadBinding = null;
+    let squadCleanupTimer = 0;
+
+    const normalizeSquadPose = (payload) => {
+        const memberId = typeof payload?.memberId === "string"
+            ? payload.memberId.trim().slice(0, 64)
+            : "";
+        const name = typeof payload?.name === "string"
+            ? payload.name.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 24)
+            : "";
+        const map = typeof payload?.map === "string" ? payload.map.trim().slice(0, 64) : "";
+        const values = [payload?.x, payload?.y, payload?.z, payload?.yaw, payload?.uncertainty];
+        if (!memberId
+            || !name
+            || !map
+            || !values.every(Number.isFinite)
+            || Math.abs(payload.x) > 1_000_000
+            || Math.abs(payload.y) > 1_000_000
+            || Math.abs(payload.z) > 1_000_000
+            || payload.uncertainty < 0
+            || payload.uncertainty > 1000) {
+            return null;
+        }
+        return {
+            memberId,
+            name,
+            map,
+            x: payload.x,
+            y: payload.y,
+            z: payload.z,
+            yaw: ((payload.yaw % 360) + 360) % 360,
+            uncertainty: payload.uncertainty,
+            receivedAt: performance.now(),
+        };
+    };
+
+    const squadColorForId = (memberId) => {
+        const palette = ["#50c8ff", "#d58cff", "#ffca5a", "#62e89d", "#ff7b8a", "#7ea5ff", "#f58fff", "#8de7df"];
+        let hash = 2166136261;
+        for (const char of memberId) {
+            hash ^= char.codePointAt(0);
+            hash = Math.imul(hash, 16777619);
+        }
+        return palette[Math.abs(hash >>> 0) % palette.length];
+    };
+
+    const makeSquadMarker = (container, pose) => {
+        const marker = document.createElement("div");
+        marker.className = "raidpilot-squad-marker";
+        marker.dataset.memberId = pose.memberId;
+        marker.setAttribute("aria-hidden", "true");
+        marker.style.setProperty("--raidpilot-squad-color", squadColorForId(pose.memberId));
+
+        const ring = document.createElement("div");
+        ring.className = "raidpilot-squad-ring";
+        const heading = document.createElement("div");
+        heading.className = "raidpilot-squad-heading";
+        const arrow = document.createElement("div");
+        arrow.className = "raidpilot-squad-arrow";
+        const label = document.createElement("div");
+        label.className = "raidpilot-squad-label";
+        heading.appendChild(arrow);
+        marker.append(ring, heading, label);
+        container.appendChild(marker);
+        return marker;
+    };
+
+    const renderSquadMembers = () => {
+        const mapInstance = findLeafletMapInstance();
+        const container = document.getElementById("leaflet-map");
+        if (!mapInstance
+            || !container
+            || typeof mapInstance.latLngToContainerPoint !== "function") {
+            return false;
+        }
+
+        if (!squadBinding
+            || squadBinding.map !== mapInstance
+            || squadBinding.container !== container) {
+            if (squadBinding?.map && typeof squadBinding.map.off === "function") {
+                for (const eventName of squadEvents) {
+                    squadBinding.map.off(eventName, squadBinding.render);
+                }
+            }
+            const render = () => window.requestAnimationFrame(renderSquadMembers);
+            squadBinding = { map: mapInstance, container, render };
+            if (typeof mapInstance.on === "function") {
+                for (const eventName of squadEvents) {
+                    mapInstance.on(eventName, render);
+                }
+            }
+        }
+
+        const now = performance.now();
+        for (const [memberId, entry] of [...squadMembers]) {
+            const age = now - entry.pose.receivedAt;
+            if (age >= squadMemberExpiryMs) {
+                entry.marker?.remove();
+                squadMembers.delete(memberId);
+                continue;
+            }
+
+            if (localPlayerPoseState?.map && entry.pose.map !== localPlayerPoseState.map) {
+                entry.marker?.setAttribute("hidden", "");
+                continue;
+            }
+
+            let point;
+            try {
+                point = mapInstance.latLngToContainerPoint([entry.pose.z, entry.pose.x]);
+            } catch {
+                entry.marker?.setAttribute("hidden", "");
+                continue;
+            }
+            if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) {
+                entry.marker?.setAttribute("hidden", "");
+                continue;
+            }
+
+            if (!entry.marker?.isConnected || entry.marker.parentElement !== container) {
+                entry.marker?.remove();
+                entry.marker = makeSquadMarker(container, entry.pose);
+            }
+
+            entry.marker.style.transform =
+                `translate3d(${Math.round(point.x * 10) / 10}px, ${Math.round(point.y * 10) / 10}px, 0) translate(-50%, -50%)`;
+            entry.marker.style.setProperty("--raidpilot-squad-yaw", `${entry.pose.yaw}deg`);
+            entry.marker.dataset.state = age >= squadMemberStaleMs
+                ? "stale"
+                : entry.pose.uncertainty > 8
+                    ? "uncertain"
+                    : "live";
+
+            const distance = localPlayerPoseState
+                && localPlayerPoseState.map === entry.pose.map
+                ? Math.hypot(
+                    entry.pose.x - localPlayerPoseState.x,
+                    entry.pose.z - localPlayerPoseState.z)
+                : null;
+            const vertical = localPlayerPoseState
+                && localPlayerPoseState.map === entry.pose.map
+                ? entry.pose.y - localPlayerPoseState.y
+                : 0;
+            const distanceText = Number.isFinite(distance) ? ` · ${Math.round(distance)} m` : "";
+            const levelText = Math.abs(vertical) >= 2.5
+                ? ` · ${vertical > 0 ? "▲" : "▼"}${Math.round(Math.abs(vertical))}m`
+                : "";
+            const label = entry.marker.querySelector(".raidpilot-squad-label");
+            if (label) {
+                label.textContent = entry.pose.name + distanceText + levelText;
+            }
+            entry.marker.removeAttribute("hidden");
+        }
+        return true;
+    };
+
+    window.__raidPilotSetSquadPose = (payload) => {
+        const pose = normalizeSquadPose(payload);
+        if (!pose) {
+            return false;
+        }
+
+        let entry = squadMembers.get(pose.memberId);
+        if (!entry && squadMembers.size >= squadMemberLimit) {
+            const oldest = [...squadMembers.entries()]
+                .sort((a, b) => a[1].pose.receivedAt - b[1].pose.receivedAt)[0];
+            oldest?.[1]?.marker?.remove();
+            if (oldest) {
+                squadMembers.delete(oldest[0]);
+            }
+        }
+        if (!entry) {
+            entry = { pose, marker: null };
+            squadMembers.set(pose.memberId, entry);
+        } else {
+            entry.pose = pose;
+        }
+
+        if (!squadCleanupTimer) {
+            squadCleanupTimer = window.setInterval(renderSquadMembers, 500);
+        }
+        renderSquadMembers();
+        return true;
+    };
+
+    window.__raidPilotRemoveSquadMember = (memberId) => {
+        const entry = squadMembers.get(String(memberId ?? ""));
+        entry?.marker?.remove();
+        return squadMembers.delete(String(memberId ?? ""));
+    };
+
+    window.__raidPilotClearSquad = () => {
+        for (const entry of squadMembers.values()) {
+            entry.marker?.remove();
+        }
+        squadMembers.clear();
+        if (squadBinding?.map && typeof squadBinding.map.off === "function") {
+            for (const eventName of squadEvents) {
+                squadBinding.map.off(eventName, squadBinding.render);
+            }
+        }
+        squadBinding = null;
+        if (squadCleanupTimer) {
+            window.clearInterval(squadCleanupTimer);
+            squadCleanupTimer = 0;
+        }
+        return true;
+    };
+
+    // The same live Leaflet layers already loaded by tarkov.dev contain the public height/bounds data.
+    // Keep floor selection local to this WebView, independent of the optional remote player-point socket.
+    const automaticFloorController = window.RaidPilotFloors?.createController(findLeafletMapInstance, document, window);
+    window.__raidPilotSetFloorPose = payload => automaticFloorController?.set(payload);
+    window.__raidPilotClearFloors = payload => automaticFloorController?.clear(payload);
+    window.__raidPilotRefreshFloorMarkers = () => automaticFloorController?.refreshMarkers();
+    window.__raidPilotFloorDiagnostics = () => ({state:automaticFloorController?.getState(), catalog:automaticFloorController?.getCatalog()});
+
+    const cancelLearnedRouteRetry = () => {
+        if (learnedRouteRetryTimer) {
+            window.clearTimeout(learnedRouteRetryTimer);
+            learnedRouteRetryTimer = 0;
+        }
+        learnedRouteRetryDelay = 100;
+    };
+
+    const detachLearnedRouteBinding = () => {
+        const binding = learnedRouteBinding;
+        learnedRouteBinding = null;
+        if (!binding) {
+            return;
+        }
+
+        if (binding.frame) {
+            window.cancelAnimationFrame(binding.frame);
+        }
+        if (typeof binding.map?.off === "function") {
+            for (const eventName of learnedRouteEvents) {
+                binding.map.off(eventName, binding.schedule);
+            }
+        }
+        binding.resizeObserver?.disconnect?.();
+        if (binding.windowResize) {
+            window.removeEventListener("resize", binding.schedule);
+        }
+        binding.svg.remove();
+    };
+
+    const removeOrphanedLearnedRoutes = (preservedSvg = null) => {
+        for (const svg of document.querySelectorAll("#raidpilot-learned-route")) {
+            if (svg !== preservedSvg) {
+                svg.remove();
+            }
+        }
+    };
+
+    const makeLearnedRouteSvg = (container) => {
+        const namespace = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(namespace, "svg");
+        svg.id = "raidpilot-learned-route";
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
+
+        const outline = document.createElementNS(namespace, "path");
+        outline.setAttribute("class", "raidpilot-learned-route-outline");
+        const travelled = document.createElementNS(namespace, "path");
+        travelled.setAttribute("class", "raidpilot-learned-route-travelled");
+        const active = document.createElementNS(namespace, "path");
+        active.setAttribute("class", "raidpilot-learned-route-active");
+        const next = document.createElementNS(namespace, "circle");
+        next.setAttribute("class", "raidpilot-learned-route-next");
+        next.setAttribute("r", "5");
+        svg.append(outline, travelled, active, next);
+        container.appendChild(svg);
+        return { svg, outline, travelled, active, next };
+    };
+
+    const scheduleLearnedRouteRetry = () => {
+        if (!learnedRouteState || learnedRouteRetryTimer) {
+            return;
+        }
+        const delay = learnedRouteRetryDelay;
+        learnedRouteRetryDelay = Math.min(1000, Math.ceil(learnedRouteRetryDelay * 1.6));
+        learnedRouteRetryTimer = window.setTimeout(() => {
+            learnedRouteRetryTimer = 0;
+            window.__raidPilotApplyLearnedRoute?.();
+        }, delay);
+    };
+
+    const scheduleLearnedRouteRender = () => {
+        const binding = learnedRouteBinding;
+        if (!binding || binding.frame) {
+            return;
+        }
+        binding.frame = window.requestAnimationFrame(() => {
+            if (learnedRouteBinding !== binding) {
+                return;
+            }
+            binding.frame = 0;
+            window.__raidPilotApplyLearnedRoute?.();
+        });
+    };
+
+    const bindLearnedRoute = (mapInstance, container) => {
+        detachLearnedRouteBinding();
+        removeOrphanedLearnedRoutes();
+        const elements = makeLearnedRouteSvg(container);
+        const binding = {
+            ...elements,
+            map: mapInstance,
+            container,
+            frame: 0,
+            schedule: scheduleLearnedRouteRender,
+            resizeObserver: null,
+            windowResize: false,
+        };
+        learnedRouteBinding = binding;
+
+        if (typeof mapInstance.on === "function") {
+            for (const eventName of learnedRouteEvents) {
+                mapInstance.on(eventName, binding.schedule);
+            }
+        }
+        if (typeof ResizeObserver === "function") {
+            binding.resizeObserver = new ResizeObserver(binding.schedule);
+            binding.resizeObserver.observe(container);
+        } else {
+            window.addEventListener("resize", binding.schedule, { passive: true });
+            binding.windowResize = true;
+        }
+        return binding;
+    };
+
+    const parseLearnedRouteGeneration = (value) => typeof value === "number"
+        && Number.isSafeInteger(value)
+        && value >= 0
+        ? value
+        : null;
+
+    const normalizeLearnedRoute = (payload, generation) => {
+        if (!payload
+            || payload.kind !== "learned"
+            || (payload.confidence !== "high" && payload.confidence !== "medium")
+            || !Array.isArray(payload.points)
+            || payload.points.length < 2
+            || payload.points.length > learnedRoutePointLimit) {
+            return null;
+        }
+
+        const points = [];
+        for (const candidate of payload.points) {
+            const x = candidate?.x;
+            const y = candidate?.y;
+            const z = candidate?.z;
+            if (![x, y, z].every((value) => Number.isFinite(value)
+                && Math.abs(value) <= learnedRouteCoordinateLimit)) {
+                return null;
+            }
+
+            const previous = points.at(-1);
+            if (!previous || previous.x !== x || previous.y !== y || previous.z !== z) {
+                points.push({ x, y, z });
+            }
+        }
+        if (points.length < 2) {
+            return null;
+        }
+
+        let nextIndex = 0;
+        if (payload.nextIndex !== undefined && payload.nextIndex !== null) {
+            nextIndex = payload.nextIndex;
+            if (!Number.isSafeInteger(nextIndex)
+                || nextIndex < 0
+                || nextIndex >= points.length) {
+                return null;
+            }
+        }
+        return {
+            generation,
+            kind: "learned",
+            confidence: payload.confidence,
+            points,
+            nextIndex,
+        };
+    };
+
+    const makeSvgPath = (points) => points.length < 2
+        ? ""
+        : points.map((point, index) => {
+            const x = Math.round(point.x * 10) / 10;
+            const y = Math.round(point.y * 10) / 10;
+            return `${index === 0 ? "M" : "L"}${x} ${y}`;
+        }).join(" ");
+
+    window.__raidPilotApplyLearnedRoute = () => {
+        const route = learnedRouteState;
+        if (!route) {
+            cancelLearnedRouteRetry();
+            detachLearnedRouteBinding();
+            removeOrphanedLearnedRoutes();
+            return false;
+        }
+
+        const mapInstance = findLeafletMapInstance();
+        const container = document.getElementById("leaflet-map");
+        if (!mapInstance
+            || !container
+            || typeof mapInstance.latLngToContainerPoint !== "function") {
+            if (learnedRouteBinding) {
+                learnedRouteBinding.svg.setAttribute("hidden", "");
+            }
+            if (!learnedRouteBinding?.container?.isConnected
+                || (container && learnedRouteBinding?.container !== container)) {
+                detachLearnedRouteBinding();
+            }
+            scheduleLearnedRouteRetry();
+            return false;
+        }
+
+        let binding = learnedRouteBinding;
+        if (!binding
+            || binding.map !== mapInstance
+            || binding.container !== container
+            || !binding.svg.isConnected
+            || binding.svg.parentElement !== container) {
+            binding = bindLearnedRoute(mapInstance, container);
+        }
+
+        const width = Math.round(container.clientWidth);
+        const height = Math.round(container.clientHeight);
+        if (width < 2 || height < 2) {
+            binding.svg.setAttribute("hidden", "");
+            scheduleLearnedRouteRetry();
+            return false;
+        }
+        const projected = [];
+        try {
+            for (const point of route.points) {
+                const screenPoint = mapInstance.latLngToContainerPoint([point.z, point.x]);
+                const x = Number(screenPoint?.x);
+                const y = Number(screenPoint?.y);
+                if (!Number.isFinite(x)
+                    || !Number.isFinite(y)
+                    || Math.abs(x) > 10_000_000
+                    || Math.abs(y) > 10_000_000) {
+                    throw new Error("Invalid Leaflet projection");
+                }
+                projected.push({ x, y });
+            }
+        } catch {
+            binding.svg.setAttribute("hidden", "");
+            scheduleLearnedRouteRetry();
+            return false;
+        }
+
+        const fullPath = makeSvgPath(projected);
+        const travelledPath = makeSvgPath(projected.slice(0, route.nextIndex + 1));
+        const activeStart = Math.max(0, route.nextIndex - 1);
+        const activePath = makeSvgPath(projected.slice(activeStart));
+        const nextPoint = projected[route.nextIndex];
+        binding.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        binding.svg.setAttribute("width", String(width));
+        binding.svg.setAttribute("height", String(height));
+        binding.svg.setAttribute("class", `raidpilot-learned-route-confidence-${route.confidence}`);
+        binding.svg.dataset.generation = String(route.generation);
+        binding.outline.setAttribute("d", fullPath);
+        binding.travelled.setAttribute("d", travelledPath);
+        binding.active.setAttribute("d", activePath);
+        binding.next.setAttribute("cx", String(Math.round(nextPoint.x * 10) / 10));
+        binding.next.setAttribute("cy", String(Math.round(nextPoint.y * 10) / 10));
+        binding.next.removeAttribute("hidden");
+        binding.svg.removeAttribute("hidden");
+        removeOrphanedLearnedRoutes(binding.svg);
+        cancelLearnedRouteRetry();
+        return true;
+    };
+
+    window.__raidPilotClearLearnedRoute = (generation = learnedRouteGeneration) => {
+        const requestedGeneration = parseLearnedRouteGeneration(generation);
+        if (requestedGeneration === null
+            || requestedGeneration < learnedRouteGeneration) {
+            return false;
+        }
+        learnedRouteGeneration = requestedGeneration;
+        learnedRouteState = null;
+        cancelLearnedRouteRetry();
+        detachLearnedRouteBinding();
+        removeOrphanedLearnedRoutes();
+        return true;
+    };
+
+    window.__raidPilotShowLearnedRoute = (payload) => {
+        const requestedGeneration = parseLearnedRouteGeneration(payload?.generation);
+        if (requestedGeneration === null
+            || requestedGeneration < learnedRouteGeneration) {
+            return false;
+        }
+
+        learnedRouteGeneration = requestedGeneration;
+        const route = normalizeLearnedRoute(payload, requestedGeneration);
+        if (!route) {
+            learnedRouteState = null;
+            cancelLearnedRouteRetry();
+            detachLearnedRouteBinding();
+            removeOrphanedLearnedRoutes();
+            return false;
+        }
+
+        learnedRouteState = route;
+        cancelLearnedRouteRetry();
+        window.__raidPilotApplyLearnedRoute();
+        return true;
+    };
+
+    const collectLooseLootMarkers = (layer, markers, visited = new Set()) => {
+        if (!layer || typeof layer !== "object" || visited.has(layer)) {
+            return;
+        }
+        visited.add(layer);
+
+        if (typeof layer.getPopup === "function" && layer.options) {
+            markers.add(layer);
+        }
+        if (!layer._layers || typeof layer._layers !== "object") {
+            return;
+        }
+        for (const child of Object.values(layer._layers)) {
+            collectLooseLootMarkers(child, markers, visited);
+        }
+    };
+
+    const getRareLootIdentity = (marker) => {
+        const itemKeys = new Set();
+        const itemIds = new Set();
+        const popupContent = marker?.getPopup?.()?.getContent?.();
+        if (popupContent instanceof Element) {
+            for (const link of popupContent.querySelectorAll('a[href*="/item/"]')) {
+                try {
+                    const path = new URL(link.getAttribute("href"), location.origin).pathname;
+                    const match = path.match(/^\/item\/([^/]+)\/?$/i);
+                    if (match) {
+                        itemKeys.add(decodeURIComponent(match[1]).toLowerCase());
+                    }
+                } catch {
+                    // Ignore a malformed third-party link and try the asset ID.
+                }
+            }
+            for (const image of popupContent.querySelectorAll("img[src]")) {
+                const match = image.getAttribute("src")?.match(
+                    /(?:^|\/)([0-9a-f]{24})-(?:base-image|icon|grid-image)(?:\.|-)/i);
+                if (match) {
+                    itemIds.add(match[1].toLowerCase());
+                }
+            }
+        }
+        return { itemKeys, itemIds };
+    };
+
+    const isDedicatedRareLootMarker = (marker) => {
+        const { itemKeys, itemIds } = getRareLootIdentity(marker);
+        if (itemKeys.size === 1) {
+            return rareLootItemKeys.has(itemKeys.values().next().value);
+        }
+        if (itemKeys.size === 0 && itemIds.size === 1) {
+            return rareLootItemIds.has(itemIds.values().next().value);
+        }
+        return false;
+    };
+
+    const releaseRareLootMarker = (marker, state) => {
+        if (marker?._icon instanceof Element) {
+            marker._icon.classList.remove(rareLootMarkerClass);
+        }
+        if (state?.addedByRaidPilot && state.map?.hasLayer?.(marker)) {
+            state.map.removeLayer(marker);
+        }
+    };
+
+    const clearActiveRareLootMarkers = () => {
+        for (const [marker, state] of [...activeRareLootMarkers.entries()]) {
+            releaseRareLootMarker(marker, state);
+            activeRareLootMarkers.delete(marker);
+        }
+    };
+
+    // tarkov.dev has no native "rare loot" layer. Keep every Loose Loot group
+    // inactive, inspect its marker metadata without displaying it, then add only
+    // dedicated one-item spawns from the strict list above. Generic pools that
+    // merely *can* contain a rare item stay hidden to avoid hundreds of dots.
+    const enforceRareLootMarkers = () => {
+        const mapInstance = findLeafletMapInstance();
+        const entries = mapInstance?.layerControl?._layers;
+        if (!mapInstance || !Array.isArray(entries)) {
+            clearActiveRareLootMarkers();
+            return false;
+        }
+
+        const looseLootEntries = entries.filter(
+            (entry) => entry?.group?.key === rareLootGroupKey);
+        if (looseLootEntries.length === 0) {
+            clearActiveRareLootMarkers();
+            return false;
+        }
+
+        const candidates = new Set();
+        for (const entry of looseLootEntries) {
+            collectLooseLootMarkers(entry?.layer, candidates);
+            if (entry?.layer && mapInstance.hasLayer(entry.layer)) {
+                mapInstance.removeLayer(entry.layer);
+            }
+        }
+
+        // Removing one category can temporarily re-add a shared marker through
+        // another active category. Sweep after every group has been removed.
+        for (const marker of candidates) {
+            if (mapInstance.hasLayer(marker)) {
+                mapInstance.removeLayer(marker);
+            }
+        }
+
+        clearActiveRareLootMarkers();
+
+        const selected = [...candidates].filter(isDedicatedRareLootMarker);
+        for (const marker of selected) {
+            marker.addTo(mapInstance);
+            const icon = marker._icon;
+            if (icon instanceof Element) {
+                icon.classList.add(rareLootMarkerClass);
+                icon.setAttribute(
+                    "aria-label",
+                    icon.getAttribute("title") || "Objet rare possible");
+            }
+            activeRareLootMarkers.set(marker, {
+                map: mapInstance,
+                addedByRaidPilot: true,
+            });
+        }
+        return selected.length > 0;
+    };
+
+    // tarkov.dev animates a full-map pan for every player packet. Patch the
+    // actual map instance: keep the map still while the marker moves, then
+    // recenter instantly only when the marker approaches an edge.
+    const installStablePlayerFollow = () => {
+        const mapInstance = findLeafletMapInstance();
+        if (!mapInstance) {
+            return false;
+        }
+        if (mapInstance.__raidPilotStablePlayerFollow === true) {
+            return true;
+        }
+
+        const originalPanTo = mapInstance.panTo;
+        Object.defineProperty(mapInstance, "__raidPilotStablePlayerFollow", {
+            value: true,
+        });
+        mapInstance.panTo = function (latlng, options) {
+            const container = this.getContainer?.();
+            const playerLayerIsActive = this.layerControl?._layers?.some?.(
+                (entry) => entry?.key === "player-position"
+                    || entry?.layer?.key === "player-position");
+            const playerMarkerIsVisible = container?.querySelector?.(
+                ".leaflet-marker-pane > .marker");
+            const isLivePlayerPan = container?.id === "leaflet-map"
+                && options?.animate === true
+                && (playerLayerIsActive || playerMarkerIsVisible);
+            if (!isLivePlayerPan) {
+                return originalPanTo.call(this, latlng, options);
+            }
+
+            const centerIdentity = location.pathname;
+            if (this.__raidPilotCenterIdentity !== centerIdentity) {
+                this.__raidPilotCenterIdentity = centerIdentity;
+                this.__raidPilotDidInitialCenter = false;
+            }
+
+            let shouldRecenter = this.__raidPilotDidInitialCenter !== true;
+            if (!shouldRecenter) {
+                try {
+                    const point = this.latLngToContainerPoint(latlng);
+                    const size = this.getSize();
+                    const marginX = Math.min(96, size.x * 0.22);
+                    const marginY = Math.min(72, size.y * 0.22);
+                    shouldRecenter = point.x < marginX
+                        || point.y < marginY
+                        || point.x > size.x - marginX
+                        || point.y > size.y - marginY;
+                } catch {
+                    shouldRecenter = false;
+                }
+            }
+
+            if (!shouldRecenter) {
+                return this;
+            }
+
+            this.__raidPilotDidInitialCenter = true;
+            const stableOptions = options && typeof options === "object"
+                ? { ...options, animate: false }
+                : { animate: false };
+            return originalPanTo.call(this, latlng, stableOptions);
+        };
+        return true;
+    };
+
+    if (!installStablePlayerFollow()) {
+        // React/Leaflet can take a moment to mount at raid start. Walking the
+        // Fiber graph every 50 ms competed with the map renderer exactly when
+        // it was busiest. A short exponential backoff remains responsive while
+        // cutting the worst-case startup scans from 300 to roughly twenty.
+        const installDeadline = performance.now() + 15000;
+        let installRetryDelay = 100;
+        const retryStablePlayerFollow = () => {
+            if (installStablePlayerFollow() || performance.now() >= installDeadline) {
+                return;
+            }
+            installRetryDelay = Math.min(1000, Math.ceil(installRetryDelay * 1.6));
+            window.setTimeout(retryStablePlayerFollow, installRetryDelay);
+        };
+        window.setTimeout(retryStablePlayerFollow, installRetryDelay);
+    }
+
+    let playerMarkerRemovalTimer = 0;
+    let playerMarkerTransitionResetFrame = 0;
+
+    const normalizeSignedAngle = (angle) => {
+        const wrapped = ((angle + 180) % 360 + 360) % 360 - 180;
+        return wrapped === -180 ? 180 : wrapped;
+    };
+
+    const getMarkerPixelPosition = (marker) => {
+        const transform = marker?.style?.getPropertyValue("transform") || "";
+        if (!transform || transform === "none") {
+            return null;
+        }
+
+        try {
+            const matrix = new DOMMatrixReadOnly(transform);
+            if (Number.isFinite(matrix.m41) && Number.isFinite(matrix.m42)) {
+                return { x: matrix.m41, y: matrix.m42 };
+            }
+        } catch {
+            // Older WebView2 builds can reject a valid translate3d value.
+        }
+
+        const match = transform.match(
+            /translate(?:3d)?\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px/i);
+        if (!match) {
+            return null;
+        }
+        const x = Number(match[1]);
+        const y = Number(match[2]);
+        return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+    };
+
+    const updateStablePlayerMarkerStyle = (stable, source, pane) => {
+        if (stable.style.cssText === source.style.cssText) {
+            return;
+        }
+
+        const previous = getMarkerPixelPosition(stable);
+        const next = getMarkerPixelPosition(source);
+        const mapSize = Math.min(pane.clientWidth || innerWidth, pane.clientHeight || innerHeight);
+        const snapDistance = Math.max(48, Math.min(120, mapSize * 0.22));
+        const shouldSnap = !previous
+            || !next
+            || Math.hypot(next.x - previous.x, next.y - previous.y) >= snapDistance;
+
+        // Ordinary live packets are interpolated by CSS. A recenter, zoom or
+        // exact F8 correction can move dozens of pixels at once; snap those
+        // changes so the marker never flies across the map after the map jumps.
+        if (shouldSnap) {
+            if (playerMarkerTransitionResetFrame !== 0) {
+                window.cancelAnimationFrame(playerMarkerTransitionResetFrame);
+            }
+            stable.classList.add("raidpilot-player-marker-snap");
+        }
+        stable.style.cssText = source.style.cssText;
+        if (shouldSnap) {
+            playerMarkerTransitionResetFrame = window.requestAnimationFrame(() => {
+                playerMarkerTransitionResetFrame = 0;
+                stable.classList.remove("raidpilot-player-marker-snap");
+            });
+        }
+    };
+
+    const getImageRotation = (image) => {
+        const rawRotation = image?.style?.getPropertyValue("rotate") || "";
+        const rotation = Number.parseFloat(rawRotation);
+        return Number.isFinite(rotation) ? rotation : null;
+    };
+
+    const updateStablePlayerImageStyle = (stableImage, sourceImage) => {
+        const previousRotation = getImageRotation(stableImage);
+        const nextRotation = getImageRotation(sourceImage);
+        if (stableImage.style.cssText !== sourceImage.style.cssText) {
+            stableImage.style.cssText = sourceImage.style.cssText;
+        }
+        if (previousRotation === null || nextRotation === null) {
+            return;
+        }
+
+        const continuousRotation = previousRotation + normalizeSignedAngle(
+            nextRotation - normalizeSignedAngle(previousRotation));
+        stableImage.style.setProperty("rotate", `${continuousRotation}deg`);
+    };
+
+    const syncStablePlayerMarker = () => {
+        const pane = document.querySelector("#leaflet-map .leaflet-marker-pane");
+        if (!pane) {
+            return;
+        }
+
+        const sourceMarkers = [...pane.querySelectorAll(
+            ":scope > .leaflet-marker-icon.marker:not(.raidpilot-player-marker)")];
+        const source = sourceMarkers.at(-1);
+        let stable = pane.querySelector(":scope > .raidpilot-player-marker");
+
+        if (localPlayerPoseState) {
+            for (const marker of sourceMarkers) {
+                marker.classList.add("raidpilot-player-marker-source");
+            }
+            stable?.remove();
+            return;
+        }
+
+        if (!source) {
+            if (stable && playerMarkerRemovalTimer === 0) {
+                playerMarkerRemovalTimer = window.setTimeout(() => {
+                    playerMarkerRemovalTimer = 0;
+                    if (!pane.querySelector(
+                        ":scope > .leaflet-marker-icon.marker:not(.raidpilot-player-marker)")) {
+                        stable.remove();
+                    }
+                }, 650);
+            }
+            return;
+        }
+
+        if (playerMarkerRemovalTimer !== 0) {
+            window.clearTimeout(playerMarkerRemovalTimer);
+            playerMarkerRemovalTimer = 0;
+        }
+
+        for (const marker of sourceMarkers) {
+            marker.classList.add("raidpilot-player-marker-source");
+        }
+        if (!stable) {
+            stable = source.cloneNode(true);
+            stable.classList.remove("raidpilot-player-marker-source", "leaflet-interactive");
+            stable.classList.add("raidpilot-player-marker");
+            stable.removeAttribute("tabindex");
+            stable.removeAttribute("role");
+            stable.setAttribute("aria-hidden", "true");
+            pane.appendChild(stable);
+        }
+
+        updateStablePlayerMarkerStyle(stable, source, pane);
+        const sourceImage = source.querySelector("img");
+        let stableImage = stable.querySelector("img");
+        if (sourceImage && !stableImage) {
+            stable.replaceChildren(sourceImage.cloneNode(true));
+            stableImage = stable.querySelector("img");
+        }
+        if (sourceImage && stableImage) {
+            const sourceUrl = sourceImage.getAttribute("src");
+            if (stableImage.getAttribute("src") !== sourceUrl) {
+                stableImage.setAttribute("src", sourceUrl || "");
+            }
+            updateStablePlayerImageStyle(stableImage, sourceImage);
+        }
+    };
+
+    const setImportantStyle = (element, property, value) => {
+        if (element.style.getPropertyValue(property) === value
+            && element.style.getPropertyPriority(property) === "important") {
+            return;
+        }
+        element.style.setProperty(property, value, "important");
+    };
+
+    const hideElement = (element) => {
+        if (element instanceof HTMLElement || element instanceof SVGElement) {
+            setImportantStyle(element, "display", "none");
+        }
+    };
+
+    const mapViewportHeight = "calc(100vh - var(--raidpilot-guidance-height, 72px) - var(--raidpilot-quest-height, 0px))";
+    let kioskMapElement = null;
+    let kioskMapResizeObserver = null;
+    let kioskResizeFrame = 0;
+    const observeMapViewportSize = () => {
+        const container = document.getElementById("leaflet-map");
+        if (container === kioskMapElement) return;
+        kioskMapResizeObserver?.disconnect();
+        if (kioskResizeFrame) window.cancelAnimationFrame(kioskResizeFrame);
+        kioskMapElement = container;
+        kioskResizeFrame = 0;
+        if (!container || typeof ResizeObserver !== "function") return;
+        kioskMapResizeObserver = new ResizeObserver(() => {
+            if (kioskResizeFrame) return;
+            kioskResizeFrame = window.requestAnimationFrame(() => {
+                kioskResizeFrame = 0;
+                if (container !== kioskMapElement || !container.isConnected) return;
+                // Layout-only: keep the current map center, zoom and GPS state.
+                const map = findLeafletMapInstance();
+                map?.invalidateSize?.({ pan: false, animate: false });
+            });
+        });
+        kioskMapResizeObserver.observe(container);
+    };
+
+    const applyKioskLayout = () => {
+        for (const selector of [
+            ".navigation",
+            ".footer-wrapper",
+            ".CookieConsent",
+            ".id-wrapper",
+            ".leaflet-control-container",
+            ".leaflet-popup-pane",
+            ".leaflet-tooltip-pane",
+            ".leaflet-shadow-pane",
+            "body > #root > .App > .MuiBox-root",
+        ]) {
+            for (const element of document.querySelectorAll(selector)) {
+                hideElement(element);
+            }
+        }
+
+        for (const [selector, properties] of [
+            ["html", { width: "100vw", height: "100vh", overflow: "hidden" }],
+            ["body", { width: "100vw", height: "100vh", margin: "0px", overflow: "hidden" }],
+            ["#root", { width: "100vw", height: "100vh" }],
+            [".App", { width: "100vw", height: "100vh" }],
+            [".display-wrapper.map-page", {
+                position: "fixed",
+                inset: "var(--raidpilot-guidance-height, 72px) 0px var(--raidpilot-quest-height, 0px) 0px",
+                width: "100vw",
+                height: mapViewportHeight,
+                margin: "0px",
+                padding: "0px",
+            }],
+            ["#leaflet-map", { width: "100vw", height: mapViewportHeight, margin: "0px" }],
+        ]) {
+            const element = document.querySelector(selector);
+            if (!element) {
+                continue;
+            }
+            for (const [property, value] of Object.entries(properties)) {
+                setImportantStyle(element, property, value);
+            }
+        }
+    };
+
+    const turnOffGroup = (group) => {
+        const key = group.dataset.key;
+
+        // Level selectors currently have no stable data-key. Preserve any group
+        // without a key, as well as the three explicitly allowed stable groups.
+        if (!key || visibleGroups.has(key)) {
+            return;
+        }
+
+        const groupSelector = group.querySelector(":scope > .leaflet-control-layers-group-label .leaflet-control-layers-group-selector");
+        if (groupSelector) {
+            if (groupSelector.checked || groupSelector.indeterminate) {
+                // Starting from checked guarantees click() ends in the off state,
+                // including the browser's otherwise ambiguous indeterminate state.
+                groupSelector.indeterminate = false;
+                groupSelector.checked = true;
+                groupSelector.click();
+            }
+            return;
+        }
+
+        // Defensive fallback for an exclusive group without a group checkbox.
+        for (const selector of group.querySelectorAll("input.leaflet-control-layers-selector:checked")) {
+            selector.click();
+        }
+    };
+
+    const groupNeedsLayerPolicy = (group) => {
+        const key = group.dataset.key;
+        if (key === rareLootGroupKey) {
+            return true;
+        }
+        if (!key || visibleGroups.has(key)) {
+            return false;
+        }
+
+        const groupSelector = group.querySelector(
+            ":scope > .leaflet-control-layers-group-label .leaflet-control-layers-group-selector");
+        if (groupSelector) {
+            return groupSelector.checked || groupSelector.indeterminate;
+        }
+        return Boolean(group.querySelector(
+            "input.leaflet-control-layers-selector:checked"));
+    };
+
+    const nodeContainsActiveDisallowedGroup = (node) => {
+        if (!(node instanceof Element)) {
+            return false;
+        }
+        const groups = node.matches(".leaflet-control-layers-group")
+            ? [node]
+            : [...node.querySelectorAll(".leaflet-control-layers-group")];
+        return groups.some(groupNeedsLayerPolicy);
+    };
+
+    const applyLayerPolicy = () => {
+        updateScheduled = false;
+        installStablePlayerFollow();
+        applyKioskLayout();
+        observeMapViewportSize();
+        for (const group of document.querySelectorAll(".leaflet-control-layers-group")) {
+            turnOffGroup(group);
+        }
+        enforceRareLootMarkers();
+
+        const map = document.getElementById("leaflet-map");
+        if (map) {
+            let credit = document.getElementById("raidpilot-map-credit");
+            if (!credit) {
+                credit = document.createElement("div");
+                credit.id = "raidpilot-map-credit";
+                credit.className = "raidpilot-map-credit";
+                map.appendChild(credit);
+            }
+
+            const author = document.querySelector(".leaflet-control-raid-info a")?.textContent?.trim();
+            const creditText = author ? `Carte · ${author} · tarkov.dev` : "Carte · tarkov.dev";
+            if (credit.textContent !== creditText) {
+                credit.textContent = creditText;
+            }
+        }
+
+        window.__raidPilotApplyLocalPose?.();
+        syncStablePlayerMarker();
+        window.__raidPilotApplyGuidanceTarget?.();
+        window.__raidPilotApplyRaidExtractions?.();
+        window.__raidPilotApplyRaidQuests?.();
+        window.__raidPilotApplyLearnedRoute?.();
+        window.__raidPilotApplyRaidTimer?.();
+        window.__raidPilotRefreshFloorMarkers?.();
+    };
+
+    const scheduleLayerPolicy = () => {
+        if (updateScheduled) {
+            return;
+        }
+        updateScheduled = true;
+        window.requestAnimationFrame(applyLayerPolicy);
+    };
+
+    const normalizeLabel = (value) => String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/gi, " ")
+        .trim()
+        .toLowerCase();
+
+    const clearGuidanceTarget = () => {
+        for (const marker of document.querySelectorAll(".raidpilot-guidance-target")) {
+            marker.classList.remove("raidpilot-guidance-target");
+        }
+    };
+
+    const clearRaidExtractionMarkers = () => {
+        for (const marker of document.querySelectorAll(".raidpilot-raid-extraction")) {
+            marker.classList.remove("raidpilot-raid-extraction");
+        }
+    };
+
+    window.__raidPilotClearRaidExtractions = (generation = raidExtractionGeneration) => {
+        const requestedGeneration = Number.isFinite(Number(generation))
+            ? Number(generation)
+            : raidExtractionGeneration;
+        if (requestedGeneration < raidExtractionGeneration) {
+            return;
+        }
+        if (requestedGeneration === raidExtractionGeneration
+            && raidExtractionsConfirmed) {
+            return;
+        }
+        raidExtractionGeneration = requestedGeneration;
+        raidExtractionEntries = [];
+        raidExtractionsConfirmed = false;
+        document.documentElement.classList.remove("raidpilot-raid-extractions-confirmed");
+        clearRaidExtractionMarkers();
+    };
+
+    window.__raidPilotSetRaidExtractions = (payload) => {
+        if (!payload || !Array.isArray(payload.extractions)) {
+            return;
+        }
+        const requestedGeneration = Number.isFinite(Number(payload.generation))
+            ? Number(payload.generation)
+            : raidExtractionGeneration;
+        if (requestedGeneration < raidExtractionGeneration) {
+            return;
+        }
+
+        raidExtractionGeneration = requestedGeneration;
+        raidExtractionEntries = payload.extractions
+            .map((entry) => ({
+                id: String(entry?.id ?? "").trim().toLowerCase(),
+                labels: [...new Set((Array.isArray(entry?.labels) ? entry.labels : [])
+                    .map(normalizeLabel)
+                    .filter(Boolean))],
+            }))
+            .filter((entry) => entry.id || entry.labels.length > 0);
+        raidExtractionsConfirmed = true;
+        document.documentElement.classList.remove("raidpilot-raid-extractions-confirmed");
+        return window.__raidPilotApplyRaidExtractions();
+    };
+
+    window.__raidPilotApplyRaidExtractions = () => {
+        clearRaidExtractionMarkers();
+        if (!raidExtractionsConfirmed) {
+            return 0;
+        }
+
+        const indexedIcons = new Map();
+        const mapInstance = findLeafletMapInstance();
+        const layers = mapInstance?._layers && typeof mapInstance._layers === "object"
+            ? Object.values(mapInstance._layers)
+            : [];
+        for (const layer of layers) {
+            const icon = layer?._icon;
+            if (!(icon instanceof Element) || !icon.classList.contains("extract-icon")) {
+                continue;
+            }
+            const layerId = String(layer?.options?.id ?? "").trim().toLowerCase();
+            indexedIcons.set(icon, layerId);
+        }
+
+        let matchedCount = 0;
+        for (const marker of document.querySelectorAll("#leaflet-map .extract-icon")) {
+            const layerId = indexedIcons.get(marker) || "";
+            const matchesId = layerId && raidExtractionEntries.some(
+                (entry) => entry.id === layerId);
+            const label = marker.getAttribute("title")
+                || marker.querySelector(".extract-name")?.textContent
+                || "";
+            const normalized = normalizeLabel(label);
+            const matchesLabel = normalized && raidExtractionEntries.some(
+                (entry) => entry.labels.includes(normalized));
+            const matches = Boolean(matchesId || matchesLabel);
+            marker.classList.toggle("raidpilot-raid-extraction", matches);
+            if (matches) {
+                matchedCount += 1;
+            }
+        }
+        document.documentElement.classList.toggle(
+            "raidpilot-raid-extractions-confirmed",
+            matchedCount > 0);
+        return matchedCount;
+    };
+
+    const questLayerKeys = new Set(["quest_item", "quest_objective"]);
+
+    const collectQuestMarkerLayers = (mapInstance) => {
+        const controlEntries = Array.isArray(mapInstance?.layerControl?._layers)
+            ? mapInstance.layerControl._layers
+            : [];
+        const pending = controlEntries
+            .filter((entry) => questLayerKeys.has(String(entry?.key ?? "")))
+            .map((entry) => entry?.layer)
+            .filter(Boolean);
+        const visited = new Set();
+        const markers = [];
+
+        while (pending.length > 0 && visited.size < 12000) {
+            const layer = pending.pop();
+            if (!layer || visited.has(layer)) {
+                continue;
+            }
+            visited.add(layer);
+
+            const questId = String(layer?.options?.questId ?? "").trim().toLowerCase();
+            if (questId && typeof layer.addTo === "function") {
+                markers.push(layer);
+            }
+
+            const children = layer?._layers && typeof layer._layers === "object"
+                ? Object.values(layer._layers)
+                : [];
+            pending.push(...children);
+        }
+        return markers;
+    };
+
+    const releaseRaidQuestLayer = (layer, state) => {
+        layer?._icon?.classList?.remove("raidpilot-quest-marker");
+        layer?._icon?.removeAttribute?.("data-raidpilot-quest-name");
+        if (state?.addedByRaidPilot === true
+            && state.map
+            && typeof state.map.hasLayer === "function"
+            && state.map.hasLayer(layer)) {
+            state.map.removeLayer(layer);
+        }
+        activeRaidQuestLayers.delete(layer);
+    };
+
+    const clearRaidQuestMarkers = () => {
+        for (const [layer, state] of [...activeRaidQuestLayers.entries()]) {
+            releaseRaidQuestLayer(layer, state);
+        }
+        for (const marker of document.querySelectorAll(".raidpilot-quest-marker")) {
+            marker.classList.remove("raidpilot-quest-marker");
+            marker.removeAttribute("data-raidpilot-quest-name");
+        }
+    };
+
+    const scheduleRaidQuestRetry = () => {
+        if (raidQuestRetryTimer !== 0
+            || !raidQuestsConfirmed
+            || raidQuestRetryAttempts >= 40) {
+            return;
+        }
+        raidQuestRetryTimer = window.setTimeout(() => {
+            raidQuestRetryTimer = 0;
+            raidQuestRetryAttempts += 1;
+            const matched = window.__raidPilotApplyRaidQuests?.() ?? 0;
+            const requested = new Set(raidQuestEntries.map((entry) => entry.id)).size;
+            if (matched < requested) {
+                scheduleRaidQuestRetry();
+            }
+        }, 250);
+    };
+
+    window.__raidPilotClearRaidQuests = (generation = raidQuestGeneration) => {
+        const requestedGeneration = Number.isFinite(Number(generation))
+            ? Number(generation)
+            : raidQuestGeneration;
+        if (requestedGeneration < raidQuestGeneration) {
+            return;
+        }
+        if (requestedGeneration === raidQuestGeneration && raidQuestsConfirmed) {
+            return;
+        }
+
+        raidQuestGeneration = requestedGeneration;
+        raidQuestEntries = [];
+        raidQuestsConfirmed = false;
+        raidQuestRetryAttempts = 0;
+        if (raidQuestRetryTimer !== 0) {
+            window.clearTimeout(raidQuestRetryTimer);
+            raidQuestRetryTimer = 0;
+        }
+        clearRaidQuestMarkers();
+    };
+
+    window.__raidPilotSetRaidQuests = (payload) => {
+        if (!payload || !Array.isArray(payload.quests)) {
+            return 0;
+        }
+        const requestedGeneration = Number.isFinite(Number(payload.generation))
+            ? Number(payload.generation)
+            : raidQuestGeneration;
+        if (requestedGeneration < raidQuestGeneration) {
+            return 0;
+        }
+
+        raidQuestGeneration = requestedGeneration;
+        raidQuestEntries = payload.quests
+            .map((entry) => ({
+                id: String(entry?.id ?? "").trim().toLowerCase(),
+                name: String(entry?.name ?? "").trim(),
+            }))
+            .filter((entry) => entry.id);
+        raidQuestsConfirmed = true;
+        raidQuestRetryAttempts = 0;
+        const matched = window.__raidPilotApplyRaidQuests();
+        const requested = new Set(raidQuestEntries.map((entry) => entry.id)).size;
+        if (matched < requested) {
+            scheduleRaidQuestRetry();
+        }
+        return matched;
+    };
+
+    window.__raidPilotApplyRaidQuests = () => {
+        const mapInstance = findLeafletMapInstance();
+        if (!raidQuestsConfirmed || !mapInstance) {
+            return 0;
+        }
+
+        const wanted = new Map(raidQuestEntries.map((entry) => [entry.id, entry]));
+        const available = collectQuestMarkerLayers(mapInstance);
+        const selected = new Set(available.filter((layer) => wanted.has(
+            String(layer?.options?.questId ?? "").trim().toLowerCase())));
+
+        for (const [layer, state] of [...activeRaidQuestLayers.entries()]) {
+            if (!selected.has(layer) || state.map !== mapInstance) {
+                releaseRaidQuestLayer(layer, state);
+            }
+        }
+
+        const matchedQuestIds = new Set();
+        for (const layer of selected) {
+            const questId = String(layer.options.questId).trim().toLowerCase();
+            const quest = wanted.get(questId);
+            let state = activeRaidQuestLayers.get(layer);
+            if (!mapInstance.hasLayer(layer)) {
+                layer.addTo(mapInstance);
+                state = { map: mapInstance, addedByRaidPilot: true };
+            } else if (!state) {
+                state = { map: mapInstance, addedByRaidPilot: false };
+            }
+            activeRaidQuestLayers.set(layer, state);
+
+            const icon = layer._icon;
+            if (icon instanceof Element) {
+                icon.classList.add("raidpilot-quest-marker");
+                icon.setAttribute("data-raidpilot-quest-name", quest?.name || "Quête");
+                icon.setAttribute("aria-label", quest?.name || "Objectif de quête");
+                matchedQuestIds.add(questId);
+            }
+        }
+        return matchedQuestIds.size;
+    };
+
+    // Render identity is independent of EXFIL recognition and protected against stale async updates.
+    let raidTimerUiSequence = -1;
+    let raidTimerReadState = "waiting";
+    const timerStatusLabel = state => ({reading:"LECTURE", unreadable:"NON LU",
+        confirmationrequired:"À CONFIRMER", failed:"NON LU", synchronized:"SYNCHRO"}[state] ?? "NON LU");
+
+    const ensureRaidTimerHud = () => {
+        let hud = document.getElementById("raidpilot-raid-timer");
+        if (hud) return hud;
+        hud = document.createElement("div");
+        hud.id = "raidpilot-raid-timer";
+        hud.hidden = true;
+        hud.setAttribute("aria-label", "Temps restant du raid");
+        document.body.appendChild(hud);
+        return hud;
+    };
+
+    const formatRaidTimer = (totalSeconds) => {
+        const value = Math.max(0, Math.trunc(totalSeconds));
+        const hours = Math.floor(value / 3600);
+        const minutes = Math.floor((value % 3600) / 60);
+        const seconds = value % 60;
+        return hours > 0
+            ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+            : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    };
+
+    const renderRaidTimer = () => {
+        const hud = ensureRaidTimerHud();
+        if (!Number.isFinite(raidTimerDeadline)) {
+            raidTimerLastSecond = null;
+            hud.classList.remove("raidpilot-raid-timer-warning", "raidpilot-raid-timer-critical");
+            hud.dataset.status = timerStatusLabel(raidTimerReadState);
+            hud.dataset.state = raidTimerReadState;
+            hud.title = "Temps non synchronisé. Le panneau O doit être lisible. Une lecture ratée reste récupérable même après reconnaissance des sorties.";
+            if (raidTimerPending) {
+                if (hud.textContent !== "--:--") hud.textContent = "--:--";
+                hud.classList.add("raidpilot-raid-timer-pending");
+                hud.hidden = false;
+            } else {
+                hud.classList.remove("raidpilot-raid-timer-pending");
+                hud.hidden = true;
+            }
+            return;
+        }
+        const remainingSeconds = Math.max(0, Math.ceil((raidTimerDeadline - performance.now()) / 1000));
+        raidTimerLastSecond = remainingSeconds;
+        const text = formatRaidTimer(remainingSeconds);
+        // Also repaint a DOM node recreated within the same second.
+        if (hud.textContent !== text) hud.textContent = text;
+        hud.dataset.status = "SYNCHRO";
+        hud.dataset.state = "synchronized";
+        hud.title = "Synchronisé sur une lecture du panneau du jeu, puis décompté localement. Le temps affiché par Tarkov fait foi.";
+        hud.classList.remove("raidpilot-raid-timer-pending");
+        hud.classList.toggle("raidpilot-raid-timer-warning", remainingSeconds <= 10 * 60);
+        hud.classList.toggle("raidpilot-raid-timer-critical", remainingSeconds <= 5 * 60);
+        hud.hidden = false;
+    };
+
+    const ensureRaidTimerLoop = () => {
+        if (!raidTimerInterval) raidTimerInterval = window.setInterval(renderRaidTimer, 250);
+    };
+
+    const acceptTimerUpdate = (generation, sequence) => {
+        if (!Number.isSafeInteger(generation) || generation < 0 || generation < raidTimerGeneration) return null;
+        const next = sequence === undefined ? raidTimerUiSequence + 1 : sequence;
+        if (!Number.isSafeInteger(next) || next < 0
+            || (generation === raidTimerGeneration && next <= raidTimerUiSequence)) return null;
+        return next;
+    };
+
+    window.__raidPilotClearRaidTimer = (generation = raidTimerGeneration, showPending = false, sequence, state = "waiting") => {
+        const next = acceptTimerUpdate(generation, sequence);
+        if (next === null) return false;
+        raidTimerGeneration = generation;
+        raidTimerUiSequence = next;
+        raidTimerDeadline = null;
+        raidTimerPending = showPending === true;
+        raidTimerReadState = ["waiting","reading","unreadable","confirmationrequired","failed"].includes(state) ? state : "waiting";
+        raidTimerLastSecond = null;
+        if (raidTimerPending) ensureRaidTimerLoop();
+        else if (raidTimerInterval) { window.clearInterval(raidTimerInterval); raidTimerInterval = 0; }
+        renderRaidTimer();
+        return true;
+    };
+
+    window.__raidPilotSetRaidTimer = payload => {
+        const generation = payload?.generation, remainingSeconds = payload?.remainingSeconds;
+        const next = acceptTimerUpdate(generation, payload?.sequence);
+        if (next === null || typeof remainingSeconds !== "number" || !Number.isFinite(remainingSeconds)
+            || remainingSeconds < 0 || remainingSeconds > 3 * 60 * 60) return false;
+        raidTimerGeneration = generation;
+        raidTimerUiSequence = next;
+        raidTimerDeadline = performance.now() + remainingSeconds * 1000;
+        raidTimerPending = false;
+        raidTimerReadState = "synchronized";
+        raidTimerLastSecond = null;
+        ensureRaidTimerLoop();
+        renderRaidTimer();
+        return true;
+    };
+
+    window.__raidPilotApplyRaidTimer = renderRaidTimer;
+    window.addEventListener("pageshow", renderRaidTimer);
+    document.addEventListener("visibilitychange", renderRaidTimer);
+
+    // Context is informational: only host-confirmed quests and a fresh, bounded-error pose.
+    // No capture, network request or completion inference is performed here.
+    let questContextSequence = -1;
+    const setQuestContextSpace = (visible) => {
+        const value = visible ? "96px" : "0px";
+        const root = document.documentElement;
+        if (root.style.getPropertyValue("--raidpilot-quest-height") !== value) {
+            root.style.setProperty("--raidpilot-quest-height", value);
+            window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+        }
+    };
+    const ensureQuestContext = () => {
+        let panel = document.getElementById("raidpilot-quest-context");
+        if (panel) return panel;
+        panel = document.createElement("section");
+        panel.id = "raidpilot-quest-context";
+        panel.hidden = true;
+        panel.setAttribute("aria-label", "Quête à proximité, progression non vérifiée");
+        for (const [tag, cls] of [["strong", "name"], ["span", "where"], ["span", "instruction"], ["small", "note"]]) {
+            const node = document.createElement(tag);
+            node.className = "raidpilot-quest-context-" + cls;
+            panel.appendChild(node);
+        }
+        document.body.appendChild(panel);
+        return panel;
+    };
+    window.__raidPilotClearQuestContext = (sequence) => {
+        sequence = Number(sequence);
+        if (!Number.isSafeInteger(sequence) || sequence < questContextSequence) return false;
+        questContextSequence = sequence;
+        const panel = document.getElementById("raidpilot-quest-context");
+        if (panel) panel.hidden = true;
+        setQuestContextSpace(false);
+        return true;
+    };
+    window.__raidPilotShowQuestContext = (context) => {
+        if (!context || !Number.isSafeInteger(context.sequence) || context.sequence < questContextSequence) return false;
+        if (!document.getElementById("leaflet-map")) return false;
+        if (typeof context.name !== "string" || !context.name.trim() || typeof context.instruction !== "string" || !context.instruction.trim())
+            return window.__raidPilotClearQuestContext(context.sequence);
+        questContextSequence = context.sequence;
+        const panel = ensureQuestContext();
+        for (const key of ["name", "where", "instruction", "note"]) {
+            const node = panel.querySelector(".raidpilot-quest-context-" + key);
+            const text = typeof context[key] === "string" ? context[key].slice(0, 1800) : "";
+            if (node.textContent !== text) node.textContent = text;
+        }
+        panel.title = [context.name, context.where, context.instruction, context.note, "Source : tarkov.dev/tasks"].join("\n");
+        panel.dataset.source = "tarkov.dev/tasks";
+        panel.hidden = false;
+        setQuestContextSpace(true);
+        return true;
+    };
+
+    const ensureGuidanceHud = () => {
+        let hud = document.getElementById("raidpilot-guidance");
+        if (hud) {
+            return hud;
+        }
+
+        hud = document.createElement("div");
+        hud.id = "raidpilot-guidance";
+        hud.hidden = true;
+
+        const arrow = document.createElement("div");
+        arrow.className = "raidpilot-guidance-arrow";
+        arrow.setAttribute("aria-hidden", "true");
+
+        const label = document.createElement("div");
+        label.className = "raidpilot-guidance-label";
+        const name = document.createElement("strong");
+        name.className = "raidpilot-guidance-name";
+        const details = document.createElement("span");
+        details.className = "raidpilot-guidance-details";
+        label.append(name, details);
+        hud.append(arrow, label);
+        document.body.appendChild(hud);
+        return hud;
+    };
+
+    const getContinuousGuidanceRotation = (arrow, requestedAngle) => {
+        const canonical = normalizeSignedAngle(requestedAngle);
+        const previousCanonical = Number(arrow.dataset.raidpilotCanonicalAngle);
+        const previousRotation = Number(arrow.dataset.raidpilotRotation);
+        const rotation = Number.isFinite(previousCanonical) && Number.isFinite(previousRotation)
+            ? previousRotation + normalizeSignedAngle(canonical - previousCanonical)
+            : canonical;
+        arrow.dataset.raidpilotCanonicalAngle = String(canonical);
+        arrow.dataset.raidpilotRotation = String(rotation);
+        return rotation;
+    };
+
+    window.__raidPilotClearGuidance = (generation = guidanceGeneration) => {
+        const requestedGeneration = Number.isFinite(Number(generation)) ? Number(generation) : guidanceGeneration;
+        if (requestedGeneration < guidanceGeneration) {
+            return;
+        }
+        guidanceGeneration = requestedGeneration;
+        guidanceTargetLabels = [];
+        guidanceTargetId = "";
+        clearGuidanceTarget();
+        const hud = document.getElementById("raidpilot-guidance");
+        if (hud) {
+            hud.hidden = true;
+        }
+    };
+
+    window.__raidPilotShowGuidance = (guidance) => {
+        if (!guidance || typeof guidance.name !== "string") {
+            window.__raidPilotClearGuidance();
+            return;
+        }
+
+        const requestedGeneration = Number.isFinite(Number(guidance.generation))
+            ? Number(guidance.generation)
+            : guidanceGeneration;
+        if (requestedGeneration < guidanceGeneration) {
+            return;
+        }
+        guidanceGeneration = requestedGeneration;
+
+        const hud = ensureGuidanceHud();
+        const arrow = hud.querySelector(".raidpilot-guidance-arrow");
+        const name = hud.querySelector(".raidpilot-guidance-name");
+        const details = hud.querySelector(".raidpilot-guidance-details");
+        const angle = Number.isFinite(Number(guidance.angle)) ? Number(guidance.angle) : 0;
+        const distance = Number.isFinite(Number(guidance.distance)) ? Math.max(0, Number(guidance.distance)) : 0;
+        const vertical = Number.isFinite(Number(guidance.vertical)) ? Number(guidance.vertical) : 0;
+        const uncertainty = Number.isFinite(Number(guidance.uncertainty))
+            ? Math.max(0, Number(guidance.uncertainty))
+            : 0;
+        const altitude = Math.abs(vertical) >= 3
+            ? ` · ${vertical > 0 ? "↑" : "↓"} ${Math.round(Math.abs(vertical))} m`
+            : "";
+        const liveStatus = guidance.estimated === true
+            ? (guidance.needsReanchor === true || uncertainty > 4)
+                ? ` · F8 ≈${Math.round(uncertainty)} m`
+                : ` · LIVE ≈${Math.round(uncertainty)} m`
+            : "";
+        const conditionStatus = guidance.conditional === true ? " · ⚠ CONDITION" : "";
+        const learnedRouteStatus = guidance.route === "learned"
+            ? guidance.routeConfidence === "medium"
+                ? "CHEMIN APPRIS · CONFIANCE MOYENNE"
+                : "CHEMIN APPRIS"
+            : "CAP DIRECT";
+
+        // Keep rotation continuous around north: 179 -> -179 is a two-degree
+        // correction, not a distracting full revolution of the arrow.
+        const arrowRotation = getContinuousGuidanceRotation(
+            arrow,
+            guidance.arrived === true ? 0 : angle);
+        const arrowTransform = `rotate(${arrowRotation}deg)`;
+        if (arrow.style.transform !== arrowTransform) {
+            arrow.style.transform = arrowTransform;
+        }
+        arrow.classList.toggle("arrived", guidance.arrived === true);
+        if (name.textContent !== guidance.name) {
+            name.textContent = guidance.name;
+        }
+        const detailText = guidance.arrived === true
+            ? "ARRIVÉ"
+            : guidance.provisional === true
+                ? `${Math.round(distance)} m · PROVISOIRE · REFAIS F8${altitude}${conditionStatus}`
+                : `${Math.round(distance)} m · ${learnedRouteStatus}${altitude}${liveStatus}${conditionStatus}`;
+        if (details.textContent !== detailText) {
+            details.textContent = detailText;
+        }
+        hud.classList.toggle("raidpilot-guidance-degraded", guidance.estimated === true && uncertainty >= 8);
+        hud.classList.toggle("raidpilot-guidance-provisional", guidance.provisional === true);
+        hud.classList.toggle("raidpilot-guidance-learned", guidance.route === "learned");
+        if (hud.hidden) {
+            hud.hidden = false;
+        }
+
+        const aliases = Array.isArray(guidance.aliases) ? guidance.aliases : [];
+        const nextTargetId = String(guidance.id ?? "").trim().toLowerCase();
+        const nextTargetLabels = [...new Set([guidance.name, ...aliases]
+            .map(normalizeLabel)
+            .filter(Boolean))];
+        const targetChanged = nextTargetId !== guidanceTargetId
+            || nextTargetLabels.length !== guidanceTargetLabels.length
+            || nextTargetLabels.some((label, index) => label !== guidanceTargetLabels[index]);
+        if (!targetChanged) {
+            // Live guidance arrives several times per second. The destination
+            // marker does not change with each angle/distance update, so avoid
+            // rescanning every Leaflet layer and extraction icon on this hot
+            // path. DOM additions are handled by the observer below.
+            return document.querySelectorAll(
+                "#leaflet-map .raidpilot-guidance-target").length;
+        }
+        guidanceTargetId = nextTargetId;
+        guidanceTargetLabels = nextTargetLabels;
+        return window.__raidPilotApplyGuidanceTarget();
+    };
+
+    window.__raidPilotApplyGuidanceTarget = () => {
+        clearGuidanceTarget();
+        const indexedIcons = new Map();
+        if (guidanceTargetId) {
+            const mapInstance = findLeafletMapInstance();
+            const layers = mapInstance?._layers && typeof mapInstance._layers === "object"
+                ? Object.values(mapInstance._layers)
+                : [];
+            for (const layer of layers) {
+                const icon = layer?._icon;
+                if (!(icon instanceof Element) || !icon.classList.contains("extract-icon")) {
+                    continue;
+                }
+                const layerId = String(layer?.options?.id ?? "").trim().toLowerCase();
+                indexedIcons.set(icon, layerId);
+            }
+        }
+
+        let matchedCount = 0;
+        for (const marker of document.querySelectorAll("#leaflet-map .extract-icon")) {
+            const matchesId = guidanceTargetId
+                && indexedIcons.get(marker) === guidanceTargetId;
+            const label = marker.getAttribute("title")
+                || marker.querySelector(".extract-name")?.textContent
+                || "";
+            const isTarget = Boolean(matchesId
+                || guidanceTargetLabels.includes(normalizeLabel(label)));
+            if (isTarget) {
+                marker.classList.add("raidpilot-guidance-target");
+                matchedCount += 1;
+            }
+        }
+        return matchedCount;
+    };
+
+    const raidPilotOwnsNode = (node) => {
+        const element = node instanceof Element ? node : node.parentElement;
+        const ownedSelector = "#raidpilot-auto-floor, #raidpilot-quest-context, #raidpilot-guidance, #raidpilot-raid-timer, #raidpilot-map-credit, #raidpilot-learned-route, .raidpilot-player-marker";
+        return element?.matches?.(ownedSelector)
+            || Boolean(element?.closest?.(ownedSelector));
+    };
+
+    const nodeMatchesOrContains = (node, selector) => node instanceof Element
+        && (node.matches(selector) || Boolean(node.querySelector(selector)));
+
+    let playerMarkerStyleObserver = null;
+    let observedPlayerMarkerPane = null;
+
+    const observePlayerMarkerStyles = (mutations) => {
+        for (const mutation of mutations) {
+            const target = mutation.target;
+            const sourceMarker = target instanceof Element
+                ? target.closest(
+                    ".leaflet-marker-pane > .leaflet-marker-icon.marker:not(.raidpilot-player-marker)")
+                : null;
+            if (sourceMarker) {
+                syncStablePlayerMarker();
+                return;
+            }
+        }
+    };
+
+    const ensurePlayerMarkerStyleObserver = () => {
+        const pane = document.querySelector("#leaflet-map .leaflet-marker-pane");
+        if (pane === observedPlayerMarkerPane) {
+            return;
+        }
+        playerMarkerStyleObserver?.disconnect();
+        playerMarkerStyleObserver = null;
+        observedPlayerMarkerPane = pane;
+        if (!pane) {
+            return;
+        }
+        playerMarkerStyleObserver = new MutationObserver(observePlayerMarkerStyles);
+        playerMarkerStyleObserver.observe(pane, {
+            subtree: true,
+            attributes: true,
+            attributeFilter: ["style"],
+        });
+        window.__raidPilotPlayerMarkerStyleObserver = playerMarkerStyleObserver;
+    };
+
+    const observeMapChanges = (mutations) => {
+        let needsLayerPolicy = false;
+        let needsGuidanceTarget = false;
+        let needsPlayerMarkerSync = false;
+        let needsQuestMarkers = false;
+        let needsLearnedRoute = false;
+        const policySelector = [
+            "#leaflet-map",
+            ".display-wrapper.map-page",
+        ].join(", ");
+
+        for (const mutation of mutations) {
+            const addedNodes = [...mutation.addedNodes];
+            if (raidPilotOwnsNode(mutation.target)
+                || (addedNodes.length > 0 && addedNodes.every(raidPilotOwnsNode))) {
+                continue;
+            }
+
+            const target = mutation.target instanceof Element
+                ? mutation.target
+                : mutation.target.parentElement;
+            const targetGroup = target?.closest?.(".leaflet-control-layers-group");
+            if (targetGroup && groupNeedsLayerPolicy(targetGroup)) {
+                needsLayerPolicy = true;
+            }
+            for (const node of addedNodes) {
+                needsLayerPolicy ||= nodeMatchesOrContains(node, policySelector);
+                needsLayerPolicy ||= nodeContainsActiveDisallowedGroup(node);
+                needsGuidanceTarget ||= nodeMatchesOrContains(node, ".extract-icon");
+                needsPlayerMarkerSync ||= nodeMatchesOrContains(node, ".leaflet-marker-icon.marker");
+                needsQuestMarkers ||= nodeMatchesOrContains(
+                    node,
+                    '.leaflet-control-layers-group[data-key="Tasks"]');
+            }
+            for (const node of mutation.removedNodes) {
+                needsPlayerMarkerSync ||= nodeMatchesOrContains(node, ".leaflet-marker-icon.marker");
+                needsLearnedRoute ||= nodeMatchesOrContains(node, "#raidpilot-learned-route");
+            }
+        }
+
+        ensurePlayerMarkerStyleObserver();
+        if (needsPlayerMarkerSync) {
+            syncStablePlayerMarker();
+        }
+        if (needsLayerPolicy) {
+            scheduleLayerPolicy();
+        } else if (needsGuidanceTarget || needsQuestMarkers) {
+            window.requestAnimationFrame(() => {
+                window.__raidPilotApplyGuidanceTarget?.();
+                window.__raidPilotApplyRaidExtractions?.();
+                window.__raidPilotApplyRaidQuests?.();
+                window.__raidPilotApplyLearnedRoute?.();
+            });
+        }
+        if (needsLearnedRoute) {
+            window.requestAnimationFrame(() => window.__raidPilotApplyLearnedRoute?.());
+        }
+    };
+
+    const startObserver = () => {
+        scheduleLayerPolicy();
+        const observer = new MutationObserver(observeMapChanges);
+        observer.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+        });
+        window.__raidPilotMapFilterObserver = observer;
+        ensurePlayerMarkerStyleObserver();
+    };
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", startObserver, { once: true });
+    } else {
+        startObserver();
+    }
+})();
