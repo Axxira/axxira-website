@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "channel": "stable",
+  "publishedAt": "2026-10-19T00:00:00Z",
+  "raidPilot": {
+    "version": "0.11.0",
+    "url": "https://example.com/releases/RaidPilot-Overlay-v0.11.0-Windows-x64.zip",
+    "sha256": "REMPLACER_PAR_LE_SHA256_DU_ZIP",
+    "sizeBytes": 1,
+    "releaseNotes": "Escouade temps réel, pions teammates et nouvelle identité visuelle."
+  },
+  "beacon": {
+    "version": "0.1.0",
+    "url": "https://example.com/releases/RaidPilot-Beacon-v0.1.0-Windows-x64.zip",
+    "sha256": "REMPLACER_PAR_LE_SHA256_DU_ZIP",
+    "sizeBytes": 1,
+    "releaseNotes": "Première version du Beacon léger pour les teammates."
+  }
+}
