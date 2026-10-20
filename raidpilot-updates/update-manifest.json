@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-20T02:12:24.2836314+00:00",
+  "publishedAt": "2026-10-20T18:37:28.1984659+00:00",
   "raidPilot": {
-    "version": "0.11.2",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-suite-v0.2.3/RaidPilot-Overlay-v0.11.2-Windows-x64.zip",
-    "sha256": "2CBBC57ED879EE440372C3148C4FCFFD64B574EB2B6A5C517D847DAD459C47CF",
-    "sizeBytes": 58957148,
+    "version": "0.11.3",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-suite-v0.2.3/RaidPilot-Overlay-v0.11.3-Windows-x64.zip",
+    "sha256": "88709747B85237857199FE6F5FC8698CC6208C4EE86D4D29BF6618E46721C63A",
+    "sizeBytes": 58957370,
     "releaseNotes": "Squad Sync, localisation locale et correctifs RaidPilot."
   },
   "beacon": {
     "version": "0.1.1",
     "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-suite-v0.2.3/RaidPilot-Beacon-v0.1.1-Windows-x64.zip",
-    "sha256": "7675B278190A9F713C2D57313717BAACC89F9943E5E468C6712534F89136D892",
-    "sizeBytes": 58210258,
+    "sha256": "1A4DABF79627CAD59E00874C0A5854247DCD3B35F3CF7F692E25670452AD251D",
+    "sizeBytes": 58210252,
     "releaseNotes": "Beacon léger avec profil d'escouade partagé et reconnexion automatique."
   },
   "launcher": {
     "version": "0.2.3",
     "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-suite-v0.2.3/RaidPilot-Launcher-v0.2.3-Windows-x64.zip",
-    "sha256": "78D6FC2A45BC441D452AF971D566707399F9909B0E48A52576001CA0D7C19BCE",
-    "sizeBytes": 175389269,
+    "sha256": "96D0B74139719BEC71EF33D531863683665237406826D357C5DCD0ACCCA4608B",
+    "sizeBytes": 175389467,
     "releaseNotes": "Canal Stable automatique et mise à jour du launcher lui-même."
   }
 }
