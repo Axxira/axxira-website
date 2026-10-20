@@ -111,6 +111,25 @@ Run("self-update accepte les suffixes de build Git", () =>
     Require(script.Contains("[Version]::TryParse($actualCore", StringComparison.Ordinal),
         "comparaison sémantique de version absente");
 });
+Run("self-update travaille hors du dossier launcher", () =>
+{
+    var workDirectory = UpdateService.GetLauncherUpdaterWorkingDirectory();
+    Require(Path.IsPathRooted(workDirectory), "dossier updater non absolu");
+    Require(workDirectory.Contains(
+            Path.Combine("RaidPilot Launcher", "Updater"),
+            StringComparison.OrdinalIgnoreCase),
+        "dossier updater inattendu");
+
+    var script = UpdateService.BuildLauncherSelfUpdateScript();
+    Require(script.Contains("[Parameter(Mandatory=$true)][string]$UpdaterWork", StringComparison.Ordinal),
+        "dossier de travail sécurisé non transmis au script");
+    Require(script.Contains("Set-Location -LiteralPath $UpdaterWork", StringComparison.Ordinal),
+        "script reste dans le dossier du launcher");
+    Require(script.Contains("FALLBACK_RELAUNCH", StringComparison.Ordinal),
+        "relance de secours absente");
+    Require(script.Contains("self-update.log", StringComparison.Ordinal),
+        "journal self-update absent");
+});
 Run("self-update relance et restaure en cas d'échec", () =>
 {
     var script = UpdateService.BuildLauncherSelfUpdateScript();
@@ -122,8 +141,8 @@ Run("self-update relance et restaure en cas d'échec", () =>
         "vérification du redémarrage absente");
     Require(script.Contains("Move-Item -LiteralPath $previous -Destination $Target", StringComparison.Ordinal),
         "restauration de l'ancienne version absente");
-    Require(script.Contains("Start-Process -FilePath $rollbackExe", StringComparison.Ordinal),
-        "relance du launcher restauré absente");
+    Require(script.Contains("Start-Process -FilePath $fallbackExe", StringComparison.Ordinal),
+        "relance du launcher restauré/de secours absente");
 });
 await RunAsync("manifeste local validé", async () =>
 {
@@ -239,10 +258,10 @@ Run("profil d'escouade launcher persistant", () =>
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("14/14 tests launcher réussis.");
+    Console.WriteLine("15/15 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/14 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/15 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 

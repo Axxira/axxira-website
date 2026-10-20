@@ -18,7 +18,7 @@ internal sealed class UpdateService : IDisposable
     internal UpdateService()
     {
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.7"));
+            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.8"));
     }
 
     internal static bool IsAllowedManifestLocation(string? value)
@@ -57,6 +57,14 @@ internal sealed class UpdateService : IDisposable
         }
 
         return version.Split(new[] { '+', '-' }, 2)[0];
+    }
+
+    internal static string GetLauncherUpdaterWorkingDirectory()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "RaidPilot Launcher",
+            "Updater");
     }
 
     internal static string NormalizeVersionForDisplay(string? version)
@@ -349,9 +357,13 @@ internal sealed class UpdateService : IDisposable
         var targetDirectory = AppContext.BaseDirectory.TrimEnd(
             Path.DirectorySeparatorChar,
             Path.AltDirectorySeparatorChar);
+        var updaterWorkingDirectory = GetLauncherUpdaterWorkingDirectory();
+        Directory.CreateDirectory(updaterWorkingDirectory);
+
         var startInfo = new ProcessStartInfo
         {
             FileName = "powershell.exe",
+            WorkingDirectory = updaterWorkingDirectory,
             UseShellExecute = false,
             CreateNoWindow = true,
         };
@@ -370,6 +382,8 @@ internal sealed class UpdateService : IDisposable
         startInfo.ArgumentList.Add("RaidPilot.Launcher.exe");
         startInfo.ArgumentList.Add("-ExpectedVersion");
         startInfo.ArgumentList.Add(component.Version);
+        startInfo.ArgumentList.Add("-UpdaterWork");
+        startInfo.ArgumentList.Add(updaterWorkingDirectory);
 
         if (Process.Start(startInfo) is null)
         {
@@ -388,11 +402,30 @@ param(
     [Parameter(Mandatory=$true)][string]$Archive,
     [Parameter(Mandatory=$true)][string]$Target,
     [Parameter(Mandatory=$true)][string]$Executable,
-    [Parameter(Mandatory=$true)][string]$ExpectedVersion
+    [Parameter(Mandatory=$true)][string]$ExpectedVersion,
+    [Parameter(Mandatory=$true)][string]$UpdaterWork
 )
 $ErrorActionPreference = 'Stop'
+
+if (-not (Test-Path -LiteralPath $UpdaterWork)) {
+    New-Item -ItemType Directory -Force -Path $UpdaterWork | Out-Null
+}
+Set-Location -LiteralPath $UpdaterWork
+[Environment]::CurrentDirectory = $UpdaterWork
+
+$logDirectory = Join-Path $env:LOCALAPPDATA 'RaidPilot Launcher'
+$logPath = Join-Path $logDirectory 'self-update.log'
+try { New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null } catch {}
+function Write-UpdateLog([string]$Message) {
+    try {
+        $line = ('{0:o} {1}' -f [DateTimeOffset]::Now, $Message)
+        Add-Content -LiteralPath $logPath -Value $line -Encoding UTF8
+    } catch {}
+}
+
 $staging = $Target + '.update-' + [Guid]::NewGuid().ToString('N')
 $previous = $Target + '.previous'
+Write-UpdateLog ("START pid=$ProcessId target=$Target expected=$ExpectedVersion cwd=" + (Get-Location).Path)
 try {
     try { Wait-Process -Id $ProcessId -Timeout 90 -ErrorAction SilentlyContinue } catch {}
     Start-Sleep -Milliseconds 600
@@ -487,15 +520,39 @@ try {
         }
         if ($hadCurrent -and (Test-Path -LiteralPath $previous)) {
             Move-Item -LiteralPath $previous -Destination $Target
-            $rollbackExe = Join-Path $Target $Executable
-            if (Test-Path -LiteralPath $rollbackExe) {
-                try {
-                    Start-Process -FilePath $rollbackExe -WorkingDirectory $Target -ErrorAction SilentlyContinue
-                } catch {}
-            }
         }
         throw $relaunchError
     }
+
+    Write-UpdateLog ("SUCCESS version=$actualVersion path=$newExe")
+}
+catch {
+    $failure = $_
+    Write-UpdateLog ("ERROR " + $failure.Exception.ToString())
+
+    # Si n'importe quelle étape échoue après la fermeture du Launcher,
+    # restaure l'ancienne copie si nécessaire puis rouvre une version
+    # fonctionnelle. L'utilisateur ne doit jamais rester sans application.
+    try {
+        if (-not (Test-Path -LiteralPath $Target) -and (Test-Path -LiteralPath $previous)) {
+            Move-Item -LiteralPath $previous -Destination $Target
+            Write-UpdateLog "ROLLBACK restored previous directory"
+        }
+    } catch {
+        Write-UpdateLog ("ROLLBACK_ERROR " + $_.Exception.Message)
+    }
+
+    $fallbackExe = Join-Path $Target $Executable
+    if (Test-Path -LiteralPath $fallbackExe) {
+        try {
+            Start-Process -FilePath $fallbackExe -WorkingDirectory $Target -ErrorAction Stop
+            Write-UpdateLog ("FALLBACK_RELAUNCH " + $fallbackExe)
+        } catch {
+            Write-UpdateLog ("FALLBACK_RELAUNCH_ERROR " + $_.Exception.Message)
+        }
+    }
+
+    throw $failure
 }
 finally {
     try { if (Test-Path -LiteralPath $Archive) { Remove-Item -LiteralPath $Archive -Force } } catch {}

@@ -1,5 +1,12 @@
-RAIDPILOT LAUNCHER 0.2.7
+RAIDPILOT LAUNCHER 0.2.8
 =========================
+
+CORRECTIF MOTEUR DE SELF-UPDATE 0.2.8
+- Corrige la fermeture sans redémarrage observée chez certains utilisateurs pendant la mise à jour du Launcher.
+- Le processus de remplacement travaille maintenant depuis %LocalAppData%\RaidPilot Launcher\Updater, hors du dossier qu'il doit remplacer.
+- En cas d'échec, le moteur restaure/rouvre une version fonctionnelle au lieu de laisser le Launcher fermé.
+- Les opérations de self-update sont journalisées dans %LocalAppData%\RaidPilot Launcher\self-update.log pour permettre un diagnostic précis.
+- Une migration unique peut être nécessaire pour les installations 0.2.3 à 0.2.7 qui possèdent encore l'ancien moteur de remplacement.
 
 CORRECTIF ALERTE + VERSION AFFICHÉE 0.2.7
 - Corrige le bouton INSTALLER LA MISE À JOUR qui pouvait continuer à clignoter alors qu'Overlay et Beacon étaient déjà à jour.
