@@ -1,4 +1,8 @@
-# RaidPilot Overlay 0.11.2 (Windows)
+# RaidPilot Overlay 0.11.3 (Windows)
+
+## Flashs de quêtes et extractions ralentis — 0.11.3
+
+Les marqueurs clignotants sont maintenant beaucoup plus calmes : quêtes 1,8 s, extractions confirmées 1,8 s et extraction actuellement guidée 1,4 s. Le cercle pulsant autour des extractions suit le même rythme. La cible active reste volontairement légèrement plus rapide afin de rester identifiable sans produire un flash agressif.
 
 ## Taille de carte adaptative et réglable — 0.11.2
 
