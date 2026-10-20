@@ -40,6 +40,7 @@ internal sealed partial class OverlayForm : Form
         Checked = true,
         CheckOnClick = false,
     };
+    private readonly ToolStripMenuItem _mapSizeMenuItem = new("Taille de la carte");
     private readonly ToolStripMenuItem _liveTrackingMenuItem = new("Suivi fluide en direct")
     {
         Checked = true,
@@ -99,6 +100,8 @@ internal sealed partial class OverlayForm : Form
     private bool _liveTrackingEnabled = true;
     private bool _autoReanchorEnabled = true;
     private bool _visibleInScreenCaptures = true;
+    private int? _mapScalePercent;
+    private double _effectiveMapScale = 1.0;
     private bool _windowHandleWasCreated;
     private bool _tarkovIsForeground;
     private bool _livePositionSendInProgress;
@@ -229,6 +232,7 @@ internal sealed partial class OverlayForm : Form
         }
         _realtimeEstimator = new RealtimePoseEstimator(estimatorSettings);
         _streamVisibilityMenuItem.Checked = OverlayPreferencesStore.LoadVisibleInCaptures();
+        _mapScalePercent = OverlayPreferencesStore.LoadMapScalePercent();
         Text = "RaidPilot Overlay";
         AutoScaleMode = AutoScaleMode.None;
         ClientSize = new Size(
@@ -484,6 +488,7 @@ internal sealed partial class OverlayForm : Form
                 showSuccess: true);
         };
         menu.Items.Add(_streamVisibilityMenuItem);
+        menu.Items.Add(BuildMapSizeMenu());
         menu.Items.Add(BuildMapMenu());
         _positionKeyMenuItem.Click += (_, _) => ShowPositionKeyHelp();
         menu.Items.Add(_positionKeyMenuItem);
@@ -547,6 +552,123 @@ internal sealed partial class OverlayForm : Form
         sideMenu.DropDownItems.Add(pmcItem);
         sideMenu.DropDownItems.Add(scavItem);
         return sideMenu;
+    }
+
+    private ToolStripMenuItem BuildMapSizeMenu()
+    {
+        _mapSizeMenuItem.DropDownOpening += (_, _) => RefreshMapSizeMenu();
+        RefreshMapSizeMenu();
+        return _mapSizeMenuItem;
+    }
+
+    private void RefreshMapSizeMenu()
+    {
+        _mapSizeMenuItem.DropDownItems.Clear();
+
+        var effectivePercent = (int)Math.Round(
+            _effectiveMapScale * 100.0,
+            MidpointRounding.AwayFromZero);
+        _mapSizeMenuItem.Text = _mapScalePercent is { } requested
+            ? $"Taille de la carte ({requested}% → {effectivePercent}%)"
+            : $"Taille de la carte (Auto · {effectivePercent}%)";
+
+        var autoItem = new ToolStripMenuItem("Auto — recommandé")
+        {
+            Checked = !_mapScalePercent.HasValue,
+            CheckOnClick = false,
+        };
+        autoItem.Click += (_, _) => SetMapScalePercent(null, showSuccess: true);
+        _mapSizeMenuItem.DropDownItems.Add(autoItem);
+        _mapSizeMenuItem.DropDownItems.Add(new ToolStripSeparator());
+
+        foreach (var percent in new[] { 50, 60, 70, 80, 90, 100, 110, 120 })
+        {
+            var item = new ToolStripMenuItem($"{percent}%")
+            {
+                Checked = _mapScalePercent == percent,
+                CheckOnClick = false,
+            };
+            var capturedPercent = percent;
+            item.Click += (_, _) => SetMapScalePercent(
+                capturedPercent,
+                showSuccess: true);
+            _mapSizeMenuItem.DropDownItems.Add(item);
+        }
+
+        _mapSizeMenuItem.DropDownItems.Add(new ToolStripSeparator());
+
+        var reduceItem = new ToolStripMenuItem("− Réduire de 5%");
+        reduceItem.Click += (_, _) => AdjustMapScalePercent(-5);
+        _mapSizeMenuItem.DropDownItems.Add(reduceItem);
+
+        var enlargeItem = new ToolStripMenuItem("+ Agrandir de 5%");
+        enlargeItem.Click += (_, _) => AdjustMapScalePercent(5);
+        _mapSizeMenuItem.DropDownItems.Add(enlargeItem);
+
+        _mapSizeMenuItem.DropDownItems.Add(new ToolStripSeparator());
+
+        var resetItem = new ToolStripMenuItem("Réinitialiser en Auto");
+        resetItem.Click += (_, _) => SetMapScalePercent(null, showSuccess: true);
+        _mapSizeMenuItem.DropDownItems.Add(resetItem);
+    }
+
+    private void AdjustMapScalePercent(int delta)
+    {
+        var currentPercent = _mapScalePercent
+            ?? (int)Math.Round(
+                _effectiveMapScale * 100.0,
+                MidpointRounding.AwayFromZero);
+        var nextPercent = Math.Clamp(
+            currentPercent + delta,
+            OverlayLayoutCalculator.MinimumManualScalePercent,
+            OverlayLayoutCalculator.MaximumManualScalePercent);
+        SetMapScalePercent(nextPercent, showSuccess: true);
+    }
+
+    private void SetMapScalePercent(
+        int? percent,
+        bool showSuccess)
+    {
+        if (percent is { } rawPercent)
+        {
+            percent = Math.Clamp(
+                rawPercent,
+                OverlayLayoutCalculator.MinimumManualScalePercent,
+                OverlayLayoutCalculator.MaximumManualScalePercent);
+        }
+
+        _mapScalePercent = percent;
+        PositionAtTopRight();
+        RefreshMapSizeMenu();
+
+        var saved = OverlayPreferencesStore.TrySaveMapScalePercent(percent);
+        if (!saved)
+        {
+            _trayIcon.ShowBalloonTip(
+                4500,
+                "RaidPilot — taille de carte",
+                "La taille a changé pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
+                ToolTipIcon.Warning);
+            return;
+        }
+
+        if (showSuccess)
+        {
+            var effectivePercent = (int)Math.Round(
+                _effectiveMapScale * 100.0,
+                MidpointRounding.AwayFromZero);
+            var message = percent is null
+                ? $"Mode Auto activé · taille actuelle {effectivePercent}%."
+                : effectivePercent == percent.Value
+                    ? $"Taille de carte réglée à {percent.Value}%."
+                    : $"Taille demandée {percent.Value}% · limitée à {effectivePercent}% pour rester dans l'écran.";
+
+            _trayIcon.ShowBalloonTip(
+                3000,
+                "RaidPilot — taille de carte",
+                message,
+                ToolTipIcon.Info);
+        }
     }
 
     private ToolStripMenuItem BuildMapMenu()
@@ -1846,6 +1968,7 @@ internal sealed partial class OverlayForm : Form
             var userDataFolder = ResolveWritableUserDataFolder();
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: userDataFolder);
             await _webView.EnsureCoreWebView2Async(environment);
+            ApplyMapScaleToWebView();
 
             var core = _webView.CoreWebView2;
             core.Settings.AreDefaultContextMenusEnabled = false;
@@ -5091,7 +5214,46 @@ internal sealed partial class OverlayForm : Form
             ?? SystemInformation.WorkingArea;
         var effectiveDpi = effectiveDpiOverride
             ?? ResolveEffectiveDpi(targetScreen, gameWindowDpi);
-        Bounds = OverlayLayoutCalculator.CalculateBounds(workingArea, effectiveDpi, _questContextVisible);
+
+        var requestedScale = _mapScalePercent is { } manualPercent
+            ? manualPercent / 100.0
+            : OverlayLayoutCalculator.CalculateAutomaticScale(
+                workingArea,
+                effectiveDpi,
+                _questContextVisible);
+
+        _effectiveMapScale = OverlayLayoutCalculator.ResolveScale(
+            workingArea,
+            effectiveDpi,
+            _questContextVisible,
+            requestedScale);
+
+        Bounds = OverlayLayoutCalculator.CalculateBounds(
+            workingArea,
+            effectiveDpi,
+            _questContextVisible,
+            requestedScale);
+
+        ApplyMapScaleToWebView();
+    }
+
+    private void ApplyMapScaleToWebView()
+    {
+        if (_webView.CoreWebView2 is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _webView.ZoomFactor = Math.Clamp(_effectiveMapScale, 0.25, 5.0);
+        }
+        catch (InvalidOperationException)
+        {
+            // WebView2 can briefly reject zoom changes while its controller is
+            // being recreated for a DPI transition. PositionAtTopRight will be
+            // called again by the normal DPI/window lifecycle.
+        }
     }
 
     private int ResolveEffectiveDpi(Screen? targetScreen, uint gameWindowDpi)
