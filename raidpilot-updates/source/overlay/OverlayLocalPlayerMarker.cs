@@ -1,0 +1,139 @@
+using System.Text.Json;
+using Microsoft.Web.WebView2.Core;
+
+namespace RaidPilot.Overlay;
+
+internal sealed partial class OverlayForm
+{
+    private bool _localPlayerMarkerUpdateInProgress;
+    private (
+        ScreenshotObservation Observation,
+        string Map,
+        int RaidGeneration,
+        double UncertaintyMeters,
+        bool Snap)? _pendingLocalPlayerMarker;
+
+    internal static bool ShouldPublishLocalPlayerMarker(
+        bool webReady,
+        bool coreReady,
+        int updateRaidGeneration,
+        int currentRaidGeneration,
+        string updateMap,
+        string currentMap) =>
+        webReady
+        && coreReady
+        && updateRaidGeneration == currentRaidGeneration
+        && string.Equals(updateMap, currentMap, StringComparison.OrdinalIgnoreCase);
+
+    private Task UpdateLocalPlayerMarkerAsync(
+        ScreenshotObservation observation,
+        double uncertaintyMeters,
+        bool snap) =>
+        UpdateLocalPlayerMarkerAsync((
+            observation,
+            _currentMap,
+            _raidGeneration,
+            uncertaintyMeters,
+            snap));
+
+    private async Task UpdateLocalPlayerMarkerAsync((
+        ScreenshotObservation Observation,
+        string Map,
+        int RaidGeneration,
+        double UncertaintyMeters,
+        bool Snap) update)
+    {
+        var core = _webView.CoreWebView2;
+        if (!ShouldPublishLocalPlayerMarker(
+                _webReady,
+                core is not null,
+                update.RaidGeneration,
+                _raidGeneration,
+                update.Map,
+                _currentMap))
+        {
+            return;
+        }
+
+        if (_localPlayerMarkerUpdateInProgress)
+        {
+            _pendingLocalPlayerMarker = update;
+            return;
+        }
+
+        _localPlayerMarkerUpdateInProgress = true;
+        try
+        {
+            var uncertainty = double.IsFinite(update.UncertaintyMeters)
+                ? Math.Clamp(update.UncertaintyMeters, 0.0, 1000.0)
+                : 1000.0;
+            var payload = JsonSerializer.Serialize(new
+            {
+                generation = update.RaidGeneration,
+                map = update.Map,
+                x = update.Observation.X,
+                y = update.Observation.Y,
+                z = update.Observation.Z,
+                yaw = update.Observation.YawDegrees,
+                uncertainty,
+                snap = update.Snap,
+            });
+            await core!.ExecuteScriptAsync(
+                $"window.__raidPilotSetLocalPose?.({payload}); void 0;");
+        }
+        catch
+        {
+            // The next 10 Hz local pose or navigation restore retries. The
+            // local position engine itself must never be stopped by WebView2.
+        }
+        finally
+        {
+            _localPlayerMarkerUpdateInProgress = false;
+            var pending = _pendingLocalPlayerMarker;
+            _pendingLocalPlayerMarker = null;
+            if (pending is { } next
+                && next.RaidGeneration == _raidGeneration
+                && string.Equals(next.Map, _currentMap, StringComparison.OrdinalIgnoreCase))
+            {
+                _ = UpdateLocalPlayerMarkerAsync(next);
+            }
+        }
+    }
+
+    private async Task RestoreLocalPlayerMarkerAsync()
+    {
+        if (_lastObservation is not { } observation)
+        {
+            await ClearLocalPlayerMarkerAsync(_raidGeneration);
+            return;
+        }
+
+        var uncertainty = _realtimeEstimator.CurrentPose is { } pose
+            ? pose.PositionUncertaintyMeters
+            : 0.0;
+        await UpdateLocalPlayerMarkerAsync(
+            observation,
+            uncertainty,
+            snap: true);
+    }
+
+    private async Task ClearLocalPlayerMarkerAsync(int raidGeneration)
+    {
+        _pendingLocalPlayerMarker = null;
+        var core = _webView.CoreWebView2;
+        if (core is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await core.ExecuteScriptAsync(
+                $"window.__raidPilotClearLocalPose?.({raidGeneration}); void 0;");
+        }
+        catch
+        {
+            // A navigation tears down the in-page marker automatically.
+        }
+    }
+}
