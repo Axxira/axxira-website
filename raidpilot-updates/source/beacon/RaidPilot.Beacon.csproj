@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>RaidPilot.Beacon</AssemblyName>
     <RootNamespace>RaidPilot.Beacon</RootNamespace>
-    <Version>0.1.2</Version>
+    <Version>0.2.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
   </PropertyGroup>
@@ -23,6 +23,10 @@
     <Compile Include="..\overlay\RealtimePoseEstimator.cs" Link="Shared\RealtimePoseEstimator.cs" />
     <Compile Include="..\overlay\RealtimeCalibrationStore.cs" Link="Shared\RealtimeCalibrationStore.cs" />
     <Compile Include="..\overlay\PrecisionCalibration.cs" Link="Shared\PrecisionCalibration.cs" />
+    <Compile Include="..\overlay\VisualEgomotionEstimator.cs" Link="Shared\VisualEgomotionEstimator.cs" />
+    <Compile Include="..\overlay\VisualMotionGate.cs" Link="Shared\VisualMotionGate.cs" />
+    <Compile Include="..\overlay\VisualKeyframeRecognizer.cs" Link="Shared\VisualKeyframeRecognizer.cs" />
+    <Compile Include="..\overlay\ScreenshotHotkeySender.cs" Link="Shared\ScreenshotHotkeySender.cs" />
     <Compile Include="..\overlay\EftScreenshotBindingReader.cs" Link="Shared\EftScreenshotBindingReader.cs" />
     <Compile Include="..\overlay\EftMapLogParser.cs" Link="Shared\EftMapLogParser.cs" />
     <Compile Include="..\overlay\EftMapLogWatcher.cs" Link="Shared\EftMapLogWatcher.cs" />
