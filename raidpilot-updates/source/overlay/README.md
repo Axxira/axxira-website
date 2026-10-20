@@ -1,4 +1,10 @@
-# RaidPilot Overlay 0.11.1 (Windows)
+# RaidPilot Overlay 0.11.2 (Windows)
+
+## Taille de carte adaptative et réglable — 0.11.2
+
+RaidPilot adapte maintenant automatiquement la taille de l'overlay à la surface utile de l'écran. Sur un écran plus petit, le mode **Auto** réduit l'ensemble pour éviter qu'il occupe une portion excessive de l'affichage. Le menu de l'icône RaidPilot contient aussi **Taille de la carte** avec Auto, 50/60/70/80/90/100/110/120 %, ainsi que des commandes **−5 % / +5 %**. Le réglage est conservé dans les préférences locales.
+
+L'ensemble complet est redimensionné proportionnellement, y compris la carte et les panneaux RaidPilot. Une taille demandée qui dépasserait la surface utile du moniteur est automatiquement limitée afin que l'overlay reste entièrement visible. Le coin supérieur droit reste l'ancrage et les changements de DPI/moniteur recalculent la taille de façon sûre.
 
 ## Escouade temps réel — 0.11.0
 
