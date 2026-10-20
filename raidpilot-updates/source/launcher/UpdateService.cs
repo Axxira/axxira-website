@@ -18,7 +18,7 @@ internal sealed class UpdateService : IDisposable
     internal UpdateService()
     {
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.5"));
+            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.6"));
     }
 
     internal static bool IsAllowedManifestLocation(string? value)
@@ -390,7 +390,13 @@ try {
     }
 
     $actualVersion = (Get-Item -LiteralPath $candidate).VersionInfo.ProductVersion
-    if ($actualVersion -ne $ExpectedVersion) {
+    $actualCore = ($actualVersion -split '[+-]', 2)[0]
+    $expectedCore = ($ExpectedVersion -split '[+-]', 2)[0]
+    $actualParsed = $null
+    $expectedParsed = $null
+    $actualValid = [Version]::TryParse($actualCore, [ref]$actualParsed)
+    $expectedValid = [Version]::TryParse($expectedCore, [ref]$expectedParsed)
+    if (-not $actualValid -or -not $expectedValid -or $actualParsed -ne $expectedParsed) {
         throw "Version launcher inattendue : $actualVersion (attendu $ExpectedVersion)."
     }
 

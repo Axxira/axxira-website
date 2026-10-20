@@ -1,5 +1,11 @@
-RAIDPILOT LAUNCHER 0.2.5
+RAIDPILOT LAUNCHER 0.2.6
 =========================
+
+CORRECTIF SELF-UPDATE 0.2.6
+- Corrige le blocage où une build GitHub annonçait ProductVersion sous la forme 0.2.x+hash alors que le manifeste attendait 0.2.x.
+- Le programme de mise à jour normalise maintenant les suffixes +commit/-metadata avant de comparer les versions.
+- Les nouvelles builds Launcher n'ajoutent plus automatiquement le hash Git au ProductVersion Windows.
+- Ce correctif permet aux Launcher 0.2.3/0.2.4/0.2.5 d'accepter correctement la prochaine mise à jour publiée.
 
 SURVEILLANCE DES MISES À JOUR 0.2.5
 - Tant que le Launcher reste ouvert, il vérifie automatiquement le canal Stable toutes les 2 minutes.

@@ -58,6 +58,14 @@ Run("détection automatique inclut le launcher", () =>
         && UpdateService.AutomaticUpdateCheckIntervalMilliseconds <= 600_000,
         "intervalle de vérification automatique déraisonnable");
 });
+Run("self-update accepte les suffixes de build Git", () =>
+{
+    var script = UpdateService.BuildLauncherSelfUpdateScript();
+    Require(script.Contains("($actualVersion -split '[+-]', 2)[0]", StringComparison.Ordinal),
+        "suffixe +commit du ProductVersion non normalisé");
+    Require(script.Contains("[Version]::TryParse($actualCore", StringComparison.Ordinal),
+        "comparaison sémantique de version absente");
+});
 Run("self-update relance et restaure en cas d'échec", () =>
 {
     var script = UpdateService.BuildLauncherSelfUpdateScript();
@@ -186,10 +194,10 @@ Run("profil d'escouade launcher persistant", () =>
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("11/11 tests launcher réussis.");
+    Console.WriteLine("12/12 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/11 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/12 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
