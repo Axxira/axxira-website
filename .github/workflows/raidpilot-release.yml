@@ -178,11 +178,18 @@ jobs:
             }
           }
 
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Another source commit may have landed while this release was being
+          # built. Rebase the publication step on the current update branch
+          # before writing the manifest so the push is always fast-forward.
+          git fetch origin raidpilot-updates
+          git checkout -B raidpilot-updates origin/raidpilot-updates
+
           $manifestPath = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\update-manifest.json"
           $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add raidpilot-updates/update-manifest.json
           git diff --cached --quiet
           if ($LASTEXITCODE -ne 0) {
