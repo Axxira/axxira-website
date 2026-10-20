@@ -1,4 +1,12 @@
-RAIDPILOT OVERLAY 0.11.1
+RAIDPILOT OVERLAY 0.11.2
+
+TAILLE DE CARTE 0.11.2
+- L'overlay utilise maintenant un mode Auto qui réduit la carte sur les petits écrans.
+- Icône RaidPilot > Taille de la carte : Auto, 50, 60, 70, 80, 90, 100, 110 ou 120 %.
+- Les boutons -5 % et +5 % permettent un réglage fin.
+- Le choix est mémorisé pour les prochains lancements.
+- Une taille trop grande est automatiquement limitée pour rester entièrement dans la surface utile de l'écran.
+- La carte et les panneaux sont redimensionnés ensemble afin de conserver les proportions.
 
 ESCOUADE 0.11.0
 - Menu de l’icône RaidPilot > Escouade > Créer/Rejoindre.
