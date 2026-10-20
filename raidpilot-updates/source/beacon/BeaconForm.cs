@@ -1,0 +1,744 @@
+using System.Diagnostics;
+using RaidPilot.Overlay;
+
+namespace RaidPilot.Beacon;
+
+internal sealed class BeaconForm : Form
+{
+    private const double SendIntervalSeconds = 0.20;
+    private readonly TextBox _roomTextBox = new();
+    private readonly TextBox _nameTextBox = new();
+    private readonly Label _statusLabel = new();
+    private readonly Label _mapLabel = new();
+    private readonly Label _poseLabel = new();
+    private readonly Button _startButton = new();
+    private readonly Button _stopButton = new();
+    private readonly NotifyIcon _trayIcon = new();
+    private readonly System.Windows.Forms.Timer _tickTimer = new() { Interval = 50 };
+    private readonly System.Windows.Forms.Timer _folderProbeTimer = new() { Interval = 3000 };
+    private readonly EftControlSettings _controls;
+    private readonly RealtimePoseEstimator _estimator;
+    private readonly string _settingsPath;
+    private readonly HashSet<string> _knownScreenshots = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CancellationTokenSource _lifetime = new();
+
+    private SquadProfile _profile;
+    private SquadRelayClient? _client;
+    private EftMapLogWatcher? _mapWatcher;
+    private FileSystemWatcher? _screenshotWatcher;
+    private string? _screenshotsPath;
+    private string? _currentMap;
+    private long _lastTick;
+    private long _lastSend;
+    private long _pendingMouseX;
+    private bool _sendInProgress;
+    private bool _profileRefreshInProgress;
+    private bool _allowClose;
+    private bool _rawInputRegistered;
+    private bool _sprintToggle;
+    private bool _walkToggle;
+    private bool _aimToggle;
+    private bool _previousSprintKey;
+    private bool _previousWalkKey;
+    private bool _previousAimKey;
+    private nint _lastForegroundWindow;
+    private bool _tarkovForeground;
+
+    internal BeaconForm()
+    {
+        _settingsPath = SquadProfileStore.DefaultPath;
+        _profile = SquadProfileStore.LoadOrCreate(_settingsPath);
+        _controls = EftControlSettings.Read();
+        _estimator = new RealtimePoseEstimator(new RealtimePoseEstimatorSettings
+        {
+            HipYawDegreesPerMouseCount = Math.Clamp(_controls.MouseSensitivity * 0.1, 0.005, 0.5),
+            AdsYawDegreesPerMouseCount = Math.Clamp(_controls.MouseAimingSensitivity * 0.1, 0.005, 0.5),
+        });
+
+        BuildUi();
+        BuildTray();
+        ResolveScreenshotsPath();
+        InitializeMapWatcher();
+
+        _tickTimer.Tick += OnTick;
+        _folderProbeTimer.Tick += async (_, _) =>
+        {
+            EnsureScreenshotWatcher();
+            await RefreshSharedSquadProfileAsync();
+        };
+        Shown += OnShown;
+        FormClosing += OnFormClosing;
+        Resize += (_, _) =>
+        {
+            if (WindowState == FormWindowState.Minimized)
+            {
+                Hide();
+            }
+        };
+    }
+
+    private void BuildUi()
+    {
+        Text = "RaidPilot Beacon";
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+        StartPosition = FormStartPosition.CenterScreen;
+        FormBorderStyle = FormBorderStyle.FixedSingle;
+        MaximizeBox = false;
+        ClientSize = new Size(540, 350);
+        BackColor = Color.FromArgb(15, 20, 23);
+        ForeColor = Color.WhiteSmoke;
+        Font = new Font("Segoe UI", 9F);
+
+        var title = new Label
+        {
+            Text = "RAIDPILOT  BEACON",
+            Location = new Point(24, 20),
+            AutoSize = true,
+            Font = new Font("Segoe UI Semibold", 18F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(112, 232, 255),
+        };
+        var subtitle = new Label
+        {
+            Text = "Partage uniquement ta position à ton escouade — aucune carte, aucun overlay.",
+            Location = new Point(26, 58),
+            Size = new Size(485, 36),
+            ForeColor = Color.Gainsboro,
+        };
+
+        Controls.Add(title);
+        Controls.Add(subtitle);
+        Controls.Add(MakeLabel("Code d’escouade", 26, 105));
+        _roomTextBox.Location = new Point(26, 126);
+        _roomTextBox.Size = new Size(292, 27);
+        _roomTextBox.CharacterCasing = CharacterCasing.Upper;
+        _roomTextBox.Text = _profile.RoomCode ?? string.Empty;
+        Controls.Add(_roomTextBox);
+
+        Controls.Add(MakeLabel("Ton nom", 334, 105));
+        _nameTextBox.Location = new Point(334, 126);
+        _nameTextBox.Size = new Size(176, 27);
+        _nameTextBox.MaxLength = 24;
+        _nameTextBox.Text = _profile.Name;
+        Controls.Add(_nameTextBox);
+
+        _startButton.Text = "CONNECTER LE BEACON";
+        _startButton.Location = new Point(26, 171);
+        _startButton.Size = new Size(220, 38);
+        StylePrimaryButton(_startButton);
+        _startButton.Click += async (_, _) => await StartBeaconFromUiAsync();
+        Controls.Add(_startButton);
+
+        _stopButton.Text = "ARRÊTER";
+        _stopButton.Location = new Point(256, 171);
+        _stopButton.Size = new Size(112, 38);
+        _stopButton.Enabled = false;
+        StyleSecondaryButton(_stopButton);
+        _stopButton.Click += async (_, _) => await StopBeaconAsync(clearAutoJoin: true);
+        Controls.Add(_stopButton);
+
+        var minimize = new Button
+        {
+            Text = "Réduire",
+            Location = new Point(378, 171),
+            Size = new Size(132, 38),
+        };
+        StyleSecondaryButton(minimize);
+        minimize.Click += (_, _) => Hide();
+        Controls.Add(minimize);
+
+        var panel = new Panel
+        {
+            Location = new Point(26, 226),
+            Size = new Size(484, 96),
+            BackColor = Color.FromArgb(23, 29, 33),
+        };
+        _statusLabel.Text = "Déconnecté";
+        _statusLabel.Location = new Point(14, 10);
+        _statusLabel.Size = new Size(454, 22);
+        _statusLabel.ForeColor = Color.FromArgb(255, 202, 90);
+        _mapLabel.Text = "Carte : en attente de Tarkov";
+        _mapLabel.Location = new Point(14, 37);
+        _mapLabel.Size = new Size(454, 20);
+        _poseLabel.Text = "Position : appuie sur F8 une fois en raid";
+        _poseLabel.Location = new Point(14, 63);
+        _poseLabel.Size = new Size(454, 20);
+        _poseLabel.ForeColor = Color.Gainsboro;
+        panel.Controls.AddRange([_statusLabel, _mapLabel, _poseLabel]);
+        Controls.Add(panel);
+    }
+
+    private static Label MakeLabel(string text, int x, int y) => new()
+    {
+        Text = text,
+        Location = new Point(x, y),
+        AutoSize = true,
+        ForeColor = Color.Gainsboro,
+    };
+
+    private static void StylePrimaryButton(Button button)
+    {
+        button.FlatStyle = FlatStyle.Flat;
+        button.BackColor = Color.FromArgb(24, 100, 118);
+        button.ForeColor = Color.White;
+        button.FlatAppearance.BorderColor = Color.FromArgb(112, 232, 255);
+    }
+
+    private static void StyleSecondaryButton(Button button)
+    {
+        button.FlatStyle = FlatStyle.Flat;
+        button.BackColor = Color.FromArgb(38, 44, 48);
+        button.ForeColor = Color.White;
+        button.FlatAppearance.BorderColor = Color.FromArgb(76, 88, 94);
+    }
+
+    private void BuildTray()
+    {
+        var menu = new ContextMenuStrip();
+        menu.Items.Add("Ouvrir RaidPilot Beacon", null, (_, _) =>
+        {
+            Show();
+            WindowState = FormWindowState.Normal;
+            Activate();
+        });
+        menu.Items.Add("Arrêter le partage", null, async (_, _) =>
+            await StopBeaconAsync(clearAutoJoin: true));
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Quitter", null, async (_, _) =>
+        {
+            _allowClose = true;
+            await StopBeaconAsync(clearAutoJoin: false);
+            Close();
+        });
+
+        _trayIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath)
+            ?? SystemIcons.Information;
+        _trayIcon.Text = "RaidPilot Beacon";
+        _trayIcon.ContextMenuStrip = menu;
+        _trayIcon.Visible = true;
+        _trayIcon.DoubleClick += (_, _) =>
+        {
+            Show();
+            WindowState = FormWindowState.Normal;
+            Activate();
+        };
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        _rawInputRegistered = RawMouseInput.Register(Handle);
+    }
+
+    protected override void OnHandleDestroyed(EventArgs e)
+    {
+        if (_rawInputRegistered)
+        {
+            RawMouseInput.Unregister();
+            _rawInputRegistered = false;
+        }
+        base.OnHandleDestroyed(e);
+    }
+
+    protected override void WndProc(ref Message message)
+    {
+        if (message.Msg == NativeMethods.WmInput
+            && RawMouseInput.TryReadPacket(message.LParam, out var packet)
+            && packet.Kind == RawInputPacketKind.Mouse
+            && CanTrackGameInput())
+        {
+            Interlocked.Add(ref _pendingMouseX, packet.DeltaX);
+        }
+        base.WndProc(ref message);
+    }
+
+    private async void OnShown(object? sender, EventArgs e)
+    {
+        EnsureScreenshotWatcher();
+        _folderProbeTimer.Start();
+        _lastTick = Stopwatch.GetTimestamp();
+        _tickTimer.Start();
+
+        if (_profile.AutoJoin && _profile.HasRoom)
+        {
+            try
+            {
+                await StartBeaconAsync(_profile.RoomCode!, _profile.Name, showSuccess: false);
+            }
+            catch
+            {
+                SetStatus("Connexion automatique impossible", warning: true);
+            }
+        }
+    }
+
+    private async Task RefreshSharedSquadProfileAsync()
+    {
+        if (_profileRefreshInProgress || _lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
+        _profileRefreshInProgress = true;
+        try
+        {
+            var stored = SquadProfileStore.LoadOrCreate(_settingsPath);
+            var roomChanged = !string.Equals(
+                stored.RoomCode,
+                _profile.RoomCode,
+                StringComparison.OrdinalIgnoreCase);
+            var nameChanged = !string.Equals(
+                stored.Name,
+                _profile.Name,
+                StringComparison.Ordinal);
+            var autoJoinChanged = stored.AutoJoin != _profile.AutoJoin;
+            var identityChanged = !string.Equals(
+                stored.MemberId,
+                _profile.MemberId,
+                StringComparison.Ordinal);
+
+            if (!roomChanged && !nameChanged && !autoJoinChanged && !identityChanged)
+            {
+                return;
+            }
+
+            _profile = stored;
+            _roomTextBox.Text = _profile.RoomCode ?? string.Empty;
+            _nameTextBox.Text = _profile.Name;
+
+            if (!_profile.AutoJoin || !_profile.HasRoom)
+            {
+                if (_client is not null)
+                {
+                    await StopBeaconAsync(clearAutoJoin: false);
+                    _profile = stored;
+                }
+                SetStatus("Déconnecté · profil partagé mis à jour", warning: true);
+                return;
+            }
+
+            var mustReconnect = _client is null
+                || roomChanged
+                || nameChanged
+                || identityChanged
+                || !string.Equals(
+                    _client.RoomCode,
+                    _profile.RoomCode,
+                    StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(
+                    _client.Name,
+                    _profile.Name,
+                    StringComparison.Ordinal);
+
+            if (mustReconnect)
+            {
+                await StartBeaconAsync(
+                    _profile.RoomCode!,
+                    _profile.Name,
+                    showSuccess: false);
+                SetStatus(
+                    $"Beacon actif · escouade {_profile.RoomCode}",
+                    warning: false);
+            }
+        }
+        catch
+        {
+            if (!_lifetime.IsCancellationRequested)
+            {
+                SetStatus("Synchronisation du profil en reprise…", warning: true);
+            }
+        }
+        finally
+        {
+            _profileRefreshInProgress = false;
+        }
+    }
+
+    private void ResolveScreenshotsPath()
+    {
+        var docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+        if (!string.IsNullOrWhiteSpace(docs))
+        {
+            _screenshotsPath = Path.Combine(docs, "Escape from Tarkov", "Screenshots");
+        }
+    }
+
+    private void EnsureScreenshotWatcher()
+    {
+        if (_screenshotWatcher is not null
+            || string.IsNullOrWhiteSpace(_screenshotsPath)
+            || !Directory.Exists(_screenshotsPath))
+        {
+            return;
+        }
+
+        lock (_knownScreenshots)
+        {
+            _knownScreenshots.Clear();
+            foreach (var path in Directory.EnumerateFiles(_screenshotsPath, "*.png", SearchOption.TopDirectoryOnly))
+            {
+                _knownScreenshots.Add(Path.GetFileName(path));
+            }
+        }
+
+        try
+        {
+            var watcher = new FileSystemWatcher(_screenshotsPath, "*.png")
+            {
+                IncludeSubdirectories = false,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.CreationTime,
+                EnableRaisingEvents = false,
+            };
+            watcher.Created += OnScreenshotAppeared;
+            watcher.Renamed += OnScreenshotAppeared;
+            watcher.Error += (_, _) =>
+            {
+                BeginInvoke(() =>
+                {
+                    _screenshotWatcher?.Dispose();
+                    _screenshotWatcher = null;
+                });
+            };
+            watcher.EnableRaisingEvents = true;
+            _screenshotWatcher = watcher;
+        }
+        catch
+        {
+        }
+    }
+
+    private void OnScreenshotAppeared(object sender, FileSystemEventArgs args)
+    {
+        var name = Path.GetFileName(args.FullPath);
+        lock (_knownScreenshots)
+        {
+            if (!_knownScreenshots.Add(name))
+            {
+                return;
+            }
+        }
+
+        if (!ScreenshotNameParser.TryParse(name, out var observation) || observation is null)
+        {
+            return;
+        }
+
+        BeginInvoke(() => AnchorFromScreenshot(observation));
+    }
+
+    private void AnchorFromScreenshot(ScreenshotObservation observation)
+    {
+        _estimator.Anchor(observation);
+        Interlocked.Exchange(ref _pendingMouseX, 0);
+        _lastTick = Stopwatch.GetTimestamp();
+        _poseLabel.Text =
+            $"Position exacte F8 : {observation.X:F1}, {observation.Z:F1} · cap {observation.YawDegrees:F0}°";
+        _poseLabel.ForeColor = Color.FromArgb(141, 255, 203);
+        if (_client is not null)
+        {
+            _ = SendCurrentPoseAsync(force: true);
+        }
+    }
+
+    private void InitializeMapWatcher()
+    {
+        try
+        {
+            var watcher = new EftMapLogWatcher();
+            watcher.MapDetected += (_, args) => BeginInvoke(() =>
+            {
+                _currentMap = args.NormalizedName;
+                _mapLabel.Text = $"Carte : {_currentMap}";
+                // Every map event is treated as a raid boundary. The log watcher
+                // deliberately emits a same-map event when EFT starts another
+                // raid on the same location, so an old pose can never leak into it.
+                _estimator.Reset();
+                Interlocked.Exchange(ref _pendingMouseX, 0);
+                _poseLabel.Text = "Position : raid détecté · appuie sur F8";
+                _poseLabel.ForeColor = Color.Gainsboro;
+            });
+            watcher.Start();
+            _mapWatcher = watcher;
+        }
+        catch
+        {
+            _mapLabel.Text = "Carte : journal EFT non détecté";
+        }
+    }
+
+    private async Task StartBeaconFromUiAsync()
+    {
+        if (!SquadRoomCode.TryNormalize(_roomTextBox.Text, out var normalized))
+        {
+            MessageBox.Show(
+                this,
+                "Entre un code du type RP-ABCD-EFGH-JKLM-NPQR.",
+                "RaidPilot Beacon",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            return;
+        }
+
+        await StartBeaconAsync(
+            SquadRoomCode.Format(normalized),
+            SquadRelayClient.NormalizeName(_nameTextBox.Text),
+            showSuccess: true);
+    }
+
+    private async Task StartBeaconAsync(string roomCode, string name, bool showSuccess)
+    {
+        await StopBeaconAsync(clearAutoJoin: false);
+        var client = new SquadRelayClient(roomCode, _profile.MemberId, name);
+        _client = client;
+        _profile = _profile with
+        {
+            RoomCode = client.RoomCode,
+            Name = client.Name,
+            AutoJoin = true,
+        };
+        _ = SquadProfileStore.TrySave(_profile, _settingsPath);
+        _roomTextBox.Text = client.RoomCode;
+        _nameTextBox.Text = client.Name;
+        _startButton.Enabled = false;
+        _stopButton.Enabled = true;
+        SetStatus("Beacon actif · envoi sécurisé au code d’escouade", warning: false);
+
+        if (_estimator.IsAnchored)
+        {
+            await SendCurrentPoseAsync(force: true);
+        }
+
+        if (showSuccess)
+        {
+            _trayIcon.ShowBalloonTip(
+                3500,
+                "RaidPilot Beacon",
+                "Connecté. Appuie sur F8 en raid pour donner une position exacte, puis laisse Beacon ouvert.",
+                ToolTipIcon.Info);
+        }
+    }
+
+    private async Task StopBeaconAsync(bool clearAutoJoin)
+    {
+        var client = _client;
+        _client = null;
+        if (client is not null)
+        {
+            await client.DisposeAsync();
+        }
+        if (clearAutoJoin)
+        {
+            _profile = _profile with { AutoJoin = false };
+            _ = SquadProfileStore.TrySave(_profile, _settingsPath);
+        }
+        _startButton.Enabled = true;
+        _stopButton.Enabled = false;
+        SetStatus("Déconnecté", warning: true);
+    }
+
+    private void OnTick(object? sender, EventArgs e)
+    {
+        var now = Stopwatch.GetTimestamp();
+        var previous = _lastTick;
+        _lastTick = now;
+        var elapsed = previous == 0
+            ? 0.0
+            : Math.Clamp((now - previous) / (double)Stopwatch.Frequency, 0.0, 0.15);
+
+        _tarkovForeground = IsTarkovForeground();
+        if (!_estimator.IsAnchored || elapsed <= 0)
+        {
+            return;
+        }
+
+        var canTrack = CanTrackGameInput();
+        var forward = canTrack
+            ? (IsKeyDown(_controls.MoveForward) ? 1.0 : 0.0)
+                - (IsKeyDown(_controls.MoveBackward) ? 1.0 : 0.0)
+            : 0.0;
+        var right = canTrack
+            ? (IsKeyDown(_controls.MoveRight) ? 1.0 : 0.0)
+                - (IsKeyDown(_controls.MoveLeft) ? 1.0 : 0.0)
+            : 0.0;
+
+        var sprintKey = canTrack && IsKeyDown(_controls.Sprint);
+        var walkKey = canTrack && IsKeyDown(_controls.Walk);
+        var aimKey = canTrack && IsKeyDown(_controls.Aim);
+        UpdateToggle(sprintKey, ref _previousSprintKey, ref _sprintToggle, _controls.SprintIsToggle);
+        UpdateToggle(walkKey, ref _previousWalkKey, ref _walkToggle, _controls.WalkIsToggle);
+        UpdateToggle(aimKey, ref _previousAimKey, ref _aimToggle, _controls.AimIsToggle);
+        var sprint = _controls.SprintIsToggle ? _sprintToggle : sprintKey;
+        var slow = _controls.WalkIsToggle ? _walkToggle : walkKey;
+        var aiming = _controls.AimIsToggle ? _aimToggle : aimKey;
+        if (forward <= 0)
+        {
+            sprint = false;
+        }
+
+        var mouseX = canTrack ? Interlocked.Exchange(ref _pendingMouseX, 0) : 0;
+        if (!canTrack)
+        {
+            Interlocked.Exchange(ref _pendingMouseX, 0);
+        }
+
+        var pose = _estimator.Advance(
+            elapsed,
+            forward,
+            right,
+            sprint,
+            slow,
+            mouseX,
+            aiming,
+            movementSpeedScale: 1.0,
+            motionEvidence: RealtimeMotionEvidence.Unknown);
+
+        _poseLabel.Text =
+            $"Suivi : ±{pose.PositionUncertaintyMeters:F1} m · {pose.X:F1}, {pose.Z:F1} · cap {pose.YawDegrees:F0}°";
+        _poseLabel.ForeColor = pose.PositionUncertaintyMeters <= 3
+            ? Color.FromArgb(141, 255, 203)
+            : pose.PositionUncertaintyMeters <= 8
+                ? Color.FromArgb(246, 214, 122)
+                : Color.FromArgb(255, 155, 103);
+
+        if (_client is not null
+            && (now - _lastSend) / (double)Stopwatch.Frequency >= SendIntervalSeconds)
+        {
+            _lastSend = now;
+            _ = SendCurrentPoseAsync(force: false);
+        }
+    }
+
+    private async Task SendCurrentPoseAsync(bool force)
+    {
+        var client = _client;
+        if (client is null
+            || _sendInProgress
+            || _estimator.CurrentPose is not { } pose
+            || string.IsNullOrWhiteSpace(_currentMap))
+        {
+            return;
+        }
+
+        _sendInProgress = true;
+        try
+        {
+            var message = new SquadMemberPose(
+                _profile.MemberId,
+                _profile.Name,
+                _currentMap,
+                pose.X,
+                pose.Y,
+                pose.Z,
+                pose.YawDegrees,
+                pose.PositionUncertaintyMeters,
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await client.SendPoseAsync(message, _lifetime.Token);
+            if (force)
+            {
+                SetStatus("Beacon actif · position F8 envoyée", warning: false);
+            }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+            SetStatus("Beacon actif · reconnexion à l’envoi…", warning: true);
+        }
+        finally
+        {
+            _sendInProgress = false;
+        }
+    }
+
+    private static void UpdateToggle(
+        bool keyDown,
+        ref bool previousDown,
+        ref bool toggled,
+        bool toggleMode)
+    {
+        if (toggleMode && keyDown && !previousDown)
+        {
+            toggled = !toggled;
+        }
+        previousDown = keyDown;
+    }
+
+    private static bool IsKeyDown(Keys key) =>
+        (NativeMethods.GetAsyncKeyState((int)(key & Keys.KeyCode)) & 0x8000) != 0;
+
+    private bool CanTrackGameInput() =>
+        _tarkovForeground && !NativeMethods.IsCursorVisible();
+
+    private bool IsTarkovForeground()
+    {
+        var window = NativeMethods.GetForegroundWindow();
+        if (window == nint.Zero)
+        {
+            _lastForegroundWindow = nint.Zero;
+            return false;
+        }
+
+        if (window == _lastForegroundWindow)
+        {
+            return _tarkovForeground;
+        }
+        _lastForegroundWindow = window;
+
+        try
+        {
+            NativeMethods.GetWindowThreadProcessId(window, out var processId);
+            if (processId == 0)
+            {
+                return false;
+            }
+            using var process = Process.GetProcessById((int)processId);
+            return string.Equals(
+                process.ProcessName,
+                "EscapeFromTarkov",
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void SetStatus(string text, bool warning)
+    {
+        _statusLabel.Text = text;
+        _statusLabel.ForeColor = warning
+            ? Color.FromArgb(255, 202, 90)
+            : Color.FromArgb(112, 232, 255);
+    }
+
+    private void OnFormClosing(object? sender, FormClosingEventArgs e)
+    {
+        if (!_allowClose && e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+
+        _tickTimer.Stop();
+        _folderProbeTimer.Stop();
+        _lifetime.Cancel();
+        _screenshotWatcher?.Dispose();
+        _mapWatcher?.Dispose();
+        if (_client is not null)
+        {
+            _ = _client.DisposeAsync();
+            _client = null;
+        }
+        if (_rawInputRegistered)
+        {
+            RawMouseInput.Unregister();
+            _rawInputRegistered = false;
+        }
+        _trayIcon.Visible = false;
+        _trayIcon.Dispose();
+        _tickTimer.Dispose();
+        _folderProbeTimer.Dispose();
+        _lifetime.Dispose();
+    }
+}
