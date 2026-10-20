@@ -762,5 +762,3 @@ internal sealed class SquadSetupDialog : Form
         return false;
     }
 }
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

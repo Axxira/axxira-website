@@ -997,9 +997,7 @@ internal sealed partial class OverlayForm : Form
                     // l'hystérésis de mouvement même quand aucun repère n'est
                     // recherché, tout en restant indépendant de la pose absolue.
                     estimateEgomotion: true)
-                && needsVisualKeyframeCheck
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]                && visualObservation.CaptureProvenLive
+                && needsVisualKeyframeCheck                && visualObservation.CaptureProvenLive
                 && visualObservation.Egomotion.State == VisualEgomotionState.Stationary
                 && _realtimeEstimator.CurrentPose is { } estimatedVisualPose
                 && _visualMotionGate.TryCopyLatestLuminance(out var visualFrame))
@@ -1999,8 +1997,6 @@ internal sealed partial class OverlayForm : Form
         {
             return false;
         }
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]
         if (now > pending.ExpiresAtTimestamp
             || pending.RaidGeneration != _raidGeneration
             || !string.Equals(
@@ -2999,9 +2995,7 @@ internal sealed partial class OverlayForm : Form
                 captureTimestamp,
                 out _);
         }
-        catch (OperationCanceledException) when (_formLifetime.IsCancellationRequested)
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]        {
+        catch (OperationCanceledException) when (_formLifetime.IsCancellationRequested)        {
         }
     }
 
@@ -4000,9 +3994,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         CacheLearnedRoutePlan(
-            recommendation.Target.Id,
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]            plan: null,
+            recommendation.Target.Id,            plan: null,
             observation,
             uncertainty);
 
@@ -5001,9 +4993,7 @@ internal sealed partial class OverlayForm : Form
             var carryFirstObservation = carriedObservations.Count > 0;
             var sessionStartedAtUtc = DateTimeOffset.UtcNow;
             foreach (var carriedObservation in carriedObservations)
-            {
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]                if (carriedObservation.FileTimestampUtc < sessionStartedAtUtc)
+            {                if (carriedObservation.FileTimestampUtc < sessionStartedAtUtc)
                 {
                     sessionStartedAtUtc = carriedObservation.FileTimestampUtc;
                 }
@@ -5610,5 +5600,3 @@ internal sealed partial class OverlayForm : Form
         _formLifetime.Dispose();
     }
 }
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

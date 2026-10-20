@@ -997,9 +997,7 @@ internal sealed class VisualMotionGate : IDisposable
         {
             internal int Left;
             internal int Top;
-            internal int Right;
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]            internal int Bottom;
+            internal int Right;            internal int Bottom;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -1091,5 +1089,3 @@ internal sealed class VisualMotionGate : IDisposable
 }
 
 internal readonly record struct VisualCaptureRegion(int Left, int Top, int Width, int Height);
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

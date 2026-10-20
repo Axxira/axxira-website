@@ -997,9 +997,7 @@
         const height = Math.round(container.clientHeight);
         if (width < 2 || height < 2) {
             binding.svg.setAttribute("hidden", "");
-            scheduleLearnedRouteRetry();
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]            return false;
+            scheduleLearnedRouteRetry();            return false;
         }
         const projected = [];
         try {
@@ -1998,9 +1996,7 @@
     // No capture, network request or completion inference is performed here.
     let questContextSequence = -1;
     const setQuestContextSpace = (visible) => {
-        const value = visible ? "96px" : "0px";
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]        const root = document.documentElement;
+        const value = visible ? "96px" : "0px";        const root = document.documentElement;
         if (root.style.getPropertyValue("--raidpilot-quest-height") !== value) {
             root.style.setProperty("--raidpilot-quest-height", value);
             window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
@@ -2348,5 +2344,3 @@
         startObserver();
     }
 })();
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

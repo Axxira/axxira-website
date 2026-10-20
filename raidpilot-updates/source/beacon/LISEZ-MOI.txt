@@ -55,5 +55,3 @@ LIMITES
 - Beacon ne lit ni la mémoire ni le trafic réseau d’Escape from Tarkov.
 - Le suivi entre deux F8 est une estimation. Appuie de nouveau sur F8 lorsque le pion devient imprécis.
 - Le relais tarkov.dev est un service externe; une modification ou indisponibilité de ce service peut interrompre temporairement Squad Sync.
-
-[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]
