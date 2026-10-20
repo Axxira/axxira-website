@@ -998,3 +998,216 @@ public sealed class LearnedRouteGraph
         LearnedRoutePose pose,
         IReadOnlyList<LearnedRouteTarget> targets,
         LearnedRouteFallbackReason reason,
+        bool allowDirectFallback,
+        out LearnedRoutePlan? plan)
+    {
+        plan = null;
+        if (!allowDirectFallback)
+        {
+            return false;
+        }
+
+        var nearest = targets
+            .Select(target => new TargetDistance(target, DistanceTo(pose, target)))
+            .OrderBy(item => item.Distance.ThreeDimensional)
+            .ThenBy(item => item.Target.Id, StringComparer.OrdinalIgnoreCase)
+            .First();
+        plan = new LearnedRoutePlan(
+            LearnedRouteKind.DirectFallback,
+            nearest.Target,
+            Array.Empty<LearnedRouteWaypoint>(),
+            0.0,
+            nearest.Distance.ThreeDimensional,
+            0.0,
+            0.0,
+            0.0,
+            LearnedRouteConfidence.Unknown,
+            reason,
+            false);
+        return true;
+    }
+
+    private double CalculatePoseConfidence(LearnedRoutePose pose)
+    {
+        if (pose.Source == LearnedPoseSource.ExactAnchor)
+        {
+            return 1.0;
+        }
+
+        return Math.Clamp(
+            1.0 - (pose.PositionUncertaintyMeters / Math.Max(0.001, _options.MaximumLiveUncertaintyMeters)),
+            0.05,
+            0.95);
+    }
+
+    private int HeightBandFor(double y) => checked((int)Math.Floor(y / _options.HeightBandMeters));
+
+    private static LearnedRouteConfidence ConfidenceFor(double score) => score switch
+    {
+        >= 0.80 => LearnedRouteConfidence.High,
+        >= 0.45 => LearnedRouteConfidence.Medium,
+        > 0.0 => LearnedRouteConfidence.Low,
+        _ => LearnedRouteConfidence.Unknown,
+    };
+
+    private static bool IsValidPose(LearnedRoutePose pose) =>
+        NormalizeMapId(pose.MapId) is not null
+        && pose.TimestampUtc != default
+        && Enum.IsDefined(pose.Source)
+        && AreFinite(pose.X, pose.Y, pose.Z, pose.PositionUncertaintyMeters)
+        && Math.Abs(pose.X) <= MaximumAbsoluteCoordinateMeters
+        && Math.Abs(pose.Y) <= MaximumAbsoluteCoordinateMeters
+        && Math.Abs(pose.Z) <= MaximumAbsoluteCoordinateMeters
+        && pose.PositionUncertaintyMeters >= 0.0;
+
+    private static bool IsValidTarget(LearnedRouteTarget target) =>
+        target is not null
+        && !string.IsNullOrWhiteSpace(target.Id)
+        && target.Id.Length <= 160
+        && !string.IsNullOrWhiteSpace(target.Name)
+        && target.Name.Length <= 240
+        && AreFinite(target.X, target.Y, target.Z)
+        && Math.Abs(target.X) <= MaximumAbsoluteCoordinateMeters
+        && Math.Abs(target.Y) <= MaximumAbsoluteCoordinateMeters
+        && Math.Abs(target.Z) <= MaximumAbsoluteCoordinateMeters;
+
+    private static string? NormalizeMapId(string? mapId)
+    {
+        if (string.IsNullOrWhiteSpace(mapId))
+        {
+            return null;
+        }
+
+        var normalized = mapId.Trim().ToLowerInvariant();
+        return normalized.Length <= 80 ? normalized : null;
+    }
+
+    private static DistanceComponents DistanceTo(LearnedRoutePose pose, LearnedRouteTarget target)
+    {
+        var horizontal = HorizontalDistance(pose.X, pose.Z, target.X, target.Z);
+        var vertical = Math.Abs(pose.Y - target.Y);
+        return new DistanceComponents(horizontal, vertical, Math.Sqrt((horizontal * horizontal) + (vertical * vertical)));
+    }
+
+    private static double HorizontalDistance(double x1, double z1, double x2, double z2)
+    {
+        var dx = x2 - x1;
+        var dz = z2 - z1;
+        return Math.Sqrt((dx * dx) + (dz * dz));
+    }
+
+    private static double Distance3D(double x1, double y1, double z1, double x2, double y2, double z2)
+    {
+        var horizontal = HorizontalDistance(x1, z1, x2, z2);
+        var vertical = y2 - y1;
+        return Math.Sqrt((horizontal * horizontal) + (vertical * vertical));
+    }
+
+    private static bool AreFinite(params double[] values) => values.All(double.IsFinite);
+
+    private static void ValidateOptions(LearnedRouteGraphOptions options)
+    {
+        if (options.MaxMaps <= 0
+            || options.MaxNodesPerMap <= 0
+            || options.MaxEdgesPerMap <= 0
+            || options.MaximumSampleGap <= TimeSpan.Zero
+            || !AreFinite(
+                options.NodeSpacingMeters,
+                options.MergeHorizontalRadiusMeters,
+                options.MergeVerticalToleranceMeters,
+                options.HeightBandMeters,
+                options.MaximumSegmentHorizontalMeters,
+                options.MaximumSegmentVerticalMeters,
+                options.MaximumLiveUncertaintyMeters,
+                options.StartSnapHorizontalRadiusMeters,
+                options.TargetSnapHorizontalRadiusMeters,
+                options.RouteVerticalToleranceMeters,
+                options.ArrivalHorizontalRadiusMeters)
+            || options.NodeSpacingMeters <= 0.0
+            || options.MergeHorizontalRadiusMeters <= 0.0
+            || options.MergeVerticalToleranceMeters <= 0.0
+            || options.HeightBandMeters < 0.1
+            || options.MaximumSegmentHorizontalMeters <= 0.0
+            || options.MaximumSegmentVerticalMeters <= 0.0
+            || options.MaximumLiveUncertaintyMeters <= 0.0
+            || options.StartSnapHorizontalRadiusMeters <= 0.0
+            || options.TargetSnapHorizontalRadiusMeters <= 0.0
+            || options.RouteVerticalToleranceMeters <= 0.0
+            || options.ArrivalHorizontalRadiusMeters < 0.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "Les limites du graphe doivent être finies et positives.");
+        }
+    }
+
+    private sealed class SessionState(string mapId)
+    {
+        public string MapId { get; } = mapId;
+
+        public long? CurrentNodeId { get; set; }
+
+        public LearnedRoutePose? LastPose { get; set; }
+
+        public DateTimeOffset? LastTimestampUtc { get; set; }
+
+        public double DistanceSinceNodeMeters { get; set; }
+
+        public double PathConfidence { get; set; } = 1.0;
+    }
+
+    private sealed class MapGraph(string mapId)
+    {
+        public string MapId { get; } = mapId;
+
+        public long LastTouchedUnixMilliseconds { get; set; }
+
+        public Dictionary<long, GraphNode> Nodes { get; } = new();
+
+        public Dictionary<EdgeKey, GraphEdge> Edges { get; } = new();
+    }
+
+    private sealed class GraphNode(
+        long id,
+        double x,
+        double y,
+        double z,
+        int heightBand,
+        double confidenceScore,
+        bool hasExactAnchor,
+        long firstSeenUnixMilliseconds,
+        long lastSeenUnixMilliseconds,
+        int observationCount)
+    {
+        public long Id { get; } = id;
+        public double X { get; } = x;
+        public double Y { get; } = y;
+        public double Z { get; } = z;
+        public int HeightBand { get; } = heightBand;
+        public double ConfidenceScore { get; set; } = confidenceScore;
+        public bool HasExactAnchor { get; set; } = hasExactAnchor;
+        public long FirstSeenUnixMilliseconds { get; } = firstSeenUnixMilliseconds;
+        public long LastSeenUnixMilliseconds { get; set; } = lastSeenUnixMilliseconds;
+        public int ObservationCount { get; set; } = observationCount;
+    }
+
+    private sealed class GraphEdge(
+        long fromId,
+        long toId,
+        double lengthMeters,
+        double confidenceScore,
+        int traversalCount,
+        long lastTraversedUnixMilliseconds)
+    {
+        public long FromId { get; } = fromId;
+        public long ToId { get; } = toId;
+        public double LengthMeters { get; set; } = lengthMeters;
+        public double ConfidenceScore { get; set; } = confidenceScore;
+        public int TraversalCount { get; set; } = traversalCount;
+        public long LastTraversedUnixMilliseconds { get; set; } = lastTraversedUnixMilliseconds;
+    }
+
+    private readonly record struct EdgeKey(long FromId, long ToId);
+
+    private sealed record TargetDistance(LearnedRouteTarget Target, DistanceComponents Distance);
+
+    private readonly record struct DistanceComponents(double Horizontal, double Vertical, double ThreeDimensional);
+}
