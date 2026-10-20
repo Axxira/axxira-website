@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RaidPilot.Launcher</AssemblyName>
+    <RootNamespace>RaidPilot.Launcher</RootNamespace>
+    <Version>0.2.3</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="LISEZ-MOI.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="update-feed.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="update-manifest.example.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Compile Include="..\overlay\SquadRelayClient.cs" Link="Shared\SquadRelayClient.cs" />
+    <Compile Include="..\overlay\SquadProfileStore.cs" Link="Shared\SquadProfileStore.cs" />
+    <Compile Remove="Tests\**\*.cs" />
+    <None Remove="Tests\**\*" />
+  </ItemGroup>
+</Project>
