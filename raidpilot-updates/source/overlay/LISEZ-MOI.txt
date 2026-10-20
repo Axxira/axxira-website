@@ -1,4 +1,10 @@
-RAIDPILOT OVERLAY 0.11.2
+RAIDPILOT OVERLAY 0.11.3
+
+FLASHS 0.11.3
+- Quêtes : clignotement ralenti de 0,82 s à 1,8 s.
+- Extractions confirmées : clignotement ralenti de 0,72 s à 1,8 s.
+- Extraction guidée : clignotement ralenti de 0,56 s à 1,4 s.
+- Le cercle pulsant des extractions suit maintenant ces rythmes plus calmes.
 
 TAILLE DE CARTE 0.11.2
 - L'overlay utilise maintenant un mode Auto qui réduit la carte sur les petits écrans.
