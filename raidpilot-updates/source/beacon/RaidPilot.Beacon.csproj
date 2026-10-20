@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RaidPilot.Beacon</AssemblyName>
+    <RootNamespace>RaidPilot.Beacon</RootNamespace>
+    <Version>0.1.1</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="LISEZ-MOI.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Compile Include="..\overlay\ScreenshotObservation.cs" Link="Shared\ScreenshotObservation.cs" />
+    <Compile Include="..\overlay\ScreenshotNameParser.cs" Link="Shared\ScreenshotNameParser.cs" />
+    <Compile Include="..\overlay\EftControlSettings.cs" Link="Shared\EftControlSettings.cs" />
+    <Compile Include="..\overlay\RealtimePoseEstimator.cs" Link="Shared\RealtimePoseEstimator.cs" />
+    <Compile Include="..\overlay\EftMapLogParser.cs" Link="Shared\EftMapLogParser.cs" />
+    <Compile Include="..\overlay\EftMapLogWatcher.cs" Link="Shared\EftMapLogWatcher.cs" />
+    <Compile Include="..\overlay\NativeMethods.cs" Link="Shared\NativeMethods.cs" />
+    <Compile Include="..\overlay\RawMouseInput.cs" Link="Shared\RawMouseInput.cs" />
+    <Compile Include="..\overlay\SquadRelayClient.cs" Link="Shared\SquadRelayClient.cs" />
+    <Compile Include="..\overlay\SquadProfileStore.cs" Link="Shared\SquadProfileStore.cs" />
+  </ItemGroup>
+</Project>
