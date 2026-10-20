@@ -7,6 +7,8 @@ internal sealed class BeaconForm : Form
 {
     private const double SendIntervalSeconds = 0.10;
     private const double PendingCaptureMaximumAgeSeconds = 3.0;
+    private const double AutomaticReanchorUncertaintyMeters = 4.0;
+    private const double AutomaticReanchorCooldownSeconds = 25.0;
     private readonly TextBox _roomTextBox = new();
     private readonly TextBox _nameTextBox = new();
     private readonly Label _statusLabel = new();
@@ -15,7 +17,7 @@ internal sealed class BeaconForm : Form
     private readonly Button _startButton = new();
     private readonly Button _stopButton = new();
     private readonly NotifyIcon _trayIcon = new();
-    private readonly System.Windows.Forms.Timer _tickTimer = new() { Interval = 50 };
+    private readonly System.Windows.Forms.Timer _tickTimer = new() { Interval = 25 };
     private readonly System.Windows.Forms.Timer _folderProbeTimer = new() { Interval = 3000 };
     private readonly EftControlSettings _controls;
     private readonly RealtimePoseEstimator _estimator;
@@ -25,6 +27,9 @@ internal sealed class BeaconForm : Form
     private readonly string _settingsPath;
     private readonly HashSet<string> _knownScreenshots = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetime = new();
+    private readonly VisualMotionGate _visualMotionGate = new();
+    private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
+    private readonly HashSet<Keys> _rawKeysDown = new();
 
     private SquadProfile _profile;
     private SquadRelayClient? _client;
@@ -48,7 +53,13 @@ internal sealed class BeaconForm : Form
     private nint _lastForegroundWindow;
     private bool _tarkovForeground;
     private bool _screenshotBindingWasDown;
+    private bool _rawScreenshotBindingDown;
     private bool _playerCalibrationLoaded;
+    private long _lastVisualSample;
+    private long _lastAutomaticReanchor;
+    private RealtimeMotionEvidence _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+    private bool _previousMovementCommanded;
+    private VisualMotionObservation? _lastVisualObservation;
     private (
         long Timestamp,
         RealtimePose Pose,
@@ -294,13 +305,78 @@ internal sealed class BeaconForm : Form
     protected override void WndProc(ref Message message)
     {
         if (message.Msg == NativeMethods.WmInput
-            && RawMouseInput.TryReadPacket(message.LParam, out var packet)
-            && packet.Kind == RawInputPacketKind.Mouse
-            && CanTrackGameInput())
+            && RawMouseInput.TryReadPacket(message.LParam, out var packet))
         {
-            Interlocked.Add(ref _pendingMouseX, packet.DeltaX);
+            if (packet.Kind == RawInputPacketKind.Mouse
+                && CanTrackGameInput())
+            {
+                Interlocked.Add(ref _pendingMouseX, packet.DeltaX);
+            }
+            else if (packet.Kind == RawInputPacketKind.Keyboard)
+            {
+                HandleRawKeyboardPacket(packet);
+            }
         }
         base.WndProc(ref message);
+    }
+
+    private void HandleRawKeyboardPacket(RawInputPacket packet)
+    {
+        if (!CanTrackGameInput())
+        {
+            _rawKeysDown.Clear();
+            _rawScreenshotBindingDown = false;
+            return;
+        }
+
+        var key = packet.Key & Keys.KeyCode;
+        if (packet.IsKeyDown)
+        {
+            _rawKeysDown.Add(key);
+        }
+        else
+        {
+            _rawKeysDown.Remove(key);
+        }
+
+        var screenshotDown = IsRawScreenshotBindingDown();
+        if (screenshotDown
+            && !_rawScreenshotBindingDown
+            && _pendingCapture is null
+            && _estimator.CurrentPose is { } pose
+            && !string.IsNullOrWhiteSpace(_currentMap))
+        {
+            var now = Stopwatch.GetTimestamp();
+            _pendingCapture = (
+                now,
+                pose,
+                _adaptiveCalibration.CaptureSegment(pose),
+                _currentMap);
+        }
+
+        _rawScreenshotBindingDown = screenshotDown;
+    }
+
+    private bool IsRawScreenshotBindingDown()
+    {
+        if (!_screenshotBinding.IsReady
+            || _screenshotBinding.AxisName is not null
+            || _screenshotBinding.KeyCodes.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var keyCode in _screenshotBinding.KeyCodes)
+        {
+            if (!EftControlSettings.TryMapKeyCode(keyCode, out var mapped)
+                || mapped == Keys.None
+                || !_rawKeysDown.Contains(mapped & Keys.KeyCode))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private async void OnShown(object? sender, EventArgs e)
@@ -478,7 +554,14 @@ internal sealed class BeaconForm : Form
             return;
         }
 
-        BeginInvoke(() => AnchorFromScreenshot(observation));
+        BeginInvoke(() =>
+        {
+            AnchorFromScreenshot(observation);
+            _ = RememberVisualKeyframeFromScreenshotAsync(
+                args.FullPath,
+                observation,
+                _currentMap);
+        });
     }
 
     private void AnchorFromScreenshot(ScreenshotObservation observation)
@@ -568,6 +651,50 @@ internal sealed class BeaconForm : Form
         }
     }
 
+    private async Task RememberVisualKeyframeFromScreenshotAsync(
+        string screenshotPath,
+        ScreenshotObservation observation,
+        string? map)
+    {
+        if (string.IsNullOrWhiteSpace(map)
+            || _lifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
+        try
+        {
+            var luminance = await _visualMotionGate.CreateLuminanceFrameFromImageWithRetryAsync(
+                screenshotPath,
+                _lifetime.Token);
+            if (luminance is null)
+            {
+                return;
+            }
+
+            _visualKeyframeRecognizer.AddExactKeyframe(
+                map,
+                luminance,
+                _visualMotionGate.SampleWidth,
+                _visualMotionGate.SampleHeight,
+                new VisualKeyframePose(
+                    observation.X,
+                    observation.Y,
+                    observation.Z,
+                    observation.YawDegrees),
+                Stopwatch.GetTimestamp(),
+                out _);
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+            // Visual landmarks are an optional accuracy layer; a failed image
+            // read must never affect the authoritative F8 anchor.
+        }
+    }
+
     private void InitializeMapWatcher()
     {
         try
@@ -582,6 +709,13 @@ internal sealed class BeaconForm : Form
                 // raid on the same location, so an old pose can never leak into it.
                 _estimator.Reset();
                 _adaptiveCalibration.ResetRaid();
+                _visualMotionGate.Reset();
+                _visualKeyframeRecognizer.ResetSession();
+                _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+                _lastVisualObservation = null;
+                _lastVisualSample = 0;
+                _lastAutomaticReanchor = 0;
+                _previousMovementCommanded = false;
                 _pendingCapture = null;
                 _screenshotBindingWasDown = false;
                 Interlocked.Exchange(ref _pendingMouseX, 0);
@@ -717,6 +851,13 @@ internal sealed class BeaconForm : Form
             _adaptiveCalibration.MarkTrackingGap();
         }
 
+        var movementCommanded = canTrack
+            && (Math.Abs(forward) > 0.01 || Math.Abs(right) > 0.01);
+        var visualEvidence = UpdateVisualMotionEvidence(
+            now,
+            canTrack,
+            movementCommanded);
+
         var beforePose = _estimator.CurrentPose!.Value;
         _adaptiveCalibration.RecordMouse(mouseX, aiming, canTrack);
 
@@ -729,7 +870,7 @@ internal sealed class BeaconForm : Form
             mouseX,
             aiming,
             movementSpeedScale: 1.0,
-            motionEvidence: RealtimeMotionEvidence.Unknown);
+            motionEvidence: visualEvidence);
 
         _adaptiveCalibration.RecordMotion(
             beforePose,
@@ -741,13 +882,27 @@ internal sealed class BeaconForm : Form
             canTrack,
             elapsed);
         DetectScreenshotCapturePoint(now, pose);
+        TryAutomaticReanchor(
+            now,
+            pose,
+            movementCommanded,
+            visualEvidence);
 
         var calibrationSuffix = _playerCalibrationLoaded
             ? " · profil adaptatif"
             : string.Empty;
+        var visionSuffix = _lastVisualObservation is { CaptureProvenLive: true } visual
+            ? visual.State switch
+            {
+                VisualMotionState.Stationary => " · vision: arrêt",
+                VisualMotionState.Moving => " · vision: mouvement",
+                _ => " · vision: incertaine",
+            }
+            : string.Empty;
         _poseLabel.Text =
             $"Suivi : ±{pose.PositionUncertaintyMeters:F1} m · {pose.X:F1}, {pose.Z:F1} · cap {pose.YawDegrees:F0}°"
-            + calibrationSuffix;
+            + calibrationSuffix
+            + visionSuffix;
         _poseLabel.ForeColor = pose.PositionUncertaintyMeters <= 3
             ? Color.FromArgb(141, 255, 203)
             : pose.PositionUncertaintyMeters <= 8
@@ -762,10 +917,182 @@ internal sealed class BeaconForm : Form
         }
     }
 
+    private bool TryApplyVisualKeyframe(long now)
+    {
+        if (string.IsNullOrWhiteSpace(_currentMap)
+            || _estimator.CurrentPose is not { } estimatedPose
+            || !_visualMotionGate.TryCopyLatestLuminance(out var luminance)
+            || luminance.Length == 0)
+        {
+            return false;
+        }
+
+        VisualKeyframeRecognition recognition;
+        try
+        {
+            recognition = _visualKeyframeRecognizer.Observe(
+                _currentMap,
+                luminance,
+                _visualMotionGate.SampleWidth,
+                _visualMotionGate.SampleHeight,
+                new VisualKeyframePose(
+                    estimatedPose.X,
+                    estimatedPose.Y,
+                    estimatedPose.Z,
+                    estimatedPose.YawDegrees),
+                now);
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (!recognition.IsConfirmed
+            || recognition.ExactPose is not { } exact)
+        {
+            return false;
+        }
+
+        var correction = Math.Sqrt(
+            ((exact.X - estimatedPose.X) * (exact.X - estimatedPose.X))
+            + ((exact.Z - estimatedPose.Z) * (exact.Z - estimatedPose.Z)));
+
+        _estimator.Anchor(new ScreenshotObservation(
+            "raidpilot-visual-keyframe",
+            exact.X,
+            exact.Y,
+            exact.Z,
+            0,
+            0,
+            0,
+            1,
+            exact.YawDegrees));
+        _adaptiveCalibration.MarkTrackingGap();
+
+        _poseLabel.Text =
+            $"Repère visuel reconnu · correction {correction:F1} m · {exact.X:F1}, {exact.Z:F1}";
+        _poseLabel.ForeColor = Color.FromArgb(112, 232, 255);
+
+        if (_client is not null)
+        {
+            _ = SendCurrentPoseAsync(force: true);
+        }
+
+        return true;
+    }
+
+    private void TryAutomaticReanchor(
+        long now,
+        RealtimePose pose,
+        bool movementCommanded,
+        RealtimeMotionEvidence visualEvidence)
+    {
+        if (_pendingCapture is not null
+            || movementCommanded
+            || visualEvidence != RealtimeMotionEvidence.Stationary
+            || pose.PositionUncertaintyMeters < AutomaticReanchorUncertaintyMeters
+            || string.IsNullOrWhiteSpace(_currentMap)
+            || !_tarkovForeground
+            || !CanTrackGameInput()
+            || !ScreenshotHotkeySender.CanSend(_screenshotBinding))
+        {
+            return;
+        }
+
+        if (_lastAutomaticReanchor != 0
+            && (now - _lastAutomaticReanchor) / (double)Stopwatch.Frequency
+                < AutomaticReanchorCooldownSeconds)
+        {
+            return;
+        }
+
+        if (!ScreenshotHotkeySender.TrySend(_screenshotBinding))
+        {
+            return;
+        }
+
+        _pendingCapture = (
+            now,
+            pose,
+            _adaptiveCalibration.CaptureSegment(pose),
+            _currentMap);
+        _lastAutomaticReanchor = now;
+
+        SetStatus(
+            $"Beacon actif · recalage automatique demandé (±{pose.PositionUncertaintyMeters:F1} m)",
+            warning: false);
+    }
+
+    private RealtimeMotionEvidence UpdateVisualMotionEvidence(
+        long now,
+        bool canTrack,
+        bool movementCommanded)
+    {
+        if (!canTrack || _lastForegroundWindow == nint.Zero)
+        {
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = null;
+            _previousMovementCommanded = movementCommanded;
+            return _visualMotionEvidence;
+        }
+
+        if (movementCommanded && !_previousMovementCommanded)
+        {
+            _visualMotionGate.ReleaseStationary();
+        }
+        _previousMovementCommanded = movementCommanded;
+
+        if (_lastVisualSample != 0
+            && (now - _lastVisualSample) / (double)Stopwatch.Frequency < 0.10)
+        {
+            return _visualMotionEvidence;
+        }
+
+        _lastVisualSample = now;
+        if (!_visualMotionGate.TryObserveWindow(
+                _lastForegroundWindow,
+                out var observation,
+                estimateEgomotion: true))
+        {
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = observation;
+            return _visualMotionEvidence;
+        }
+
+        _lastVisualObservation = observation;
+        if (!observation.CaptureProvenLive)
+        {
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            return _visualMotionEvidence;
+        }
+
+        _visualMotionEvidence = observation.State switch
+        {
+            VisualMotionState.Stationary => RealtimeMotionEvidence.Stationary,
+            VisualMotionState.Moving => RealtimeMotionEvidence.Moving,
+            _ => RealtimeMotionEvidence.Unknown,
+        };
+
+        // A keyboard command with a visually confirmed stationary scene means
+        // the character is probably blocked, exhausted or otherwise not
+        // translating as requested. Keep the adaptive speed learner away from
+        // that segment; it is not evidence that the player's base speed is low.
+        if (movementCommanded
+            && _visualMotionEvidence == RealtimeMotionEvidence.Stationary)
+        {
+            _adaptiveCalibration.MarkTrackingGap();
+        }
+
+        _ = TryApplyVisualKeyframe(now);
+        return _visualMotionEvidence;
+    }
+
     private void DetectScreenshotCapturePoint(long now, RealtimePose pose)
     {
         var keyDown = IsScreenshotBindingDown();
-        if (keyDown && !_screenshotBindingWasDown)
+        if (keyDown
+            && !_screenshotBindingWasDown
+            && _pendingCapture is null)
         {
             _pendingCapture = (
                 now,
@@ -929,6 +1256,7 @@ internal sealed class BeaconForm : Form
         }
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
+        _visualMotionGate.Dispose();
         _tickTimer.Dispose();
         _folderProbeTimer.Dispose();
         _lifetime.Dispose();
