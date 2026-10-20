@@ -315,7 +315,7 @@ body > #root > .App > .MuiBox-root,
     filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px #d946ef);
     /* Step opacity keeps the requested blink without repainting animated
        drop-shadows on every compositor frame. */
-    animation: raidpilot-quest-pulse 0.82s steps(2, end) infinite !important;
+    animation: raidpilot-quest-pulse 1.8s steps(2, end) infinite !important;
     z-index: 2050000 !important;
 }
 
@@ -565,13 +565,13 @@ html.raidpilot-raid-extractions-confirmed #leaflet-map .extract-icon:not(.raidpi
     visibility: visible !important;
     overflow: visible !important;
     filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 7px #62f0b3) !important;
-    animation: raidpilot-extraction-pulse 0.72s steps(2, end) infinite !important;
+    animation: raidpilot-extraction-pulse 1.8s steps(2, end) infinite !important;
     z-index: 2000000 !important;
 }
 
 #leaflet-map .extract-icon.raidpilot-raid-extraction.raidpilot-guidance-target {
     filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 12px #fff36b) !important;
-    animation: raidpilot-target-pulse 0.56s steps(2, end) infinite !important;
+    animation: raidpilot-target-pulse 1.4s steps(2, end) infinite !important;
     z-index: 2100000 !important;
 }
 
@@ -586,13 +586,13 @@ html.raidpilot-raid-extractions-confirmed #leaflet-map .extract-icon:not(.raidpi
     box-shadow: 0 0 4px #fff, 0 0 13px #00ff9d !important;
     content: "" !important;
     pointer-events: none !important;
-    animation: raidpilot-extraction-ring 0.72s ease-out infinite !important;
+    animation: raidpilot-extraction-ring 1.8s ease-out infinite !important;
 }
 
 #leaflet-map .extract-icon.raidpilot-raid-extraction.raidpilot-guidance-target::after {
     border-color: #fff36b !important;
     box-shadow: 0 0 5px #fff, 0 0 17px #ffe600 !important;
-    animation-duration: 0.56s !important;
+    animation-duration: 1.4s !important;
 }
 
 @keyframes raidpilot-extraction-pulse {
