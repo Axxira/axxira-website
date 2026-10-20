@@ -1,0 +1,193 @@
+name: RaidPilot Stable Release
+
+on:
+  push:
+    branches:
+      - raidpilot-updates
+    paths:
+      - "raidpilot-updates/source/**"
+      - ".github/workflows/raidpilot-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout update branch
+        uses: actions/checkout@v4
+        with:
+          ref: raidpilot-updates
+          fetch-depth: 0
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Read versions
+        shell: pwsh
+        run: |
+          $src = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\source"
+          [xml]$rpXml = Get-Content -LiteralPath (Join-Path $src "overlay\RaidPilot.Overlay.csproj")
+          [xml]$beaconXml = Get-Content -LiteralPath (Join-Path $src "beacon\RaidPilot.Beacon.csproj")
+          [xml]$launcherXml = Get-Content -LiteralPath (Join-Path $src "launcher\RaidPilot.Launcher.csproj")
+          $rpVersion = @($rpXml.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          $beaconVersion = @($beaconXml.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          $launcherVersion = @($launcherXml.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          "RP_VERSION=$rpVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "BEACON_VERSION=$beaconVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "LAUNCHER_VERSION=$launcherVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "RELEASE_TAG=raidpilot-suite-v$launcherVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Generate RaidPilot icon
+        shell: pwsh
+        run: |
+          $src = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\source"
+          dotnet run --project (Join-Path $src "brand\icon-builder\IconBuilder.csproj") -c Release -- (Join-Path $src "brand")
+          if (-not (Test-Path -LiteralPath (Join-Path $src "brand\RaidPilot.ico"))) {
+            throw "RaidPilot.ico was not generated."
+          }
+
+      - name: Publish Windows x64 components
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $src = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\source"
+          $out = Join-Path $env:GITHUB_WORKSPACE "release-output"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+
+          dotnet restore (Join-Path $src "overlay\RaidPilot.Overlay.csproj") -r win-x64
+          dotnet publish (Join-Path $src "overlay\RaidPilot.Overlay.csproj") -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out "overlay")
+
+          dotnet restore (Join-Path $src "beacon\RaidPilot.Beacon.csproj") -r win-x64
+          dotnet publish (Join-Path $src "beacon\RaidPilot.Beacon.csproj") -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out "beacon")
+
+          dotnet restore (Join-Path $src "launcher\RaidPilot.Launcher.csproj") -r win-x64
+          dotnet publish (Join-Path $src "launcher\RaidPilot.Launcher.csproj") -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out "launcher")
+
+          Get-ChildItem -LiteralPath $out -Filter *.pdb -File -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+          Get-ChildItem -LiteralPath $out -Directory -Recurse -Force -ErrorAction SilentlyContinue |
+            Where-Object Name -eq "UserData" |
+            Sort-Object FullName -Descending |
+            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+      - name: Bundle payloads into launcher
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE "release-output"
+          $rpPayload = Join-Path $out "launcher\payload\RaidPilot"
+          $beaconPayload = Join-Path $out "launcher\payload\Beacon"
+          New-Item -ItemType Directory -Force -Path $rpPayload,$beaconPayload | Out-Null
+          Copy-Item -LiteralPath (Join-Path $out "overlay\*") -Destination $rpPayload -Recurse -Force
+          Copy-Item -LiteralPath (Join-Path $out "beacon\*") -Destination $beaconPayload -Recurse -Force
+
+          @"
+RAIDPILOT — COMMENCE ICI
+=========================
+1. Extrais complètement le ZIP.
+2. Ouvre RaidPilot.Launcher.exe.
+3. Va dans ESCOUADE.
+4. Utilisez tous exactement le même code.
+5. Lance RaidPilot ou Beacon.
+6. Une fois en raid et les programmes ouverts, appuie sur F8 une fois sur chaque PC.
+
+Launcher $env:LAUNCHER_VERSION
+RaidPilot Overlay $env:RP_VERSION
+Beacon $env:BEACON_VERSION
+"@ | Set-Content -LiteralPath (Join-Path $out "launcher\COMMENCE-ICI.txt") -Encoding UTF8
+
+      - name: Create release archives
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $env:GITHUB_WORKSPACE "release-output"
+          $assets = Join-Path $env:GITHUB_WORKSPACE "release-assets"
+          New-Item -ItemType Directory -Force -Path $assets | Out-Null
+
+          $rpZip = Join-Path $assets "RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
+          $beaconZip = Join-Path $assets "RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
+          $launcherZip = Join-Path $assets "RaidPilot-Launcher-v$env:LAUNCHER_VERSION-Windows-x64.zip"
+
+          Compress-Archive -Path (Join-Path $out "overlay\*") -DestinationPath $rpZip -CompressionLevel Optimal
+          Compress-Archive -Path (Join-Path $out "beacon\*") -DestinationPath $beaconZip -CompressionLevel Optimal
+          Compress-Archive -Path (Join-Path $out "launcher\*") -DestinationPath $launcherZip -CompressionLevel Optimal
+
+          "RP_ZIP=$rpZip" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "BEACON_ZIP=$beaconZip" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "LAUNCHER_ZIP=$launcherZip" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "RP_SHA=$((Get-FileHash -Algorithm SHA256 -LiteralPath $rpZip).Hash)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "BEACON_SHA=$((Get-FileHash -Algorithm SHA256 -LiteralPath $beaconZip).Hash)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "LAUNCHER_SHA=$((Get-FileHash -Algorithm SHA256 -LiteralPath $launcherZip).Hash)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "RP_SIZE=$((Get-Item -LiteralPath $rpZip).Length)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "BEACON_SIZE=$((Get-Item -LiteralPath $beaconZip).Length)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "LAUNCHER_SIZE=$((Get-Item -LiteralPath $launcherZip).Length)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $repo = $env:GITHUB_REPOSITORY
+          gh release view $env:RELEASE_TAG --repo $repo *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release delete $env:RELEASE_TAG --repo $repo --yes --cleanup-tag
+          }
+
+          $notes = @"
+RaidPilot Stable
+- Launcher v$env:LAUNCHER_VERSION
+- Overlay v$env:RP_VERSION
+- Beacon v$env:BEACON_VERSION
+
+Packages are built automatically on GitHub Actions and verified by SHA-256 in the Stable manifest.
+"@
+          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP --repo $repo --title "RaidPilot Suite v$env:LAUNCHER_VERSION" --notes $notes
+
+      - name: Update Stable manifest
+        shell: pwsh
+        run: |
+          $repo = $env:GITHUB_REPOSITORY
+          $base = "https://github.com/$repo/releases/download/$env:RELEASE_TAG"
+          $manifest = [ordered]@{
+            schemaVersion = 1
+            channel = "stable"
+            publishedAt = [DateTimeOffset]::UtcNow.ToString("o")
+            raidPilot = [ordered]@{
+              version = $env:RP_VERSION
+              url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
+              sha256 = $env:RP_SHA
+              sizeBytes = [int64]$env:RP_SIZE
+              releaseNotes = "Squad Sync, localisation locale et correctifs RaidPilot."
+            }
+            beacon = [ordered]@{
+              version = $env:BEACON_VERSION
+              url = "$base/RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
+              sha256 = $env:BEACON_SHA
+              sizeBytes = [int64]$env:BEACON_SIZE
+              releaseNotes = "Beacon léger avec profil d'escouade partagé et reconnexion automatique."
+            }
+            launcher = [ordered]@{
+              version = $env:LAUNCHER_VERSION
+              url = "$base/RaidPilot-Launcher-v$env:LAUNCHER_VERSION-Windows-x64.zip"
+              sha256 = $env:LAUNCHER_SHA
+              sizeBytes = [int64]$env:LAUNCHER_SIZE
+              releaseNotes = "Canal Stable automatique et mise à jour du launcher lui-même."
+            }
+          }
+
+          $manifestPath = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\update-manifest.json"
+          $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add raidpilot-updates/update-manifest.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m "Update RaidPilot Stable manifest [skip ci]"
+            git push origin HEAD:raidpilot-updates
+          }
