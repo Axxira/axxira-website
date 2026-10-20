@@ -1,0 +1,28 @@
+RAIDPILOT BEACON 0.1.1
+=======================
+
+BUT
+RaidPilot Beacon permet à un teammate d’apparaître sur la carte du joueur qui utilise RaidPilot Overlay sans installer l’overlay complet.
+
+UTILISATION
+1. Le joueur RaidPilot crée une escouade depuis l’icône de notification > Escouade > Créer.
+2. Il transmet le code RP-XXXX-XXXX-XXXX-XXXX au teammate.
+3. Le teammate ouvre RaidPilot.Beacon.exe, entre le code et son nom, puis clique CONNECTER LE BEACON.
+4. En raid, il appuie une fois sur F8. Beacon obtient alors une position exacte.
+5. Beacon suit ensuite localement les déplacements et envoie le pion à l’escouade environ 5 fois/seconde.
+6. Un nouveau raid remet automatiquement la position à zéro jusqu’au prochain F8.
+
+DONNÉES TRANSMISES
+- nom choisi;
+- carte;
+- position X/Y/Z;
+- direction;
+- incertitude estimée.
+
+Les captures PNG, les touches et les mouvements de souris ne sont pas transmis. Ils sont uniquement utilisés localement pour estimer la pose.
+Le relais réseau utilisé est wss://socket.tarkov.dev. Le code d’escouade agit comme un secret d’accès : ne le publie pas.
+
+LIMITES
+- Beacon ne lit ni la mémoire ni le trafic réseau d’Escape from Tarkov.
+- Le suivi entre deux F8 est une estimation. Appuie de nouveau sur F8 lorsque le pion devient imprécis.
+- Le relais tarkov.dev est un service externe; une modification ou indisponibilité de ce service peut interrompre temporairement Squad Sync.
