@@ -6,20 +6,62 @@ namespace RaidPilot.Overlay;
 internal static class OverlayPreferencesStore
 {
     private const string VisibleInCapturesProperty = "visibleInCaptures";
+    private const string MapScalePercentProperty = "mapScalePercent";
+
+    private sealed record Snapshot(
+        bool VisibleInCaptures,
+        int? MapScalePercent);
 
     internal static string DefaultPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "RaidPilot",
         "overlay-preferences.json");
 
-    internal static bool LoadVisibleInCaptures(string? path = null)
+    internal static bool LoadVisibleInCaptures(string? path = null) =>
+        ReadSnapshot(path).VisibleInCaptures;
+
+    internal static int? LoadMapScalePercent(string? path = null) =>
+        ReadSnapshot(path).MapScalePercent;
+
+    internal static bool TrySaveVisibleInCaptures(
+        bool visibleInCaptures,
+        string? path = null)
+    {
+        var current = ReadSnapshot(path);
+        return TrySaveSnapshot(
+            new Snapshot(
+                visibleInCaptures,
+                current.MapScalePercent),
+            path);
+    }
+
+    internal static bool TrySaveMapScalePercent(
+        int? mapScalePercent,
+        string? path = null)
+    {
+        if (mapScalePercent is { } percent
+            && (percent < OverlayLayoutCalculator.MinimumManualScalePercent
+                || percent > OverlayLayoutCalculator.MaximumManualScalePercent))
+        {
+            return false;
+        }
+
+        var current = ReadSnapshot(path);
+        return TrySaveSnapshot(
+            new Snapshot(
+                current.VisibleInCaptures,
+                mapScalePercent),
+            path);
+    }
+
+    private static Snapshot ReadSnapshot(string? path)
     {
         try
         {
             var settingsPath = Path.GetFullPath(path ?? DefaultPath);
             if (!File.Exists(settingsPath))
             {
-                return true;
+                return new Snapshot(true, null);
             }
 
             using var stream = new FileStream(
@@ -28,32 +70,49 @@ internal static class OverlayPreferencesStore
                 FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete);
             using var document = JsonDocument.Parse(stream);
-            if (document.RootElement.ValueKind != JsonValueKind.Object
-                || !document.RootElement.TryGetProperty(
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return new Snapshot(true, null);
+            }
+
+            var visible = true;
+            if (document.RootElement.TryGetProperty(
                     VisibleInCapturesProperty,
                     out var visibleProperty))
             {
-                return true;
+                visible = visibleProperty.ValueKind switch
+                {
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    _ => true,
+                };
             }
 
-            return visibleProperty.ValueKind switch
+            int? mapScalePercent = null;
+            if (document.RootElement.TryGetProperty(
+                    MapScalePercentProperty,
+                    out var scaleProperty)
+                && scaleProperty.ValueKind == JsonValueKind.Number
+                && scaleProperty.TryGetInt32(out var rawScale)
+                && rawScale >= OverlayLayoutCalculator.MinimumManualScalePercent
+                && rawScale <= OverlayLayoutCalculator.MaximumManualScalePercent)
             {
-                JsonValueKind.True => true,
-                JsonValueKind.False => false,
-                _ => true,
-            };
+                mapScalePercent = rawScale;
+            }
+
+            return new Snapshot(visible, mapScalePercent);
         }
         catch (Exception exception) when (IsExpectedFileError(exception))
         {
             // A missing, corrupt, or inaccessible preference must never stop
-            // the overlay from starting. Stream visibility is the safe default.
-            return true;
+            // the overlay from starting.
+            return new Snapshot(true, null);
         }
     }
 
-    internal static bool TrySaveVisibleInCaptures(
-        bool visibleInCaptures,
-        string? path = null)
+    private static bool TrySaveSnapshot(
+        Snapshot snapshot,
+        string? path)
     {
         string? temporaryPath = null;
         try
@@ -74,9 +133,17 @@ internal static class OverlayPreferencesStore
                 bufferSize: 4096,
                 FileOptions.WriteThrough))
             {
-                using var writer = new Utf8JsonWriter(stream);
+                using var writer = new Utf8JsonWriter(
+                    stream,
+                    new JsonWriterOptions { Indented = true });
                 writer.WriteStartObject();
-                writer.WriteBoolean(VisibleInCapturesProperty, visibleInCaptures);
+                writer.WriteBoolean(
+                    VisibleInCapturesProperty,
+                    snapshot.VisibleInCaptures);
+                if (snapshot.MapScalePercent is { } scale)
+                {
+                    writer.WriteNumber(MapScalePercentProperty, scale);
+                }
                 writer.WriteEndObject();
                 writer.Flush();
                 stream.Flush(flushToDisk: true);
