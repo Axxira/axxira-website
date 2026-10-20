@@ -86,20 +86,21 @@ jobs:
           Copy-Item -LiteralPath (Join-Path $out "overlay\*") -Destination $rpPayload -Recurse -Force
           Copy-Item -LiteralPath (Join-Path $out "beacon\*") -Destination $beaconPayload -Recurse -Force
 
-          @"
-RAIDPILOT — COMMENCE ICI
-=========================
-1. Extrais complètement le ZIP.
-2. Ouvre RaidPilot.Launcher.exe.
-3. Va dans ESCOUADE.
-4. Utilisez tous exactement le même code.
-5. Lance RaidPilot ou Beacon.
-6. Une fois en raid et les programmes ouverts, appuie sur F8 une fois sur chaque PC.
-
-Launcher $env:LAUNCHER_VERSION
-RaidPilot Overlay $env:RP_VERSION
-Beacon $env:BEACON_VERSION
-"@ | Set-Content -LiteralPath (Join-Path $out "launcher\COMMENCE-ICI.txt") -Encoding UTF8
+          $guide = @(
+            "RAIDPILOT — COMMENCE ICI"
+            "========================="
+            "1. Extrais complètement le ZIP."
+            "2. Ouvre RaidPilot.Launcher.exe."
+            "3. Va dans ESCOUADE."
+            "4. Utilisez tous exactement le même code."
+            "5. Lance RaidPilot ou Beacon."
+            "6. Une fois en raid et les programmes ouverts, appuie sur F8 une fois sur chaque PC."
+            ""
+            "Launcher $env:LAUNCHER_VERSION"
+            "RaidPilot Overlay $env:RP_VERSION"
+            "Beacon $env:BEACON_VERSION"
+          )
+          $guide | Set-Content -LiteralPath (Join-Path $out "launcher\COMMENCE-ICI.txt") -Encoding UTF8
 
       - name: Create release archives
         shell: pwsh
@@ -138,14 +139,7 @@ Beacon $env:BEACON_VERSION
             gh release delete $env:RELEASE_TAG --repo $repo --yes --cleanup-tag
           }
 
-          $notes = @"
-RaidPilot Stable
-- Launcher v$env:LAUNCHER_VERSION
-- Overlay v$env:RP_VERSION
-- Beacon v$env:BEACON_VERSION
-
-Packages are built automatically on GitHub Actions and verified by SHA-256 in the Stable manifest.
-"@
+          $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`nPackages are built automatically on GitHub Actions and verified by SHA-256 in the Stable manifest."
           gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP --repo $repo --title "RaidPilot Suite v$env:LAUNCHER_VERSION" --notes $notes
 
       - name: Update Stable manifest
