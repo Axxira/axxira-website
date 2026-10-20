@@ -1,0 +1,46 @@
+RAIDPILOT LAUNCHER 0.2.2
+=========================
+
+ESCOUADE DIRECTEMENT DANS LE LAUNCHER 0.2.1
+- Onglet Escouade intégré au launcher.
+- Bouton CRÉER : génère immédiatement un code RP-XXXX-XXXX-XXXX-XXXX et le copie.
+- Bouton COPIER : copie le code actuel pour l'envoyer aux teammates.
+- Bouton REJOINDRE : entre le code d'une autre escouade et ton nom.
+- Bouton NOM : modifie le nom visible par l'équipe.
+- Boutons LANCER RAIDPILOT et LANCER BEACON directement dans la page Escouade.
+- Le profil est écrit dans le même fichier que RaidPilot : le code est donc repris automatiquement au prochain lancement.
+- Bouton QUITTER pour retirer le code du profil.
+
+NOUVELLE INTERFACE 0.2.0
+- Interface reconstruite pour reprendre le design approuvé : thème sombre tactique, accents cyan/bleu, grand hero RAIDPILOT, barre latérale et cartes d'état.
+- Navigation : Accueil, Mise à jour, Jouer, Escouade, Paramètres, Notes de version et Aide.
+- Version actuelle, dernière version, canal Stable et bouton LANCER RAIDPILOT regroupés dans le tableau principal.
+- Cartes de fonctions : Carte interactive, Escouade, Guidage intelligent et Mises à jour.
+- Historique visuel des dernières versions.
+- Fenêtre sans bordure avec boutons minimiser/fermer et déplacement par la barre supérieure.
+- Nouvelle identité visuelle RaidPilot conservée dans toute l'application.
+
+INSTALLATION
+Le launcher installe et lance RaidPilot Overlay et RaidPilot Beacon dans :
+%LocalAppData%\RaidPilot Suite\Apps
+
+MISES À JOUR
+- Vérifie un manifeste JSON servi en HTTPS.
+- Télécharge le ZIP de chaque composant.
+- Vérifie son SHA-256 avant installation.
+- Décompresse dans un dossier temporaire.
+- Conserve la version précédente dans un dossier .previous.
+- En cas d’échec de remplacement, restaure la version précédente.
+- Les routes apprises, calibrations, préférences et profils d’escouade sont stockés hors du dossier de programme.
+
+PREMIÈRE DISTRIBUTION
+Le package du launcher contient une copie initiale de RaidPilot et Beacon dans payload\.
+
+POUR ENVOYER DES MISES À JOUR
+1. Héberge les ZIP RaidPilot et Beacon sur un serveur HTTPS, par exemple GitHub Releases.
+2. Héberge update-manifest.json à une URL HTTPS stable.
+3. Dans le launcher, ouvre Paramètres / Source des mises à jour et entre cette URL.
+4. Les utilisateurs utilisent Mise à jour puis INSTALLER LA MISE À JOUR.
+
+IMPORTANT
+Les binaires restent non signés Authenticode. Une signature de code Windows reste recommandée pour limiter les avertissements SmartScreen.
