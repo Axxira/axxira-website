@@ -83,8 +83,8 @@ jobs:
           $rpPayload = Join-Path $out "launcher\payload\RaidPilot"
           $beaconPayload = Join-Path $out "launcher\payload\Beacon"
           New-Item -ItemType Directory -Force -Path $rpPayload,$beaconPayload | Out-Null
-          Copy-Item -LiteralPath (Join-Path $out "overlay\*") -Destination $rpPayload -Recurse -Force
-          Copy-Item -LiteralPath (Join-Path $out "beacon\*") -Destination $beaconPayload -Recurse -Force
+          Copy-Item -Path (Join-Path $out "overlay\*") -Destination $rpPayload -Recurse -Force
+          Copy-Item -Path (Join-Path $out "beacon\*") -Destination $beaconPayload -Recurse -Force
 
           $guide = @(
             "RAIDPILOT — COMMENCE ICI"
