@@ -473,8 +473,17 @@ internal sealed class VisualMotionGate : IDisposable
             meanDifference,
             changedPixelRatio,
             spatialMotion);
+
+        // Un flux de décor cohérent est une preuve de mouvement plus forte que
+        // les simples seuils pixel/tuiles. Il empêche surtout une petite rotation
+        // ou un déplacement faible de devenir un faux Stationary.
+        if (egomotion.State == VisualEgomotionState.Tracking && egomotion.IsReliable)
+        {
+            evidence = VisualMotionState.Moving;
+        }
+
         current.CopyTo(_previousLuminance);
-        ApplyHysteresis(evidence);
+        ApplyHysteresis(evidence, egomotion);
 
         return CreateObservation(
             evidence,
@@ -640,7 +649,9 @@ internal sealed class VisualMotionGate : IDisposable
         return !isLowerCenterWeaponRegion;
     }
 
-    private void ApplyHysteresis(VisualMotionState evidence)
+    private void ApplyHysteresis(
+        VisualMotionState evidence,
+        VisualEgomotionEstimate egomotion)
     {
         switch (evidence)
         {
@@ -664,7 +675,14 @@ internal sealed class VisualMotionGate : IDisposable
 
             case VisualMotionState.Stationary:
                 _movingEvidenceFrames = 0;
-                _stationaryEvidenceFrames++;
+                // Quand les deux détecteurs indépendants (différence spatiale
+                // et suivi de points) voient la même scène immobile, compter
+                // deux preuves réduit l'overshoot contre un mur sans accepter
+                // une image figée: CaptureProvenLive reste obligatoire.
+                _stationaryEvidenceFrames +=
+                    egomotion.State == VisualEgomotionState.Stationary && egomotion.IsReliable
+                        ? 2
+                        : 1;
                 if (_captureProvenLive
                     && _stationaryEvidenceFrames >= _settings.StationaryFramesRequired)
                 {
@@ -980,7 +998,8 @@ internal sealed class VisualMotionGate : IDisposable
             internal int Left;
             internal int Top;
             internal int Right;
-            internal int Bottom;
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]            internal int Bottom;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -1072,3 +1091,5 @@ internal sealed class VisualMotionGate : IDisposable
 }
 
 internal readonly record struct VisualCaptureRegion(int Left, int Top, int Width, int Height);
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

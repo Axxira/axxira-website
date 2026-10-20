@@ -1,4 +1,11 @@
-RAIDPILOT OVERLAY 0.11.3
+RAIDPILOT OVERLAY 0.11.4
+
+LOCALISATION + ESCOUADE 0.11.4
+- Le suivi visuel 64x36 renforce maintenant l'hystérésis de mouvement à 10 Hz : un flux optique fiable empêche les faux arrêts, et deux preuves indépendantes confirment plus vite un vrai blocage.
+- Après un F8 manuel propre, RaidPilot peut mémoriser un repère visuel différé sans enregistrer l'écran O/TÂCHES; tout mouvement ou rotation annule l'apprentissage.
+- Squad Sync envoie maintenant les positions autour de 10 Hz au lieu de 5 Hz.
+- Les poses de teammate retardées ou reçues hors ordre sont refusées, et le lissage visuel est aligné sur 100 ms.
+- La version Stable n'est pas remplacée tant que cette build n'a pas été validée en raid avec un teammate.
 
 FLASHS 0.11.3
 - Quêtes : clignotement ralenti de 0,82 s à 1,8 s.
@@ -196,3 +203,5 @@ Le chrono peut maintenant être relu après reconnaissance complète des sorties
 
 PRÉCISION GPS — 0.10.0
 Suivi plus fin des séquences clavier/souris, freinage corrigé, calibration multi-segments et diagnostic des écarts avant recalage. Aucun nouveau screenshot/OCR. Après le raid, quitter RaidPilot puis relancer son raccourci; le menu doit indiquer 0.10.0. Les étages et le chrono corrigé restent inclus. La précision en raid reste à mesurer.
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

@@ -205,7 +205,7 @@ body > #root > .App > .MuiBox-root,
     height: 24px !important;
     z-index: 1150 !important;
     pointer-events: none !important;
-    transition: transform 120ms linear, opacity 180ms ease !important;
+    transition: transform 100ms linear, opacity 180ms ease !important;
     will-change: transform !important;
     filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 4px var(--raidpilot-squad-color)) !important;
 }
@@ -237,7 +237,7 @@ body > #root > .App > .MuiBox-root,
     inset: 0 !important;
     transform: rotate(var(--raidpilot-squad-yaw, 0deg)) !important;
     transform-origin: 50% 50% !important;
-    transition: transform 120ms linear !important;
+    transition: transform 100ms linear !important;
 }
 
 .raidpilot-squad-marker .raidpilot-squad-arrow {
@@ -750,3 +750,5 @@ html.raidpilot-auto-floor-filter #leaflet-map .extract-icon.raidpilot-other-floo
     letter-spacing: 0.25px !important;
     opacity: 0.8 !important;
 }
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

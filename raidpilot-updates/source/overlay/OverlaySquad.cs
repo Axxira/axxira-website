@@ -5,7 +5,7 @@ namespace RaidPilot.Overlay;
 
 internal sealed partial class OverlayForm
 {
-    private const double SquadSendIntervalSeconds = 0.20;
+    private const double SquadSendIntervalSeconds = 0.10;
     private static readonly TimeSpan SquadMemberRetention = TimeSpan.FromSeconds(9);
 
     private readonly ToolStripMenuItem _squadMenuItem = new("Escouade");
@@ -413,6 +413,15 @@ internal sealed partial class OverlayForm
 
         lock (_squadGate)
         {
+            if (_squadMembers.TryGetValue(pose.MemberId, out var previous)
+                && pose.SentAtUnixMilliseconds <= previous.Pose.SentAtUnixMilliseconds)
+            {
+                // Les appels WebView sont asynchrones et une reconnexion peut
+                // remettre en circulation un paquet ancien. Ne jamais faire
+                // reculer visuellement un teammate vers une pose plus vieille.
+                return;
+            }
+
             if (!_squadMembers.ContainsKey(pose.MemberId) && _squadMembers.Count >= 12)
             {
                 var oldest = _squadMembers
@@ -518,6 +527,7 @@ internal sealed partial class OverlayForm
                 z = pose.Z,
                 yaw = pose.YawDegrees,
                 uncertainty = pose.UncertaintyMeters,
+                sentAtUnixMs = pose.SentAtUnixMilliseconds,
             });
             await _webView.CoreWebView2.ExecuteScriptAsync(
                 $"window.__raidPilotSetSquadPose?.({payload}); void 0;");
@@ -752,3 +762,5 @@ internal sealed class SquadSetupDialog : Form
         return false;
     }
 }
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

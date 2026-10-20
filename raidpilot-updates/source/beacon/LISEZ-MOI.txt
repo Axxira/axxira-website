@@ -1,5 +1,14 @@
-RAIDPILOT BEACON 0.2.0
+RAIDPILOT BEACON 0.2.1
 =======================
+
+PRÉCISION TEAMMATE 0.2.1
+- W/A/S/D et la rotation sont maintenant rejoués avec leurs horodatages Raw Input; les taps très courts entre deux ticks ne sont plus perdus.
+- L'intégration utilise des sous-pas fins lors des changements de touches et de rotation au lieu de supposer que tout le tick a eu le même mouvement.
+- Le free-look au bouton du milieu ne modifie plus le cap du corps estimé.
+- La vitesse de marche réglée à la molette EFT est suivie de 25 à 100 %, sans contaminer l'apprentissage de la vitesse personnelle.
+- Une capture GDI qui semble figée perd automatiquement sa confiance si une vraie rotation est observée ou si elle bloque trop longtemps un déplacement commandé.
+- Les repères visuels ne peuvent recaler Beacon que sur une scène vivante, fiable et réellement immobile.
+- Le partage de pose reste autour de 10 Hz.
 
 FUSION DE LOCALISATION 0.2.0
 - Beacon observe maintenant une petite trame locale 64x36 de la fenêtre EFT, sans enregistrer de vidéo ni transmettre d'image.
@@ -46,3 +55,5 @@ LIMITES
 - Beacon ne lit ni la mémoire ni le trafic réseau d’Escape from Tarkov.
 - Le suivi entre deux F8 est une estimation. Appuie de nouveau sur F8 lorsque le pion devient imprécis.
 - Le relais tarkov.dev est un service externe; une modification ou indisponibilité de ce service peut interrompre temporairement Squad Sync.
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

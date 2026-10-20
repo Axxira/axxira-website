@@ -9,6 +9,7 @@ internal sealed class BeaconForm : Form
     private const double PendingCaptureMaximumAgeSeconds = 3.0;
     private const double AutomaticReanchorUncertaintyMeters = 4.0;
     private const double AutomaticReanchorCooldownSeconds = 25.0;
+    private const double MaximumCommandedStationarySeconds = 1.25;
     private readonly TextBox _roomTextBox = new();
     private readonly TextBox _nameTextBox = new();
     private readonly Label _statusLabel = new();
@@ -29,7 +30,11 @@ internal sealed class BeaconForm : Form
     private readonly CancellationTokenSource _lifetime = new();
     private readonly VisualMotionGate _visualMotionGate = new();
     private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
+    private readonly RawKeyboardTimeline _rawKeyboardTimeline = new();
+    private readonly PrecisionYawTimeline _precisionYaw = new();
+    private readonly PrecisionMotionIntegrator _precisionMotionIntegrator = new();
     private readonly HashSet<Keys> _rawKeysDown = new();
+    private readonly HashSet<Keys> _trackedMovementKeys;
 
     private SquadProfile _profile;
     private SquadRelayClient? _client;
@@ -40,10 +45,15 @@ internal sealed class BeaconForm : Form
     private long _lastTick;
     private long _lastSend;
     private long _pendingMouseX;
+    private int _pendingRawMouseWheel;
+    private int _pendingDuckWheelChord;
+    private int _rawRotationActivity;
     private bool _sendInProgress;
     private bool _profileRefreshInProgress;
     private bool _allowClose;
     private bool _rawInputRegistered;
+    private bool _controlTrackingActive;
+    private bool _middleMouseDown;
     private bool _sprintToggle;
     private bool _walkToggle;
     private bool _aimToggle;
@@ -57,6 +67,8 @@ internal sealed class BeaconForm : Form
     private bool _playerCalibrationLoaded;
     private long _lastVisualSample;
     private long _lastAutomaticReanchor;
+    private double _movementSpeedScale = 1.0;
+    private double _commandedStationarySeconds;
     private RealtimeMotionEvidence _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
     private bool _previousMovementCommanded;
     private VisualMotionObservation? _lastVisualObservation;
@@ -71,6 +83,7 @@ internal sealed class BeaconForm : Form
         _settingsPath = SquadProfileStore.DefaultPath;
         _profile = SquadProfileStore.LoadOrCreate(_settingsPath);
         _controls = EftControlSettings.Read();
+        _trackedMovementKeys = BuildTrackedMovementKeys(_controls);
         _calibrationSource = new RealtimeCalibrationSource(
             _controls.MouseSensitivity,
             _controls.MouseAimingSensitivity);
@@ -138,6 +151,12 @@ internal sealed class BeaconForm : Form
         _adaptiveCalibration = new BeaconAdaptiveCalibration(path, _calibrationSource);
         _pendingCapture = null;
         _screenshotBindingWasDown = false;
+        _controlTrackingActive = false;
+        _rawKeyboardTimeline.Reset();
+        _precisionYaw.Reset();
+        Interlocked.Exchange(ref _pendingMouseX, 0);
+        Interlocked.Exchange(ref _pendingRawMouseWheel, 0);
+        Interlocked.Exchange(ref _rawRotationActivity, 0);
     }
 
     private void BuildUi()
@@ -307,10 +326,50 @@ internal sealed class BeaconForm : Form
         if (message.Msg == NativeMethods.WmInput
             && RawMouseInput.TryReadPacket(message.LParam, out var packet))
         {
-            if (packet.Kind == RawInputPacketKind.Mouse
-                && CanTrackGameInput())
+            if (packet.Kind == RawInputPacketKind.Mouse)
             {
-                Interlocked.Add(ref _pendingMouseX, packet.DeltaX);
+                if (CanTrackGameInput())
+                {
+                    if ((packet.ButtonFlags & NativeMethods.RiMouseMiddleButtonDown) != 0)
+                    {
+                        _middleMouseDown = true;
+                    }
+                    if ((packet.ButtonFlags & NativeMethods.RiMouseMiddleButtonUp) != 0)
+                    {
+                        _middleMouseDown = false;
+                    }
+
+                    Interlocked.Add(ref _pendingRawMouseWheel, packet.WheelDelta);
+                    if (packet.WheelDelta != 0 && IsKeyDown(_controls.Duck))
+                    {
+                        Interlocked.Exchange(ref _pendingDuckWheelChord, 1);
+                    }
+
+                    // Le bouton du milieu est le free-look EFT: la caméra tourne
+                    // sans changer l'axe du corps utilisé pour W/A/S/D. Compter
+                    // ces mouvements comme du lacet faisait dériver Beacon.
+                    if (!_middleMouseDown)
+                    {
+                        Interlocked.Add(ref _pendingMouseX, packet.DeltaX);
+                        if (packet.DeltaX != 0)
+                        {
+                            Interlocked.Exchange(ref _rawRotationActivity, 1);
+                            var aimingForSample = _controls.AimIsToggle
+                                ? _aimToggle
+                                : IsKeyDown(_controls.Aim);
+                            _precisionYaw.Record(
+                                Math.Max(
+                                    Stopwatch.GetTimestamp(),
+                                    Volatile.Read(ref _lastTick) + 1),
+                                packet.DeltaX,
+                                aimingForSample);
+                        }
+                    }
+                }
+                else
+                {
+                    _middleMouseDown = false;
+                }
             }
             else if (packet.Kind == RawInputPacketKind.Keyboard)
             {
@@ -337,6 +396,17 @@ internal sealed class BeaconForm : Form
         else
         {
             _rawKeysDown.Remove(key);
+        }
+
+        if (RawMouseInput.KeyboardRegistered
+            && _trackedMovementKeys.Contains(key))
+        {
+            _rawKeyboardTimeline.Record(
+                key,
+                packet.IsKeyDown,
+                Math.Max(
+                    Stopwatch.GetTimestamp(),
+                    Volatile.Read(ref _lastTick) + 1));
         }
 
         var screenshotDown = IsRawScreenshotBindingDown();
@@ -718,7 +788,17 @@ internal sealed class BeaconForm : Form
                 _previousMovementCommanded = false;
                 _pendingCapture = null;
                 _screenshotBindingWasDown = false;
+                _controlTrackingActive = false;
+                _middleMouseDown = false;
+                _movementSpeedScale = 1.0;
+                _commandedStationarySeconds = 0.0;
+                _rawKeyboardTimeline.Reset();
+                _precisionYaw.Reset();
+                _rawKeysDown.Clear();
                 Interlocked.Exchange(ref _pendingMouseX, 0);
+                Interlocked.Exchange(ref _pendingRawMouseWheel, 0);
+                Interlocked.Exchange(ref _pendingDuckWheelChord, 0);
+                Interlocked.Exchange(ref _rawRotationActivity, 0);
                 _poseLabel.Text = "Position : raid détecté · appuie sur F8";
                 _poseLabel.ForeColor = Color.Gainsboro;
             });
@@ -805,6 +885,154 @@ internal sealed class BeaconForm : Form
         SetStatus("Déconnecté", warning: true);
     }
 
+    private static HashSet<Keys> BuildTrackedMovementKeys(EftControlSettings controls)
+    {
+        var keys = new HashSet<Keys>();
+        foreach (var candidate in new[]
+        {
+            controls.MoveForward,
+            controls.MoveBackward,
+            controls.MoveLeft,
+            controls.MoveRight,
+        })
+        {
+            var key = candidate & Keys.KeyCode;
+            if (key is not (Keys.None
+                or Keys.LButton
+                or Keys.RButton
+                or Keys.MButton
+                or Keys.XButton1
+                or Keys.XButton2))
+            {
+                keys.Add(key);
+            }
+        }
+        return keys;
+    }
+
+    private void UpdateControlTrackingState(bool canTrack)
+    {
+        if (canTrack)
+        {
+            if (_controlTrackingActive)
+            {
+                return;
+            }
+
+            _rawKeyboardTimeline.Reset();
+            _precisionYaw.Reset();
+            if (RawMouseInput.KeyboardRegistered)
+            {
+                foreach (var key in _trackedMovementKeys)
+                {
+                    _rawKeyboardTimeline.Synchronize(key, IsKeyDown(key));
+                }
+            }
+
+            Interlocked.Exchange(ref _pendingMouseX, 0);
+            Interlocked.Exchange(ref _pendingRawMouseWheel, 0);
+            Interlocked.Exchange(ref _pendingDuckWheelChord, 0);
+            Interlocked.Exchange(ref _rawRotationActivity, 0);
+            _middleMouseDown = false;
+            _controlTrackingActive = true;
+            return;
+        }
+
+        if (_controlTrackingActive)
+        {
+            _adaptiveCalibration.MarkTrackingGap();
+            _visualMotionGate.Reset();
+            _visualKeyframeRecognizer.CancelPendingMatch();
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = null;
+            _previousMovementCommanded = false;
+            _commandedStationarySeconds = 0.0;
+        }
+
+        _controlTrackingActive = false;
+        _rawKeyboardTimeline.Reset();
+        _precisionYaw.Reset();
+        _rawKeysDown.Clear();
+        _rawScreenshotBindingDown = false;
+        _middleMouseDown = false;
+        Interlocked.Exchange(ref _pendingMouseX, 0);
+        Interlocked.Exchange(ref _pendingRawMouseWheel, 0);
+        Interlocked.Exchange(ref _pendingDuckWheelChord, 0);
+        Interlocked.Exchange(ref _rawRotationActivity, 0);
+    }
+
+    private bool CanUsePrecisionInput() =>
+        RawMouseInput.MouseRegistered
+        && RawMouseInput.KeyboardRegistered
+        && _trackedMovementKeys.Contains(_controls.MoveForward & Keys.KeyCode)
+        && _trackedMovementKeys.Contains(_controls.MoveBackward & Keys.KeyCode)
+        && _trackedMovementKeys.Contains(_controls.MoveLeft & Keys.KeyCode)
+        && _trackedMovementKeys.Contains(_controls.MoveRight & Keys.KeyCode);
+
+    private bool TryGetMovementActivity(
+        long startTimestamp,
+        long endTimestamp,
+        out double activity)
+    {
+        activity = 0.0;
+        if (!RawMouseInput.KeyboardRegistered
+            || !_rawKeyboardTimeline.TrySample(
+                _controls.MoveForward & Keys.KeyCode,
+                startTimestamp,
+                endTimestamp,
+                out var forward)
+            || !_rawKeyboardTimeline.TrySample(
+                _controls.MoveBackward & Keys.KeyCode,
+                startTimestamp,
+                endTimestamp,
+                out var backward)
+            || !_rawKeyboardTimeline.TrySample(
+                _controls.MoveLeft & Keys.KeyCode,
+                startTimestamp,
+                endTimestamp,
+                out var left)
+            || !_rawKeyboardTimeline.TrySample(
+                _controls.MoveRight & Keys.KeyCode,
+                startTimestamp,
+                endTimestamp,
+                out var right))
+        {
+            return false;
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]        }
+
+        activity = PrecisionMotionIntegrator.MovementActivity(
+            forward.HeldFraction,
+            backward.HeldFraction,
+            left.HeldFraction,
+            right.HeldFraction);
+        return true;
+    }
+
+    private void UpdateMovementSpeedScale(int wheelDelta, bool duckWheelChord)
+    {
+        if (wheelDelta == 0
+            || duckWheelChord
+            || IsKeyDown(_controls.Duck)
+            || IsKeyDown(Keys.R)
+            || IsKeyDown(Keys.LControlKey)
+            || IsKeyDown(Keys.RControlKey)
+            || IsKeyDown(Keys.LMenu)
+            || IsKeyDown(Keys.RMenu))
+        {
+            return;
+        }
+
+        // EFT utilise la molette pour une vitesse de marche continue. Sans ce
+        // multiplicateur, Beacon avançait trop vite dès qu'un teammate avait
+        // réduit sa vitesse sous 100 %.
+        var wheelSteps = wheelDelta / 120.0;
+        _movementSpeedScale = Math.Clamp(
+            _movementSpeedScale + (wheelSteps * 0.07),
+            0.25,
+            1.0);
+    }
+
     private void OnTick(object? sender, EventArgs e)
     {
         var now = Stopwatch.GetTimestamp();
@@ -815,12 +1043,17 @@ internal sealed class BeaconForm : Form
             : Math.Clamp((now - previous) / (double)Stopwatch.Frequency, 0.0, 0.15);
 
         _tarkovForeground = IsTarkovForeground();
+        var canTrack = CanTrackGameInput();
+        var precisionIntervalReady = canTrack
+            && _controlTrackingActive
+            && previous > 0;
+        UpdateControlTrackingState(canTrack);
+
         if (!_estimator.IsAnchored || elapsed <= 0)
         {
             return;
         }
 
-        var canTrack = CanTrackGameInput();
         var forward = canTrack
             ? (IsKeyDown(_controls.MoveForward) ? 1.0 : 0.0)
                 - (IsKeyDown(_controls.MoveBackward) ? 1.0 : 0.0)
@@ -844,33 +1077,136 @@ internal sealed class BeaconForm : Form
             sprint = false;
         }
 
+        var wheelDelta = canTrack
+            ? Interlocked.Exchange(ref _pendingRawMouseWheel, 0)
+            : 0;
+        var duckWheelChord = Interlocked.Exchange(ref _pendingDuckWheelChord, 0) != 0;
+        if (canTrack)
+        {
+            UpdateMovementSpeedScale(wheelDelta, duckWheelChord);
+        }
+
         var mouseX = canTrack ? Interlocked.Exchange(ref _pendingMouseX, 0) : 0;
+        var rotationOccurred = Interlocked.Exchange(ref _rawRotationActivity, 0) != 0;
         if (!canTrack)
         {
             Interlocked.Exchange(ref _pendingMouseX, 0);
+            Interlocked.Exchange(ref _pendingRawMouseWheel, 0);
             _adaptiveCalibration.MarkTrackingGap();
         }
 
         var movementCommanded = canTrack
             && (Math.Abs(forward) > 0.01 || Math.Abs(right) > 0.01);
+        if (precisionIntervalReady
+            && TryGetMovementActivity(previous, now, out var rawMovementActivity))
+        {
+            movementCommanded |= rawMovementActivity > 0.0;
+        }
+
+        if (movementCommanded || rotationOccurred)
+        {
+            _visualKeyframeRecognizer.CancelPendingMatch();
+        }
+
         var visualEvidence = UpdateVisualMotionEvidence(
             now,
             canTrack,
             movementCommanded);
 
+        if (Math.Abs(mouseX) > 3
+            && _visualMotionGate.State == VisualMotionState.Stationary)
+        {
+            // Une rotation du corps avec une image prétendument fixe signifie
+            // que la capture GDI s'est probablement figée. Elle ne doit pas
+            // bloquer le pion indéfiniment.
+            _visualMotionGate.InvalidateLiveness();
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = null;
+            visualEvidence = RealtimeMotionEvidence.Unknown;
+        }
+
+        if (movementCommanded
+            && _visualMotionGate.CaptureProvenLive
+            && _visualMotionGate.State == VisualMotionState.Stationary)
+        {
+            _commandedStationarySeconds += Math.Clamp(elapsed, 0.0, 0.25);
+            if (_commandedStationarySeconds >= MaximumCommandedStationarySeconds)
+            {
+                _visualMotionGate.InvalidateLiveness();
+                _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+                _lastVisualObservation = null;
+                visualEvidence = RealtimeMotionEvidence.Unknown;
+                _commandedStationarySeconds = 0.0;
+            }
+        }
+        else
+        {
+            _commandedStationarySeconds = 0.0;
+        }
+
+        var movementSpeedScale = slow || sprint
+            ? 1.0
+            : _movementSpeedScale;
+        if (movementSpeedScale < 0.35)
+        {
+            // À très basse vitesse, 64×36 peut ressembler à une scène fixe.
+            // Conserver Unknown évite un faux arrêt pendant une marche lente.
+            visualEvidence = RealtimeMotionEvidence.Unknown;
+        }
+
         var beforePose = _estimator.CurrentPose!.Value;
         _adaptiveCalibration.RecordMouse(mouseX, aiming, canTrack);
+        if (movementCommanded
+            && !sprint
+            && !slow
+            && movementSpeedScale < 0.99)
+        {
+            // La molette change le multiplicateur courant, pas la vitesse de
+            // marche de base du joueur. Ne pas apprendre ce segment comme une
+            // nouvelle vitesse personnelle.
+            _adaptiveCalibration.MarkTrackingGap();
+        }
 
-        var pose = _estimator.Advance(
-            elapsed,
-            forward,
-            right,
-            sprint,
-            slow,
-            mouseX,
-            aiming,
-            movementSpeedScale: 1.0,
-            motionEvidence: visualEvidence);
+        RealtimePose pose;
+        PrecisionMotionResult integrated = default;
+        var usedPrecision = precisionIntervalReady
+            && mouseX >= int.MinValue
+            && mouseX <= int.MaxValue
+            && CanUsePrecisionInput()
+            && _precisionMotionIntegrator.TryAdvance(
+                _estimator,
+                _rawKeyboardTimeline,
+                _precisionYaw,
+                previous,
+                now,
+                _controls.MoveForward & Keys.KeyCode,
+                _controls.MoveBackward & Keys.KeyCode,
+                _controls.MoveLeft & Keys.KeyCode,
+                _controls.MoveRight & Keys.KeyCode,
+                sprint,
+                slow,
+                movementSpeedScale,
+                visualEvidence,
+                (int)mouseX,
+                out integrated);
+
+        if (usedPrecision)
+        {
+            pose = integrated.Pose;
+        }
+        else
+        {
+            pose = _estimator.Advance(
+                elapsed,
+                forward,
+                right,
+                sprint,
+                slow,
+                mouseX,
+                aiming,
+                movementSpeedScale,
+                visualEvidence);
+        }
 
         _adaptiveCalibration.RecordMotion(
             beforePose,
@@ -1083,7 +1419,16 @@ internal sealed class BeaconForm : Form
             _adaptiveCalibration.MarkTrackingGap();
         }
 
-        _ = TryApplyVisualKeyframe(now);
+        if (!movementCommanded
+            && observation.Egomotion.State == VisualEgomotionState.Stationary
+            && observation.Egomotion.IsReliable)
+        {
+            _ = TryApplyVisualKeyframe(now);
+        }
+        else
+        {
+            _visualKeyframeRecognizer.CancelPendingMatch();
+        }
         return _visualMotionEvidence;
     }
 
@@ -1262,3 +1607,5 @@ internal sealed class BeaconForm : Form
         _lifetime.Dispose();
     }
 }
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

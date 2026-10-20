@@ -571,10 +571,13 @@
             : "";
         const map = typeof payload?.map === "string" ? payload.map.trim().slice(0, 64) : "";
         const values = [payload?.x, payload?.y, payload?.z, payload?.yaw, payload?.uncertainty];
+        const sentAtUnixMs = payload?.sentAtUnixMs;
         if (!memberId
             || !name
             || !map
             || !values.every(Number.isFinite)
+            || !Number.isSafeInteger(sentAtUnixMs)
+            || sentAtUnixMs <= 0
             || Math.abs(payload.x) > 1_000_000
             || Math.abs(payload.y) > 1_000_000
             || Math.abs(payload.z) > 1_000_000
@@ -591,6 +594,7 @@
             z: payload.z,
             yaw: ((payload.yaw % 360) + 360) % 360,
             uncertainty: payload.uncertainty,
+            sentAtUnixMs,
             receivedAt: performance.now(),
         };
     };
@@ -734,6 +738,9 @@
             entry = { pose, marker: null };
             squadMembers.set(pose.memberId, entry);
         } else {
+            if (pose.sentAtUnixMs <= entry.pose.sentAtUnixMs) {
+                return false;
+            }
             entry.pose = pose;
         }
 
@@ -991,7 +998,8 @@
         if (width < 2 || height < 2) {
             binding.svg.setAttribute("hidden", "");
             scheduleLearnedRouteRetry();
-            return false;
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]            return false;
         }
         const projected = [];
         try {
@@ -1991,7 +1999,8 @@
     let questContextSequence = -1;
     const setQuestContextSpace = (visible) => {
         const value = visible ? "96px" : "0px";
-        const root = document.documentElement;
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]        const root = document.documentElement;
         if (root.style.getPropertyValue("--raidpilot-quest-height") !== value) {
             root.style.setProperty("--raidpilot-quest-height", value);
             window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
@@ -2339,3 +2348,5 @@
         startObserver();
     }
 })();
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]

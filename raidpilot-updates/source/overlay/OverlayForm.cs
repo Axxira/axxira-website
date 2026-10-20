@@ -25,6 +25,8 @@ internal sealed partial class OverlayForm : Form
     private const double CalibrationPostCaptureMovementToleranceMeters = 0.35;
     private const double CalibrationPostCaptureYawToleranceDegrees = 2.0;
     private const double MaximumCommandedStationarySeconds = 1.25;
+    private const double ManualVisualKeyframeMinimumDelaySeconds = 1.8;
+    private const double ManualVisualKeyframeMaximumDelaySeconds = 6.0;
     private const double LearnedWaypointArrivalRadiusMeters = 0.25;
     private const double LearnedWaypointVerticalToleranceMeters = 0.75;
     private static readonly TimeSpan ScreenshotSessionClockTolerance = TimeSpan.FromSeconds(2);
@@ -149,6 +151,7 @@ internal sealed partial class OverlayForm : Form
     private long _lastLearnedRoutePlanAt;
     private long _lastLearnedRouteSaveAt;
     private AutomaticReanchorRequest? _automaticReanchorRequest;
+    private PendingVisualKeyframeLearning? _pendingVisualKeyframeLearning;
     private nint _lastForegroundWindow;
     private double _walkDistanceSinceAnchor;
     private double _sprintDistanceSinceAnchor;
@@ -755,6 +758,7 @@ internal sealed partial class OverlayForm : Form
                 _precisionGaps++;
                 _visualMotionGate.Reset();
                 _visualKeyframeRecognizer.CancelPendingMatch();
+                _pendingVisualKeyframeLearning = null;
             }
             _controlTrackingActive = false;
             _movementInputWasActive = false;
@@ -952,6 +956,10 @@ internal sealed partial class OverlayForm : Form
         if (movementInputActive || rotationOccurred || mouseDelta != 0)
         {
             _visualKeyframeRecognizer.CancelPendingMatch();
+            // Un repère différé doit rester exactement à la pose F8. Dès que
+            // le joueur bouge ou tourne, la vue courante n'est plus une ancre
+            // absolue sûre et l'apprentissage est abandonné.
+            _pendingVisualKeyframeLearning = null;
         }
 
         // Une longue pause de la boucle UI ne doit jamais compter comme une
@@ -966,6 +974,7 @@ internal sealed partial class OverlayForm : Form
             _skipNextRealtimeCalibration = true;
             _visualMotionGate.Reset();
             _visualKeyframeRecognizer.CancelPendingMatch();
+            _pendingVisualKeyframeLearning = null;
             ResetRealtimePoseHistory(now);
             return;
         }
@@ -984,29 +993,37 @@ internal sealed partial class OverlayForm : Form
             if (_visualMotionGate.TryObserveWindow(
                     _lastForegroundWindow,
                     out var visualObservation,
-                    estimateEgomotion: needsVisualKeyframeCheck)
-                && !movementInputActive
-                && !rotationOccurred
-                && mouseDelta == 0
-                && visualObservation.CaptureProvenLive
+                    // Le suivi de points 64×36 tourne à 10 Hz. Il renforce
+                    // l'hystérésis de mouvement même quand aucun repère n'est
+                    // recherché, tout en restant indépendant de la pose absolue.
+                    estimateEgomotion: true)
+                && needsVisualKeyframeCheck
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]                && visualObservation.CaptureProvenLive
                 && visualObservation.Egomotion.State == VisualEgomotionState.Stationary
                 && _realtimeEstimator.CurrentPose is { } estimatedVisualPose
                 && _visualMotionGate.TryCopyLatestLuminance(out var visualFrame))
             {
-                var recognition = _visualKeyframeRecognizer.Observe(
-                    _currentMap,
+                var learnedPendingKeyframe = TryLearnPendingVisualKeyframe(
                     visualFrame,
-                    _visualMotionGate.SampleWidth,
-                    _visualMotionGate.SampleHeight,
-                    new VisualKeyframePose(
-                        estimatedVisualPose.X,
-                        estimatedVisualPose.Y,
-                        estimatedVisualPose.Z,
-                        estimatedVisualPose.YawDegrees),
                     now);
-                if (recognition.IsConfirmed)
+                if (!learnedPendingKeyframe)
                 {
-                    recognizedVisualPose = recognition.ExactPose;
+                    var recognition = _visualKeyframeRecognizer.Observe(
+                        _currentMap,
+                        visualFrame,
+                        _visualMotionGate.SampleWidth,
+                        _visualMotionGate.SampleHeight,
+                        new VisualKeyframePose(
+                            estimatedVisualPose.X,
+                            estimatedVisualPose.Y,
+                            estimatedVisualPose.Z,
+                            estimatedVisualPose.YawDegrees),
+                        now);
+                    if (recognition.IsConfirmed)
+                    {
+                        recognizedVisualPose = recognition.ExactPose;
+                    }
                 }
             }
             else
@@ -1631,6 +1648,7 @@ internal sealed partial class OverlayForm : Form
         _idleSeconds = 0.0;
         _visualMotionGate.Reset();
         _visualKeyframeRecognizer.CancelPendingMatch();
+        _pendingVisualKeyframeLearning = null;
         ResetDistanceCalibrationCounters();
         ResetControlTrackingState();
         _lastRealtimeTick = Stopwatch.GetTimestamp();
@@ -1952,6 +1970,76 @@ internal sealed partial class OverlayForm : Form
         bool hasFileTimestamp,
         bool hasCaptureTimestamp) =>
         isAutomaticReanchor && hasFileTimestamp && hasCaptureTimestamp;
+
+    private void ScheduleManualVisualKeyframeLearning(
+        ScreenshotObservation observation,
+        long now)
+    {
+        var minimumDelayTicks = (long)Math.Ceiling(
+            ManualVisualKeyframeMinimumDelaySeconds * Stopwatch.Frequency);
+        var maximumDelayTicks = (long)Math.Ceiling(
+            ManualVisualKeyframeMaximumDelaySeconds * Stopwatch.Frequency);
+        _pendingVisualKeyframeLearning = new PendingVisualKeyframeLearning(
+            _currentMap,
+            _raidGeneration,
+            new VisualKeyframePose(
+                observation.X,
+                observation.Y,
+                observation.Z,
+                observation.YawDegrees),
+            now + minimumDelayTicks,
+            now + maximumDelayTicks);
+    }
+
+    private bool TryLearnPendingVisualKeyframe(
+        ReadOnlySpan<byte> visualFrame,
+        long now)
+    {
+        if (_pendingVisualKeyframeLearning is not { } pending)
+        {
+            return false;
+        }
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]
+        if (now > pending.ExpiresAtTimestamp
+            || pending.RaidGeneration != _raidGeneration
+            || !string.Equals(
+                pending.MapId,
+                _currentMap,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            _pendingVisualKeyframeLearning = null;
+            return false;
+        }
+
+        if (now < pending.EarliestAtTimestamp)
+        {
+            return false;
+        }
+
+        if (!_visualKeyframeRecognizer.AddExactKeyframe(
+                pending.MapId,
+                visualFrame,
+                _visualMotionGate.SampleWidth,
+                _visualMotionGate.SampleHeight,
+                pending.Pose,
+                now,
+                out _))
+        {
+            return false;
+        }
+
+        _pendingVisualKeyframeLearning = null;
+        _visualKeyframeRecognizer.CancelPendingMatch();
+        return true;
+    }
+
+    private readonly record struct PendingVisualKeyframeLearning(
+        string MapId,
+        int RaidGeneration,
+        VisualKeyframePose Pose,
+        long EarliestAtTimestamp,
+        long ExpiresAtTimestamp);
 
     internal readonly record struct KeySample(
         bool IsDown,
@@ -2718,9 +2806,9 @@ internal sealed partial class OverlayForm : Form
                     hasCaptureTimestamp)
                 && automaticRequest is not null)
             {
-                // Les captures manuelles servent aussi à lire les panneaux O et
-                // TÂCHES. Seule une capture automatique déclenchée au repos est
-                // garantie comme vue de jeu libre et peut devenir un repère.
+                // Une capture automatique déclenchée au repos est déjà une vue
+                // de jeu propre: elle peut être transformée immédiatement en
+                // signature visuelle exacte.
                 _ = LearnAutomaticVisualKeyframeAsync(
                     automaticRequest,
                     screenshotPath,
@@ -2728,6 +2816,23 @@ internal sealed partial class OverlayForm : Form
                     _raidGeneration,
                     observation,
                     captureTimestamp);
+            }
+            else if (!isAutomaticReanchor
+                && _liveTrackingEnabled
+                && hasFileTimestamp
+                && hasCaptureTimestamp
+                && estimatedPoseAtCapture is not null
+                && !postCaptureIntervalContaminated)
+            {
+                // Un F8 manuel peut afficher O ou TÂCHES. Ne jamais apprendre
+                // le PNG lui-même. Attendre que l'écran de jeu soit revenu,
+                // exiger une scène vivante puis stationnaire, et annuler au
+                // moindre déplacement/virage pour conserver exactement la pose F8.
+                ScheduleManualVisualKeyframeLearning(observation, now);
+            }
+            else if (!isAutomaticReanchor)
+            {
+                _pendingVisualKeyframeLearning = null;
             }
             _idleSeconds = 0.0;
             _guidanceGeneration = unchecked(_guidanceGeneration + 1);
@@ -2895,7 +3000,8 @@ internal sealed partial class OverlayForm : Form
                 out _);
         }
         catch (OperationCanceledException) when (_formLifetime.IsCancellationRequested)
-        {
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]        {
         }
     }
 
@@ -3425,6 +3531,7 @@ internal sealed partial class OverlayForm : Form
         _lastLearnedRouteObservationAt = 0;
         _learnedRouteGraph.BeginSession(mapId);
         _visualKeyframeRecognizer.ResetSession();
+        _pendingVisualKeyframeLearning = null;
         InvalidateLearnedRoutePlan();
     }
 
@@ -3894,7 +4001,8 @@ internal sealed partial class OverlayForm : Form
 
         CacheLearnedRoutePlan(
             recommendation.Target.Id,
-            plan: null,
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]            plan: null,
             observation,
             uncertainty);
 
@@ -4730,6 +4838,7 @@ internal sealed partial class OverlayForm : Form
             _idleSeconds = 0.0;
             _visualMotionGate.Reset();
             _visualKeyframeRecognizer.ResetSession();
+            _pendingVisualKeyframeLearning = null;
             ResetDistanceCalibrationCounters();
             ResetControlTrackingState();
         }
@@ -4893,7 +5002,8 @@ internal sealed partial class OverlayForm : Form
             var sessionStartedAtUtc = DateTimeOffset.UtcNow;
             foreach (var carriedObservation in carriedObservations)
             {
-                if (carriedObservation.FileTimestampUtc < sessionStartedAtUtc)
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]                if (carriedObservation.FileTimestampUtc < sessionStartedAtUtc)
                 {
                     sessionStartedAtUtc = carriedObservation.FileTimestampUtc;
                 }
@@ -5081,6 +5191,7 @@ internal sealed partial class OverlayForm : Form
         // backends from ever comparing one frame from each visibility mode.
         _visualMotionGate.Reset();
         _visualKeyframeRecognizer.CancelPendingMatch();
+        _pendingVisualKeyframeLearning = null;
 
         if (persistPreference
             && !OverlayPreferencesStore.TrySaveVisibleInCaptures(visibleInScreenCaptures))
@@ -5499,3 +5610,5 @@ internal sealed partial class OverlayForm : Form
         _formLifetime.Dispose();
     }
 }
+
+[executed on device: DESKTOP-KVH3DSJ (44d736d8-f6af-4787-901d-eb48c2bcbff3)]
