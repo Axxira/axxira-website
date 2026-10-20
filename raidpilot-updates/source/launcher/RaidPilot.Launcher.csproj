@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>RaidPilot.Launcher</AssemblyName>
     <RootNamespace>RaidPilot.Launcher</RootNamespace>
-    <Version>0.2.3</Version>
+    <Version>0.2.4</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
   </PropertyGroup>

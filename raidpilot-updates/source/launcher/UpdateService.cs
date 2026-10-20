@@ -17,7 +17,7 @@ internal sealed class UpdateService : IDisposable
     internal UpdateService()
     {
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.3"));
+            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.4"));
     }
 
     internal static bool IsAllowedManifestLocation(string? value)
@@ -291,7 +291,46 @@ internal sealed class UpdateService : IDisposable
         var scriptPath = Path.Combine(
             LauncherPaths.Downloads,
             $"apply-launcher-{component.Version}-{workId}.ps1");
-        var script = """
+        var script = BuildLauncherSelfUpdateScript();
+        await File.WriteAllTextAsync(scriptPath, script, cancellationToken);
+
+        var targetDirectory = AppContext.BaseDirectory.TrimEnd(
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar);
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-File");
+        startInfo.ArgumentList.Add(scriptPath);
+        startInfo.ArgumentList.Add("-ProcessId");
+        startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
+        startInfo.ArgumentList.Add("-Archive");
+        startInfo.ArgumentList.Add(archivePath);
+        startInfo.ArgumentList.Add("-Target");
+        startInfo.ArgumentList.Add(targetDirectory);
+        startInfo.ArgumentList.Add("-Executable");
+        startInfo.ArgumentList.Add("RaidPilot.Launcher.exe");
+        startInfo.ArgumentList.Add("-ExpectedVersion");
+        startInfo.ArgumentList.Add(component.Version);
+
+        if (Process.Start(startInfo) is null)
+        {
+            TryDeleteFile(scriptPath);
+            TryDeleteFile(archivePath);
+            throw new InvalidOperationException(
+                "Impossible de lancer le programme de mise à jour du launcher.");
+        }
+
+        progress?.Report(100);
+    }
+
+    internal static string BuildLauncherSelfUpdateScript() => """
 param(
     [Parameter(Mandatory=$true)][int]$ProcessId,
     [Parameter(Mandatory=$true)][string]$Archive,
@@ -361,7 +400,44 @@ try {
     }
 
     $newExe = Join-Path $Target $Executable
-    Start-Process -FilePath $newExe -WorkingDirectory $Target
+    if (-not (Test-Path -LiteralPath $newExe)) {
+        throw "Launcher installé mais exécutable introuvable : $newExe"
+    }
+
+    $relaunch = $null
+    try {
+        $relaunch = Start-Process -FilePath $newExe -WorkingDirectory $Target -PassThru -ErrorAction Stop
+        Start-Sleep -Milliseconds 1200
+        if ($relaunch.HasExited) {
+            throw "Le nouveau launcher s'est fermé immédiatement après la mise à jour."
+        }
+    }
+    catch {
+        $relaunchError = $_
+        try {
+            if ($relaunch -and -not $relaunch.HasExited) {
+                $relaunch.Kill()
+                $relaunch.WaitForExit()
+            }
+        } catch {}
+
+        # Une mise à jour du launcher ne doit jamais laisser l'utilisateur
+        # sans application. Si le nouveau binaire ne se relance pas, restaure
+        # la copie précédente et tente de rouvrir celle-ci.
+        if (Test-Path -LiteralPath $Target) {
+            Remove-Item -LiteralPath $Target -Recurse -Force
+        }
+        if ($hadCurrent -and (Test-Path -LiteralPath $previous)) {
+            Move-Item -LiteralPath $previous -Destination $Target
+            $rollbackExe = Join-Path $Target $Executable
+            if (Test-Path -LiteralPath $rollbackExe) {
+                try {
+                    Start-Process -FilePath $rollbackExe -WorkingDirectory $Target -ErrorAction SilentlyContinue
+                } catch {}
+            }
+        }
+        throw $relaunchError
+    }
 }
 finally {
     try { if (Test-Path -LiteralPath $Archive) { Remove-Item -LiteralPath $Archive -Force } } catch {}
@@ -369,43 +445,6 @@ finally {
     try { Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force } catch {}
 }
 """;
-        await File.WriteAllTextAsync(scriptPath, script, cancellationToken);
-
-        var targetDirectory = AppContext.BaseDirectory.TrimEnd(
-            Path.DirectorySeparatorChar,
-            Path.AltDirectorySeparatorChar);
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "powershell.exe",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        startInfo.ArgumentList.Add("-NoProfile");
-        startInfo.ArgumentList.Add("-ExecutionPolicy");
-        startInfo.ArgumentList.Add("Bypass");
-        startInfo.ArgumentList.Add("-File");
-        startInfo.ArgumentList.Add(scriptPath);
-        startInfo.ArgumentList.Add("-ProcessId");
-        startInfo.ArgumentList.Add(Environment.ProcessId.ToString());
-        startInfo.ArgumentList.Add("-Archive");
-        startInfo.ArgumentList.Add(archivePath);
-        startInfo.ArgumentList.Add("-Target");
-        startInfo.ArgumentList.Add(targetDirectory);
-        startInfo.ArgumentList.Add("-Executable");
-        startInfo.ArgumentList.Add("RaidPilot.Launcher.exe");
-        startInfo.ArgumentList.Add("-ExpectedVersion");
-        startInfo.ArgumentList.Add(component.Version);
-
-        if (Process.Start(startInfo) is null)
-        {
-            TryDeleteFile(scriptPath);
-            TryDeleteFile(archivePath);
-            throw new InvalidOperationException(
-                "Impossible de lancer le programme de mise à jour du launcher.");
-        }
-
-        progress?.Report(100);
-    }
 
     internal static void EnsureBundledPayloadInstalled()
     {

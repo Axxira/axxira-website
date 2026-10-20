@@ -1,5 +1,11 @@
-RAIDPILOT LAUNCHER 0.2.2
+RAIDPILOT LAUNCHER 0.2.4
 =========================
+
+REDÉMARRAGE AUTOMATIQUE 0.2.4
+- Après une mise à jour du Launcher lui-même, RaidPilot Launcher se ferme, installe la nouvelle version puis se rouvre automatiquement.
+- Le redémarrage de la nouvelle version est vérifié pendant un court délai.
+- Si la nouvelle version ne démarre pas correctement, la copie précédente est restaurée et le Launcher précédent tente de se rouvrir.
+- Ce mécanisme évite qu'un utilisateur se retrouve sans Launcher après une mise à jour interrompue ou invalide.
 
 ESCOUADE DIRECTEMENT DANS LE LAUNCHER 0.2.1
 - Onglet Escouade intégré au launcher.
