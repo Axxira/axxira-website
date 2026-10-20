@@ -46,7 +46,9 @@ jobs:
           "RP_VERSION=$rpVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
           "BEACON_VERSION=$beaconVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
           "LAUNCHER_VERSION=$launcherVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "RELEASE_TAG=raidpilot-suite-v$launcherVersion" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $shortSha = $env:GITHUB_SHA.Substring(0, 12)
+          $releaseTag = "raidpilot-stable-rp$rpVersion-b$beaconVersion-l$launcherVersion-$shortSha"
+          "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Generate RaidPilot icon
         shell: pwsh
@@ -138,13 +140,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $repo = $env:GITHUB_REPOSITORY
-          gh release view $env:RELEASE_TAG --repo $repo *> $null
-          if ($LASTEXITCODE -eq 0) {
-            gh release delete $env:RELEASE_TAG --repo $repo --yes --cleanup-tag
-          }
-
-          $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`nPackages are built automatically on GitHub Actions and verified by SHA-256 in the Stable manifest."
-          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP --repo $repo --title "RaidPilot Suite v$env:LAUNCHER_VERSION" --notes $notes
+          $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`nPublication immuable : cette Release n'est jamais remplacée. Le manifeste Stable bascule vers elle seulement après création complète des ZIP et calcul des SHA-256."
+          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP --repo $repo --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
 
       - name: Update Stable manifest
         shell: pwsh
