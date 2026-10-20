@@ -5,7 +5,8 @@ namespace RaidPilot.Beacon;
 
 internal sealed class BeaconForm : Form
 {
-    private const double SendIntervalSeconds = 0.20;
+    private const double SendIntervalSeconds = 0.10;
+    private const double PendingCaptureMaximumAgeSeconds = 3.0;
     private readonly TextBox _roomTextBox = new();
     private readonly TextBox _nameTextBox = new();
     private readonly Label _statusLabel = new();
@@ -18,6 +19,9 @@ internal sealed class BeaconForm : Form
     private readonly System.Windows.Forms.Timer _folderProbeTimer = new() { Interval = 3000 };
     private readonly EftControlSettings _controls;
     private readonly RealtimePoseEstimator _estimator;
+    private readonly RealtimeCalibrationSource _calibrationSource;
+    private BeaconAdaptiveCalibration _adaptiveCalibration;
+    private EftScreenshotBindingInfo _screenshotBinding;
     private readonly string _settingsPath;
     private readonly HashSet<string> _knownScreenshots = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetime = new();
@@ -43,17 +47,38 @@ internal sealed class BeaconForm : Form
     private bool _previousAimKey;
     private nint _lastForegroundWindow;
     private bool _tarkovForeground;
+    private bool _screenshotBindingWasDown;
+    private bool _playerCalibrationLoaded;
+    private (
+        long Timestamp,
+        RealtimePose Pose,
+        BeaconCalibrationSegment Calibration,
+        string? Map)? _pendingCapture;
 
     internal BeaconForm()
     {
         _settingsPath = SquadProfileStore.DefaultPath;
         _profile = SquadProfileStore.LoadOrCreate(_settingsPath);
         _controls = EftControlSettings.Read();
-        _estimator = new RealtimePoseEstimator(new RealtimePoseEstimatorSettings
+        _calibrationSource = new RealtimeCalibrationSource(
+            _controls.MouseSensitivity,
+            _controls.MouseAimingSensitivity);
+        var estimatorSettings = CreateBaseEstimatorSettings();
+        var calibrationPath = BeaconAdaptiveCalibration.GetCalibrationPath(_profile.MemberId);
+        _playerCalibrationLoaded = RealtimeCalibrationStore.TryLoad(
+            calibrationPath,
+            estimatorSettings,
+            _calibrationSource,
+            out var learnedSettings);
+        if (_playerCalibrationLoaded)
         {
-            HipYawDegreesPerMouseCount = Math.Clamp(_controls.MouseSensitivity * 0.1, 0.005, 0.5),
-            AdsYawDegreesPerMouseCount = Math.Clamp(_controls.MouseAimingSensitivity * 0.1, 0.005, 0.5),
-        });
+            estimatorSettings = learnedSettings;
+        }
+        _estimator = new RealtimePoseEstimator(estimatorSettings);
+        _adaptiveCalibration = new BeaconAdaptiveCalibration(
+            calibrationPath,
+            _calibrationSource);
+        _screenshotBinding = EftScreenshotBindingReader.Read();
 
         BuildUi();
         BuildTray();
@@ -64,6 +89,7 @@ internal sealed class BeaconForm : Form
         _folderProbeTimer.Tick += async (_, _) =>
         {
             EnsureScreenshotWatcher();
+            _screenshotBinding = EftScreenshotBindingReader.Read();
             await RefreshSharedSquadProfileAsync();
         };
         Shown += OnShown;
@@ -75,6 +101,32 @@ internal sealed class BeaconForm : Form
                 Hide();
             }
         };
+    }
+
+    private RealtimePoseEstimatorSettings CreateBaseEstimatorSettings() => new()
+    {
+        HipYawDegreesPerMouseCount = Math.Clamp(_controls.MouseSensitivity * 0.1, 0.005, 0.5),
+        AdsYawDegreesPerMouseCount = Math.Clamp(_controls.MouseAimingSensitivity * 0.1, 0.005, 0.5),
+    };
+
+    private void ReloadPlayerCalibration(string memberId)
+    {
+        var settings = CreateBaseEstimatorSettings();
+        var path = BeaconAdaptiveCalibration.GetCalibrationPath(memberId);
+        _playerCalibrationLoaded = RealtimeCalibrationStore.TryLoad(
+            path,
+            settings,
+            _calibrationSource,
+            out var learnedSettings);
+        if (_playerCalibrationLoaded)
+        {
+            settings = learnedSettings;
+        }
+
+        _estimator.ApplySettings(settings);
+        _adaptiveCalibration = new BeaconAdaptiveCalibration(path, _calibrationSource);
+        _pendingCapture = null;
+        _screenshotBindingWasDown = false;
     }
 
     private void BuildUi()
@@ -304,6 +356,10 @@ internal sealed class BeaconForm : Form
             _profile = stored;
             _roomTextBox.Text = _profile.RoomCode ?? string.Empty;
             _nameTextBox.Text = _profile.Name;
+            if (identityChanged)
+            {
+                ReloadPlayerCalibration(_profile.MemberId);
+            }
 
             if (!_profile.AutoJoin || !_profile.HasRoom)
             {
@@ -427,12 +483,85 @@ internal sealed class BeaconForm : Form
 
     private void AnchorFromScreenshot(ScreenshotObservation observation)
     {
-        _estimator.Anchor(observation);
+        var now = Stopwatch.GetTimestamp();
+        var hasHistoricalCapture = false;
+        RealtimePose? poseAtCapture = null;
+        BeaconCalibrationSegment calibrationSegment;
+
+        if (_pendingCapture is { } pending
+            && (now - pending.Timestamp) / (double)Stopwatch.Frequency
+                <= PendingCaptureMaximumAgeSeconds
+            && (pending.Map is null
+                || _currentMap is null
+                || string.Equals(
+                    pending.Map,
+                    _currentMap,
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            hasHistoricalCapture = true;
+            poseAtCapture = pending.Pose;
+            calibrationSegment = pending.Calibration;
+        }
+        else
+        {
+            // The file arrived without a reliably observed screenshot-key
+            // transition. Keep the absolute anchor, but do not learn from a
+            // segment whose true capture instant is unknown.
+            _adaptiveCalibration.MarkTrackingGap();
+            calibrationSegment = _adaptiveCalibration.CaptureSegment(
+                _estimator.CurrentPose);
+        }
+
+        _pendingCapture = null;
+
+        var learned = _adaptiveCalibration.ObserveExact(
+            observation,
+            calibrationSegment,
+            _estimator);
+        if (learned)
+        {
+            _playerCalibrationLoaded = true;
+        }
+
+        if (hasHistoricalCapture
+            && poseAtCapture is { } historicalPose
+            && _estimator.IsAnchored)
+        {
+            try
+            {
+                _estimator.ReanchorFromHistoricalPose(
+                    observation,
+                    historicalPose);
+            }
+            catch (InvalidOperationException)
+            {
+                _estimator.Anchor(observation);
+            }
+            catch (ArgumentException)
+            {
+                _estimator.Anchor(observation);
+            }
+        }
+        else
+        {
+            _estimator.Anchor(observation);
+        }
+
         Interlocked.Exchange(ref _pendingMouseX, 0);
-        _lastTick = Stopwatch.GetTimestamp();
+        _lastTick = now;
+
+        var residual = _adaptiveCalibration.LastResidualMeters is { } meters
+            ? $" · écart corrigé {meters:F1} m"
+            : string.Empty;
+        var learnedLabel = _playerCalibrationLoaded
+            ? " · profil joueur adaptatif actif"
+            : string.Empty;
         _poseLabel.Text =
-            $"Position exacte F8 : {observation.X:F1}, {observation.Z:F1} · cap {observation.YawDegrees:F0}°";
+            $"Position F8 recalée : {observation.X:F1}, {observation.Z:F1} · cap {observation.YawDegrees:F0}°"
+            + residual
+            + learnedLabel;
         _poseLabel.ForeColor = Color.FromArgb(141, 255, 203);
+
         if (_client is not null)
         {
             _ = SendCurrentPoseAsync(force: true);
@@ -452,6 +581,9 @@ internal sealed class BeaconForm : Form
                 // deliberately emits a same-map event when EFT starts another
                 // raid on the same location, so an old pose can never leak into it.
                 _estimator.Reset();
+                _adaptiveCalibration.ResetRaid();
+                _pendingCapture = null;
+                _screenshotBindingWasDown = false;
                 Interlocked.Exchange(ref _pendingMouseX, 0);
                 _poseLabel.Text = "Position : raid détecté · appuie sur F8";
                 _poseLabel.ForeColor = Color.Gainsboro;
@@ -500,7 +632,11 @@ internal sealed class BeaconForm : Form
         _nameTextBox.Text = client.Name;
         _startButton.Enabled = false;
         _stopButton.Enabled = true;
-        SetStatus("Beacon actif · envoi sécurisé au code d’escouade", warning: false);
+        SetStatus(
+            _playerCalibrationLoaded
+                ? "Beacon actif · profil joueur adaptatif chargé"
+                : "Beacon actif · apprentissage du joueur en cours",
+            warning: false);
 
         if (_estimator.IsAnchored)
         {
@@ -578,7 +714,11 @@ internal sealed class BeaconForm : Form
         if (!canTrack)
         {
             Interlocked.Exchange(ref _pendingMouseX, 0);
+            _adaptiveCalibration.MarkTrackingGap();
         }
+
+        var beforePose = _estimator.CurrentPose!.Value;
+        _adaptiveCalibration.RecordMouse(mouseX, aiming, canTrack);
 
         var pose = _estimator.Advance(
             elapsed,
@@ -591,8 +731,23 @@ internal sealed class BeaconForm : Form
             movementSpeedScale: 1.0,
             motionEvidence: RealtimeMotionEvidence.Unknown);
 
+        _adaptiveCalibration.RecordMotion(
+            beforePose,
+            pose,
+            forward,
+            right,
+            sprint,
+            slow,
+            canTrack,
+            elapsed);
+        DetectScreenshotCapturePoint(now, pose);
+
+        var calibrationSuffix = _playerCalibrationLoaded
+            ? " · profil adaptatif"
+            : string.Empty;
         _poseLabel.Text =
-            $"Suivi : ±{pose.PositionUncertaintyMeters:F1} m · {pose.X:F1}, {pose.Z:F1} · cap {pose.YawDegrees:F0}°";
+            $"Suivi : ±{pose.PositionUncertaintyMeters:F1} m · {pose.X:F1}, {pose.Z:F1} · cap {pose.YawDegrees:F0}°"
+            + calibrationSuffix;
         _poseLabel.ForeColor = pose.PositionUncertaintyMeters <= 3
             ? Color.FromArgb(141, 255, 203)
             : pose.PositionUncertaintyMeters <= 8
@@ -605,6 +760,43 @@ internal sealed class BeaconForm : Form
             _lastSend = now;
             _ = SendCurrentPoseAsync(force: false);
         }
+    }
+
+    private void DetectScreenshotCapturePoint(long now, RealtimePose pose)
+    {
+        var keyDown = IsScreenshotBindingDown();
+        if (keyDown && !_screenshotBindingWasDown)
+        {
+            _pendingCapture = (
+                now,
+                pose,
+                _adaptiveCalibration.CaptureSegment(pose),
+                _currentMap);
+        }
+
+        _screenshotBindingWasDown = keyDown;
+    }
+
+    private bool IsScreenshotBindingDown()
+    {
+        if (!_screenshotBinding.IsReady
+            || _screenshotBinding.AxisName is not null
+            || _screenshotBinding.KeyCodes.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var keyCode in _screenshotBinding.KeyCodes)
+        {
+            if (!EftControlSettings.TryMapKeyCode(keyCode, out var key)
+                || key == Keys.None
+                || !IsKeyDown(key))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private async Task SendCurrentPoseAsync(bool force)
