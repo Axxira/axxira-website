@@ -1,0 +1,184 @@
+RAIDPILOT OVERLAY 0.11.1
+
+ESCOUADE 0.11.0
+- Menu de l’icône RaidPilot > Escouade > Créer/Rejoindre.
+- Le créateur partage le code RP-XXXX-XXXX-XXXX-XXXX aux teammates.
+- Les teammates peuvent utiliser le petit RaidPilot Beacon au lieu de l’overlay complet.
+- Les pions affichent nom, direction, distance et différence d’altitude significative.
+- Position périmée après 2,5 s; suppression après 8 s.
+- Seuls nom choisi, carte, X/Y/Z, cap et incertitude transitent par wss://socket.tarkov.dev.
+- Captures, touches et souris restent sur le PC.
+- Garde le code d’escouade privé entre les membres de ton équipe.
+
+LOCALISATION 0.10.2
+- Le point joueur visible est maintenant dessiné localement par RaidPilot dès qu'une position F8 est connue.
+- Ctrl+Alt+G n'est plus nécessaire pour voir ton point; il sert seulement au partage facultatif vers tarkov.dev.
+- Le point local continue de suivre la pose estimée entre deux F8 et est restauré après un rechargement de la carte.
+- Une ancienne pose, une autre carte ou un ancien raid ne peuvent pas écraser le point courant.
+
+CHRONO 0.10.1
+- Lecture du panneau O durcie avec un cadrage plus serré, un masque dédié au chrono rouge et plusieurs replis OCR prudents.
+- Validation locale du 19 octobre 2026 : 14/14 captures avec panneau O reconnu donnent un chrono lisible sur le jeu de captures disponible.
+- Les lectures ambiguës ou contradictoires restent refusées : RaidPilot n'invente jamais un temps.
+
+Disposition 0.8.9 : ensemble ancré dans le coin supérieur droit, à 16 pixels logiques des bords utiles de l’écran. De haut en bas : extraction (72 px), carte (832 x 340 px), puis quêtes proches (96 px uniquement lorsqu’une aide est pertinente). L’apparition des quêtes agrandit la fenêtre vers le bas sans déplacer ni réduire la carte. Les calculs GPS, quêtes et extractions ne changent pas.
+
+Lancement
+1. Ouvre RaidPilot.Overlay.exe.
+2. Dans Tarkov, utilise le mode Fenêtré sans bordure.
+3. En raid, F8 donne une ancre exacte. Ensuite RaidPilot suit tes mouvements en direct.
+   Après un déplacement, il peut se recaler seul dès que tu restes au repos.
+4. Ctrl+Alt+G est facultatif : il affiche aussi ton point sur tarkov.dev.
+
+Nettoyage au lancement
+- À chaque ouverture de RaidPilot, les anciens PNG déjà présents dans
+  Documents\Escape from Tarkov\Screenshots sont supprimés définitivement.
+  Une capture créée dans les trois secondes autour de l'ouverture est protégée.
+- Seul ce dossier exact est nettoyé : aucun sous-dossier et aucun autre type de
+  fichier. Les nouvelles captures créées après l'ouverture sont protégées.
+- La surveillance démarre tout de suite pendant le nettoyage, donc le premier
+  F8 du raid n'est pas perdu. Un fichier verrouillé est réessayé puis conservé.
+
+Guidage vers une extraction
+1. Au début du raid, appuie deux fois sur O pour laisser la liste des sorties visible.
+2. Pendant que la liste est visible, appuie sur F8 une fois.
+3. La même capture lit le temps exact affiché par Tarkov et lance le petit
+   compte à rebours en haut à gauche de la carte. Aucune capture supplémentaire
+   n'est faite. --:-- reste affiché jusqu'à une lecture fiable; le temps devient
+   jaune sous 10 minutes et rouge sous 5 minutes. O deux fois puis F8 le recale.
+4. RaidPilot lit localement les lignes EXFIL numérotées, ignore les TRANSIT et
+   EXFIL??, puis les entoure d'un grand clignotement. Il préfère une sortie sans
+   condition; si la carte n'en offre aucune, il pointe la meilleure sortie lue
+   et affiche clairement « CONDITION ».
+5. La flèche et la cible la plus proche bougent en continu. Appuie de nouveau
+   sur F8 quand elle affiche F8
+   ou après une collision pour corriger la dérive.
+
+Itinéraires appris
+- Dans une zone encore inconnue, le HUD dit « CAP DIRECT ».
+- RaidPilot apprend localement les passages que tu parcours réellement, carte
+  par carte et étage par étage. Il n'invente jamais de passage entre deux rues,
+  couloirs ou niveaux seulement parce qu'ils sont proches.
+- Quand un chemin assez fiable rejoint une sortie confirmée, une ligne cyan
+  apparaît et la flèche vise le prochain point du chemin. Le HUD dit alors
+  « CHEMIN APPRIS ». Une ligne pointillée indique une confiance moyenne.
+- Les chemins restent disponibles après une mise à jour du logiciel et
+  s'améliorent au fil des raids. La première visite garde le cap direct.
+
+Même si une ligne du panneau est mal lue, RaidPilot guide immédiatement vers les
+sorties EXFIL reconnues sans inventer les autres. Un autre F8 peut compléter la
+liste. Ctrl+Alt+E reste un secours manuel.
+
+Quêtes sur la carte
+1. Dans le raid, ouvre TAB > TÂCHES pour afficher les noms de tes quêtes.
+2. Appuie sur F8 pendant que les titres sont visibles.
+3. Leurs objectifs géolocalisés clignotent en violet directement sur la carte.
+4. Si la liste défile, descends-la et reprends un F8 : les quêtes reconnues
+   s'additionnent pour ce raid.
+
+RaidPilot compare seulement les quêtes de la carte active et n'invente aucun
+emplacement. Une quête sans position publique dans tarkov.dev reste absente.
+Il n'ajoute aucun panneau : seuls les marqueurs violets apparaissent sur la carte.
+
+Boss sur la carte
+- Les crânes entourés de rouge indiquent uniquement les zones où un boss peut
+  apparaître selon les données publiques de tarkov.dev.
+- Ils ne confirment jamais qu'un boss est réellement présent dans le raid.
+- Les points PMC, Scav et autres apparitions restent cachés.
+
+Objets rares sur la carte
+- Les marqueurs entourés de doré indiquent les emplacements possibles des
+  LEDX, cartes graphiques, Bitcoin, Intel, technologies militaires rares,
+  cartes Labs et clés marquées répertoriés par tarkov.dev.
+- L'objet n'est jamais garanti dans le raid : il peut ne rien y avoir.
+- Seuls les emplacements dédiés à un objet rare sont affichés. Les grands pools
+  génériques, les autres catégories de loot et les caches restent cachés pour
+  garder la carte lisible.
+- Les marqueurs rares restent visibles même si tarkov.dev les classe sur un
+  autre étage, comme les dossiers de renseignements de Customs.
+
+Le profil d’extraction est PMC par défaut. Pour un raid Scav, fais un clic droit
+sur l’icône RaidPilot près de l’horloge, puis choisis Type de raid > Scav.
+
+Raccourcis
+- Ctrl+Alt+M : afficher/masquer la carte
+- Ctrl+Alt+I : interagir avec la carte / traverser les clics
+- Ctrl+Alt+G : afficher/masquer le point tarkov.dev facultatif
+- Ctrl+Alt+E : extraction manuelle de secours avant la lecture du panneau
+- Icône RaidPilot près de l'horloge : « Visible dans le stream Discord » est
+  coché par défaut. Décoche-le pour masquer la carte à ton stream; RaidPilot
+  mémorise ce choix pour les prochains démarrages.
+
+Suivi fluide
+- RaidPilot lit tes touches de mouvement, la souris et les sensibilités de
+  Control.ini uniquement pendant que Tarkov est au premier plan.
+- Les taps clavier très brefs sont horodatés en mémoire : ils ne disparaissent
+  plus entre deux mises à jour, et le tampon est vidé si Tarkov perd le focus.
+- Il tient maintenant compte de l'accélération et du freinage, de la molette de
+  vitesse, de la marche arrière, des pas latéraux, de l'accroupissement, de la
+  position allongée et du free-look.
+- Une lecture visuelle minuscule et silencieuse du jeu confirme les arrêts :
+  aucune image complète n'est gardée et aucun fichier n'est créé par ce contrôle.
+  Elle sépare maintenant le décor du HUD et de la zone de l'arme pour éviter
+  qu'une animation locale soit prise pour un vrai déplacement.
+- Cette lecture suit aussi les petits déplacements du décor et rejette les
+  mouvements contradictoires. Seul un recalage automatique pris au repos sur la
+  vue libre peut garder une signature compacte du décor; les F8 manuels avec O
+  ou TÂCHES n'en créent jamais. Si trois lectures fraîches et espacées retrouvent
+  sans ambiguïté le même lieu proche et le même cap, RaidPilot se recale dessus.
+  Un mouvement annule la tentative. Les repères disparaissent à la fermeture.
+- Les touches et rotations restent intégrées 20 fois par seconde. Le point et
+  la flèche sont publiés 10 fois par seconde puis lissés localement, ce qui
+  réduit le travail de la carte sans ralentir les commandes. La carte ne se
+  recentre que lorsque le point approche du bord.
+- RaidPilot mémorise quelques secondes de trajectoire : lorsqu'un PNG F8 arrive
+  en retard, il corrige la position à l'instant de la capture puis conserve le
+  mouvement fait depuis. Le point ne revient donc plus à un ancien emplacement.
+- Au début d'un raid, un F8 arrivé juste avant la détection de la nouvelle carte
+  est gardé brièvement et appliqué une seule fois à cette nouvelle session.
+- Si l'erreur estimée monte, RaidPilot appuie sur ta touche de position seulement
+  après 0,9 seconde sans mouvement, visée ni tir. Le PNG automatique est supprimé
+  seulement s'il correspond sans ambiguïté à cette demande; une capture manuelle
+  concurrente est conservée. Il ne déclenche jamais ce recalage en courant.
+- Le clic droit sur l'icône RaidPilot permet de désactiver « Recalage exact
+  automatique au repos »; F8 reste alors entièrement manuel.
+- Les sensibilités et vitesses apprises avec les F8 sont conservées localement
+  pour les prochains lancements afin que le suivi s'améliore avec l'utilisation.
+  Si tu modifies la sensibilité normale ou ADS dans Tarkov, RaidPilot ignore
+  automatiquement l'ancienne calibration et en apprend une nouvelle.
+- Ces entrées restent en mémoire et ne sont pas enregistrées ni envoyées.
+- LIVE ≈3 m indique la dérive estimée; au-delà de 4 m, le HUD demande F8 et
+  suspend les chemins appris jusqu'au prochain recalage exact.
+
+Important
+- Une capture manuelle est gardée pendant la session, mais elle sera supprimée
+  au prochain lancement de RaidPilot si elle est encore dans le dossier EFT.
+- Les zones du panneau d’extractions et des titres de quêtes d’un PNG sont lues
+  localement. L’image et les lignes OCR brutes ne sont jamais téléversées ni
+  enregistrées; seuls les identifiants publics retenus sélectionnent les marqueurs.
+- RaidPilot ne lit pas la mémoire du jeu.
+- Les coordonnées viennent uniquement du nom créé par la capture Tarkov F8.
+- tarkov.dev publie toutes les sorties possibles; le panneau O sert à ne garder
+  que celles attribuées à ton raid.
+- Les dernières données publiques valides des extractions et quêtes sont gardées
+  localement pour résister à une panne temporaire du service de catalogues.
+  Ce cache ne contient pas la page, les tuiles ni les images de tarkov.dev :
+  la carte demande toujours Internet et un premier lancement hors ligne ne suffit pas.
+- « CHEMIN APPRIS » suit seulement des passages déjà parcourus. « CAP DIRECT »
+  reste un simple cap et peut donc rencontrer un mur, une clôture ou une falaise.
+
+
+QUÊTES PROCHES — 0.8.8
+La nouvelle aide apparaît automatiquement sous la carte après reconnaissance des quêtes et positionnement. Elle n’ajoute aucune capture. La progression et les étages restent non confirmés. Menu : Aide des quêtes proches / Masquer cet objectif pour ce raid.
+
+
+NIVEAUX AUTOMATIQUES — 0.9.0
+Les étages et sous-sols publiés sont sélectionnés automatiquement à réception de la hauteur du GPS existant. AUTO indique la couche et sa fraîcheur. Aucun nouveau screenshot n’est déclenché par cette fonction. Entre deux observations, l’étage reste estimé; les escaliers ne sont pas suivis verticalement en continu. La carte reste entre les extractions en haut et les quêtes en bas.
+
+
+CHRONO — 0.9.1
+Le chrono peut maintenant être relu après reconnaissance complète des sorties. Une lecture ratée ne bloque plus toutes les suivantes. NON LU / LECTURE / SYNCHRO indiquent son état. Le menu Chrono ouvre son diagnostic. Aucune capture nouvelle n’est déclenchée par le correctif. Une première lecture valide du panneau reste nécessaire.
+
+
+PRÉCISION GPS — 0.10.0
+Suivi plus fin des séquences clavier/souris, freinage corrigé, calibration multi-segments et diagnostic des écarts avant recalage. Aucun nouveau screenshot/OCR. Après le raid, quitter RaidPilot puis relancer son raccourci; le menu doit indiquer 0.10.0. Les étages et le chrono corrigé restent inclus. La précision en raid reste à mesurer.
