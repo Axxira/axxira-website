@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-20T22:04:39.0253347+00:00",
+  "publishedAt": "2026-10-20T22:13:10.0733466+00:00",
   "raidPilot": {
     "version": "0.11.4",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.11.4-b0.2.1-l0.2.4-5bb1a134a06e/RaidPilot-Overlay-v0.11.4-Windows-x64.zip",
-    "sha256": "64E40275E09F195A6CCEF1FA42147EE47DD660995E88F73A14179024EC873DA4",
-    "sizeBytes": 58959161,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.11.4-b0.2.1-l0.2.5-bed23b3c4798/RaidPilot-Overlay-v0.11.4-Windows-x64.zip",
+    "sha256": "00D52A86DC6FE2CB21201004E4AB531D9E03C420ABD94B39EAB9970D85340FA1",
+    "sizeBytes": 58959170,
     "releaseNotes": "Squad Sync, localisation locale et correctifs RaidPilot."
   },
   "beacon": {
     "version": "0.2.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.11.4-b0.2.1-l0.2.4-5bb1a134a06e/RaidPilot-Beacon-v0.2.1-Windows-x64.zip",
-    "sha256": "75BDB3CC3D7230E32BB6C467E14E8EF1DE07EA960A6B2069B973539F8F7B6C9F",
-    "sizeBytes": 58263047,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.11.4-b0.2.1-l0.2.5-bed23b3c4798/RaidPilot-Beacon-v0.2.1-Windows-x64.zip",
+    "sha256": "05D14D2AC983A7EAB2AC3F5D8D6E05F6FA9D59ADFE65B7C3D9471696A88AC0AB",
+    "sizeBytes": 58263058,
     "releaseNotes": "Beacon 0.2 : fusion visuelle, blocage anti-dérive, repères F8, recalage automatique prudent et calibration propre au joueur."
   },
   "launcher": {
-    "version": "0.2.4",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.11.4-b0.2.1-l0.2.4-5bb1a134a06e/RaidPilot-Launcher-v0.2.4-Windows-x64.zip",
-    "sha256": "89B95F23F8C546F96B58C8D9040AF61137C661C59BB5196E5673593F51B3D589",
-    "sizeBytes": 175444728,
+    "version": "0.2.5",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.11.4-b0.2.1-l0.2.5-bed23b3c4798/RaidPilot-Launcher-v0.2.5-Windows-x64.zip",
+    "sha256": "33B9A98F1C8C1C8F97B0BAE049E8EF6FDC653CCE622EC9CB4D774024815B13AB",
+    "sizeBytes": 175445707,
     "releaseNotes": "Canal Stable automatique et mise à jour du launcher lui-même."
   }
 }
