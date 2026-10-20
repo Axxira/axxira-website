@@ -185,8 +185,9 @@ internal sealed class LauncherForm : Form
         var beaconVersion = UpdateService.GetInstalledVersion(LauncherPaths.BeaconExe);
         var launcherVersion = Application.ProductVersion;
 
-        _surface.CurrentRaidPilotVersion = raidVersion is null ? "—" : TrimVersion(raidVersion);
-        _surface.CurrentBeaconVersion = beaconVersion is null ? "—" : TrimVersion(beaconVersion);
+        _surface.CurrentRaidPilotVersion = UpdateService.NormalizeVersionForDisplay(raidVersion);
+        _surface.CurrentBeaconVersion = UpdateService.NormalizeVersionForDisplay(beaconVersion);
+        _surface.LauncherVersion = UpdateService.NormalizeVersionForDisplay(launcherVersion);
         _surface.LatestRaidPilotVersion = _manifest?.RaidPilot?.Version
             ?? _surface.CurrentRaidPilotVersion;
         _surface.UpdateAvailable = UpdateService.HasAvailableUpdate(
@@ -970,6 +971,7 @@ internal sealed class LauncherSurface : Control
     internal LauncherSection ActiveSection = LauncherSection.Home;
     internal string CurrentRaidPilotVersion = "—";
     internal string LatestRaidPilotVersion = "—";
+    internal string LauncherVersion = "—";
     internal string CurrentBeaconVersion = "—";
     internal string ChannelLabel = "Stable";
     internal string FeedLabel = "Source non configurée";
@@ -995,9 +997,9 @@ internal sealed class LauncherSurface : Control
             _appIcon?.Dispose();
             _appIcon = null;
         }
-
         base.Dispose(disposing);
     }
+
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
@@ -1064,7 +1066,7 @@ internal sealed class LauncherSurface : Control
 
         using var small = FontOf("Segoe UI", 8.5F);
         using var mutedBrush = new SolidBrush(Color.FromArgb(90, 111, 122));
-        g.DrawString("Launcher v0.2.3", small, mutedBrush, 24, Height - 34);
+        g.DrawString($"Launcher v{LauncherVersion}", small, mutedBrush, 24, Height - 34);
     }
 
     private void DrawNavItem(
@@ -1994,9 +1996,9 @@ internal sealed class SquadLauncherDialog : Form
 
         Controls.Add(new Label
         {
-            Text = codeReadOnly
-                ? "Modifie le nom qui sera visible par ton équipe."
-                : "Entre le code reçu du joueur qui a créé l'escouade.",            Location = new Point(24, 55),
+            Text = codeReadOnly                ? "Modifie le nom qui sera visible par ton équipe."
+                : "Entre le code reçu du joueur qui a créé l'escouade.",
+            Location = new Point(24, 55),
             Size = new Size(510, 32),
             ForeColor = Color.FromArgb(166, 184, 193),
         });

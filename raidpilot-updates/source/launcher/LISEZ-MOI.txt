@@ -1,5 +1,11 @@
-RAIDPILOT LAUNCHER 0.2.6
+RAIDPILOT LAUNCHER 0.2.7
 =========================
+
+CORRECTIF ALERTE + VERSION AFFICHÉE 0.2.7
+- Corrige le bouton INSTALLER LA MISE À JOUR qui pouvait continuer à clignoter alors qu'Overlay et Beacon étaient déjà à jour.
+- Les suffixes Git comme 0.11.4+hash et 0.2.1+hash sont maintenant comparés comme leurs versions réelles 0.11.4 et 0.2.1.
+- La version affichée en bas du menu n'est plus codée en dur : elle provient directement du Launcher réellement exécuté.
+- Le clignotement disparaît immédiatement lorsque les trois composants sont réellement à jour.
 
 CORRECTIF SELF-UPDATE 0.2.6
 - Corrige le blocage où une build GitHub annonçait ProductVersion sous la forme 0.2.x+hash alors que le manifeste attendait 0.2.x.

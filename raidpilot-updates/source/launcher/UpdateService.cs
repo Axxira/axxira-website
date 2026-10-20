@@ -18,7 +18,7 @@ internal sealed class UpdateService : IDisposable
     internal UpdateService()
     {
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.6"));
+            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.7"));
     }
 
     internal static bool IsAllowedManifestLocation(string? value)
@@ -33,16 +33,48 @@ internal sealed class UpdateService : IDisposable
 
     internal static bool IsNewer(string? installedVersion, string? availableVersion)
     {
-        if (!Version.TryParse(installedVersion, out var installed)
-            || !Version.TryParse(availableVersion, out var available))
+        var installedCore = NormalizeVersionCore(installedVersion);
+        var availableCore = NormalizeVersionCore(availableVersion);
+
+        if (!Version.TryParse(availableCore, out var available))
         {
-            return !string.Equals(
-                installedVersion,
-                availableVersion,
-                StringComparison.OrdinalIgnoreCase)
-            && Version.TryParse(availableVersion, out _);
+            return false;
         }
+
+        if (!Version.TryParse(installedCore, out var installed))
+        {
+            return true;
+        }
+
         return available > installed;
+    }
+
+    private static string? NormalizeVersionCore(string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return null;
+        }
+
+        return version.Split(new[] { '+', '-' }, 2)[0];
+    }
+
+    internal static string NormalizeVersionForDisplay(string? version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return "—";
+        }
+
+        var core = NormalizeVersionCore(version) ?? version;
+        if (Version.TryParse(core, out var parsed))
+        {
+            return parsed.Build > 0
+                ? $"{parsed.Major}.{parsed.Minor}.{parsed.Build}"
+                : $"{parsed.Major}.{parsed.Minor}";
+        }
+
+        return core;
     }
 
     internal static bool HasAvailableUpdate(

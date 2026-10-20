@@ -11,6 +11,12 @@ Run("comparaison de versions", () =>
     Require(UpdateService.IsNewer("0.10.2", "0.11.0"), "0.11.0 devrait être plus récent");
     Require(!UpdateService.IsNewer("0.11.0", "0.10.2"), "downgrade considéré comme update");
     Require(!UpdateService.IsNewer("0.11.0", "0.11.0"), "version égale considérée nouvelle");
+    Require(!UpdateService.IsNewer("0.11.4+65c0b97cd781", "0.11.4"),
+        "suffixe Git Overlay considéré comme une mise à jour");
+    Require(!UpdateService.IsNewer("0.2.1+65c0b97cd781", "0.2.1"),
+        "suffixe Git Beacon considéré comme une mise à jour");
+    Require(UpdateService.IsNewer("0.11.4+65c0b97cd781", "0.11.5"),
+        "vraie mise à niveau masquée par le suffixe Git");
 });
 Run("source HTTP refusée", () =>
 {
@@ -36,6 +42,45 @@ Run("canal Stable officiel intégré", () =>
         "URL Stable intégrée invalide");
     Require(LauncherSettings.StableManifestUrl.Contains("raidpilot-updates", StringComparison.Ordinal),
         "URL Stable ne vise pas le canal RaidPilot");
+});
+Run("état à jour ignore les suffixes Git", () =>
+{
+    var manifest = new UpdateManifest
+    {
+        SchemaVersion = 1,
+        Channel = "stable",
+        RaidPilot = new UpdateComponent
+        {
+            Version = "0.11.4",
+            Url = "https://example.com/overlay.zip",
+            Sha256 = new string('A', 64),
+        },
+        Beacon = new UpdateComponent
+        {
+            Version = "0.2.1",
+            Url = "https://example.com/beacon.zip",
+            Sha256 = new string('B', 64),
+        },
+        Launcher = new UpdateComponent
+        {
+            Version = "0.2.7",
+            Url = "https://example.com/launcher.zip",
+            Sha256 = new string('C', 64),
+        },
+    };
+    Require(!UpdateService.HasAvailableUpdate(
+            "0.11.4+65c0b97cd781",
+            "0.2.1+65c0b97cd781",
+            "0.2.7",
+            manifest),
+        "bouton de mise à jour resterait actif alors que tout est à jour");
+});
+Run("version affichée suit le binaire réel", () =>
+{
+    Require(UpdateService.NormalizeVersionForDisplay("0.2.7") == "0.2.7",
+        "version simple mal affichée");
+    Require(UpdateService.NormalizeVersionForDisplay("0.2.3+63309c9f") == "0.2.3",
+        "suffixe Git visible dans l'interface");
 });
 Run("détection automatique inclut le launcher", () =>
 {
@@ -194,10 +239,10 @@ Run("profil d'escouade launcher persistant", () =>
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("12/12 tests launcher réussis.");
+    Console.WriteLine("14/14 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/12 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/14 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
