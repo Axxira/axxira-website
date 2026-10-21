@@ -40,6 +40,7 @@ internal static class ScreenshotNameParserTests
         RouteGuidanceCalculatorTests.RunAll(failures);
         ExtractionAdvisorTests.RunAll(failures);
         TarkovDevExtractionProviderTests.RunAll(failures);
+        TarkovDevMineProviderTests.RunAll(failures);
         TarkovDevQuestProviderTests.RunAll(failures);
         TarkovDevJsonCacheTests.RunAll(failures);
         QuestAdvisorTests.RunAll(failures);
@@ -82,6 +83,7 @@ internal static class ScreenshotNameParserTests
             + RouteGuidanceCalculatorTests.TestCount
             + ExtractionAdvisorTests.TestCount
             + TarkovDevExtractionProviderTests.TestCount
+            + TarkovDevMineProviderTests.TestCount
             + TarkovDevQuestProviderTests.TestCount
             + TarkovDevJsonCacheTests.TestCount
             + QuestAdvisorTests.TestCount
@@ -297,3 +299,52 @@ internal static class ScreenshotNameParserTests
                 applicationLog,
                 "2026-10-17 12:00:00.000|application|scene preset path:maps/customs_preset.bundle\n");
             File.SetLastWriteTimeUtc(applicationLog, DateTime.UtcNow.AddMinutes(-1));
+
+            using (var watcher = new EftMapLogWatcher(
+                logsDirectory,
+                TimeSpan.FromMilliseconds(50),
+                watchFileSystemEvents: false))
+            {
+                watcher.MapDetected += (_, args) =>
+                {
+                    if (args.Map.NormalizedName == "woods")
+                    {
+                        Interlocked.Increment(ref woodsDetectionCount);
+                        woodsDetected.Set();
+                    }
+                };
+                Require(watcher.Start(), "le watcher de test n'a pas démarré");
+
+                var nextSession = Path.Combine(logsDirectory, "log_2026.10.17_12-05-00");
+                Directory.CreateDirectory(nextSession);
+                File.WriteAllText(
+                    Path.Combine(nextSession, "2026.10.17_12-05-00 application_000.log"),
+                    "2026-10-17 12:05:00.000|application|scene preset path:maps/woods_preset.bundle\n");
+
+                Require(woodsDetected.Wait(TimeSpan.FromSeconds(2)),
+                    "la réconciliation n'a pas rattrapé la nouvelle session Woods");
+                Thread.Sleep(150);
+                Require(Volatile.Read(ref woodsDetectionCount) == 1,
+                    "la nouvelle session Woods a été publiée plusieurs fois");
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static void ReconcilesMissedAppend()
+    {
+        var root = CreateTemporaryInstall(out var logsDirectory, out var applicationLog);
+        using var woodsDetected = new ManualResetEventSlim();
+        var woodsDetectionCount = 0;
+        try
+        {
+            File.WriteAllText(
+                applicationLog,
+                "2026-10-17 12:00:00.000|application|scene preset path:maps/laboratory_preset.bundle\n");
+
+            using (var watcher = new EftMapLogWatcher(
+                logsDirectory,
+                TimeSpan.FromMilliseconds(50),

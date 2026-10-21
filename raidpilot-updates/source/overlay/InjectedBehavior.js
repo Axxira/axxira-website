@@ -357,6 +357,10 @@
         const z = payload?.z;
         const yaw = payload?.yaw;
         const uncertainty = payload?.uncertainty;
+        const mineAlert = payload?.mineAlert === true;
+        const mineDistance = Number.isFinite(payload?.mineDistance)
+            ? Math.max(0, payload.mineDistance)
+            : null;
         if (generation === null
             || ![x, y, z, yaw, uncertainty].every((value) => Number.isFinite(value))
             || Math.abs(x) > localPlayerCoordinateLimit
@@ -380,6 +384,8 @@
             yaw: ((yaw % 360) + 360) % 360,
             uncertainty,
             snap: payload?.snap === true,
+            mineAlert,
+            mineDistance,
         };
     };
 
@@ -409,6 +415,147 @@
         marker.append(pulse, core, heading);
         container.appendChild(marker);
         return marker;
+    };
+
+    const compassCardinals = new Map([
+        [0, "N"],
+        [45, "NE"],
+        [90, "E"],
+        [135, "SE"],
+        [180, "S"],
+        [225, "SO"],
+        [270, "O"],
+        [315, "NO"],
+    ]);
+    const compassTickCount = 25;
+    const compassTickStepDegrees = 5;
+    const compassPixelsPerDegree = 4.1;
+
+    const ensureCompass = (container) => {
+        let compass = document.getElementById("raidpilot-compass");
+        if (!compass || compass.parentElement !== container) {
+            compass?.remove();
+            compass = document.createElement("div");
+            compass.id = "raidpilot-compass";
+            compass.className = "raidpilot-compass";
+            compass.setAttribute("role", "presentation");
+            compass.setAttribute("aria-hidden", "true");
+
+            const viewport = document.createElement("div");
+            viewport.className = "raidpilot-compass-viewport";
+            const track = document.createElement("div");
+            track.className = "raidpilot-compass-track";
+            for (let index = 0; index < compassTickCount; index++) {
+                const tick = document.createElement("div");
+                tick.className = "raidpilot-compass-tick";
+                const label = document.createElement("span");
+                label.className = "raidpilot-compass-label";
+                tick.appendChild(label);
+                track.appendChild(tick);
+            }
+            viewport.appendChild(track);
+
+            const pointer = document.createElement("div");
+            pointer.className = "raidpilot-compass-pointer";
+            const heading = document.createElement("output");
+            heading.className = "raidpilot-compass-heading";
+            heading.textContent = "000°";
+
+            compass.append(viewport, pointer, heading);
+            container.appendChild(compass);
+        }
+        return compass;
+    };
+
+    const clearCompass = () => {
+        document.getElementById("raidpilot-compass")?.remove();
+    };
+
+    const normalizeCompassDegrees = (value) => {
+        const normalized = ((value % 360) + 360) % 360;
+        return normalized >= 359.95 ? 0 : normalized;
+    };
+
+    const updateCompass = (container, pose) => {
+        const yaw = normalizeCompassDegrees(pose?.yaw ?? 0);
+        const compass = ensureCompass(container);
+        const track = compass.querySelector(".raidpilot-compass-track");
+        const heading = compass.querySelector(".raidpilot-compass-heading");
+        if (!track || !heading) return;
+
+        const centerIndex = Math.floor(compassTickCount / 2);
+        const nearestTick = Math.round(yaw / compassTickStepDegrees)
+            * compassTickStepDegrees;
+        const fractionalOffset = nearestTick - yaw;
+        const ticks = track.children;
+
+        for (let index = 0; index < ticks.length; index++) {
+            const relativeIndex = index - centerIndex;
+            const absolute = nearestTick
+                + (relativeIndex * compassTickStepDegrees);
+            const normalized = normalizeCompassDegrees(absolute);
+            const tick = ticks[index];
+            const label = tick.querySelector(".raidpilot-compass-label");
+            const offsetDegrees = fractionalOffset
+                + (relativeIndex * compassTickStepDegrees);
+            tick.style.left = "calc(50% + "
+                + (Math.round(offsetDegrees * compassPixelsPerDegree * 10) / 10)
+                + "px)";
+
+            const rounded = Math.round(normalized);
+            const cardinal = compassCardinals.get(rounded);
+            const major = rounded % 15 === 0;
+            tick.classList.toggle("raidpilot-compass-tick-major", major);
+            tick.classList.toggle(
+                "raidpilot-compass-tick-cardinal",
+                Boolean(cardinal));
+            if (label) {
+                label.textContent = cardinal || (major ? String(rounded) : "");
+            }
+        }
+
+        heading.textContent =
+            String(Math.round(yaw) % 360).padStart(3, "0") + "°";
+        compass.dataset.heading = yaw.toFixed(1);
+    };
+
+    const ensureMineWarning = (container) => {
+        let warning = document.getElementById("raidpilot-mine-warning");
+        if (!warning || warning.parentElement !== container) {
+            warning?.remove();
+            warning = document.createElement("div");
+            warning.id = "raidpilot-mine-warning";
+            warning.className = "raidpilot-mine-warning";
+            warning.hidden = true;
+            warning.setAttribute("role", "presentation");
+            warning.setAttribute("aria-hidden", "true");
+            container.appendChild(warning);
+        }
+        return warning;
+    };
+
+    const clearMineWarning = () => {
+        const warning = document.getElementById("raidpilot-mine-warning");
+        if (warning) {
+            warning.hidden = true;
+            warning.classList.remove("raidpilot-mine-warning-critical");
+            warning.removeAttribute("data-distance");
+        }
+    };
+
+    const updateMineWarning = (container, pose) => {
+        const warning = ensureMineWarning(container);
+        const critical = pose?.mineAlert === true;
+        warning.hidden = !critical;
+        warning.classList.toggle(
+            "raidpilot-mine-warning-critical",
+            critical);
+        if (Number.isFinite(pose?.mineDistance)) {
+            warning.dataset.distance =
+                Math.max(0, pose.mineDistance).toFixed(1);
+        } else {
+            warning.removeAttribute("data-distance");
+        }
     };
 
     const cancelLocalPlayerRetry = () => {
@@ -500,6 +647,8 @@
     window.__raidPilotApplyLocalPose = () => {
         const pose = localPlayerPoseState;
         if (!pose) {
+            clearMineWarning();
+            clearCompass();
             cancelLocalPlayerRetry();
             detachLocalPlayerBinding();
             removeOrphanedLocalPlayerMarkers();
@@ -508,6 +657,10 @@
 
         const mapInstance = findLeafletMapInstance();
         const container = document.getElementById("leaflet-map");
+        if (container) {
+            updateMineWarning(container, pose);
+            updateCompass(container, pose);
+        }
         if (!mapInstance
             || !container
             || typeof mapInstance.latLngToContainerPoint !== "function") {
@@ -654,6 +807,8 @@
         }
         localPlayerGeneration = requestedGeneration;
         localPlayerPoseState = null;
+        clearMineWarning();
+        clearCompass();
         localPlayerTrail.length = 0;
         renderTacticalTrails();
         cancelLocalPlayerRetry();

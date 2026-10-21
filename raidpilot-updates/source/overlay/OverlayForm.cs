@@ -1479,6 +1479,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         _visualRelocalization.ObserveTracking(pose, now);
+        UpdateMineProximity(pose);
         _realtimePoseHistory.Add(now, pose);
         ObserveLearnedRoutePose(
             pose,
@@ -3281,6 +3282,7 @@ internal sealed partial class OverlayForm : Form
                 effectiveObservation.YawDegrees,
                 0.0,
                 0.0);
+            UpdateMineProximity(learnedPose);
             var learnedSource = !_liveTrackingEnabled || estimatedPoseAtCapture is null
                 ? LearnedPoseSource.ExactAnchor
                 : LearnedPoseSource.LiveEstimate;
@@ -5244,6 +5246,7 @@ internal sealed partial class OverlayForm : Form
         _raidQuestGameMode = null;
         if (clearObservation)
         {
+            ResetMineAlertForRaid();
             _raidStartObservationBuffer.Clear();
             _learnedRouteGraph.BreakContinuity();
             _lastLearnedRouteObservationAt = 0;

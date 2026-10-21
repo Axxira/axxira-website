@@ -11,7 +11,9 @@ internal sealed partial class OverlayForm
         string Map,
         int RaidGeneration,
         double UncertaintyMeters,
-        bool Snap)? _pendingLocalPlayerMarker;
+        bool Snap,
+        bool MineAlert,
+        double MineDistanceMeters)? _pendingLocalPlayerMarker;
 
     internal static bool ShouldPublishLocalPlayerMarker(
         bool webReady,
@@ -34,14 +36,18 @@ internal sealed partial class OverlayForm
             _currentMap,
             _raidGeneration,
             uncertaintyMeters,
-            snap));
+            snap,
+            _mineAlertActive,
+            _mineAlertDistanceMeters));
 
     private async Task UpdateLocalPlayerMarkerAsync((
         ScreenshotObservation Observation,
         string Map,
         int RaidGeneration,
         double UncertaintyMeters,
-        bool Snap) update)
+        bool Snap,
+        bool MineAlert,
+        double MineDistanceMeters) update)
     {
         var core = _webView.CoreWebView2;
         if (!ShouldPublishLocalPlayerMarker(
@@ -67,6 +73,10 @@ internal sealed partial class OverlayForm
             var uncertainty = double.IsFinite(update.UncertaintyMeters)
                 ? Math.Clamp(update.UncertaintyMeters, 0.0, 1000.0)
                 : 1000.0;
+            double? mineDistance = double.IsFinite(
+                    update.MineDistanceMeters)
+                ? Math.Clamp(update.MineDistanceMeters, 0.0, 10_000.0)
+                : null;
             var payload = JsonSerializer.Serialize(new
             {
                 generation = update.RaidGeneration,
@@ -77,6 +87,8 @@ internal sealed partial class OverlayForm
                 yaw = update.Observation.YawDegrees,
                 uncertainty,
                 snap = update.Snap,
+                mineAlert = update.MineAlert,
+                mineDistance,
             });
             await core!.ExecuteScriptAsync(
                 $"window.__raidPilotSetLocalPose?.({payload}); void 0;");

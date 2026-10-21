@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MapQualityTests
 {
-    internal const int TestCount = 11;
+    internal const int TestCount = 13;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -16,6 +16,8 @@ internal static class MapQualityTests
         Run("map quality: décluttering adaptatif", UsesAdaptiveLabelDecluttering, failures);
         Run("map quality: teammates hors écran", UsesOffscreenSquadIndicators, failures);
         Run("map quality: zoom tactique natif", UsesNativeMapZoomControls, failures);
+        Run("map quality: alerte mine rouge critique", UsesCriticalMineWarning, failures);
+        Run("map quality: boussole horizontale type PUBG", UsesHorizontalCompass, failures);
         Run("map quality: étage actif accentué", EmphasizesConfirmedFloor, failures);
     }
 
@@ -145,6 +147,35 @@ internal static class MapQualityTests
             && styles.Contains("html.raidpilot-interactive #leaflet-map > #raidpilot-zoom-controls", StringComparison.Ordinal)
             && styles.Contains("#raidpilot-zoom-controls button", StringComparison.Ordinal),
             "le zoom RaidPilot n'est pas relié à Leaflet ou au mode interactif");
+    }
+
+    private static void UsesCriticalMineWarning()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("ensureMineWarning", StringComparison.Ordinal)
+            && behavior.Contains("mineAlert", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-mine-warning-critical", StringComparison.Ordinal)
+            && behavior.Contains("clearMineWarning", StringComparison.Ordinal)
+            && styles.Contains("#leaflet-map > #raidpilot-mine-warning", StringComparison.Ordinal)
+            && styles.Contains("@keyframes raidpilot-mine-warning-flash", StringComparison.Ordinal)
+            && styles.Contains("rgb(255 28 28 / 92%)", StringComparison.Ordinal),
+            "l'alerte mine rouge autour de la map est absente");
+    }
+
+    private static void UsesHorizontalCompass()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("ensureCompass", StringComparison.Ordinal)
+            && behavior.Contains("compassCardinals", StringComparison.Ordinal)
+            && behavior.Contains("compassTickCount = 25", StringComparison.Ordinal)
+            && behavior.Contains("updateCompass(container, pose)", StringComparison.Ordinal)
+            && behavior.Contains("padStart(3, \"0\") + \"°\"", StringComparison.Ordinal)
+            && styles.Contains("#leaflet-map > #raidpilot-compass", StringComparison.Ordinal)
+            && styles.Contains(".raidpilot-compass-pointer", StringComparison.Ordinal)
+            && styles.Contains("transform: translateX(-50%)", StringComparison.Ordinal),
+            "la boussole horizontale centrée n'est pas complète");
     }
 
     private static void EmphasizesConfirmedFloor()
