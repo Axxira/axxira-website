@@ -224,13 +224,25 @@
     };
 
     // Leaflet is bundled as a module by tarkov.dev, so it is not reliably
-    // exposed as window.L. React keeps the live map in a useRef; locate that
-    // exact instance from the map element's Fiber chain without changing React.
+    // exposed as window.L. Resolve it from React only when the map/container
+    // actually changes; the hot 10 Hz path reuses the validated live instance.
+    let cachedLeafletMapInstance = null;
+    let cachedLeafletContainer = null;
     const findLeafletMapInstance = () => {
         const container = document.getElementById("leaflet-map");
         if (!container) {
+            cachedLeafletMapInstance = null;
+            cachedLeafletContainer = null;
             return null;
         }
+
+        if (cachedLeafletContainer === container
+            && isLeafletMapForContainer(cachedLeafletMapInstance, container)) {
+            return cachedLeafletMapInstance;
+        }
+
+        cachedLeafletMapInstance = null;
+        cachedLeafletContainer = null;
 
         const fiberKey = Object.keys(container).find((key) => key.startsWith("__reactFiber$"));
         if (!fiberKey) {
@@ -258,6 +270,8 @@
                     ? state.current
                     : state;
                 if (isLeafletMapForContainer(candidate, container)) {
+                    cachedLeafletMapInstance = candidate;
+                    cachedLeafletContainer = container;
                     return candidate;
                 }
                 hook = hook.next;
@@ -527,11 +541,42 @@
         compass.dataset.heading = yaw.toFixed(1);
     };
 
+    const normalizeHazardOverlayZones = (zones) => (
+        Array.isArray(zones)
+            ? zones.map((zone) => ({
+                id: String(zone?.id ?? ""),
+                x: Number(zone?.x),
+                z: Number(zone?.z),
+                outline: Array.isArray(zone?.outline)
+                    ? zone.outline
+                        .map((point) => ({
+                            x: Number(point?.x),
+                            z: Number(point?.z),
+                        }))
+                        .filter((point) =>
+                            Number.isFinite(point.x)
+                            && Number.isFinite(point.z))
+                    : [],
+            }))
+            : []
+    );
+
+    let tacticalHazardRenderFrame = 0;
+    const scheduleTacticalHazardRender = () => {
+        if (tacticalHazardRenderFrame) return;
+        tacticalHazardRenderFrame = window.requestAnimationFrame(() => {
+            tacticalHazardRenderFrame = 0;
+            renderMineHazards();
+            renderBoundaryHazards();
+        });
+    };
+
     let mineHazardOverlayState = {
         generation: -1,
         map: "",
         zones: [],
     };
+    let mineHazardElements = [];
     let mineHazardRenderRetry = 0;
 
     const ensureMineHazardOverlay = (container) => {
@@ -558,6 +603,19 @@
         }, 120);
     };
 
+    const rebuildMineHazardElements = (overlay) => {
+        overlay.replaceChildren();
+        mineHazardElements = mineHazardOverlayState.zones.map((zone) => {
+            const element = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                zone.outline.length >= 3 ? "polygon" : "circle");
+            element.classList.add("raidpilot-minefield-zone");
+            element.dataset.mineId = zone.id;
+            overlay.appendChild(element);
+            return element;
+        });
+    };
+
     const renderMineHazards = () => {
         const mapInstance = findLeafletMapInstance();
         const container = document.getElementById("leaflet-map");
@@ -572,7 +630,6 @@
         overlay.classList.toggle(
             "raidpilot-minefield-overlay-critical",
             localPlayerPoseState?.mineAlert === true);
-        overlay.replaceChildren();
         overlay.setAttribute(
             "viewBox",
             "0 0 "
@@ -580,23 +637,20 @@
                 + " "
                 + Math.max(1, container.clientHeight));
 
-        for (const zone of mineHazardOverlayState.zones) {
-            const outline = Array.isArray(zone?.outline)
-                ? zone.outline
-                    .map((point) => ({
-                        x: Number(point?.x),
-                        z: Number(point?.z),
-                    }))
-                    .filter((point) =>
-                        Number.isFinite(point.x)
-                        && Number.isFinite(point.z))
-                : [];
+        if (mineHazardElements.length !== mineHazardOverlayState.zones.length
+            || mineHazardElements.some((element) =>
+                element.parentElement !== overlay)) {
+            rebuildMineHazardElements(overlay);
+        }
 
-            if (outline.length >= 3) {
-                const polygon = document.createElementNS(
-                    "http://www.w3.org/2000/svg",
-                    "polygon");
-                const points = outline.map((point) => {
+        for (let index = 0;
+             index < mineHazardOverlayState.zones.length;
+             index += 1) {
+            const zone = mineHazardOverlayState.zones[index];
+            const element = mineHazardElements[index];
+
+            if (zone.outline.length >= 3) {
+                const points = zone.outline.map((point) => {
                     const projected = mapInstance.latLngToContainerPoint(
                         [point.z, point.x]);
                     return Number(projected?.x).toFixed(1)
@@ -604,39 +658,35 @@
                         + Number(projected?.y).toFixed(1);
                 });
                 if (points.some((point) => point.includes("NaN"))) {
+                    element.setAttribute("visibility", "hidden");
                     continue;
                 }
-                polygon.setAttribute("points", points.join(" "));
-                polygon.classList.add("raidpilot-minefield-zone");
-                polygon.dataset.mineId = String(zone?.id ?? "");
-                overlay.appendChild(polygon);
+                element.removeAttribute("visibility");
+                element.setAttribute("points", points.join(" "));
                 continue;
             }
 
-            const x = Number(zone?.x);
-            const z = Number(zone?.z);
-            if (!Number.isFinite(x) || !Number.isFinite(z)) {
+            if (!Number.isFinite(zone.x) || !Number.isFinite(zone.z)) {
+                element.setAttribute("visibility", "hidden");
                 continue;
             }
-            const center = mapInstance.latLngToContainerPoint([z, x]);
-            const edge = mapInstance.latLngToContainerPoint([z, x + 10]);
+            const center = mapInstance.latLngToContainerPoint(
+                [zone.z, zone.x]);
+            const edge = mapInstance.latLngToContainerPoint(
+                [zone.z, zone.x + 10]);
             const radius = Math.max(
                 6,
                 Math.hypot(
                     Number(edge?.x) - Number(center?.x),
                     Number(edge?.y) - Number(center?.y)));
             if (![center?.x, center?.y, radius].every(Number.isFinite)) {
+                element.setAttribute("visibility", "hidden");
                 continue;
             }
-            const circle = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "circle");
-            circle.setAttribute("cx", Number(center.x).toFixed(1));
-            circle.setAttribute("cy", Number(center.y).toFixed(1));
-            circle.setAttribute("r", radius.toFixed(1));
-            circle.classList.add("raidpilot-minefield-zone");
-            circle.dataset.mineId = String(zone?.id ?? "");
-            overlay.appendChild(circle);
+            element.removeAttribute("visibility");
+            element.setAttribute("cx", Number(center.x).toFixed(1));
+            element.setAttribute("cy", Number(center.y).toFixed(1));
+            element.setAttribute("r", radius.toFixed(1));
         }
         return true;
     };
@@ -644,7 +694,7 @@
     window.__raidPilotSetMineHazards = (payload) => {
         const generation = Number(payload?.generation);
         const map = String(payload?.map ?? "").trim();
-        const zones = Array.isArray(payload?.zones) ? payload.zones : [];
+        const zones = normalizeHazardOverlayZones(payload?.zones);
         if (!Number.isInteger(generation) || !map) return false;
 
         mineHazardOverlayState = {
@@ -652,7 +702,8 @@
             map,
             zones,
         };
-        renderMineHazards();
+        mineHazardElements = [];
+        scheduleTacticalHazardRender();
         return true;
     };
 
@@ -666,6 +717,7 @@
             map: "",
             zones: [],
         };
+        mineHazardElements = [];
         document.getElementById("raidpilot-minefield-overlay")?.remove();
         return true;
     };
@@ -675,6 +727,7 @@
         map: "",
         zones: [],
     };
+    let boundaryHazardElements = [];
 
     const ensureBoundaryOverlay = (container) => {
         let overlay = document.getElementById("raidpilot-boundary-overlay");
@@ -690,6 +743,19 @@
             container.appendChild(overlay);
         }
         return overlay;
+    };
+
+    const rebuildBoundaryHazardElements = (overlay) => {
+        overlay.replaceChildren();
+        boundaryHazardElements = boundaryHazardOverlayState.zones.map((zone) => {
+            const polygon = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "polygon");
+            polygon.classList.add("raidpilot-boundary-zone");
+            polygon.dataset.boundaryId = zone.id;
+            overlay.appendChild(polygon);
+            return polygon;
+        });
     };
 
     const renderBoundaryHazards = () => {
@@ -708,7 +774,6 @@
         overlay.classList.toggle(
             "raidpilot-boundary-overlay-critical",
             localPlayerPoseState?.boundaryCritical === true);
-        overlay.replaceChildren();
         overlay.setAttribute(
             "viewBox",
             "0 0 "
@@ -716,36 +781,36 @@
                 + " "
                 + Math.max(1, container.clientHeight));
 
-        for (const zone of boundaryHazardOverlayState.zones) {
-            const outline = Array.isArray(zone?.outline)
-                ? zone.outline
-                    .map((point) => ({
-                        x: Number(point?.x),
-                        z: Number(point?.z),
-                    }))
-                    .filter((point) =>
-                        Number.isFinite(point.x)
-                        && Number.isFinite(point.z))
-                : [];
+        if (boundaryHazardElements.length !== boundaryHazardOverlayState.zones.length
+            || boundaryHazardElements.some((element) =>
+                element.parentElement !== overlay)) {
+            rebuildBoundaryHazardElements(overlay);
+        }
 
-            if (outline.length < 3) continue;
+        for (let index = 0;
+             index < boundaryHazardOverlayState.zones.length;
+             index += 1) {
+            const zone = boundaryHazardOverlayState.zones[index];
+            const polygon = boundaryHazardElements[index];
+            if (zone.outline.length < 3) {
+                polygon.setAttribute("visibility", "hidden");
+                continue;
+            }
 
-            const polygon = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "polygon");
-            const points = outline.map((point) => {
+            const points = zone.outline.map((point) => {
                 const projected = mapInstance.latLngToContainerPoint(
                     [point.z, point.x]);
                 return Number(projected?.x).toFixed(1)
                     + ","
                     + Number(projected?.y).toFixed(1);
             });
-            if (points.some((point) => point.includes("NaN"))) continue;
+            if (points.some((point) => point.includes("NaN"))) {
+                polygon.setAttribute("visibility", "hidden");
+                continue;
+            }
 
+            polygon.removeAttribute("visibility");
             polygon.setAttribute("points", points.join(" "));
-            polygon.classList.add("raidpilot-boundary-zone");
-            polygon.dataset.boundaryId = String(zone?.id ?? "");
-            overlay.appendChild(polygon);
         }
         return true;
     };
@@ -753,7 +818,7 @@
     window.__raidPilotSetBoundaryHazards = (payload) => {
         const generation = Number(payload?.generation);
         const map = String(payload?.map ?? "").trim();
-        const zones = Array.isArray(payload?.zones) ? payload.zones : [];
+        const zones = normalizeHazardOverlayZones(payload?.zones);
         if (!Number.isInteger(generation) || !map) return false;
 
         boundaryHazardOverlayState = {
@@ -761,7 +826,8 @@
             map,
             zones,
         };
-        renderBoundaryHazards();
+        boundaryHazardElements = [];
+        scheduleTacticalHazardRender();
         return true;
     };
 
@@ -775,6 +841,7 @@
             map: "",
             zones: [],
         };
+        boundaryHazardElements = [];
         document.getElementById("raidpilot-boundary-overlay")?.remove();
         document.getElementById("raidpilot-boundary-warning")?.remove();
         return true;
@@ -818,7 +885,7 @@
                 : "ATTENTION — LIMITE DE ZONE"
                     + (distance === null ? "" : " · " + distance.toFixed(0) + " m");
         }
-        renderBoundaryHazards();
+        scheduleTacticalHazardRender();
     };
 
     const clearBoundaryWarning = () => {
@@ -945,7 +1012,10 @@
             container,
             marker,
             frame: 0,
-            schedule: scheduleLocalPlayerRender,
+            schedule: () => {
+                scheduleLocalPlayerRender();
+                scheduleTacticalHazardRender();
+            },
             resizeObserver: null,
             windowResize: false,
             lastPoint: null,
@@ -964,6 +1034,7 @@
             window.addEventListener("resize", binding.schedule, { passive: true });
             binding.windowResize = true;
         }
+        syncStablePlayerMarker();
         return binding;
     };
 
@@ -995,8 +1066,7 @@
             return false;
         }
 
-        renderMineHazards();
-        renderBoundaryHazards();
+        scheduleTacticalHazardRender();
 
         let binding = localPlayerBinding;
         if (!binding
@@ -1096,16 +1166,8 @@
             });
         }
 
-        // The local pose is authoritative. Remote tarkov.dev marker nodes may
-        // still exist when sharing is enabled, but they must never create a
-        // second visible player marker.
-        document.querySelectorAll(
-            "#leaflet-map .leaflet-marker-pane > .marker:not(.raidpilot-player-marker)")
-            .forEach((marker) => marker.classList.add("raidpilot-player-marker-source"));
-        document.querySelector(
-            "#leaflet-map .leaflet-marker-pane > .raidpilot-player-marker")?.remove();
-
-        removeOrphanedLocalPlayerMarkers(binding.marker);
+        // Native tarkov.dev marker churn is handled by the existing
+        // MutationObserver. Do not rescan the marker pane on every 10 Hz pose.
         cancelLocalPlayerRetry();
         return true;
     };

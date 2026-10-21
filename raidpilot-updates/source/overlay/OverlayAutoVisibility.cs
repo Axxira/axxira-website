@@ -6,8 +6,11 @@ internal sealed partial class OverlayForm
 {
     private const double LootHideDebounceSeconds = 0.10;
     private const double LootRestoreDebounceSeconds = 0.16;
+    private const double CompassTargetAreaRefreshSeconds = 1.0;
 
     private readonly CompassOverlayForm _compassOverlay = new();
+    private Rectangle _cachedCompassTargetArea;
+    private long _cachedCompassTargetAreaAt;
     private bool _raidActive;
     private bool _lootUiVisible;
     private bool _manualOverlayHidden;
@@ -107,9 +110,20 @@ internal sealed partial class OverlayForm
     private void UpdateCompassHeading(
         double yawDegrees)
     {
+        var now = Stopwatch.GetTimestamp();
+        if (_cachedCompassTargetArea.Width <= 0
+            || _cachedCompassTargetArea.Height <= 0
+            || SecondsSince(
+                _cachedCompassTargetAreaAt,
+                now) >= CompassTargetAreaRefreshSeconds)
+        {
+            _cachedCompassTargetArea = GetTargetWorkingArea();
+            _cachedCompassTargetAreaAt = now;
+        }
+
         _compassOverlay.UpdateHeading(
             yawDegrees,
-            GetTargetWorkingArea());
+            _cachedCompassTargetArea);
         _compassOverlay.SetCompassVisible(
             !_manualOverlayHidden
             && _raidActive

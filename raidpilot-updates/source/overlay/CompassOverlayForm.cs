@@ -14,6 +14,7 @@ internal sealed class CompassOverlayForm : Form
     internal const int TopMarginDip = 10;
     internal const int DegreesVisibleEachSide = 60;
     internal const int TickStepDegrees = 5;
+    internal const double MinimumHeadingRepaintDegrees = 0.08;
 
     private double _yawDegrees;
     private Rectangle _targetArea;
@@ -57,11 +58,25 @@ internal sealed class CompassOverlayForm : Form
             return;
         }
 
-        _yawDegrees = Normalize360(yawDegrees);
+        var normalizedYaw = Normalize360(yawDegrees);
+        var targetChanged = targetArea != _targetArea;
+        var headingChanged = !_hasHeading
+            || AngularDistance(_yawDegrees, normalizedYaw)
+                >= MinimumHeadingRepaintDegrees;
+
+        _yawDegrees = normalizedYaw;
         _targetArea = targetArea;
         _hasHeading = true;
-        PositionForTarget();
-        Invalidate();
+
+        if (targetChanged)
+        {
+            PositionForTarget();
+        }
+
+        if (headingChanged || targetChanged)
+        {
+            Invalidate();
+        }
     }
 
     internal void SetCompassVisible(bool visible)
@@ -83,12 +98,14 @@ internal sealed class CompassOverlayForm : Form
             return;
         }
 
-        PositionForTarget();
-        if (!Visible)
+        if (Visible)
         {
-            Show();
-            NativeMethods.ShowWindow(Handle, NativeMethods.SwShowNoActivate);
+            return;
         }
+
+        PositionForTarget();
+        Show();
+        NativeMethods.ShowWindow(Handle, NativeMethods.SwShowNoActivate);
         NativeMethods.SetWindowPos(
             Handle,
             NativeMethods.HwndTopMost,
@@ -285,5 +302,11 @@ internal sealed class CompassOverlayForm : Form
             result += 360.0;
         }
         return result >= 359.999999 ? 0.0 : result;
+    }
+
+    internal static double AngularDistance(double a, double b)
+    {
+        var difference = Math.Abs(Normalize360(a) - Normalize360(b));
+        return Math.Min(difference, 360.0 - difference);
     }
 }

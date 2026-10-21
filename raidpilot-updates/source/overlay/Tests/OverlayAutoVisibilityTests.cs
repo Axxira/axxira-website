@@ -76,7 +76,9 @@ internal static class OverlayAutoVisibilityTests
             && CompassOverlayForm.CardinalLabel(90) == "E"
             && CompassOverlayForm.CardinalLabel(180) == "S"
             && CompassOverlayForm.CardinalLabel(270) == "O"
-            && Math.Abs(CompassOverlayForm.Normalize360(-10) - 350) < 0.0001,
+            && Math.Abs(CompassOverlayForm.Normalize360(-10) - 350) < 0.0001
+            && Math.Abs(CompassOverlayForm.AngularDistance(359, 1) - 2) < 0.0001
+            && CompassOverlayForm.MinimumHeadingRepaintDegrees > 0,
             "les cardinaux ou la normalisation de cap sont incorrects");
     }
 
