@@ -7,10 +7,14 @@ internal static class OverlayPreferencesStore
 {
     private const string VisibleInCapturesProperty = "visibleInCaptures";
     private const string MapScalePercentProperty = "mapScalePercent";
+    private const string MapCornerProperty = "mapCorner";
+    private const string FreeLayoutProperty = "freeLayout";
 
     private sealed record Snapshot(
         bool VisibleInCaptures,
-        int? MapScalePercent);
+        int? MapScalePercent,
+        OverlayCorner MapCorner,
+        OverlayFreeLayout? FreeLayout);
 
     internal static string DefaultPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -23,6 +27,12 @@ internal static class OverlayPreferencesStore
     internal static int? LoadMapScalePercent(string? path = null) =>
         ReadSnapshot(path).MapScalePercent;
 
+    internal static OverlayCorner LoadMapCorner(string? path = null) =>
+        ReadSnapshot(path).MapCorner;
+
+    internal static OverlayFreeLayout? LoadFreeLayout(string? path = null) =>
+        ReadSnapshot(path).FreeLayout;
+
     internal static bool TrySaveVisibleInCaptures(
         bool visibleInCaptures,
         string? path = null)
@@ -31,7 +41,9 @@ internal static class OverlayPreferencesStore
         return TrySaveSnapshot(
             new Snapshot(
                 visibleInCaptures,
-                current.MapScalePercent),
+                current.MapScalePercent,
+                current.MapCorner,
+                current.FreeLayout),
             path);
     }
 
@@ -50,7 +62,47 @@ internal static class OverlayPreferencesStore
         return TrySaveSnapshot(
             new Snapshot(
                 current.VisibleInCaptures,
-                mapScalePercent),
+                mapScalePercent,
+                current.MapCorner,
+                current.FreeLayout),
+            path);
+    }
+
+    internal static bool TrySaveMapCorner(
+        OverlayCorner mapCorner,
+        string? path = null)
+    {
+        if (!Enum.IsDefined(mapCorner))
+        {
+            return false;
+        }
+
+        var current = ReadSnapshot(path);
+        return TrySaveSnapshot(
+            new Snapshot(
+                current.VisibleInCaptures,
+                current.MapScalePercent,
+                mapCorner,
+                null),
+            path);
+    }
+
+    internal static bool TrySaveFreeLayout(
+        OverlayFreeLayout? freeLayout,
+        string? path = null)
+    {
+        if (freeLayout is { } layout && !IsValidFreeLayout(layout))
+        {
+            return false;
+        }
+
+        var current = ReadSnapshot(path);
+        return TrySaveSnapshot(
+            new Snapshot(
+                current.VisibleInCaptures,
+                current.MapScalePercent,
+                current.MapCorner,
+                freeLayout),
             path);
     }
 
@@ -61,7 +113,7 @@ internal static class OverlayPreferencesStore
             var settingsPath = Path.GetFullPath(path ?? DefaultPath);
             if (!File.Exists(settingsPath))
             {
-                return new Snapshot(true, null);
+                return new Snapshot(true, null, OverlayCorner.TopRight, null);
             }
 
             using var stream = new FileStream(
@@ -72,7 +124,7 @@ internal static class OverlayPreferencesStore
             using var document = JsonDocument.Parse(stream);
             if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
-                return new Snapshot(true, null);
+                return new Snapshot(true, null, OverlayCorner.TopRight, null);
             }
 
             var visible = true;
@@ -100,13 +152,48 @@ internal static class OverlayPreferencesStore
                 mapScalePercent = rawScale;
             }
 
-            return new Snapshot(visible, mapScalePercent);
+            var mapCorner = OverlayCorner.TopRight;
+            if (document.RootElement.TryGetProperty(
+                    MapCornerProperty,
+                    out var cornerProperty)
+                && cornerProperty.ValueKind == JsonValueKind.String
+                && Enum.TryParse<OverlayCorner>(
+                    cornerProperty.GetString(),
+                    ignoreCase: true,
+                    out var parsedCorner)
+                && Enum.IsDefined(parsedCorner))
+            {
+                mapCorner = parsedCorner;
+            }
+
+            OverlayFreeLayout? freeLayout = null;
+            if (document.RootElement.TryGetProperty(
+                    FreeLayoutProperty,
+                    out var freeLayoutProperty)
+                && freeLayoutProperty.ValueKind == JsonValueKind.Object
+                && TryReadFiniteDouble(freeLayoutProperty, "leftFraction", out var leftFraction)
+                && TryReadFiniteDouble(freeLayoutProperty, "topFraction", out var topFraction)
+                && TryReadFiniteDouble(freeLayoutProperty, "widthFraction", out var widthFraction)
+                && TryReadFiniteDouble(freeLayoutProperty, "heightFraction", out var heightFraction))
+            {
+                var candidate = new OverlayFreeLayout(
+                    leftFraction,
+                    topFraction,
+                    widthFraction,
+                    heightFraction);
+                if (IsValidFreeLayout(candidate))
+                {
+                    freeLayout = candidate;
+                }
+            }
+
+            return new Snapshot(visible, mapScalePercent, mapCorner, freeLayout);
         }
         catch (Exception exception) when (IsExpectedFileError(exception))
         {
             // A missing, corrupt, or inaccessible preference must never stop
             // the overlay from starting.
-            return new Snapshot(true, null);
+            return new Snapshot(true, null, OverlayCorner.TopRight, null);
         }
     }
 
@@ -144,6 +231,16 @@ internal static class OverlayPreferencesStore
                 {
                     writer.WriteNumber(MapScalePercentProperty, scale);
                 }
+                writer.WriteString(MapCornerProperty, snapshot.MapCorner.ToString());
+                if (snapshot.FreeLayout is { } freeLayout)
+                {
+                    writer.WriteStartObject(FreeLayoutProperty);
+                    writer.WriteNumber("leftFraction", freeLayout.LeftFraction);
+                    writer.WriteNumber("topFraction", freeLayout.TopFraction);
+                    writer.WriteNumber("widthFraction", freeLayout.WidthFraction);
+                    writer.WriteNumber("heightFraction", freeLayout.HeightFraction);
+                    writer.WriteEndObject();
+                }
                 writer.WriteEndObject();
                 writer.Flush();
                 stream.Flush(flushToDisk: true);
@@ -172,6 +269,28 @@ internal static class OverlayPreferencesStore
             }
         }
     }
+
+    private static bool TryReadFiniteDouble(
+        JsonElement parent,
+        string propertyName,
+        out double value)
+    {
+        value = 0;
+        return parent.TryGetProperty(propertyName, out var property)
+            && property.ValueKind == JsonValueKind.Number
+            && property.TryGetDouble(out value)
+            && double.IsFinite(value);
+    }
+
+    private static bool IsValidFreeLayout(OverlayFreeLayout layout) =>
+        double.IsFinite(layout.LeftFraction)
+        && double.IsFinite(layout.TopFraction)
+        && double.IsFinite(layout.WidthFraction)
+        && double.IsFinite(layout.HeightFraction)
+        && layout.LeftFraction is >= 0 and <= 1
+        && layout.TopFraction is >= 0 and <= 1
+        && layout.WidthFraction is > 0 and <= 1
+        && layout.HeightFraction is > 0 and <= 1;
 
     private static bool IsExpectedFileError(Exception exception) =>
         exception is IOException

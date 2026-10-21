@@ -1,10 +1,24 @@
 namespace RaidPilot.Overlay;
 
+internal enum OverlayCorner
+{
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+internal readonly record struct OverlayFreeLayout(
+    double LeftFraction,
+    double TopFraction,
+    double WidthFraction,
+    double HeightFraction);
+
 internal static class OverlayLayoutCalculator
 {
     internal const int LogicalDpi = 96;
     internal const int BaseWidthDip = 640;
-    // Fixed extraction header, unchanged map area, optional quest footer. Anchored top-right.
+    // Fixed extraction header, unchanged map area, optional quest footer.
     internal const int BaseHeightDip = 340;
     internal const int GuidanceHeightDip = 72;
     internal const int QuestContextHeightDip = 96;
@@ -15,6 +29,8 @@ internal static class OverlayLayoutCalculator
 
     internal const int MinimumManualScalePercent = 50;
     internal const int MaximumManualScalePercent = 120;
+    internal const int MinimumFreeWidthDip = 360;
+    internal const int MinimumFreeHeightDip = 240;
 
     // In automatic mode the overlay stays comfortably usable on small screens
     // instead of merely "fitting". Width is the limiting dimension for the
@@ -27,7 +43,8 @@ internal static class OverlayLayoutCalculator
         Rectangle workingArea,
         int effectiveDpi,
         bool questContextVisible = false,
-        double requestedScale = 1.0)
+        double requestedScale = 1.0,
+        OverlayCorner corner = OverlayCorner.TopRight)
     {
         var dpi = effectiveDpi > 0 ? effectiveDpi : LogicalDpi;
         var scale = ResolveScale(
@@ -45,11 +62,68 @@ internal static class OverlayLayoutCalculator
         width = Math.Max(1, ScalePixelLength(width, scale));
         height = Math.Max(1, ScalePixelLength(height, scale));
 
-        return new Rectangle(
-            workingArea.Right - width - rightMargin,
-            workingArea.Top + topMargin,
-            width,
-            height);
+        var leftMargin = rightMargin;
+        var bottomMargin = topMargin;
+        var x = corner is OverlayCorner.TopLeft or OverlayCorner.BottomLeft
+            ? workingArea.Left + leftMargin
+            : workingArea.Right - width - rightMargin;
+        var y = corner is OverlayCorner.TopLeft or OverlayCorner.TopRight
+            ? workingArea.Top + topMargin
+            : workingArea.Bottom - height - bottomMargin;
+
+        return new Rectangle(x, y, width, height);
+    }
+
+    internal static OverlayFreeLayout NormalizeFreeLayout(
+        Rectangle bounds,
+        Rectangle workingArea)
+    {
+        if (workingArea.Width <= 0 || workingArea.Height <= 0)
+        {
+            return new OverlayFreeLayout(0, 0, 1, 1);
+        }
+
+        var clamped = Rectangle.Intersect(bounds, workingArea);
+        if (clamped.Width <= 0 || clamped.Height <= 0)
+        {
+            clamped = workingArea;
+        }
+
+        return new OverlayFreeLayout(
+            Math.Clamp((clamped.Left - workingArea.Left) / (double)workingArea.Width, 0, 1),
+            Math.Clamp((clamped.Top - workingArea.Top) / (double)workingArea.Height, 0, 1),
+            Math.Clamp(clamped.Width / (double)workingArea.Width, 0.01, 1),
+            Math.Clamp(clamped.Height / (double)workingArea.Height, 0.01, 1));
+    }
+
+    internal static Rectangle CalculateFreeBounds(
+        Rectangle workingArea,
+        int effectiveDpi,
+        OverlayFreeLayout layout)
+    {
+        var dpi = effectiveDpi > 0 ? effectiveDpi : LogicalDpi;
+        var minWidth = Math.Min(workingArea.Width, ScaleDip(MinimumFreeWidthDip, dpi));
+        var minHeight = Math.Min(workingArea.Height, ScaleDip(MinimumFreeHeightDip, dpi));
+
+        var width = Math.Clamp(
+            (int)Math.Round(workingArea.Width * layout.WidthFraction, MidpointRounding.AwayFromZero),
+            Math.Max(1, minWidth),
+            Math.Max(1, workingArea.Width));
+        var height = Math.Clamp(
+            (int)Math.Round(workingArea.Height * layout.HeightFraction, MidpointRounding.AwayFromZero),
+            Math.Max(1, minHeight),
+            Math.Max(1, workingArea.Height));
+
+        var x = workingArea.Left + (int)Math.Round(
+            workingArea.Width * layout.LeftFraction,
+            MidpointRounding.AwayFromZero);
+        var y = workingArea.Top + (int)Math.Round(
+            workingArea.Height * layout.TopFraction,
+            MidpointRounding.AwayFromZero);
+
+        x = Math.Clamp(x, workingArea.Left, workingArea.Right - width);
+        y = Math.Clamp(y, workingArea.Top, workingArea.Bottom - height);
+        return new Rectangle(x, y, width, height);
     }
 
     internal static double CalculateAutomaticScale(

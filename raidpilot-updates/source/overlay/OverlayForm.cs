@@ -48,6 +48,7 @@ internal sealed partial class OverlayForm : Form
         CheckOnClick = false,
     };
     private readonly ToolStripMenuItem _mapSizeMenuItem = new("Taille de la carte");
+    private readonly ToolStripMenuItem _mapCornerMenuItem = new("Position de la carte");
     private readonly ToolStripMenuItem _liveTrackingMenuItem = new("Suivi fluide en direct")
     {
         Checked = true,
@@ -109,7 +110,10 @@ internal sealed partial class OverlayForm : Form
     private bool _autoReanchorEnabled = true;
     private bool _visibleInScreenCaptures = true;
     private int? _mapScalePercent;
+    private OverlayCorner _mapCorner = OverlayCorner.TopRight;
+    private OverlayFreeLayout? _freeLayout;
     private double _effectiveMapScale = 1.0;
+    private bool _applyingInteractiveFrame;
     private bool _windowHandleWasCreated;
     private bool _tarkovIsForeground;
     private bool _livePositionSendInProgress;
@@ -253,6 +257,8 @@ internal sealed partial class OverlayForm : Form
             SuperKeyframeStore.GetPath(_squadProfile.MemberId));
         _streamVisibilityMenuItem.Checked = OverlayPreferencesStore.LoadVisibleInCaptures();
         _mapScalePercent = OverlayPreferencesStore.LoadMapScalePercent();
+        _mapCorner = OverlayPreferencesStore.LoadMapCorner();
+        _freeLayout = OverlayPreferencesStore.LoadFreeLayout();
         Text = "RaidPilot Overlay";
         AutoScaleMode = AutoScaleMode.None;
         ClientSize = new Size(
@@ -273,10 +279,11 @@ internal sealed partial class OverlayForm : Form
         InitializeAutomaticFloors();
         InitializeRaidClockUi();
         InitializePrecision();
-        PositionAtTopRight();
+        PositionOverlay();
 
         _realtimeTimer.Tick += OnRealtimeTimerTick;
         Shown += OnShown;
+        ResizeEnd += OnInteractiveMoveOrResizeEnd;
         FormClosing += OnFormClosing;
     }
 
@@ -285,7 +292,7 @@ internal sealed partial class OverlayForm : Form
     protected override void OnDpiChanged(DpiChangedEventArgs e)
     {
         base.OnDpiChanged(e);
-        PositionAtTopRight(e.DeviceDpiNew);
+        PositionOverlay(e.DeviceDpiNew);
     }
 
     protected override CreateParams CreateParams
@@ -509,6 +516,7 @@ internal sealed partial class OverlayForm : Form
         };
         menu.Items.Add(_streamVisibilityMenuItem);
         menu.Items.Add(BuildMapSizeMenu());
+        menu.Items.Add(BuildMapCornerMenu());
         menu.Items.Add(BuildMapMenu());
         _positionKeyMenuItem.Click += (_, _) => ShowPositionKeyHelp();
         menu.Items.Add(_positionKeyMenuItem);
@@ -658,8 +666,14 @@ internal sealed partial class OverlayForm : Form
         }
 
         _mapScalePercent = percent;
-        PositionAtTopRight();
+        if (_freeLayout.HasValue)
+        {
+            _freeLayout = null;
+            OverlayPreferencesStore.TrySaveFreeLayout(null);
+        }
+        PositionOverlay();
         RefreshMapSizeMenu();
+        RefreshMapCornerMenu();
 
         var saved = OverlayPreferencesStore.TrySaveMapScalePercent(percent);
         if (!saved)
@@ -690,6 +704,104 @@ internal sealed partial class OverlayForm : Form
                 ToolTipIcon.Info);
         }
     }
+
+    private ToolStripMenuItem BuildMapCornerMenu()
+    {
+        _mapCornerMenuItem.DropDownOpening += (_, _) => RefreshMapCornerMenu();
+        RefreshMapCornerMenu();
+        return _mapCornerMenuItem;
+    }
+
+    private void RefreshMapCornerMenu()
+    {
+        _mapCornerMenuItem.DropDownItems.Clear();
+        _mapCornerMenuItem.Text = _freeLayout.HasValue
+            ? "Position de la carte (Libre)"
+            : $"Position de la carte ({MapCornerLabel(_mapCorner)})";
+
+        foreach (var (corner, label) in new[]
+        {
+            (OverlayCorner.TopLeft, "Haut gauche"),
+            (OverlayCorner.TopRight, "Haut droite"),
+            (OverlayCorner.BottomLeft, "Bas gauche"),
+            (OverlayCorner.BottomRight, "Bas droite"),
+        })
+        {
+            var item = new ToolStripMenuItem(label)
+            {
+                Checked = !_freeLayout.HasValue && _mapCorner == corner,
+                CheckOnClick = false,
+            };
+            var capturedCorner = corner;
+            item.Click += (_, _) => SetMapCorner(capturedCorner, showSuccess: true);
+            _mapCornerMenuItem.DropDownItems.Add(item);
+        }
+
+        _mapCornerMenuItem.DropDownItems.Add(new ToolStripSeparator());
+        var freeItem = new ToolStripMenuItem("Libre — déplacer et redimensionner")
+        {
+            Checked = _freeLayout.HasValue,
+            CheckOnClick = false,
+        };
+        freeItem.Click += (_, _) => EnableFreeLayout();
+        _mapCornerMenuItem.DropDownItems.Add(freeItem);
+    }
+
+    private void SetMapCorner(OverlayCorner corner, bool showSuccess)
+    {
+        if (!Enum.IsDefined(corner))
+        {
+            return;
+        }
+
+        _mapCorner = corner;
+        _freeLayout = null;
+        PositionOverlay();
+        RefreshMapCornerMenu();
+
+        var saved = OverlayPreferencesStore.TrySaveMapCorner(corner);
+        if (!saved)
+        {
+            _trayIcon.ShowBalloonTip(
+                4500,
+                "RaidPilot — position de carte",
+                "La position a changé pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
+                ToolTipIcon.Warning);
+            return;
+        }
+
+        if (showSuccess)
+        {
+            _trayIcon.ShowBalloonTip(
+                2500,
+                "RaidPilot — position de carte",
+                $"Carte placée : {MapCornerLabel(corner)}.",
+                ToolTipIcon.Info);
+        }
+    }
+
+    private void EnableFreeLayout()
+    {
+        var workingArea = GetTargetWorkingArea();
+        _freeLayout = OverlayLayoutCalculator.NormalizeFreeLayout(Bounds, workingArea);
+        OverlayPreferencesStore.TrySaveFreeLayout(_freeLayout);
+        RefreshMapCornerMenu();
+        SetClickThrough(false, activateWhenInteractive: true);
+        _trayIcon.ShowBalloonTip(
+            4000,
+            "RaidPilot — position libre",
+            "Déplace ou redimensionne la fenêtre, puis refais Ctrl+Alt+I pour verrouiller la carte.",
+            ToolTipIcon.Info);
+    }
+
+    private static string MapCornerLabel(OverlayCorner corner) => corner switch
+    {
+        OverlayCorner.TopLeft => "Haut gauche",
+        OverlayCorner.TopRight => "Haut droite",
+        OverlayCorner.BottomLeft => "Bas gauche",
+        OverlayCorner.BottomRight => "Bas droite",
+        _ => "Haut droite",
+    };
 
     private ToolStripMenuItem BuildMapMenu()
     {
@@ -729,7 +841,7 @@ internal sealed partial class OverlayForm : Form
 
     private async void OnShown(object? sender, EventArgs e)
     {
-        PositionAtTopRight();
+        PositionOverlay();
         ApplyClickThroughStyle();
         ReassertTopMost();
         EnsureMapLogWatcherStarted();
@@ -5436,7 +5548,13 @@ internal sealed partial class OverlayForm : Form
 
     private void SetClickThrough(bool enabled, bool activateWhenInteractive)
     {
+        if (enabled && _freeLayout.HasValue && !_applyingInteractiveFrame)
+        {
+            PersistCurrentFreeLayout();
+        }
+
         _clickThrough = enabled;
+        SetInteractiveWindowFrame(!enabled);
         ApplyClickThroughStyle();
         _ = ApplyWebInteractionStateAsync();
 
@@ -5459,6 +5577,58 @@ internal sealed partial class OverlayForm : Form
             Activate();
             _webView.Focus();
         }
+    }
+
+    private void SetInteractiveWindowFrame(bool interactive)
+    {
+        var desired = interactive
+            ? FormBorderStyle.SizableToolWindow
+            : FormBorderStyle.None;
+        if (FormBorderStyle == desired)
+        {
+            return;
+        }
+
+        var currentBounds = Bounds;
+        _applyingInteractiveFrame = true;
+        try
+        {
+            FormBorderStyle = desired;
+            var dpi = DeviceDpi > 0 ? DeviceDpi : OverlayLayoutCalculator.LogicalDpi;
+            MinimumSize = interactive
+                ? new Size(
+                    (int)Math.Round(
+                        OverlayLayoutCalculator.MinimumFreeWidthDip * dpi
+                            / (double)OverlayLayoutCalculator.LogicalDpi),
+                    (int)Math.Round(
+                        OverlayLayoutCalculator.MinimumFreeHeightDip * dpi
+                            / (double)OverlayLayoutCalculator.LogicalDpi))
+                : Size.Empty;
+            Bounds = currentBounds;
+        }
+        finally
+        {
+            _applyingInteractiveFrame = false;
+        }
+    }
+
+    private void OnInteractiveMoveOrResizeEnd(object? sender, EventArgs e)
+    {
+        if (_clickThrough || _applyingInteractiveFrame || !Visible)
+        {
+            return;
+        }
+
+        PersistCurrentFreeLayout();
+        RefreshMapCornerMenu();
+    }
+
+    private void PersistCurrentFreeLayout()
+    {
+        var workingArea = GetTargetWorkingArea();
+        _freeLayout = OverlayLayoutCalculator.NormalizeFreeLayout(Bounds, workingArea);
+        OverlayPreferencesStore.TrySaveFreeLayout(_freeLayout);
+        PositionOverlay();
     }
 
     private async Task ApplyWebInteractionStateAsync()
@@ -5523,7 +5693,7 @@ internal sealed partial class OverlayForm : Form
             return;
         }
 
-        PositionAtTopRight();
+        PositionOverlay();
         Show();
         NativeMethods.ShowWindow(Handle, NativeMethods.SwShowNoActivate);
         ReassertTopMost(showWindow: true);
@@ -5554,7 +5724,7 @@ internal sealed partial class OverlayForm : Form
             flags);
     }
 
-    private void PositionAtTopRight(int? effectiveDpiOverride = null)
+    private void PositionOverlay(int? effectiveDpiOverride = null)
     {
         var gameScreen = FindGameScreen(out var gameWindowDpi);
         var targetScreen = gameScreen ?? Screen.PrimaryScreen;
@@ -5564,26 +5734,60 @@ internal sealed partial class OverlayForm : Form
         var effectiveDpi = effectiveDpiOverride
             ?? ResolveEffectiveDpi(targetScreen, gameWindowDpi);
 
-        var requestedScale = _mapScalePercent is { } manualPercent
-            ? manualPercent / 100.0
-            : OverlayLayoutCalculator.CalculateAutomaticScale(
+        if (_freeLayout is { } freeLayout)
+        {
+            var freeBounds = OverlayLayoutCalculator.CalculateFreeBounds(
                 workingArea,
                 effectiveDpi,
-                _questContextVisible);
+                freeLayout);
+            var referenceBounds = OverlayLayoutCalculator.CalculateBounds(
+                workingArea,
+                effectiveDpi,
+                _questContextVisible,
+                requestedScale: 1.0,
+                corner: OverlayCorner.TopLeft);
 
-        _effectiveMapScale = OverlayLayoutCalculator.ResolveScale(
-            workingArea,
-            effectiveDpi,
-            _questContextVisible,
-            requestedScale);
+            _effectiveMapScale = Math.Clamp(
+                Math.Min(
+                    freeBounds.Width / (double)Math.Max(1, referenceBounds.Width),
+                    freeBounds.Height / (double)Math.Max(1, referenceBounds.Height)),
+                0.25,
+                1.50);
+            Bounds = freeBounds;
+        }
+        else
+        {
+            var requestedScale = _mapScalePercent is { } manualPercent
+                ? manualPercent / 100.0
+                : OverlayLayoutCalculator.CalculateAutomaticScale(
+                    workingArea,
+                    effectiveDpi,
+                    _questContextVisible);
 
-        Bounds = OverlayLayoutCalculator.CalculateBounds(
-            workingArea,
-            effectiveDpi,
-            _questContextVisible,
-            requestedScale);
+            _effectiveMapScale = OverlayLayoutCalculator.ResolveScale(
+                workingArea,
+                effectiveDpi,
+                _questContextVisible,
+                requestedScale);
+
+            Bounds = OverlayLayoutCalculator.CalculateBounds(
+                workingArea,
+                effectiveDpi,
+                _questContextVisible,
+                requestedScale,
+                _mapCorner);
+        }
 
         ApplyMapScaleToWebView();
+    }
+
+    private static Rectangle GetTargetWorkingArea()
+    {
+        var gameScreen = FindGameScreen(out _);
+        var targetScreen = gameScreen ?? Screen.PrimaryScreen;
+        return gameScreen?.WorkingArea
+            ?? targetScreen?.WorkingArea
+            ?? SystemInformation.WorkingArea;
     }
 
     private void ApplyMapScaleToWebView()
@@ -5600,7 +5804,7 @@ internal sealed partial class OverlayForm : Form
         catch (InvalidOperationException)
         {
             // WebView2 can briefly reject zoom changes while its controller is
-            // being recreated for a DPI transition. PositionAtTopRight will be
+            // being recreated for a DPI transition. PositionOverlay will be
             // called again by the normal DPI/window lifecycle.
         }
     }
