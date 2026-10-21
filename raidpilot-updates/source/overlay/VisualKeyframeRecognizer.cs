@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 
@@ -54,6 +55,49 @@ internal readonly record struct VisualKeyframeRecognition(
         0);
 }
 
+internal sealed record VisualKeyframeDatabaseSnapshot
+{
+    public int SchemaVersion { get; init; } = 1;
+
+    public int FrameWidth { get; init; }
+
+    public int FrameHeight { get; init; }
+
+    public int GridColumns { get; init; }
+
+    public int GridRows { get; init; }
+
+    public int CensusRadius { get; init; }
+
+    public List<VisualKeyframeMapSnapshot> Maps { get; init; } = [];
+}
+
+internal sealed record VisualKeyframeMapSnapshot
+{
+    public string MapId { get; init; } = string.Empty;
+
+    public List<VisualKeyframeEntrySnapshot> Keyframes { get; init; } = [];
+}
+
+internal sealed record VisualKeyframeEntrySnapshot
+{
+    public double X { get; init; }
+
+    public double Y { get; init; }
+
+    public double Z { get; init; }
+
+    public double YawDegrees { get; init; }
+
+    public string BitsBase64 { get; init; } = string.Empty;
+
+    public string ValidBitsBase64 { get; init; } = string.Empty;
+
+    public int ValidBitCount { get; init; }
+
+    public double TextureStandardDeviation { get; init; }
+}
+
 internal sealed record VisualKeyframeRecognizerSettings
 {
     internal int FrameWidth { get; init; } = 64;
@@ -87,6 +131,22 @@ internal sealed record VisualKeyframeRecognizerSettings
     internal double MaximumEstimatedYawDifferenceDegrees { get; init; } = 25.0;
 
     internal int RequiredConsecutiveMatches { get; init; } = 3;
+
+    // Mode « loop closure » : quand l'estimateur admet une forte incertitude,
+    // un repère visuel exceptionnellement distinctif peut être réutilisé même
+    // si la pose estimée s'est éloignée. Les seuils sont volontairement plus
+    // stricts que le matching local afin d'éviter les faux snaps.
+    internal double GlobalLoopClosureMinimumUncertaintyMeters { get; init; } = 8.0;
+
+    internal double GlobalMaximumDescriptorDistance { get; init; } = 0.055;
+
+    internal double GlobalMinimumBestSecondMargin { get; init; } = 0.075;
+
+    internal double GlobalMaximumVerticalDistanceMeters { get; init; } = 15.0;
+
+    internal double GlobalMaximumEstimatedYawDifferenceDegrees { get; init; } = 90.0;
+
+    internal int GlobalRequiredConsecutiveMatches { get; init; } = 5;
 
     internal TimeSpan MinimumConfirmationInterval { get; init; } = TimeSpan.FromMilliseconds(80);
 
@@ -152,6 +212,7 @@ internal sealed class VisualKeyframeRecognizer
     private long _touchSequence;
     private long _pendingKeyframeId;
     private int _pendingMatches;
+    private bool _pendingGlobalLoopClosure;
     private long _pendingLastMatchTimestamp;
     private long _cooldownUntilTimestamp;
     private long _lastObservationTimestamp;
@@ -170,6 +231,182 @@ internal sealed class VisualKeyframeRecognizer
             {
                 return _maps.Count;
             }
+        }
+    }
+
+    internal VisualKeyframeDatabaseSnapshot CreateSnapshot()
+    {
+        lock (_sync)
+        {
+            var snapshot = new VisualKeyframeDatabaseSnapshot
+            {
+                FrameWidth = _settings.FrameWidth,
+                FrameHeight = _settings.FrameHeight,
+                GridColumns = _settings.GridColumns,
+                GridRows = _settings.GridRows,
+                CensusRadius = _settings.CensusRadius,
+            };
+
+            foreach (var pair in _maps
+                .OrderBy(pair => pair.Value.LastTouchedSequence)
+                .ThenBy(pair => pair.Key, StringComparer.Ordinal))
+            {
+                var map = new VisualKeyframeMapSnapshot { MapId = pair.Key };
+                foreach (var keyframe in pair.Value.Keyframes
+                    .OrderBy(keyframe => keyframe.CapturedAtTimestamp)
+                    .ThenBy(keyframe => keyframe.Id))
+                {
+                    map.Keyframes.Add(new VisualKeyframeEntrySnapshot
+                    {
+                        X = keyframe.Pose.X,
+                        Y = keyframe.Pose.Y,
+                        Z = keyframe.Pose.Z,
+                        YawDegrees = keyframe.Pose.YawDegrees,
+                        BitsBase64 = EncodeWords(keyframe.Descriptor.Bits),
+                        ValidBitsBase64 = EncodeWords(keyframe.Descriptor.ValidBits),
+                        ValidBitCount = keyframe.Descriptor.ValidBitCount,
+                        TextureStandardDeviation = keyframe.Descriptor.TextureStandardDeviation,
+                    });
+                }
+
+                snapshot.Maps.Add(map);
+            }
+
+            return snapshot;
+        }
+    }
+
+    internal bool TryImportSnapshot(VisualKeyframeDatabaseSnapshot? snapshot)
+    {
+        if (snapshot is null)
+        {
+            return false;
+        }
+
+        lock (_sync)
+        {
+            try
+            {
+                if (snapshot.SchemaVersion != 1
+                    || snapshot.FrameWidth != _settings.FrameWidth
+                    || snapshot.FrameHeight != _settings.FrameHeight
+                    || snapshot.GridColumns != _settings.GridColumns
+                    || snapshot.GridRows != _settings.GridRows
+                    || snapshot.CensusRadius != _settings.CensusRadius
+                    || snapshot.Maps is null
+                    || snapshot.Maps.Count > _settings.MaximumMaps)
+                {
+                    return false;
+                }
+
+                var bitCapacity = checked(
+                    _settings.GridColumns * _settings.GridRows * CensusPairs.Length);
+                var wordCount = (bitCapacity + 63) / 64;
+                var imported = new Dictionary<string, MapKeyframes>(StringComparer.Ordinal);
+                var nextId = 1L;
+                var touchSequence = 0L;
+                var captureOrder = 0L;
+
+                foreach (var mapSnapshot in snapshot.Maps)
+                {
+                    if (mapSnapshot is null || mapSnapshot.Keyframes is null)
+                    {
+                        return false;
+                    }
+
+                    var mapId = NormalizeMapId(mapSnapshot.MapId);
+                    if (imported.ContainsKey(mapId)
+                        || mapSnapshot.Keyframes.Count > _settings.MaximumKeyframesPerMap)
+                    {
+                        return false;
+                    }
+
+                    var importedMap = new MapKeyframes
+                    {
+                        LastTouchedSequence = ++touchSequence,
+                    };
+
+                    foreach (var entry in mapSnapshot.Keyframes)
+                    {
+                        if (entry is null)
+                        {
+                            return false;
+                        }
+
+                        var pose = new VisualKeyframePose(
+                            entry.X,
+                            entry.Y,
+                            entry.Z,
+                            Normalize360(entry.YawDegrees));
+                        ValidatePose(pose, nameof(snapshot));
+
+                        if (!double.IsFinite(entry.TextureStandardDeviation)
+                            || entry.TextureStandardDeviation < 0
+                            || !TryDecodeWords(entry.BitsBase64, wordCount, out var bits)
+                            || !TryDecodeWords(entry.ValidBitsBase64, wordCount, out var validBits)
+                            || !DescriptorBitsAreValid(
+                                bits,
+                                validBits,
+                                entry.ValidBitCount,
+                                bitCapacity))
+                        {
+                            return false;
+                        }
+
+                        var descriptor = new FrameDescriptor(
+                            bits,
+                            validBits,
+                            entry.ValidBitCount,
+                            entry.TextureStandardDeviation);
+                        if (!descriptor.IsUsable(_settings))
+                        {
+                            return false;
+                        }
+
+                        importedMap.Keyframes.Add(new Keyframe(
+                            nextId++,
+                            pose,
+                            descriptor,
+                            ++captureOrder));
+                    }
+
+                    imported.Add(mapId, importedMap);
+                }
+
+                _maps.Clear();
+                foreach (var pair in imported)
+                {
+                    _maps.Add(pair.Key, pair.Value);
+                }
+
+                _nextKeyframeId = nextId;
+                _touchSequence = touchSequence;
+                ClearPending();
+                _cooldownUntilTimestamp = 0;
+                _lastObservationTimestamp = 0;
+                return true;
+            }
+            catch (Exception exception) when (exception is
+                ArgumentException or
+                ArgumentOutOfRangeException or
+                FormatException or
+                OverflowException)
+            {
+                return false;
+            }
+        }
+    }
+
+    internal void ClearAllKeyframes()
+    {
+        lock (_sync)
+        {
+            _maps.Clear();
+            _nextKeyframeId = 1;
+            _touchSequence = 0;
+            ClearPending();
+            _cooldownUntilTimestamp = 0;
+            _lastObservationTimestamp = 0;
         }
     }
 
@@ -266,7 +503,8 @@ internal sealed class VisualKeyframeRecognizer
         int width,
         int height,
         VisualKeyframePose estimatedPose,
-        long timestamp)
+        long timestamp,
+        double estimatedPositionUncertaintyMeters = 0.0)
     {
         lock (_sync)
         {
@@ -276,6 +514,11 @@ internal sealed class VisualKeyframeRecognizer
             if (timestamp < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(timestamp));
+            }
+            if (!double.IsFinite(estimatedPositionUncertaintyMeters)
+                || estimatedPositionUncertaintyMeters < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(estimatedPositionUncertaintyMeters));
             }
 
             // Un producteur peut livrer deux trames dans le même tick. Une
@@ -364,18 +607,39 @@ internal sealed class VisualKeyframeRecognizer
                 return VisualKeyframeRecognition.NoMatch();
             }
 
-            if (SpatialDistance(winner.Keyframe.Pose, estimatedPose)
-                    > _settings.MaximumEstimatedDistanceMeters
-                || Math.Abs(winner.Keyframe.Pose.Y - estimatedPose.Y)
-                    > _settings.MaximumVerticalDistanceMeters
-                || AngleDistance(winner.Keyframe.Pose.YawDegrees, estimatedPose.YawDegrees)
-                    > _settings.MaximumEstimatedYawDifferenceDegrees)
+            var spatialDistance = SpatialDistance(winner.Keyframe.Pose, estimatedPose);
+            var verticalDistance = Math.Abs(winner.Keyframe.Pose.Y - estimatedPose.Y);
+            var yawDistance = AngleDistance(
+                winner.Keyframe.Pose.YawDegrees,
+                estimatedPose.YawDegrees);
+            var localPoseCompatible =
+                spatialDistance <= _settings.MaximumEstimatedDistanceMeters
+                && verticalDistance <= _settings.MaximumVerticalDistanceMeters
+                && yawDistance <= _settings.MaximumEstimatedYawDifferenceDegrees;
+
+            var globalLoopClosure = false;
+            if (!localPoseCompatible)
             {
-                ClearPending();
-                return VisualKeyframeRecognition.NoMatch();
+                var globalVisualEvidence =
+                    winner.Distance <= _settings.GlobalMaximumDescriptorDistance
+                    && uniquenessMargin >= _settings.GlobalMinimumBestSecondMargin;
+                var globalPoseStillPlausible =
+                    verticalDistance <= _settings.GlobalMaximumVerticalDistanceMeters
+                    && yawDistance <= _settings.GlobalMaximumEstimatedYawDifferenceDegrees;
+                if (estimatedPositionUncertaintyMeters
+                        < _settings.GlobalLoopClosureMinimumUncertaintyMeters
+                    || !globalVisualEvidence
+                    || !globalPoseStillPlausible)
+                {
+                    ClearPending();
+                    return VisualKeyframeRecognition.NoMatch();
+                }
+
+                globalLoopClosure = true;
             }
 
-            if (_pendingKeyframeId == winner.Keyframe.Id)
+            if (_pendingKeyframeId == winner.Keyframe.Id
+                && _pendingGlobalLoopClosure == globalLoopClosure)
             {
                 var elapsed = timestamp - _pendingLastMatchTimestamp;
                 var minimumTicks = SecondsToTimestampTicks(
@@ -396,10 +660,14 @@ internal sealed class VisualKeyframeRecognizer
             {
                 _pendingKeyframeId = winner.Keyframe.Id;
                 _pendingMatches = 1;
+                _pendingGlobalLoopClosure = globalLoopClosure;
                 _pendingLastMatchTimestamp = timestamp;
             }
 
-            if (_pendingMatches < _settings.RequiredConsecutiveMatches)
+            var requiredMatches = globalLoopClosure
+                ? _settings.GlobalRequiredConsecutiveMatches
+                : _settings.RequiredConsecutiveMatches;
+            if (_pendingMatches < requiredMatches)
             {
                 return Candidate(winner, uniquenessMargin, _pendingMatches);
             }
@@ -451,6 +719,99 @@ internal sealed class VisualKeyframeRecognizer
                 ? map.Keyframes.Count
                 : 0;
         }
+    }
+
+    private static string EncodeWords(ulong[] words)
+    {
+        var bytes = new byte[checked(words.Length * sizeof(ulong))];
+        for (var index = 0; index < words.Length; index++)
+        {
+            BinaryPrimitives.WriteUInt64LittleEndian(
+                bytes.AsSpan(index * sizeof(ulong), sizeof(ulong)),
+                words[index]);
+        }
+
+        return Convert.ToBase64String(bytes);
+    }
+
+    private static bool TryDecodeWords(
+        string? encoded,
+        int expectedWordCount,
+        out ulong[] words)
+    {
+        words = Array.Empty<ulong>();
+        if (string.IsNullOrWhiteSpace(encoded) || expectedWordCount <= 0)
+        {
+            return false;
+        }
+
+        var expectedBytes = checked(expectedWordCount * sizeof(ulong));
+        var expectedBase64Length = 4 * ((expectedBytes + 2) / 3);
+        if (encoded.Length != expectedBase64Length)
+        {
+            return false;
+        }
+
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(encoded);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+
+        if (bytes.Length != expectedBytes)
+        {
+            return false;
+        }
+
+        var decoded = new ulong[expectedWordCount];
+        for (var index = 0; index < decoded.Length; index++)
+        {
+            decoded[index] = BinaryPrimitives.ReadUInt64LittleEndian(
+                bytes.AsSpan(index * sizeof(ulong), sizeof(ulong)));
+        }
+
+        words = decoded;
+        return true;
+    }
+
+    private static bool DescriptorBitsAreValid(
+        ulong[] bits,
+        ulong[] validBits,
+        int declaredValidBitCount,
+        int bitCapacity)
+    {
+        if (bits.Length == 0
+            || bits.Length != validBits.Length
+            || declaredValidBitCount < 0
+            || declaredValidBitCount != CountBits(validBits))
+        {
+            return false;
+        }
+
+        for (var index = 0; index < bits.Length; index++)
+        {
+            if ((bits[index] & ~validBits[index]) != 0)
+            {
+                return false;
+            }
+        }
+
+        var remainder = bitCapacity % 64;
+        if (remainder != 0)
+        {
+            var allowedMask = (1UL << remainder) - 1UL;
+            if ((bits[^1] & ~allowedMask) != 0
+                || (validBits[^1] & ~allowedMask) != 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private List<FrameDescriptor> CreateAlignedDescriptors(
@@ -637,201 +998,3 @@ internal sealed class VisualKeyframeRecognizer
         return created;
     }
 
-    private void ClearPending()
-    {
-        _pendingKeyframeId = 0;
-        _pendingMatches = 0;
-        _pendingLastMatchTimestamp = 0;
-    }
-
-    private static VisualKeyframeRecognition Candidate(
-        MatchCandidate winner,
-        double uniquenessMargin,
-        int consecutiveMatches) => new(
-            VisualKeyframeRecognitionState.Candidate,
-            winner.Keyframe.Id,
-            null,
-            consecutiveMatches,
-            winner.Distance,
-            uniquenessMargin,
-            winner.ComparedBits);
-
-    private static int SampleCoordinate(int start, int length, int index, int count)
-    {
-        if (count == 1)
-        {
-            return start + (length / 2);
-        }
-
-        return start + (int)Math.Round(index * (length - 1.0) / (count - 1.0));
-    }
-
-    private static void SetBit(ulong[] words, int bitIndex)
-    {
-        words[bitIndex >> 6] |= 1UL << (bitIndex & 63);
-    }
-
-    private static int CountBits(ulong[] words)
-    {
-        var count = 0;
-        foreach (var word in words)
-        {
-            count += BitOperations.PopCount(word);
-        }
-
-        return count;
-    }
-
-    private static double SpatialDistance(VisualKeyframePose left, VisualKeyframePose right)
-    {
-        var dx = left.X - right.X;
-        var dy = left.Y - right.Y;
-        var dz = left.Z - right.Z;
-        return Math.Sqrt((dx * dx) + (dy * dy) + (dz * dz));
-    }
-
-    private static double AngleDistance(double left, double right)
-    {
-        var difference = Math.Abs(Normalize360(left) - Normalize360(right));
-        return Math.Min(difference, 360.0 - difference);
-    }
-
-    private static double Normalize360(double angle)
-    {
-        var normalized = angle % 360.0;
-        return normalized < 0 ? normalized + 360.0 : normalized;
-    }
-
-    private static long SecondsToTimestampTicks(double seconds)
-    {
-        if (seconds <= 0)
-        {
-            return 0;
-        }
-
-        var ticks = seconds * Stopwatch.Frequency;
-        return ticks >= long.MaxValue ? long.MaxValue : (long)Math.Ceiling(ticks);
-    }
-
-    private static long SaturatingAdd(long left, long right) =>
-        long.MaxValue - left < right ? long.MaxValue : left + right;
-
-    private void ValidateFrame(ReadOnlySpan<byte> luminance, int width, int height)
-    {
-        if (width != _settings.FrameWidth || height != _settings.FrameHeight)
-        {
-            throw new ArgumentException(
-                $"La trame attendue mesure {_settings.FrameWidth}x{_settings.FrameHeight}.",
-                nameof(luminance));
-        }
-
-        if (luminance.Length != checked(width * height))
-        {
-            throw new ArgumentException("La taille de la trame de luminance est invalide.", nameof(luminance));
-        }
-    }
-
-    private static string NormalizeMapId(string mapId)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(mapId);
-        return mapId.Trim().ToLowerInvariant();
-    }
-
-    private static void ValidatePose(VisualKeyframePose pose, string parameterName)
-    {
-        if (!double.IsFinite(pose.X)
-            || !double.IsFinite(pose.Y)
-            || !double.IsFinite(pose.Z)
-            || !double.IsFinite(pose.YawDegrees))
-        {
-            throw new ArgumentException("La pose doit contenir uniquement des valeurs finies.", parameterName);
-        }
-    }
-
-    private static void ValidateSettings(VisualKeyframeRecognizerSettings settings)
-    {
-        if (settings.FrameWidth < 24
-            || settings.FrameHeight < 18
-            || settings.GridColumns < 3
-            || settings.GridRows < 3
-            || settings.CensusRadius != 2
-            || settings.AlignmentSearchRadius is < 0 or > 4
-            || settings.MinimumCensusContrast is < 1 or > 64
-            || settings.MinimumComparedBits < 16
-            || !IsUnitFraction(settings.MinimumComparedBitRatio)
-            || !double.IsFinite(settings.MinimumTextureStandardDeviation)
-            || settings.MinimumTextureStandardDeviation <= 0
-            || !IsUnitFraction(settings.MaximumDescriptorDistance)
-            || settings.MaximumDescriptorDistance <= 0
-            || !IsUnitFraction(settings.MinimumBestSecondMargin)
-            || settings.MinimumBestSecondMargin <= 0
-            || !double.IsFinite(settings.MaximumEstimatedDistanceMeters)
-            || settings.MaximumEstimatedDistanceMeters <= 0
-            || !double.IsFinite(settings.MaximumVerticalDistanceMeters)
-            || settings.MaximumVerticalDistanceMeters <= 0
-            || !double.IsFinite(settings.MaximumEstimatedYawDifferenceDegrees)
-            || settings.MaximumEstimatedYawDifferenceDegrees is <= 0 or > 180
-            || settings.RequiredConsecutiveMatches < 2
-            || settings.MinimumConfirmationInterval < TimeSpan.Zero
-            || settings.MaximumConfirmationGap <= settings.MinimumConfirmationInterval
-            || settings.ConfirmationCooldown < TimeSpan.Zero
-            || settings.MaximumKeyframesPerMap is < 1 or > 64
-            || settings.MaximumMaps is < 1 or > 16
-            || !IsUnitFraction(settings.SideHudMaskFraction)
-            || !IsUnitFraction(settings.TopHudMaskFraction)
-            || !IsUnitFraction(settings.BottomHudMaskFraction)
-            || !IsUnitFraction(settings.WeaponMaskTopFraction)
-            || !IsUnitFraction(settings.WeaponMaskLeftFraction)
-            || !IsUnitFraction(settings.WeaponMaskRightFraction)
-            || settings.WeaponMaskLeftFraction >= settings.WeaponMaskRightFraction
-            || settings.TopHudMaskFraction + settings.BottomHudMaskFraction >= 0.75)
-        {
-            throw new ArgumentOutOfRangeException(nameof(settings));
-        }
-
-        var margin = settings.CensusRadius + settings.AlignmentSearchRadius;
-        if (settings.FrameWidth - (2 * margin) < settings.GridColumns
-            || settings.FrameHeight - (2 * margin) < settings.GridRows)
-        {
-            throw new ArgumentOutOfRangeException(nameof(settings), "La grille ne tient pas dans la trame.");
-        }
-
-        var bitCapacity = checked(settings.GridColumns * settings.GridRows * CensusPairs.Length);
-        if (settings.MinimumComparedBits > bitCapacity)
-        {
-            throw new ArgumentOutOfRangeException(nameof(settings), "Le minimum de bits dépasse le descripteur.");
-        }
-    }
-
-    private static bool IsUnitFraction(double value) =>
-        double.IsFinite(value) && value is >= 0 and <= 1;
-
-    private sealed class MapKeyframes
-    {
-        internal List<Keyframe> Keyframes { get; } = [];
-
-        internal long LastTouchedSequence { get; set; }
-    }
-
-    private sealed record Keyframe(
-        long Id,
-        VisualKeyframePose Pose,
-        FrameDescriptor Descriptor,
-        long CapturedAtTimestamp);
-
-    private sealed record FrameDescriptor(
-        ulong[] Bits,
-        ulong[] ValidBits,
-        int ValidBitCount,
-        double TextureStandardDeviation)
-    {
-        internal bool IsUsable(VisualKeyframeRecognizerSettings settings) =>
-            ValidBitCount >= settings.MinimumComparedBits
-            && TextureStandardDeviation >= settings.MinimumTextureStandardDeviation;
-    }
-
-    private readonly record struct MatchCandidate(
-        Keyframe Keyframe,
-        double Distance,
-        int ComparedBits);
-}

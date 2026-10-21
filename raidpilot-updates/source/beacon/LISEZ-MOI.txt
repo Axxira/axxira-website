@@ -1,5 +1,14 @@
-RAIDPILOT BEACON 0.2.2
+RAIDPILOT BEACON 0.2.3
 =======================
+
+LOCALISATION SLAM / RÉCUPÉRATION DE DÉRIVE 0.2.3
+- Beacon utilise maintenant le même loop closure global prudent que l'Overlay : un lieu exact déjà appris peut récupérer une grosse dérive lorsque l'incertitude dépasse 8 m.
+- Une récupération globale exige une signature visuelle exceptionnellement proche, une forte marge d'unicité et cinq confirmations consécutives; un cap ou un étage incompatible reste refusé.
+- Les recalages F8 sont maintenant adaptatifs à l'incertitude : jusqu'à environ 4,5 s de cooldown en forte dérive, 6 s en dérive moyenne et 8 s en régime normal.
+- Le temps d'immobilité requis descend prudemment jusqu'à 0,55 s uniquement quand l'incertitude est très élevée.
+- Les repères visuels exacts persistent maintenant par identité de joueur entre les raids et les redémarrages. La mémoire conserve des signatures compactes, jamais les images de jeu.
+- Changer d'identité Beacon recharge automatiquement la mémoire visuelle propre à ce joueur.
+- Le partage Squad reste à environ 10 Hz; un recalage exact ou visuel confirmé est envoyé immédiatement.
 
 RECALAGE TEAMMATE PLUS FRÉQUENT 0.2.2
 - Le délai minimum entre deux recalages automatiques passe de 25 secondes à 8 secondes.

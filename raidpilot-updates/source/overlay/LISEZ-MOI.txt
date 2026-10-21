@@ -1,4 +1,14 @@
-RAIDPILOT OVERLAY 0.11.4
+RAIDPILOT OVERLAY 0.11.5
+
+LOCALISATION SLAM / LOOP CLOSURE 0.11.5
+- RaidPilot ajoute un mode de loop closure global inspiré des systèmes SLAM modernes : si l'estimation reconnaît qu'elle a fortement dérivé, un lieu visuel déjà ancré peut la ramener sur la bonne position même si le pion estimé s'est éloigné.
+- Le loop closure global est volontairement beaucoup plus strict que le matching local : incertitude minimale de 8 m, signature visuelle très proche, forte marge d'unicité et cinq confirmations consécutives.
+- Un écart vertical ou de cap irréaliste reste refusé; une position encore fiable ne peut jamais être déplacée par ce mode global.
+- Les recalages F8 automatiques deviennent adaptatifs : ~8 s en dérive normale, ~6 s quand l'incertitude dépasse 7 m et ~4,5 s au-delà de 12 m, toujours seulement après une immobilité visuelle suffisante.
+- L'immobilité minimale devient elle aussi adaptative : 0,90 s, 0,70 s ou 0,55 s selon le niveau d'incertitude.
+- Les repères visuels exacts sont maintenant persistés par joueur entre les sessions. Seules des signatures Census compactes, la carte et la pose exacte sont conservées; aucun screenshot n'est stocké dans cette mémoire.
+- La base visuelle reste bornée à 64 repères par carte et 16 cartes, avec sauvegarde atomique et refus complet d'un fichier corrompu.
+- La synchronisation Squad reste à environ 10 Hz; ces améliorations corrigent la qualité de la pose envoyée plutôt que d'augmenter inutilement le trafic.
 
 LOCALISATION + ESCOUADE 0.11.4
 - Le suivi visuel 64x36 renforce maintenant l'hystérésis de mouvement à 10 Hz : un flux optique fiable empêche les faux arrêts, et deux preuves indépendantes confirment plus vite un vrai blocage.

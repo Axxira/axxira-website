@@ -66,6 +66,13 @@ internal sealed partial class OverlayForm
             }
 
             _squadProfile = stored;
+            if (identityChanged)
+            {
+                _visualKeyframeRecognizer.ClearAllKeyframes();
+                _ = VisualKeyframeStore.TryLoad(
+                    _visualKeyframeRecognizer,
+                    VisualKeyframeStore.GetPath(_squadProfile.MemberId));
+            }
 
             if (!_squadProfile.AutoJoin || !_squadProfile.HasRoom)
             {
