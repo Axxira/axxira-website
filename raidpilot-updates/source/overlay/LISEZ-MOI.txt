@@ -1,4 +1,10 @@
-RAIDPILOT OVERLAY 0.11.5
+RAIDPILOT OVERLAY 0.11.6
+
+ORIENTATION DES PIONS 0.11.6
+- La flèche du joueur local et celles des teammates suivent maintenant la rotation cartographique native de tarkov.dev.
+- RaidPilot lit directement coordinateRotation depuis la carte Leaflet actuellement ouverte au lieu d'utiliser une table codée en dur.
+- La même règle spéciale que tarkov.dev est appliquée aux cartes tournées de 90° ou 270°; le yaw Unity est ensuite converti vers l'orientation visuelle correcte de la carte.
+- La position X/Y/Z et le moteur de localisation ne sont pas modifiés par ce correctif : seule l'orientation graphique du pion est transformée.
 
 LOCALISATION SLAM / LOOP CLOSURE 0.11.5
 - RaidPilot lit automatiquement le FOV vertical réel dans Game.ini et le convertit selon le ratio de la fenêtre puis le recadrage visuel; l'egomotion n'utilise plus une optique fixe identique pour tous les joueurs.

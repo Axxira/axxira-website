@@ -273,6 +273,24 @@
         return null;
     };
 
+    // tarkov.dev rotates several interactive maps relative to EFT world
+    // coordinates. Match its native player marker rule exactly so a Unity yaw
+    // always points toward the direction the player is actually facing on the
+    // currently displayed map.
+    const raidPilotDisplayYaw = (yaw, mapInstance) => {
+        let addRotation = Number(mapInstance?.options?.baseData?.coordinateRotation ?? 0);
+        if (!Number.isFinite(addRotation)) {
+            addRotation = 0;
+        }
+
+        const normalizedRotation = ((addRotation % 360) + 360) % 360;
+        if (normalizedRotation === 90 || normalizedRotation === 270) {
+            addRotation += 180;
+        }
+
+        return ((yaw + addRotation) % 360 + 360) % 360;
+    };
+
     const parseLocalPlayerGeneration = (value) => typeof value === "number"
         && Number.isSafeInteger(value)
         && value >= 0
@@ -488,7 +506,8 @@
 
         binding.marker.style.transform =
             `translate3d(${Math.round(x * 10) / 10}px, ${Math.round(y * 10) / 10}px, 0) translate(-50%, -50%)`;
-        binding.marker.style.setProperty("--raidpilot-local-yaw", `${pose.yaw}deg`);
+        const displayYaw = raidPilotDisplayYaw(pose.yaw, mapInstance);
+        binding.marker.style.setProperty("--raidpilot-local-yaw", `${displayYaw}deg`);
         binding.marker.dataset.quality = pose.snap
             ? "exact"
             : pose.uncertainty <= 3
@@ -689,7 +708,8 @@
 
             entry.marker.style.transform =
                 `translate3d(${Math.round(point.x * 10) / 10}px, ${Math.round(point.y * 10) / 10}px, 0) translate(-50%, -50%)`;
-            entry.marker.style.setProperty("--raidpilot-squad-yaw", `${entry.pose.yaw}deg`);
+            const displayYaw = raidPilotDisplayYaw(entry.pose.yaw, mapInstance);
+            entry.marker.style.setProperty("--raidpilot-squad-yaw", `${displayYaw}deg`);
             entry.marker.dataset.state = age >= squadMemberStaleMs
                 ? "stale"
                 : entry.pose.uncertainty > 8
@@ -997,7 +1017,8 @@
         const height = Math.round(container.clientHeight);
         if (width < 2 || height < 2) {
             binding.svg.setAttribute("hidden", "");
-            scheduleLearnedRouteRetry();            return false;
+            scheduleLearnedRouteRetry();
+            return false;
         }
         const projected = [];
         try {
@@ -1996,7 +2017,8 @@
     // No capture, network request or completion inference is performed here.
     let questContextSequence = -1;
     const setQuestContextSpace = (visible) => {
-        const value = visible ? "96px" : "0px";        const root = document.documentElement;
+        const value = visible ? "96px" : "0px";
+        const root = document.documentElement;
         if (root.style.getPropertyValue("--raidpilot-quest-height") !== value) {
             root.style.setProperty("--raidpilot-quest-height", value);
             window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
