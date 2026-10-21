@@ -1,4 +1,12 @@
-RAIDPILOT OVERLAY 0.11.7
+RAIDPILOT OVERLAY 0.11.8
+
+TACTICAL MAP++ 0.11.8
+- Les teammates qui sortent de la zone visible ne disparaissent plus : un indicateur reste au bord de la carte avec leur nom, leur direction relative, leur distance et la différence d'altitude significative.
+- Une empreinte de formation très légère relie les positions live de l'escouade avec un hull convexe; elle permet de voir immédiatement si l'équipe est groupée, étirée ou séparée.
+- Les noms de lieux se déclutter automatiquement lorsque le zoom est faible : RaidPilot garde en priorité les libellés proches du joueur et réduit les chevauchements, puis restaure tous les détails au rapprochement.
+- L'état d'étage est maintenant codé visuellement : vert pour une altitude native mesurée, cyan pour un repère visuel reconnu et ambre pour une estimation ou une zone ambiguë.
+- Quand un étage est confirmé, la carte reçoit un contour tactique discret et les extractions d'un autre étage sont davantage atténuées.
+- Aucun recentrage ou zoom automatique n'est imposé : la caméra de carte reste entièrement sous le contrôle du joueur.
 
 MAP QUALITY+ 0.11.7
 - Le mode SVG reste forcé pour conserver la meilleure netteté disponible depuis tarkov.dev.

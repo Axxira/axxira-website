@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MapQualityTests
 {
-    internal const int TestCount = 6;
+    internal const int TestCount = 10;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -12,6 +12,10 @@ internal static class MapQualityTests
         Run("map quality: traces reprojetées par Leaflet", TrailsFollowLiveLeafletProjection, failures);
         Run("map quality: rayon de cap local et squad", UsesHeadingRays, failures);
         Run("map quality: couche tactique sous les pions", TacticalLayerStaysBelowMarkers, failures);
+        Run("map quality: empreinte de formation", UsesSquadFormationFootprint, failures);
+        Run("map quality: décluttering adaptatif", UsesAdaptiveLabelDecluttering, failures);
+        Run("map quality: teammates hors écran", UsesOffscreenSquadIndicators, failures);
+        Run("map quality: étage actif accentué", EmphasizesConfirmedFloor, failures);
     }
 
     private static (string Behavior, string Styles) Load()
@@ -87,6 +91,54 @@ internal static class MapQualityTests
             && styles.Contains("z-index: 1150", StringComparison.Ordinal)
             && styles.Contains("z-index: 1200", StringComparison.Ordinal),
             "l'ordre des couches tactiques n'est pas verrouillé");
+    }
+
+    private static void UsesSquadFormationFootprint()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("convexHull", StringComparison.Ordinal)
+            && behavior.Contains("tacticalFormationPath", StringComparison.Ordinal)
+            && behavior.Contains("formationPoints", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-squad-formation", StringComparison.Ordinal)
+            && styles.Contains(".raidpilot-squad-formation", StringComparison.Ordinal),
+            "l'empreinte de formation de l'escouade est absente");
+    }
+
+    private static void UsesAdaptiveLabelDecluttering()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("updateAdaptiveMapLabels", StringComparison.Ordinal)
+            && behavior.Contains("pixelsPerMeter < 0.9", StringComparison.Ordinal)
+            && behavior.Contains("maximumHidden", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-map-label-decluttered", StringComparison.Ordinal)
+            && styles.Contains(".map-area-label.raidpilot-map-label-decluttered", StringComparison.Ordinal),
+            "le décluttering adaptatif des noms de lieux est absent");
+    }
+
+    private static void UsesOffscreenSquadIndicators()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("makeSquadEdgeIndicator", StringComparison.Ordinal)
+            && behavior.Contains("updateSquadEdgeIndicator", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-squad-edge-indicator", StringComparison.Ordinal)
+            && behavior.Contains("Math.atan2(dy, dx)", StringComparison.Ordinal)
+            && styles.Contains(".raidpilot-squad-edge-indicator", StringComparison.Ordinal)
+            && styles.Contains(".raidpilot-squad-edge-arrow", StringComparison.Ordinal),
+            "les indicateurs de teammates hors écran sont absents");
+    }
+
+    private static void EmphasizesConfirmedFloor()
+    {
+        var (_, styles) = Load();
+        Require(
+            styles.Contains("#raidpilot-auto-floor[data-state=\"measured\"]", StringComparison.Ordinal)
+            && styles.Contains("#raidpilot-auto-floor[data-state=\"recognized\"]", StringComparison.Ordinal)
+            && styles.Contains("html.raidpilot-auto-floor-filter #leaflet-map", StringComparison.Ordinal)
+            && styles.Contains("opacity: 0.28", StringComparison.Ordinal),
+            "l'étage actif confirmé n'est pas visuellement accentué");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)

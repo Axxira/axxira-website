@@ -725,6 +725,130 @@
             `${index === 0 ? "M" : "L"}${Math.round(point.x * 10) / 10} ${Math.round(point.y * 10) / 10}`).join(" ");
     };
 
+    const convexHull = (points) => {
+        if (points.length <= 2) {
+            return points.slice();
+        }
+        const sorted = points
+            .slice()
+            .sort((a, b) => a.x === b.x ? a.y - b.y : a.x - b.x);
+        const cross = (origin, a, b) =>
+            (a.x - origin.x) * (b.y - origin.y)
+            - (a.y - origin.y) * (b.x - origin.x);
+        const lower = [];
+        for (const point of sorted) {
+            while (lower.length >= 2
+                && cross(lower.at(-2), lower.at(-1), point) <= 0) {
+                lower.pop();
+            }
+            lower.push(point);
+        }
+        const upper = [];
+        for (let index = sorted.length - 1; index >= 0; index -= 1) {
+            const point = sorted[index];
+            while (upper.length >= 2
+                && cross(upper.at(-2), upper.at(-1), point) <= 0) {
+                upper.pop();
+            }
+            upper.push(point);
+        }
+        lower.pop();
+        upper.pop();
+        return [...lower, ...upper];
+    };
+
+    const tacticalFormationPath = (points) => {
+        if (points.length < 2) {
+            return "";
+        }
+        const hull = convexHull(points);
+        if (hull.length === 2) {
+            return `M${hull[0].x} ${hull[0].y} L${hull[1].x} ${hull[1].y}`;
+        }
+        return hull.map((point, index) =>
+            `${index === 0 ? "M" : "L"}${point.x} ${point.y}`).join(" ") + " Z";
+    };
+
+    const updateAdaptiveMapLabels = (mapInstance, container) => {
+        const labels = [...container.querySelectorAll(".map-area-label")];
+        for (const label of labels) {
+            label.classList.remove("raidpilot-map-label-decluttered");
+        }
+        if (!localPlayerPoseState || labels.length < 4) {
+            return;
+        }
+
+        const pixelsPerMeter = raidPilotMetricRadiusPixels(
+            mapInstance,
+            localPlayerPoseState.z,
+            localPlayerPoseState.x,
+            10) / 10;
+        if (!Number.isFinite(pixelsPerMeter) || pixelsPerMeter >= 2.2) {
+            return;
+        }
+
+        let localPoint;
+        try {
+            localPoint = mapInstance.latLngToContainerPoint([
+                localPlayerPoseState.z,
+                localPlayerPoseState.x,
+            ]);
+        } catch {
+            return;
+        }
+        if (!Number.isFinite(localPoint?.x) || !Number.isFinite(localPoint?.y)) {
+            return;
+        }
+
+        const mapRect = container.getBoundingClientRect();
+        const candidates = labels
+            .map((label) => {
+                const rect = label.getBoundingClientRect();
+                return {
+                    label,
+                    rect,
+                    distance: Math.hypot(
+                        rect.left + rect.width * 0.5 - mapRect.left - localPoint.x,
+                        rect.top + rect.height * 0.5 - mapRect.top - localPoint.y),
+                };
+            })
+            .filter(({ rect }) =>
+                rect.width > 1
+                && rect.height > 1
+                && rect.right > mapRect.left
+                && rect.left < mapRect.right
+                && rect.bottom > mapRect.top
+                && rect.top < mapRect.bottom)
+            .sort((a, b) => a.distance - b.distance);
+
+        const kept = [];
+        const aggressive = pixelsPerMeter < 0.9;
+        const padding = aggressive ? 10 : 6;
+        const maximumHidden = Math.floor(
+            candidates.length * (aggressive ? 0.55 : 0.35));
+        let hidden = 0;
+
+        for (const candidate of candidates) {
+            const expanded = {
+                left: candidate.rect.left - padding,
+                top: candidate.rect.top - padding,
+                right: candidate.rect.right + padding,
+                bottom: candidate.rect.bottom + padding,
+            };
+            const overlaps = kept.some((rect) =>
+                expanded.left < rect.right
+                && expanded.right > rect.left
+                && expanded.top < rect.bottom
+                && expanded.bottom > rect.top);
+            if (overlaps && hidden < maximumHidden) {
+                candidate.label.classList.add("raidpilot-map-label-decluttered");
+                hidden += 1;
+            } else {
+                kept.push(expanded);
+            }
+        }
+    };
+
     const makeTacticalTrailLayer = (container) => {
         const namespace = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(namespace, "svg");
@@ -732,15 +856,17 @@
         svg.setAttribute("aria-hidden", "true");
         svg.setAttribute("focusable", "false");
 
+        const formation = document.createElementNS(namespace, "path");
+        formation.setAttribute("class", "raidpilot-squad-formation");
         const localBase = document.createElementNS(namespace, "path");
         localBase.setAttribute("class", "raidpilot-tactical-trail-local-base");
         const localRecent = document.createElementNS(namespace, "path");
         localRecent.setAttribute("class", "raidpilot-tactical-trail-local-recent");
         const squadGroup = document.createElementNS(namespace, "g");
         squadGroup.setAttribute("class", "raidpilot-tactical-trails-squad");
-        svg.append(localBase, localRecent, squadGroup);
+        svg.append(formation, localBase, localRecent, squadGroup);
         container.appendChild(svg);
-        return { svg, localBase, localRecent, squadGroup, squadPaths: new Map() };
+        return { svg, formation, localBase, localRecent, squadGroup, squadPaths: new Map() };
     };
 
     const detachTacticalTrailLayer = () => {
@@ -833,6 +959,36 @@
                 ? tacticalPathData(mapInstance, localPlayerTrail.slice(-6))
                 : "");
 
+        const formationPoints = [];
+        const pushFormationPoint = (pose) => {
+            try {
+                const projected = mapInstance.latLngToContainerPoint([pose.z, pose.x]);
+                const x = Number(projected?.x);
+                const y = Number(projected?.y);
+                if (Number.isFinite(x) && Number.isFinite(y)) {
+                    formationPoints.push({
+                        x: Math.round(x * 10) / 10,
+                        y: Math.round(y * 10) / 10,
+                    });
+                }
+            } catch {
+                // A transient Leaflet navigation simply omits this point.
+            }
+        };
+        if (localPlayerPoseState) {
+            pushFormationPoint(localPlayerPoseState);
+        }
+        for (const entry of squadMembers.values()) {
+            if (now - entry.pose.receivedAt < squadMemberStaleMs
+                && (!localPlayerPoseState?.map
+                    || entry.pose.map === localPlayerPoseState.map)) {
+                pushFormationPoint(entry.pose);
+            }
+        }
+        binding.formation.setAttribute(
+            "d",
+            tacticalFormationPath(formationPoints));
+
         const activeIds = new Set();
         for (const [memberId, entry] of squadMembers) {
             pruneTacticalTrail(entry.trail ??= [], now);
@@ -869,6 +1025,7 @@
                 binding.squadPaths.delete(memberId);
             }
         }
+        updateAdaptiveMapLabels(mapInstance, container);
         return true;
     };
 
@@ -897,6 +1054,82 @@
         marker.append(ring, heading, label);
         container.appendChild(marker);
         return marker;
+    };
+
+    const makeSquadEdgeIndicator = (container, pose) => {
+        const indicator = document.createElement("div");
+        indicator.className = "raidpilot-squad-edge-indicator";
+        indicator.dataset.memberId = pose.memberId;
+        indicator.setAttribute("aria-hidden", "true");
+        indicator.style.setProperty("--raidpilot-squad-color", squadColorForId(pose.memberId));
+
+        const arrow = document.createElement("div");
+        arrow.className = "raidpilot-squad-edge-arrow";
+        const label = document.createElement("div");
+        label.className = "raidpilot-squad-edge-label";
+        indicator.append(arrow, label);
+        container.appendChild(indicator);
+        return indicator;
+    };
+
+    const updateSquadEdgeIndicator = (entry, point, container) => {
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        const margin = 28;
+        const inside = point.x >= margin
+            && point.x <= width - margin
+            && point.y >= margin
+            && point.y <= height - margin;
+
+        if (inside) {
+            entry.edge?.setAttribute("hidden", "");
+            return false;
+        }
+
+        if (!entry.edge?.isConnected || entry.edge.parentElement !== container) {
+            entry.edge?.remove();
+            entry.edge = makeSquadEdgeIndicator(container, entry.pose);
+        }
+
+        const centerX = width * 0.5;
+        const centerY = height * 0.5;
+        const dx = point.x - centerX;
+        const dy = point.y - centerY;
+        const maxX = Math.max(1, centerX - margin);
+        const maxY = Math.max(1, centerY - margin);
+        const scaleX = Math.abs(dx) > 0.001 ? maxX / Math.abs(dx) : Number.POSITIVE_INFINITY;
+        const scaleY = Math.abs(dy) > 0.001 ? maxY / Math.abs(dy) : Number.POSITIVE_INFINITY;
+        const scale = Math.min(scaleX, scaleY, 1);
+        const edgeX = centerX + dx * scale;
+        const edgeY = centerY + dy * scale;
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+
+        const distance = localPlayerPoseState
+            && localPlayerPoseState.map === entry.pose.map
+            ? Math.hypot(
+                entry.pose.x - localPlayerPoseState.x,
+                entry.pose.z - localPlayerPoseState.z)
+            : null;
+        const vertical = localPlayerPoseState
+            && localPlayerPoseState.map === entry.pose.map
+            ? entry.pose.y - localPlayerPoseState.y
+            : 0;
+        const distanceText = Number.isFinite(distance) ? ` · ${Math.round(distance)}m` : "";
+        const levelText = Math.abs(vertical) >= 2.5
+            ? ` · ${vertical > 0 ? "▲" : "▼"}${Math.round(Math.abs(vertical))}m`
+            : "";
+
+        entry.edge.style.transform =
+            `translate3d(${Math.round(edgeX * 10) / 10}px, ${Math.round(edgeY * 10) / 10}px, 0) translate(-50%, -50%)`;
+        entry.edge.querySelector(".raidpilot-squad-edge-arrow")?.style.setProperty(
+            "transform",
+            `rotate(${Math.round(angle * 10) / 10}deg)`);
+        const label = entry.edge.querySelector(".raidpilot-squad-edge-label");
+        if (label) {
+            label.textContent = entry.pose.name + distanceText + levelText;
+        }
+        entry.edge.removeAttribute("hidden");
+        return true;
     };
 
     const renderSquadMembers = () => {
@@ -930,12 +1163,14 @@
             const age = now - entry.pose.receivedAt;
             if (age >= squadMemberExpiryMs) {
                 entry.marker?.remove();
+                entry.edge?.remove();
                 squadMembers.delete(memberId);
                 continue;
             }
 
             if (localPlayerPoseState?.map && entry.pose.map !== localPlayerPoseState.map) {
                 entry.marker?.setAttribute("hidden", "");
+                entry.edge?.setAttribute("hidden", "");
                 continue;
             }
 
@@ -944,16 +1179,29 @@
                 point = mapInstance.latLngToContainerPoint([entry.pose.z, entry.pose.x]);
             } catch {
                 entry.marker?.setAttribute("hidden", "");
+                entry.edge?.setAttribute("hidden", "");
                 continue;
             }
             if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) {
                 entry.marker?.setAttribute("hidden", "");
+                entry.edge?.setAttribute("hidden", "");
                 continue;
             }
 
             if (!entry.marker?.isConnected || entry.marker.parentElement !== container) {
                 entry.marker?.remove();
                 entry.marker = makeSquadMarker(container, entry.pose);
+            }
+
+            const markerState = age >= squadMemberStaleMs
+                ? "stale"
+                : entry.pose.uncertainty > 8
+                    ? "uncertain"
+                    : "live";
+            if (updateSquadEdgeIndicator(entry, point, container)) {
+                entry.edge.dataset.state = markerState;
+                entry.marker.setAttribute("hidden", "");
+                continue;
             }
 
             entry.marker.style.transform =
@@ -968,11 +1216,7 @@
             entry.marker.style.setProperty(
                 "--raidpilot-squad-uncertainty-radius",
                 `${Math.round(uncertaintyRadius * 10) / 10}px`);
-            entry.marker.dataset.state = age >= squadMemberStaleMs
-                ? "stale"
-                : entry.pose.uncertainty > 8
-                    ? "uncertain"
-                    : "live";
+            entry.marker.dataset.state = markerState;
 
             const distance = localPlayerPoseState
                 && localPlayerPoseState.map === entry.pose.map
@@ -1008,12 +1252,13 @@
             const oldest = [...squadMembers.entries()]
                 .sort((a, b) => a[1].pose.receivedAt - b[1].pose.receivedAt)[0];
             oldest?.[1]?.marker?.remove();
+            oldest?.[1]?.edge?.remove();
             if (oldest) {
                 squadMembers.delete(oldest[0]);
             }
         }
         if (!entry) {
-            entry = { pose, marker: null, trail: [] };
+            entry = { pose, marker: null, edge: null, trail: [] };
             squadMembers.set(pose.memberId, entry);
         } else {
             if (pose.sentAtUnixMs <= entry.pose.sentAtUnixMs) {
@@ -1034,6 +1279,7 @@
     window.__raidPilotRemoveSquadMember = (memberId) => {
         const entry = squadMembers.get(String(memberId ?? ""));
         entry?.marker?.remove();
+        entry?.edge?.remove();
         const removed = squadMembers.delete(String(memberId ?? ""));
         renderTacticalTrails();
         return removed;
@@ -1042,6 +1288,7 @@
     window.__raidPilotClearSquad = () => {
         for (const entry of squadMembers.values()) {
             entry.marker?.remove();
+            entry.edge?.remove();
         }
         squadMembers.clear();
         renderTacticalTrails();
