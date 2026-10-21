@@ -1653,7 +1653,7 @@ internal sealed partial class OverlayForm : Form
                 _idleSeconds,
                 secondsSinceLastAttempt)
             || LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
-                _visualRelocalization.Health,
+                _visualRelocalization.Health == LocalizationHealthState.Red,
                 uncertaintyMeters,
                 _idleSeconds,
                 secondsSinceLastAttempt);

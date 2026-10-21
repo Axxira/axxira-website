@@ -62,19 +62,19 @@ internal static class LocalizationRecoveryPolicyTests
     private static void RedHealthEscalatesNativeAnchor()
     {
         Require(LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
-                LocalizationHealthState.Red,
+                localizationHealthIsRed: true,
                 uncertaintyMeters: 1.8,
                 idleSeconds: 0.8,
                 secondsSinceLastAttempt: 21.0),
             "une santé rouge ancienne devrait profiter d'une vraie pause");
         Require(!LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
-                LocalizationHealthState.Orange,
+                localizationHealthIsRed: false,
                 uncertaintyMeters: 3.0,
                 idleSeconds: 10.0,
                 secondsSinceLastAttempt: 100.0),
             "orange ne doit pas forcer la voie rouge");
         Require(!LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
-                LocalizationHealthState.Red,
+                localizationHealthIsRed: true,
                 uncertaintyMeters: 1.8,
                 idleSeconds: 0.8,
                 secondsSinceLastAttempt: 5.0),

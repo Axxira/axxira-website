@@ -57,7 +57,7 @@ internal static class LocalizationRecoveryPolicy
     }
 
     internal static bool ShouldEscalateFromLocalizationHealth(
-        LocalizationHealthState health,
+        bool localizationHealthIsRed,
         double uncertaintyMeters,
         double idleSeconds,
         double secondsSinceLastAttempt)
@@ -78,7 +78,7 @@ internal static class LocalizationRecoveryPolicy
         // au temps et à l'incertitude. À partir de 1,75 m, profiter d'une
         // vraie pause du joueur pour obtenir un F8 exact évite d'attendre le
         // seuil nominal de 2,25 m. Le cooldown long interdit tout spam.
-        return health == LocalizationHealthState.Red
+        return localizationHealthIsRed
             && uncertaintyMeters >= 1.75
             && idleSeconds >= 0.75
             && secondsSinceLastAttempt >= 20.0;
