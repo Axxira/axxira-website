@@ -159,8 +159,8 @@ internal static class ScreenshotNameParserTests
             throw new InvalidOperationException("le quaternion de référence n'est pas reconnu");
         }
 
-        Require(observation.YawDegrees is >= 15.2 and <= 15.5,
-            $"yaw attendu entre 15.2 et 15.5, reçu {observation.YawDegrees:F3}");
+        Require(observation.YawDegrees is >= 15.20 and <= 15.40,
+            $"yaw EFT/TarkovMonitor attendu autour de 15.29°, reçu {observation.YawDegrees:F3}");
     }
 
     private static void KeepsYawWhileLookingUp()
