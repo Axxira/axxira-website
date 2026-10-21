@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class LocalizationRecoveryPolicyTests
 {
-    internal const int TestCount = 6;
+    internal const int TestCount = 7;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -12,6 +12,7 @@ internal static class LocalizationRecoveryPolicyTests
         Run("récupération localisation: pas de F8 si position fiable", RejectsReliablePose, failures);
         Run("récupération localisation: attend l'immobilité minimale", RequiresIdleWindow, failures);
         Run("récupération localisation: forte dérive accélère le recalage", AllowsFastRecoveryWhenUncertain, failures);
+        Run("récupération localisation: santé rouge escalade prudemment", RedHealthEscalatesNativeAnchor, failures);
     }
 
     private static void UsesNominalThresholds()
@@ -56,6 +57,28 @@ internal static class LocalizationRecoveryPolicyTests
     {
         Require(LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(14.0, 0.25, 2.1),
             "une forte dérive devrait autoriser une récupération accélérée");
+    }
+
+    private static void RedHealthEscalatesNativeAnchor()
+    {
+        Require(LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
+                LocalizationHealthState.Red,
+                uncertaintyMeters: 1.8,
+                idleSeconds: 0.8,
+                secondsSinceLastAttempt: 21.0),
+            "une santé rouge ancienne devrait profiter d'une vraie pause");
+        Require(!LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
+                LocalizationHealthState.Orange,
+                uncertaintyMeters: 3.0,
+                idleSeconds: 10.0,
+                secondsSinceLastAttempt: 100.0),
+            "orange ne doit pas forcer la voie rouge");
+        Require(!LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
+                LocalizationHealthState.Red,
+                uncertaintyMeters: 1.8,
+                idleSeconds: 0.8,
+                secondsSinceLastAttempt: 5.0),
+            "le cooldown santé doit empêcher le spam F8");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)

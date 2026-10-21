@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class RealtimePoseEstimatorTests
 {
-    internal const int TestCount = 20;
+    internal const int TestCount = 23;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -24,6 +24,9 @@ internal static class RealtimePoseEstimatorTests
         Run("recalage historique conserve le déplacement", HistoricalReanchorPreservesPostCaptureMovement, failures);
         Run("recalage historique corrige le cap et la vélocité", HistoricalReanchorRotatesHeadingAndVelocity, failures);
         Run("recalage historique conserve seulement l'incertitude récente", HistoricalReanchorKeepsOnlyPostCaptureUncertainty, failures);
+        Run("relocalisation douce conserve le mouvement post-capture", PartialVisualCorrectionPreservesPostCaptureMovement, failures);
+        Run("relocalisation douce borne translation et yaw", PartialVisualCorrectionBoundsTranslationAndYaw, failures);
+        Run("relocalisation douce tourne aussi la vélocité", PartialVisualCorrectionRotatesMomentum, failures);
         Run("nouveaux paramètres conservent l'état dynamique", ApplyingSettingsPreservesDynamicState, failures);
         Run("rejet des entrées invalides", RejectsInvalidInputs, failures);
     }
@@ -412,6 +415,71 @@ internal static class RealtimePoseEstimatorTests
                 - atCapture.YawUncertaintyDegrees,
             "incertitude de cap post-capture",
             0.000001);
+    }
+
+    private static void PartialVisualCorrectionPreservesPostCaptureMovement()
+    {
+        var estimator = NewEstimator();
+        var atCapture = estimator.Anchor(Observation(0, 0, 0, 0));
+        estimator.Advance(1, 1, 0, false, false, 0, false);
+
+        var corrected = estimator.ApplyVisualRelocalizationCorrection(
+            new VisualKeyframePose(1, 0, 0, 0),
+            atCapture,
+            positionGain: 0.5,
+            yawGain: 0.5,
+            maximumTranslationStepMeters: 1.0,
+            maximumYawStepDegrees: 5.0);
+
+        Near(corrected.X, 0.5, "demi-correction X", 0.000001);
+        Near(corrected.Z, 2.0, "mouvement post-capture conservé", 0.000001);
+    }
+
+    private static void PartialVisualCorrectionBoundsTranslationAndYaw()
+    {
+        var estimator = NewEstimator();
+        var atCapture = estimator.Anchor(Observation(0, 0, 0, 0));
+
+        var corrected = estimator.ApplyVisualRelocalizationCorrection(
+            new VisualKeyframePose(10, 0, 0, 90),
+            atCapture,
+            positionGain: 1.0,
+            yawGain: 1.0,
+            maximumTranslationStepMeters: 1.0,
+            maximumYawStepDegrees: 5.0);
+
+        Near(corrected.X, 1.0, "translation bornée", 0.000001);
+        Near(corrected.YawDegrees, 5.0, "yaw borné", 0.000001);
+    }
+
+    private static void PartialVisualCorrectionRotatesMomentum()
+    {
+        var estimator = new RealtimePoseEstimator(new RealtimePoseEstimatorSettings
+        {
+            WalkSpeedMetersPerSecond = 2,
+            BackwardSpeedMultiplier = 1,
+            StrafeSpeedMultiplier = 1,
+            AccelerationMetersPerSecondSquared = 10_000_000,
+            DecelerationMetersPerSecondSquared = 0,
+            InitialPositionUncertaintyMeters = 0.25,
+            InitialYawUncertaintyDegrees = 0.5,
+        });
+        var atCapture = estimator.Anchor(Observation(0, 0, 0, 0));
+        estimator.Advance(1, 1, 0, false, false, 0, false);
+
+        var corrected = estimator.ApplyVisualRelocalizationCorrection(
+            new VisualKeyframePose(0, 0, 0, 90),
+            atCapture,
+            positionGain: 1.0,
+            yawGain: 1.0,
+            maximumTranslationStepMeters: 1.0,
+            maximumYawStepDegrees: 90.0);
+        Near(corrected.X, 2.0, "trajet tourné vers X", 0.000001);
+        Near(corrected.Z, 0.0, "trajet Z tourné", 0.000001);
+
+        var coasting = estimator.Advance(1, 0, 0, false, false, 0, false);
+        Near(coasting.X, 4.0, "vélocité tournée vers X", 0.000001);
+        Near(coasting.Z, 0.0, "vélocité Z tournée", 0.000001);
     }
 
     private static void ApplyingSettingsPreservesDynamicState()

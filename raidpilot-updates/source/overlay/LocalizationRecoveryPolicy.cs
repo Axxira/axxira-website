@@ -56,6 +56,34 @@ internal static class LocalizationRecoveryPolicy
             && secondsSinceLastAttempt >= AutomaticReanchorCooldownSeconds(uncertaintyMeters);
     }
 
+    internal static bool ShouldEscalateFromLocalizationHealth(
+        LocalizationHealthState health,
+        double uncertaintyMeters,
+        double idleSeconds,
+        double secondsSinceLastAttempt)
+    {
+        ValidateUncertainty(uncertaintyMeters);
+        if (!double.IsFinite(idleSeconds) || idleSeconds < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(idleSeconds));
+        }
+        if (double.IsNaN(secondsSinceLastAttempt)
+            || secondsSinceLastAttempt < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(secondsSinceLastAttempt));
+        }
+
+        // Rouge signifie qu'aucune confirmation absolue récente n'a résisté
+        // au temps et à l'incertitude. À partir de 1,75 m, profiter d'une
+        // vraie pause du joueur pour obtenir un F8 exact évite d'attendre le
+        // seuil nominal de 2,25 m. Le cooldown long interdit tout spam.
+        return health == LocalizationHealthState.Red
+            && uncertaintyMeters >= 1.75
+            && idleSeconds >= 0.75
+            && secondsSinceLastAttempt >= 20.0;
+    }
+
     private static void ValidateUncertainty(double uncertaintyMeters)
     {
         if (!double.IsFinite(uncertaintyMeters) || uncertaintyMeters < 0)

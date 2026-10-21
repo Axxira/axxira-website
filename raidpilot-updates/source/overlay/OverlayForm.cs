@@ -68,6 +68,7 @@ internal sealed partial class OverlayForm : Form
     private readonly VisualMotionGate _visualMotionGate = new();
     private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
     private readonly SuperKeyframeRecognizer _superKeyframeRecognizer = new();
+    private readonly VisualRelocalizationEngineV2 _visualRelocalization = new();
     private readonly RealtimePoseHistory _realtimePoseHistory = new(capacity: 256);
     private readonly RawKeyboardTimeline _rawKeyboardTimeline = new();
     private readonly RaidCountdown _raidCountdown = new();
@@ -226,6 +227,7 @@ internal sealed partial class OverlayForm : Form
         _learnedRouteClockOriginUtc = _raidSessionStartedAtUtc;
         _learnedRouteClockOriginTimestamp = Stopwatch.GetTimestamp();
         _learnedRouteGraph.BeginSession(_currentMap);
+        _visualRelocalization.BeginSession(_learnedRouteClockOriginTimestamp);
         _controlSettings = EftControlSettings.Read();
         _visualMotionGate.ConfigureVerticalFieldOfView(
             EftGameViewSettings.Read().VerticalFieldOfViewDegrees);
@@ -1084,13 +1086,18 @@ internal sealed partial class OverlayForm : Form
         var duckWheelChord = Interlocked.Exchange(ref _pendingDuckWheelChord, 0) != 0;
         UpdateMovementSpeedScale(wheelDelta, duckWheelChord);
 
-        if (movementInputActive || rotationOccurred || mouseDelta != 0)
+        // La relocalisation v2 peut confirmer un lieu pendant une marche
+        // rectiligne. Seule une rotation significative invalide donc les
+        // confirmations partielles des recognizers. L'apprentissage d'un
+        // NOUVEAU repère, lui, reste strictement immobile et est annulé au
+        // moindre déplacement comme auparavant.
+        if (rotationOccurred || Math.Abs(mouseDelta) > 3)
         {
             _visualKeyframeRecognizer.CancelPendingMatch();
             _superKeyframeRecognizer.CancelPendingMatch();
-            // Un repère différé doit rester exactement à la pose F8. Dès que
-            // le joueur bouge ou tourne, la vue courante n'est plus une ancre
-            // absolue sûre et l'apprentissage est abandonné.
+        }
+        if (movementInputActive || rotationOccurred || mouseDelta != 0)
+        {
             _pendingVisualKeyframeLearning = null;
         }
 
@@ -1112,7 +1119,8 @@ internal sealed partial class OverlayForm : Form
             return;
         }
 
-        VisualKeyframePose? recognizedVisualPose = null;
+        VisualRelocalizationDecision? visualRelocalizationDecision = null;
+        RealtimePose? visualRelocalizationPoseAtCapture = null;
         // Visual motion cannot produce an absolute position before the first
         // exact anchor. Delay GDI capture/feature work until it can actually
         // protect or correct a live estimate.
@@ -1121,9 +1129,6 @@ internal sealed partial class OverlayForm : Form
         {
             var visualIntervalStart = _lastVisualMotionSample;
             _lastVisualMotionSample = now;
-            var needsVisualKeyframeCheck = !movementInputActive && !rotationOccurred
-                && mouseDelta == 0
-                && _visualMotionGate.State == VisualMotionState.Stationary;
             if (_visualMotionGate.TryObserveWindow(
                     _lastForegroundWindow,
                     out var visualObservation,
@@ -1139,110 +1144,165 @@ internal sealed partial class OverlayForm : Form
                     movementInputActive,
                     aiming);
 
-                if (needsVisualKeyframeCheck
-                    && visualObservation.CaptureProvenLive
-                    && visualObservation.Egomotion.State == VisualEgomotionState.Stationary
-                    && _realtimeEstimator.CurrentPose is { } estimatedVisualPose
-                    && _visualMotionGate.TryCopyLatestLuminance(out var visualFrame))
+                if (_realtimeEstimator.CurrentPose is { } estimatedVisualPose)
                 {
-                    var learnedPendingKeyframe = TryLearnPendingVisualKeyframe(
-                        visualFrame,
+                    _visualRelocalization.ObserveTracking(
+                        estimatedVisualPose,
                         now);
-                    if (!learnedPendingKeyframe)
-                    {
-                        VisualKeyframePose? lowResolutionPose = null;
-                        var recognition = _visualKeyframeRecognizer.Observe(
-                            _currentMap,
-                            visualFrame,
-                            _visualMotionGate.SampleWidth,
-                            _visualMotionGate.SampleHeight,
-                            new VisualKeyframePose(
-                                estimatedVisualPose.X,
-                                estimatedVisualPose.Y,
-                                estimatedVisualPose.Z,
-                                estimatedVisualPose.YawDegrees),
-                            now,
-                            estimatedVisualPose.PositionUncertaintyMeters);
-                        if (recognition.IsConfirmed)
-                        {
-                            lowResolutionPose = recognition.ExactPose;
-                        }
 
-                        var superAvailable =
-                            _superKeyframeRecognizer.KeyframeCountForMap(
-                                _currentMap) > 0;
-                        SuperKeyframeRecognition superRecognition =
-                            SuperKeyframeRecognition.NoMatch();
-                        var superDue = superAvailable
-                            && estimatedVisualPose.PositionUncertaintyMeters
-                                >= SuperKeyframeMinimumUncertaintyMeters
-                            && (_lastSuperKeyframeSample == 0
-                                || (now - _lastSuperKeyframeSample)
-                                    / (double)Stopwatch.Frequency
-                                    >= SuperKeyframeSampleIntervalSeconds);
-                        if (superDue)
+                    var stationaryForLearning =
+                        !movementInputActive
+                        && !rotationOccurred
+                        && mouseDelta == 0
+                        && visualObservation.CaptureProvenLive
+                        && visualObservation.Egomotion.State
+                            == VisualEgomotionState.Stationary
+                        && _visualMotionGate.State
+                            == VisualMotionState.Stationary;
+
+                    if (visualObservation.CaptureProvenLive
+                        && _visualMotionGate.TryCopyLatestLuminance(
+                            out var visualFrame))
+                    {
+                        var learnedPendingKeyframe =
+                            stationaryForLearning
+                            && TryLearnPendingVisualKeyframe(
+                                visualFrame,
+                                now);
+                        if (learnedPendingKeyframe)
                         {
-                            _lastSuperKeyframeSample = now;
-                            if (HighResolutionVisualSampler.TryCaptureWindow(
-                                    _lastForegroundWindow,
-                                    out var highResolutionFrame))
+                            // Le nouveau repère vient d'être appris à une pose
+                            // absolue. Une confirmation commencée avant cet
+                            // apprentissage ne doit pas survivre à ce changement
+                            // de base visuelle.
+                            _visualKeyframeRecognizer.CancelPendingMatch();
+                            _superKeyframeRecognizer.CancelPendingMatch();
+                        }
+                        else
+                        {
+                            var canMatch =
+                                !rotationOccurred
+                                && Math.Abs(mouseDelta) <= 3;
+                            var estimatedKeyframePose =
+                                new VisualKeyframePose(
+                                    estimatedVisualPose.X,
+                                    estimatedVisualPose.Y,
+                                    estimatedVisualPose.Z,
+                                    estimatedVisualPose.YawDegrees);
+
+                            var lowRecognition =
+                                VisualKeyframeRecognition.NoMatch();
+                            var lowAttempted = false;
+                            if (canMatch
+                                && _visualRelocalization
+                                    .ShouldRunLowResolution(
+                                        movementInputActive,
+                                        now))
                             {
-                                superRecognition =
-                                    _superKeyframeRecognizer.Observe(
+                                lowAttempted = true;
+                                lowRecognition =
+                                    _visualKeyframeRecognizer.Observe(
                                         _currentMap,
-                                        highResolutionFrame,
-                                        new VisualKeyframePose(
-                                            estimatedVisualPose.X,
-                                            estimatedVisualPose.Y,
-                                            estimatedVisualPose.Z,
-                                            estimatedVisualPose.YawDegrees),
+                                        visualFrame,
+                                        _visualMotionGate.SampleWidth,
+                                        _visualMotionGate.SampleHeight,
+                                        estimatedKeyframePose,
                                         now,
                                         estimatedVisualPose
                                             .PositionUncertaintyMeters);
                             }
-                            else
-                            {
-                                _superKeyframeRecognizer.CancelPendingMatch();
-                            }
-                        }
 
-                        if (superRecognition.IsConfirmed
-                            && superRecognition.ExactPose is { } superPose)
-                        {
-                            if (lowResolutionPose is null
-                                || VisualAnchorsConsistent(
-                                    lowResolutionPose.Value,
-                                    superPose))
+                            var superAvailable =
+                                _superKeyframeRecognizer
+                                    .KeyframeCountForMap(
+                                        _currentMap) > 0;
+                            var adaptiveHighResolutionDue =
+                                canMatch
+                                && _visualRelocalization
+                                    .ShouldRunHighResolution(
+                                        estimatedVisualPose,
+                                        superAvailable,
+                                        now);
+                            var lowNeedsCorroboration =
+                                canMatch
+                                && superAvailable
+                                && lowRecognition.IsConfirmed
+                                && (_lastSuperKeyframeSample == 0
+                                    || (now - _lastSuperKeyframeSample)
+                                        / (double)Stopwatch.Frequency
+                                        >= SuperKeyframeSampleIntervalSeconds);
+                            var superDue =
+                                superAvailable
+                                && (adaptiveHighResolutionDue
+                                    || lowNeedsCorroboration);
+
+                            var superRecognition =
+                                SuperKeyframeRecognition.NoMatch();
+                            var highResolutionAttempted = false;
+                            if (superDue)
                             {
-                                recognizedVisualPose = superPose;
+                                highResolutionAttempted = true;
+                                _lastSuperKeyframeSample = now;
+                                if (HighResolutionVisualSampler
+                                    .TryCaptureWindow(
+                                        _lastForegroundWindow,
+                                        out var highResolutionFrame))
+                                {
+                                    superRecognition =
+                                        _superKeyframeRecognizer.Observe(
+                                            _currentMap,
+                                            highResolutionFrame,
+                                            estimatedKeyframePose,
+                                            now,
+                                            estimatedVisualPose
+                                                .PositionUncertaintyMeters);
+                                }
+                                else
+                                {
+                                    _superKeyframeRecognizer
+                                        .CancelPendingMatch();
+                                }
                             }
-                            else
+
+                            if (lowAttempted
+                                || highResolutionAttempted)
                             {
-                                _visualKeyframeRecognizer.CancelPendingMatch();
-                                _superKeyframeRecognizer.CancelPendingMatch();
+                                var evaluatedRelocalization =
+                                    _visualRelocalization.Evaluate(
+                                        estimatedVisualPose,
+                                        lowRecognition,
+                                        superRecognition,
+                                        superAvailable,
+                                        now);
+                                if (evaluatedRelocalization.ShouldCorrect)
+                                {
+                                    visualRelocalizationDecision =
+                                        evaluatedRelocalization;
+                                    visualRelocalizationPoseAtCapture =
+                                        estimatedVisualPose;
+                                }
                             }
-                        }
-                        else if (!superAvailable
-                            && lowResolutionPose is { } legacyPose)
-                        {
-                            // Migration douce : tant que le joueur n'a pas
-                            // encore de SuperKeyframes, conserver le moteur
-                            // 64×36 existant. Dès que la base haute résolution
-                            // existe, elle devient l'arbitre final.
-                            recognizedVisualPose = legacyPose;
+
+                            if (!canMatch)
+                            {
+                                _visualKeyframeRecognizer
+                                    .CancelPendingMatch();
+                                _superKeyframeRecognizer
+                                    .CancelPendingMatch();
+                            }
                         }
                     }
-                }
-                else
-                {
-                    _visualKeyframeRecognizer.CancelPendingMatch();
-                    _superKeyframeRecognizer.CancelPendingMatch();
+                    else if (!visualObservation.CaptureProvenLive)
+                    {
+                        _visualKeyframeRecognizer.CancelPendingMatch();
+                        _superKeyframeRecognizer.CancelPendingMatch();
+                    }
                 }
             }
             else
             {
                 _visualKeyframeRecognizer.CancelPendingMatch();
-            _superKeyframeRecognizer.CancelPendingMatch();
+                _superKeyframeRecognizer.CancelPendingMatch();
             }
         }
         if (Math.Abs(mouseDelta) > 3
@@ -1349,13 +1409,16 @@ internal sealed partial class OverlayForm : Form
         {
             return;
         }
-        var visuallyReanchored = false;
-        if (recognizedVisualPose is { } visualAnchor)
+        var visualCorrectionApplied = false;
+        var visualCorrectionSnap = false;
+        var visualCorrectionAuthoritative = false;
+        if (visualRelocalizationDecision is { } decision
+            && decision.ShouldCorrect
+            && decision.TargetPose is { } visualAnchor
+            && visualRelocalizationPoseAtCapture is { } visualPoseAtCapture)
         {
-            _learnedRouteGraph.BreakContinuity();
-            _lastLearnedRouteObservationAt = 0;
             var anchorObservation = new ScreenshotObservation(
-                "raidpilot-visual-keyframe",
+                "raidpilot-visual-v2",
                 visualAnchor.X,
                 visualAnchor.Y,
                 visualAnchor.Z,
@@ -1364,15 +1427,49 @@ internal sealed partial class OverlayForm : Form
                 0,
                 1,
                 visualAnchor.YawDegrees);
-            pose = _realtimeEstimator.Anchor(anchorObservation);
-            visuallyReanchored = true;
+
+            pose = _realtimeEstimator.ApplyVisualRelocalizationCorrection(
+                visualAnchor,
+                visualPoseAtCapture,
+                decision.PositionGain,
+                decision.YawGain,
+                decision.MaximumTranslationStepMeters,
+                decision.MaximumYawStepDegrees);
+
+            visualCorrectionApplied = true;
+            visualCorrectionSnap =
+                decision.Mode == VisualCorrectionMode.HardSnap;
+            visualCorrectionAuthoritative =
+                decision.Mode is VisualCorrectionMode.Medium
+                    or VisualCorrectionMode.HardSnap;
+
+            // Une correction moyenne ou un loop-closure change suffisamment
+            // le repère pour casser la continuité d'une route apprise. Une
+            // micro-correction reste au contraire sous le bruit normal du
+            // graphe et ne doit pas fragmenter le trajet.
+            if (visualCorrectionAuthoritative)
+            {
+                _learnedRouteGraph.BreakContinuity();
+                _lastLearnedRouteObservationAt = 0;
+                _guidanceGeneration = unchecked(
+                    _guidanceGeneration + 1);
+                InvalidateLearnedRoutePlan();
+            }
+
             _lastExactObservation = anchorObservation;
-            RecordAutomaticFloorAnchor(anchorObservation, now, "visual");
+            RecordAutomaticFloorAnchor(
+                anchorObservation,
+                now,
+                decision.GlobalLoopClosure
+                    ? "visual-v2-loop"
+                    : "visual-v2");
             _lastExactAnchorAt = now;
             _idleSeconds = 0.0;
-            _skipNextRealtimeCalibration = false;
-            _guidanceGeneration = unchecked(_guidanceGeneration + 1);
-            InvalidateLearnedRoutePlan();
+            // Une correction visuelle crée une discontinuité par rapport au
+            // segment utilisé pour apprendre les vitesses. Le prochain F8 ne
+            // doit donc pas calibrer une vitesse à travers cette correction.
+            _skipNextRealtimeCalibration = true;
+            _precisionSegmentClean = false;
             _realtimePoseHistory.Reset();
             ResetDistanceCalibrationCounters();
             Interlocked.Exchange(ref _hipMouseCountsSinceAnchor, 0);
@@ -1380,22 +1477,26 @@ internal sealed partial class OverlayForm : Form
             Interlocked.Exchange(ref _hipMouseMagnitudeSinceAnchor, 0);
             Interlocked.Exchange(ref _adsMouseMagnitudeSinceAnchor, 0);
         }
+
+        _visualRelocalization.ObserveTracking(pose, now);
         _realtimePoseHistory.Add(now, pose);
         ObserveLearnedRoutePose(
             pose,
-            visuallyReanchored ? LearnedPoseSource.ExactAnchor : LearnedPoseSource.LiveEstimate,
+            visualCorrectionAuthoritative
+                ? LearnedPoseSource.ExactAnchor
+                : LearnedPoseSource.LiveEstimate,
             pose.PositionUncertaintyMeters,
             now,
-            force: visuallyReanchored);
+            force: visualCorrectionAuthoritative);
         // Le garde interne limite l'écriture à une fois toutes les 45 s. Le
         // solliciter à chaque tick évite de perdre tout le trajet depuis le
         // dernier F8 si le jeu ou Windows s'arrête brutalement.
         MaybeSaveLearnedRouteGraph(now);
 
-        // Un snap de repère corrige une erreur accumulée; ce delta n'est pas
-        // une distance réellement parcourue pendant ce tick et ne doit jamais
-        // alimenter l'apprentissage des vitesses de marche.
-        if (ShouldAccumulateCalibrationDistance(visuallyReanchored))
+        // Une correction de relocalisation n'est pas une distance parcourue
+        // pendant ce tick et ne doit jamais alimenter l'apprentissage des
+        // vitesses de marche.
+        if (ShouldAccumulateCalibrationDistance(visualCorrectionApplied))
         {
             var estimatedDistance = double.IsFinite(precisionPath) ? precisionPath : Math.Sqrt(
                 ((pose.X - previousPose.X) * (pose.X - previousPose.X))
@@ -1443,7 +1544,7 @@ internal sealed partial class OverlayForm : Form
             _ = UpdateLocalPlayerMarkerAsync(
                 observation,
                 pose.PositionUncertaintyMeters,
-                snap: visuallyReanchored);
+                snap: visualCorrectionSnap);
             MaybeSendSquadPose(
                 observation,
                 pose.PositionUncertaintyMeters);
@@ -1546,10 +1647,16 @@ internal sealed partial class OverlayForm : Form
         var secondsSinceLastAttempt = _lastAutoReanchorAttempt == 0
             ? double.PositiveInfinity
             : (now - _lastAutoReanchorAttempt) / (double)Stopwatch.Frequency;
-        var recoveryReady = LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(
-            uncertaintyMeters,
-            _idleSeconds,
-            secondsSinceLastAttempt);
+        var recoveryReady =
+            LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(
+                uncertaintyMeters,
+                _idleSeconds,
+                secondsSinceLastAttempt)
+            || LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
+                _visualRelocalization.Health,
+                uncertaintyMeters,
+                _idleSeconds,
+                secondsSinceLastAttempt);
         if (!_autoReanchorEnabled
             || _lastExactObservation is null
             || !recoveryReady
@@ -3095,6 +3202,7 @@ internal sealed partial class OverlayForm : Form
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;
             _lastExactAnchorAt = now;
+            _visualRelocalization.NoteAbsoluteAnchor(now);
             if (ShouldScheduleVisualKeyframeLearning(
                     isAutomaticReanchor,
                     hasFileTimestamp,
@@ -5166,6 +5274,7 @@ internal sealed partial class OverlayForm : Form
             _visualMotionGate.Reset();
             _visualKeyframeRecognizer.ResetSession();
             _superKeyframeRecognizer.ResetSession();
+            _visualRelocalization.BeginSession(Stopwatch.GetTimestamp());
             _lastSuperKeyframeSample = 0;
             _pendingVisualKeyframeLearning = null;
             ResetDistanceCalibrationCounters();

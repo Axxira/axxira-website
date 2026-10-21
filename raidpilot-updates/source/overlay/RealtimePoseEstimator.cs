@@ -249,6 +249,126 @@ public sealed class RealtimePoseEstimator
     }
 
     /// <summary>
+    /// Applique une correction absolue partielle issue de la relocalisation
+    /// visuelle, tout en conservant le mouvement effectué depuis la trame qui
+    /// a fourni la preuve. La translation et le yaw sont bornés séparément.
+    /// </summary>
+    internal RealtimePose ApplyVisualRelocalizationCorrection(
+        VisualKeyframePose exactPoseAtCapture,
+        RealtimePose estimatedPoseAtCapture,
+        double positionGain,
+        double yawGain,
+        double maximumTranslationStepMeters,
+        double maximumYawStepDegrees)
+    {
+        if (CurrentPose is not { } currentPose)
+        {
+            throw new InvalidOperationException(
+                "Une pose courante est requise pour corriger la relocalisation.");
+        }
+
+        if (!AreFinite(
+                exactPoseAtCapture.X,
+                exactPoseAtCapture.Y,
+                exactPoseAtCapture.Z,
+                exactPoseAtCapture.YawDegrees,
+                estimatedPoseAtCapture.X,
+                estimatedPoseAtCapture.Y,
+                estimatedPoseAtCapture.Z,
+                estimatedPoseAtCapture.YawDegrees,
+                estimatedPoseAtCapture.PositionUncertaintyMeters,
+                estimatedPoseAtCapture.YawUncertaintyDegrees)
+            || positionGain is < 0.0 or > 1.0
+            || yawGain is < 0.0 or > 1.0
+            || double.IsNaN(maximumTranslationStepMeters)
+            || maximumTranslationStepMeters <= 0.0
+            || double.IsNaN(maximumYawStepDegrees)
+            || maximumYawStepDegrees <= 0.0
+            || estimatedPoseAtCapture.PositionUncertaintyMeters < 0.0
+            || estimatedPoseAtCapture.YawUncertaintyDegrees < 0.0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(positionGain),
+                "La correction visuelle contient des valeurs invalides.");
+        }
+
+        var anchorDeltaX = exactPoseAtCapture.X - estimatedPoseAtCapture.X;
+        var anchorDeltaY = exactPoseAtCapture.Y - estimatedPoseAtCapture.Y;
+        var anchorDeltaZ = exactPoseAtCapture.Z - estimatedPoseAtCapture.Z;
+        var anchorDistance = Math.Sqrt(
+            (anchorDeltaX * anchorDeltaX) + (anchorDeltaZ * anchorDeltaZ));
+        var requestedTranslation = anchorDistance * positionGain;
+        var appliedTranslation = Math.Min(
+            requestedTranslation,
+            maximumTranslationStepMeters);
+        var translationFraction = anchorDistance <= double.Epsilon
+            ? positionGain
+            : Math.Clamp(appliedTranslation / anchorDistance, 0.0, 1.0);
+
+        var fullYawCorrection = NormalizeSigned180(
+            exactPoseAtCapture.YawDegrees - estimatedPoseAtCapture.YawDegrees);
+        var requestedYawCorrection = fullYawCorrection * yawGain;
+        var yawCorrection = Math.Clamp(
+            requestedYawCorrection,
+            -maximumYawStepDegrees,
+            maximumYawStepDegrees);
+
+        var correctionRadians = yawCorrection * DegreesToRadians;
+        var cosine = Math.Cos(correctionRadians);
+        var sine = Math.Sin(correctionRadians);
+
+        var relativeX = currentPose.X - estimatedPoseAtCapture.X;
+        var relativeY = currentPose.Y - estimatedPoseAtCapture.Y;
+        var relativeZ = currentPose.Z - estimatedPoseAtCapture.Z;
+        var correctedRelativeX = (relativeX * cosine) + (relativeZ * sine);
+        var correctedRelativeZ = (-relativeX * sine) + (relativeZ * cosine);
+
+        var correctedVelocityX = (_velocityX * cosine) + (_velocityZ * sine);
+        var correctedVelocityZ = (-_velocityX * sine) + (_velocityZ * cosine);
+
+        var correctedAnchorX =
+            estimatedPoseAtCapture.X + (anchorDeltaX * translationFraction);
+        var correctedAnchorY =
+            estimatedPoseAtCapture.Y + (anchorDeltaY * translationFraction);
+        var correctedAnchorZ =
+            estimatedPoseAtCapture.Z + (anchorDeltaZ * translationFraction);
+
+        var historicalPositionUncertainty = Math.Max(
+            0.0,
+            estimatedPoseAtCapture.PositionUncertaintyMeters
+                - _settings.InitialPositionUncertaintyMeters);
+        var historicalYawUncertainty = Math.Max(
+            0.0,
+            estimatedPoseAtCapture.YawUncertaintyDegrees
+                - _settings.InitialYawUncertaintyDegrees);
+        var yawFraction = Math.Abs(fullYawCorrection) <= double.Epsilon
+            ? yawGain
+            : Math.Clamp(
+                Math.Abs(yawCorrection / fullYawCorrection),
+                0.0,
+                1.0);
+
+        var corrected = new RealtimePose(
+            correctedAnchorX + correctedRelativeX,
+            correctedAnchorY + relativeY,
+            correctedAnchorZ + correctedRelativeZ,
+            Normalize360(currentPose.YawDegrees + yawCorrection),
+            Math.Max(
+                _settings.InitialPositionUncertaintyMeters,
+                currentPose.PositionUncertaintyMeters
+                    - (historicalPositionUncertainty * translationFraction)),
+            Math.Max(
+                _settings.InitialYawUncertaintyDegrees,
+                currentPose.YawUncertaintyDegrees
+                    - (historicalYawUncertainty * yawFraction)));
+
+        CurrentPose = corrected;
+        _velocityX = correctedVelocityX;
+        _velocityZ = correctedVelocityZ;
+        return corrected;
+    }
+
+    /// <summary>
     /// Avance l'estimation d'un pas. <paramref name="forward"/> et
     /// <paramref name="right"/> sont des axes compris entre -1 et 1.
     /// Un delta de souris positif tourne vers la droite.
