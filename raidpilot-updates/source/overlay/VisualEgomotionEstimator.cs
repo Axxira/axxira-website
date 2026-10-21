@@ -134,6 +134,7 @@ internal sealed class VisualEgomotionEstimator
 
     private readonly object _sync = new();
     private readonly VisualEgomotionSettings _settings;
+    private double _horizontalFieldOfViewDegrees;
 
     private byte[] _previousFrame = [];
     private int _previousWidth;
@@ -144,6 +145,31 @@ internal sealed class VisualEgomotionEstimator
     {
         _settings = settings ?? new VisualEgomotionSettings();
         ValidateSettings(_settings);
+        _horizontalFieldOfViewDegrees = _settings.HorizontalFieldOfViewDegrees;
+    }
+
+    internal double HorizontalFieldOfViewDegrees
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _horizontalFieldOfViewDegrees;
+            }
+        }
+    }
+
+    internal void SetHorizontalFieldOfViewDegrees(double degrees)
+    {
+        if (!double.IsFinite(degrees) || degrees is <= 1.0 or >= 179.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(degrees));
+        }
+
+        lock (_sync)
+        {
+            _horizontalFieldOfViewDegrees = degrees;
+        }
     }
 
     internal VisualEgomotionEstimate Observe(
@@ -346,7 +372,7 @@ internal sealed class VisualEgomotionEstimator
         // caméra vers la droite. Cette conversion donne une valeur angulaire
         // utile sous l'hypothèse d'une rotation pure au centre de l'image.
         var focalLengthPixels = (width * 0.5)
-            / Math.Tan(_settings.HorizontalFieldOfViewDegrees * Math.PI / 360.0);
+            / Math.Tan(_horizontalFieldOfViewDegrees * Math.PI / 360.0);
         var yawDeltaDegrees = -Math.Atan(shiftX / focalLengthPixels) * 180.0 / Math.PI;
 
         return new VisualEgomotionEstimate(

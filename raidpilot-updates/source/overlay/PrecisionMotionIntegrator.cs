@@ -3,6 +3,13 @@ using System.Diagnostics;
 namespace RaidPilot.Overlay;
 
 /// <summary>Bounded RAM-only rotation samples. No input injection, recording to disk or image capture.</summary>
+internal readonly record struct PrecisionYawSummary(
+    long Counts,
+    long Magnitude,
+    bool Aiming,
+    bool MixedAiming,
+    int Samples);
+
 internal sealed class PrecisionYawTimeline
 {
     internal readonly record struct Sample(long At, int Counts, bool Aiming);
@@ -38,6 +45,48 @@ internal sealed class PrecisionYawTimeline
             if (sample.At > end) break;
             if (sample.At > start) target.Add(sample);
         }
+        return true;
+    }
+
+    internal bool TrySummarizeInterval(long start, long end, out PrecisionYawSummary summary)
+    {
+        summary = default;
+        if (start < 0 || end < start || start < _discardedThrough)
+        {
+            return false;
+        }
+
+        long counts = 0;
+        long magnitude = 0;
+        var samples = 0;
+        bool? aiming = null;
+        var mixedAiming = false;
+
+        for (int i = 0; i < _count; i++)
+        {
+            var sample = _ring[(_start + i) % _ring.Length];
+            if (sample.At > end) break;
+            if (sample.At <= start) continue;
+
+            counts += sample.Counts;
+            magnitude += Math.Abs((long)sample.Counts);
+            samples++;
+            if (aiming is null)
+            {
+                aiming = sample.Aiming;
+            }
+            else if (aiming.Value != sample.Aiming)
+            {
+                mixedAiming = true;
+            }
+        }
+
+        summary = new PrecisionYawSummary(
+            counts,
+            magnitude,
+            aiming ?? false,
+            mixedAiming,
+            samples);
         return true;
     }
 }

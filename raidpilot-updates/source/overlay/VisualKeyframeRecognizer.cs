@@ -997,6 +997,7 @@ internal sealed class VisualKeyframeRecognizer
         _maps.Add(mapId, created);
         return created;
     }
+
     private void ClearPending()
     {
         _pendingKeyframeId = 0;

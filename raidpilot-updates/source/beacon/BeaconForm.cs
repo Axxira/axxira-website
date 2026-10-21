@@ -28,6 +28,7 @@ internal sealed class BeaconForm : Form
     private readonly CancellationTokenSource _lifetime = new();
     private readonly VisualMotionGate _visualMotionGate = new();
     private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
+    private readonly VisualYawCalibration _visualYawCalibration = new();
     private readonly RawKeyboardTimeline _rawKeyboardTimeline = new();
     private readonly PrecisionYawTimeline _precisionYaw = new();
     private readonly PrecisionMotionIntegrator _precisionMotionIntegrator = new();
@@ -82,6 +83,8 @@ internal sealed class BeaconForm : Form
         _settingsPath = SquadProfileStore.DefaultPath;
         _profile = SquadProfileStore.LoadOrCreate(_settingsPath);
         _controls = EftControlSettings.Read();
+        _visualMotionGate.ConfigureVerticalFieldOfView(
+            EftGameViewSettings.Read().VerticalFieldOfViewDegrees);
         _trackedMovementKeys = BuildTrackedMovementKeys(_controls);
         _calibrationSource = new RealtimeCalibrationSource(
             _controls.MouseSensitivity,
@@ -156,6 +159,7 @@ internal sealed class BeaconForm : Form
         _ = VisualKeyframeStore.TryLoad(
             _visualKeyframeRecognizer,
             VisualKeyframeStore.GetPath(memberId));
+        _visualYawCalibration.Reset();
         _pendingCapture = null;
         _screenshotBindingWasDown = false;
         _controlTrackingActive = false;
@@ -794,6 +798,7 @@ internal sealed class BeaconForm : Form
                 _adaptiveCalibration.ResetRaid();
                 _visualMotionGate.Reset();
                 _visualKeyframeRecognizer.ResetSession();
+                _visualYawCalibration.Reset();
                 _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
                 _lastVisualObservation = null;
                 _lastVisualSample = 0;
@@ -997,7 +1002,8 @@ internal sealed class BeaconForm : Form
                 endTimestamp,
                 out var forward)
             || !_rawKeyboardTimeline.TrySample(
-                _controls.MoveBackward & Keys.KeyCode,                startTimestamp,
+                _controls.MoveBackward & Keys.KeyCode,
+                startTimestamp,
                 endTimestamp,
                 out var backward)
             || !_rawKeyboardTimeline.TrySample(
@@ -1411,6 +1417,7 @@ internal sealed class BeaconForm : Form
             return _visualMotionEvidence;
         }
 
+        var visualIntervalStart = _lastVisualSample;
         _lastVisualSample = now;
         if (!_visualMotionGate.TryObserveWindow(
                 _lastForegroundWindow,
@@ -1423,6 +1430,11 @@ internal sealed class BeaconForm : Form
         }
 
         _lastVisualObservation = observation;
+        TryCalibrateYawFromVision(
+            visualIntervalStart,
+            now,
+            observation,
+            movementCommanded);
         if (!observation.CaptureProvenLive)
         {
             _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
@@ -1457,6 +1469,50 @@ internal sealed class BeaconForm : Form
             _visualKeyframeRecognizer.CancelPendingMatch();
         }
         return _visualMotionEvidence;
+    }
+
+    private void TryCalibrateYawFromVision(
+        long intervalStart,
+        long intervalEnd,
+        VisualMotionObservation observation,
+        bool movementCommanded)
+    {
+        if (!observation.CaptureProvenLive
+            || intervalStart <= 0
+            || intervalEnd <= intervalStart
+            || !_precisionYaw.TrySummarizeInterval(
+                intervalStart,
+                intervalEnd,
+                out var yawSummary))
+        {
+            return;
+        }
+
+        var aiming = _controls.AimIsToggle
+            ? _aimToggle
+            : IsKeyDown(_controls.Aim);
+        var settings = _estimator.Settings;
+        var proposed = _visualYawCalibration.Observe(
+            observation.Egomotion,
+            yawSummary.Counts,
+            yawSummary.Magnitude,
+            movementCommanded,
+            aiming || yawSummary.Aiming || yawSummary.MixedAiming,
+            _middleMouseDown,
+            settings.HipYawDegreesPerMouseCount);
+        if (proposed is not { } hipYaw
+            || Math.Abs(hipYaw - settings.HipYawDegreesPerMouseCount) < 1e-12)
+        {
+            return;
+        }
+
+        var updated = settings with { HipYawDegreesPerMouseCount = hipYaw };
+        _estimator.ApplySettings(updated);
+        _playerCalibrationLoaded = true;
+        _ = RealtimeCalibrationStore.TrySave(
+            BeaconAdaptiveCalibration.GetCalibrationPath(_profile.MemberId),
+            updated,
+            _calibrationSource);
     }
 
     private void DetectScreenshotCapturePoint(long now, RealtimePose pose)

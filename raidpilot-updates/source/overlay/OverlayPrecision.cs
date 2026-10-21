@@ -8,6 +8,7 @@ internal sealed partial class OverlayForm
     private readonly PrecisionMotionIntegrator _precisionMotion = new();
     private readonly PrecisionCalibration _precisionCalibration = new();
     private readonly PrecisionResiduals _precisionResiduals = new();
+    private readonly VisualYawCalibration _visualYawCalibration = new();
     private readonly System.Windows.Forms.Timer _precisionUiTimer = new() { Interval = 1000 };
     private readonly ToolStripMenuItem _precisionModeMenu = new("Suivi précis — séquences courtes") { Checked = true, CheckOnClick = true };
     private readonly ToolStripMenuItem _precisionStatusMenu = new($"RaidPilot {Application.ProductVersion} — Précision GPS");
@@ -45,7 +46,9 @@ internal sealed partial class OverlayForm
                 + $"Intégrations fines : {_precisionTicks} ; replis : {_precisionFallbacks}\n"
                 + $"Dernier calcul : {_precisionLastComputeMs:F3} ms ; {_precisionLastSlices} sous-pas\n"
                 + $"Interruptions : {_precisionGaps} ; dernier repli : {_precisionLastFallback}\n"
-                + $"Calibration : {_precisionCalibration.LastDecision}\n\n"
+                + $"Calibration F8 : {_precisionCalibration.LastDecision}\n"
+                + $"Calibration yaw vision : {_visualYawCalibration.LastDecision}\n"
+                + $"FOV visuel effectif : {_visualMotionGate.EgomotionHorizontalFieldOfViewDegrees:F1}°\n\n"
                 + "Les écarts sont mesurés aux positions de référence reçues, pas en continu. "
                 + "Les sous-pas de 1 à 5 ms sont des calculs en mémoire, pas des captures. "
                 + "Le suivi ne connaît pas automatiquement chaque collision, épuisement ou changement d'étage.",
@@ -76,9 +79,54 @@ internal sealed partial class OverlayForm
         return success;
     }
 
+    private void TryCalibrateYawFromVision(
+        long intervalStart,
+        long intervalEnd,
+        VisualMotionObservation visualObservation,
+        bool movementActive,
+        bool aiming)
+    {
+        if (intervalStart <= 0
+            || intervalEnd <= intervalStart
+            || !_precisionYaw.TrySummarizeInterval(
+                intervalStart,
+                intervalEnd,
+                out var yawSummary))
+        {
+            return;
+        }
+
+        var settings = _realtimeEstimator.Settings;
+        var proposed = _visualYawCalibration.Observe(
+            visualObservation.Egomotion,
+            yawSummary.Counts,
+            yawSummary.Magnitude,
+            movementActive,
+            aiming || yawSummary.Aiming || yawSummary.MixedAiming,
+            _middleMouseDown,
+            settings.HipYawDegreesPerMouseCount);
+        if (proposed is not { } hipYaw
+            || Math.Abs(hipYaw - settings.HipYawDegreesPerMouseCount) < 1e-12)
+        {
+            return;
+        }
+
+        var updated = settings with { HipYawDegreesPerMouseCount = hipYaw };
+        _realtimeEstimator.ApplySettings(updated);
+        _ = RealtimeCalibrationStore.TrySave(
+            GetRealtimeCalibrationPath(),
+            updated,
+            new RealtimeCalibrationSource(
+                _controlSettings.MouseSensitivity,
+                _controlSettings.MouseAimingSensitivity));
+    }
+
     private void ResetPrecisionSession()
     {
-        _precisionYaw.Reset(); _precisionCalibration.Reset(); _precisionResiduals.Reset();
+        _precisionYaw.Reset();
+        _precisionCalibration.Reset();
+        _precisionResiduals.Reset();
+        _visualYawCalibration.Reset();
         _precisionSegmentClean = true; _precisionTicks = _precisionFallbacks = _precisionGaps = 0;
         _precisionLastFallback = "aucun";
     }

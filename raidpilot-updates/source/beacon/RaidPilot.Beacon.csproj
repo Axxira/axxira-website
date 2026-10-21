@@ -21,9 +21,11 @@
     <Compile Include="..\overlay\ScreenshotObservation.cs" Link="Shared\ScreenshotObservation.cs" />
     <Compile Include="..\overlay\ScreenshotNameParser.cs" Link="Shared\ScreenshotNameParser.cs" />
     <Compile Include="..\overlay\EftControlSettings.cs" Link="Shared\EftControlSettings.cs" />
+    <Compile Include="..\overlay\EftGameViewSettings.cs" Link="Shared\EftGameViewSettings.cs" />
     <Compile Include="..\overlay\RealtimePoseEstimator.cs" Link="Shared\RealtimePoseEstimator.cs" />
     <Compile Include="..\overlay\RealtimeCalibrationStore.cs" Link="Shared\RealtimeCalibrationStore.cs" />
     <Compile Include="..\overlay\PrecisionCalibration.cs" Link="Shared\PrecisionCalibration.cs" />
+    <Compile Include="..\overlay\VisualYawCalibration.cs" Link="Shared\VisualYawCalibration.cs" />
     <Compile Include="..\overlay\VisualEgomotionEstimator.cs" Link="Shared\VisualEgomotionEstimator.cs" />
     <Compile Include="..\overlay\VisualMotionGate.cs" Link="Shared\VisualMotionGate.cs" />
     <Compile Include="..\overlay\VisualKeyframeRecognizer.cs" Link="Shared\VisualKeyframeRecognizer.cs" />

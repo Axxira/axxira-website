@@ -216,6 +216,8 @@ internal sealed partial class OverlayForm : Form
         _learnedRouteClockOriginTimestamp = Stopwatch.GetTimestamp();
         _learnedRouteGraph.BeginSession(_currentMap);
         _controlSettings = EftControlSettings.Read();
+        _visualMotionGate.ConfigureVerticalFieldOfView(
+            EftGameViewSettings.Read().VerticalFieldOfViewDegrees);
         _trackedKeyboardKeys = BuildTrackedKeyboardKeys(_controlSettings);
         var estimatorSettings = new RealtimePoseEstimatorSettings
         {
@@ -990,6 +992,7 @@ internal sealed partial class OverlayForm : Form
         if (_realtimeEstimator.IsAnchored
             && (now - _lastVisualMotionSample) / (double)Stopwatch.Frequency >= 0.1)
         {
+            var visualIntervalStart = _lastVisualMotionSample;
             _lastVisualMotionSample = now;
             var needsVisualKeyframeCheck = !movementInputActive && !rotationOccurred
                 && mouseDelta == 0
@@ -997,36 +1000,50 @@ internal sealed partial class OverlayForm : Form
             if (_visualMotionGate.TryObserveWindow(
                     _lastForegroundWindow,
                     out var visualObservation,
-                    // Le suivi de points 64×36 tourne à 10 Hz. Il renforce                    // l'hystérésis de mouvement même quand aucun repère n'est
+                    // Le suivi de points 64×36 tourne à 10 Hz. Il renforce
+                    // l'hystérésis de mouvement même quand aucun repère n'est
                     // recherché, tout en restant indépendant de la pose absolue.
-                    estimateEgomotion: true)
-                && needsVisualKeyframeCheck
-                && visualObservation.CaptureProvenLive
-                && visualObservation.Egomotion.State == VisualEgomotionState.Stationary
-                && _realtimeEstimator.CurrentPose is { } estimatedVisualPose
-                && _visualMotionGate.TryCopyLatestLuminance(out var visualFrame))
+                    estimateEgomotion: true))
             {
-                var learnedPendingKeyframe = TryLearnPendingVisualKeyframe(
-                    visualFrame,
-                    now);
-                if (!learnedPendingKeyframe)
+                TryCalibrateYawFromVision(
+                    visualIntervalStart,
+                    now,
+                    visualObservation,
+                    movementInputActive,
+                    aiming);
+
+                if (needsVisualKeyframeCheck
+                    && visualObservation.CaptureProvenLive
+                    && visualObservation.Egomotion.State == VisualEgomotionState.Stationary
+                    && _realtimeEstimator.CurrentPose is { } estimatedVisualPose
+                    && _visualMotionGate.TryCopyLatestLuminance(out var visualFrame))
                 {
-                    var recognition = _visualKeyframeRecognizer.Observe(
-                        _currentMap,
+                    var learnedPendingKeyframe = TryLearnPendingVisualKeyframe(
                         visualFrame,
-                        _visualMotionGate.SampleWidth,
-                        _visualMotionGate.SampleHeight,
-                        new VisualKeyframePose(
-                            estimatedVisualPose.X,
-                            estimatedVisualPose.Y,
-                            estimatedVisualPose.Z,
-                            estimatedVisualPose.YawDegrees),
-                        now,
-                        estimatedVisualPose.PositionUncertaintyMeters);
-                    if (recognition.IsConfirmed)
+                        now);
+                    if (!learnedPendingKeyframe)
                     {
-                        recognizedVisualPose = recognition.ExactPose;
+                        var recognition = _visualKeyframeRecognizer.Observe(
+                            _currentMap,
+                            visualFrame,
+                            _visualMotionGate.SampleWidth,
+                            _visualMotionGate.SampleHeight,
+                            new VisualKeyframePose(
+                                estimatedVisualPose.X,
+                                estimatedVisualPose.Y,
+                                estimatedVisualPose.Z,
+                                estimatedVisualPose.YawDegrees),
+                            now,
+                            estimatedVisualPose.PositionUncertaintyMeters);
+                        if (recognition.IsConfirmed)
+                        {
+                            recognizedVisualPose = recognition.ExactPose;
+                        }
                     }
+                }
+                else
+                {
+                    _visualKeyframeRecognizer.CancelPendingMatch();
                 }
             }
             else
@@ -1996,7 +2013,8 @@ internal sealed partial class OverlayForm : Form
                 observation.Z,
                 observation.YawDegrees),
             now + minimumDelayTicks,
-            now + maximumDelayTicks);    }
+            now + maximumDelayTicks);
+    }
 
     private bool TryLearnPendingVisualKeyframe(
         ReadOnlySpan<byte> visualFrame,
@@ -2995,7 +3013,8 @@ internal sealed partial class OverlayForm : Form
                 return;
             }
 
-            if (_visualKeyframeRecognizer.AddExactKeyframe(                    mapId,
+            if (_visualKeyframeRecognizer.AddExactKeyframe(
+                    mapId,
                     frame,
                     _visualMotionGate.SampleWidth,
                     _visualMotionGate.SampleHeight,
@@ -3994,7 +4013,8 @@ internal sealed partial class OverlayForm : Form
                 routeCandidates,
                 uncertainty,
                 out var learnedPlan)
-            && learnedPlan is not null            && LearnedRoutePolicy.IsTrusted(learnedPlan, uncertainty))
+            && learnedPlan is not null
+            && LearnedRoutePolicy.IsTrusted(learnedPlan, uncertainty))
         {
             var learnedTarget = routeCandidates.FirstOrDefault(candidate =>
                 string.Equals(candidate.Id, learnedPlan.Target.Id, StringComparison.OrdinalIgnoreCase));
@@ -4993,7 +5013,8 @@ internal sealed partial class OverlayForm : Form
         {
             if (!ReferenceEquals(sender, _mapLogWatcher))
             {
-                return;            }
+                return;
+            }
 
             // Un nouveau fichier de session représente un nouveau raid même si
             // le joueur relance exactement la même carte.

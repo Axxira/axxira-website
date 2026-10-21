@@ -1,6 +1,9 @@
 RAIDPILOT OVERLAY 0.11.5
 
 LOCALISATION SLAM / LOOP CLOSURE 0.11.5
+- RaidPilot lit automatiquement le FOV vertical réel dans Game.ini et le convertit selon le ratio de la fenêtre puis le recadrage visuel; l'egomotion n'utilise plus une optique fixe identique pour tous les joueurs.
+- Le yaw hip-fire peut maintenant se recalibrer par fusion Raw Input + egomotion visuelle lors de rotations pures très fiables. Déplacement, ADS, free-look, flux douteux et rotations qui se compensent sont refusés.
+- La calibration visuelle exige plusieurs mesures cohérentes et ne peut modifier la sensibilité que par pas maximum de 0,5 %; les F8 natifs restent la référence absolue.
 - RaidPilot ajoute un mode de loop closure global inspiré des systèmes SLAM modernes : si l'estimation reconnaît qu'elle a fortement dérivé, un lieu visuel déjà ancré peut la ramener sur la bonne position même si le pion estimé s'est éloigné.
 - Le loop closure global est volontairement beaucoup plus strict que le matching local : incertitude minimale de 8 m, signature visuelle très proche, forte marge d'unicité et cinq confirmations consécutives.
 - Un écart vertical ou de cap irréaliste reste refusé; une position encore fiable ne peut jamais être déplacée par ce mode global.

@@ -44,6 +44,7 @@ internal static class ScreenshotNameParserTests
         TarkovDevJsonCacheTests.RunAll(failures);
         QuestAdvisorTests.RunAll(failures);
         EftControlSettingsTests.RunAll(failures);
+        EftGameViewSettingsTests.RunAll(failures);
         RealtimePoseEstimatorTests.RunAll(failures);
         RealtimePoseHistoryTests.RunAll(failures);
         RealtimeCalibrationStoreTests.RunAll(failures);
@@ -52,6 +53,7 @@ internal static class ScreenshotNameParserTests
         RealtimeControlStateTests.RunAll(failures);
         VisualMotionGateTests.RunAll(failures);
         VisualEgomotionEstimatorTests.RunAll(failures);
+        VisualYawCalibrationTests.RunAll(failures);
         VisualKeyframeRecognizerTests.RunAll(failures);
         VisualKeyframeStoreTests.RunAll(failures);
         LocalizationRecoveryPolicyTests.RunAll(failures);
@@ -81,6 +83,7 @@ internal static class ScreenshotNameParserTests
             + TarkovDevJsonCacheTests.TestCount
             + QuestAdvisorTests.TestCount
             + EftControlSettingsTests.TestCount
+            + EftGameViewSettingsTests.TestCount
             + RealtimePoseEstimatorTests.TestCount
             + RealtimePoseHistoryTests.TestCount
             + RealtimeCalibrationStoreTests.TestCount
@@ -89,6 +92,7 @@ internal static class ScreenshotNameParserTests
             + RealtimeControlStateTests.TestCount
             + VisualMotionGateTests.TestCount
             + VisualEgomotionEstimatorTests.TestCount
+            + VisualYawCalibrationTests.TestCount
             + VisualKeyframeRecognizerTests.TestCount
             + VisualKeyframeStoreTests.TestCount
             + LocalizationRecoveryPolicyTests.TestCount

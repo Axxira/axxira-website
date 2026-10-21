@@ -79,6 +79,7 @@ internal sealed class VisualMotionGate : IDisposable
     private readonly byte[] _previousLuminance;
     private readonly byte[] _bgraPixels;
     private readonly VisualEgomotionEstimator _egomotionEstimator;
+    private double? _verticalFieldOfViewDegrees;
 
     private bool _hasPreviousFrame;
     private bool _captureProvenLive;
@@ -106,6 +107,23 @@ internal sealed class VisualMotionGate : IDisposable
         _bgraPixels = new byte[checked(pixelCount * 4)];
         _egomotionEstimator = new VisualEgomotionEstimator();
     }
+
+    internal void ConfigureVerticalFieldOfView(double verticalFieldOfViewDegrees)
+    {
+        if (!EftGameViewSettings.IsValidVerticalFieldOfView(verticalFieldOfViewDegrees))
+        {
+            throw new ArgumentOutOfRangeException(nameof(verticalFieldOfViewDegrees));
+        }
+
+        lock (_sync)
+        {
+            ThrowIfDisposed();
+            _verticalFieldOfViewDegrees = verticalFieldOfViewDegrees;
+        }
+    }
+
+    internal double EgomotionHorizontalFieldOfViewDegrees =>
+        _egomotionEstimator.HorizontalFieldOfViewDegrees;
 
     internal VisualMotionState State
     {
@@ -778,6 +796,18 @@ internal sealed class VisualMotionGate : IDisposable
         try
         {
             var region = CalculateCaptureRegion(clientWidth, clientHeight, _settings);
+            if (_verticalFieldOfViewDegrees is { } verticalFov)
+            {
+                var aspectRatio = clientWidth / (double)clientHeight;
+                var horizontalCropFraction = region.Width / (double)clientWidth;
+                var effectiveHorizontalFov =
+                    EftGameViewSettings.CalculateEffectiveHorizontalFieldOfViewDegrees(
+                        verticalFov,
+                        aspectRatio,
+                        horizontalCropFraction);
+                _egomotionEstimator.SetHorizontalFieldOfViewDegrees(effectiveHorizontalFov);
+            }
+
             if (!GdiCaptureMethods.StretchBlt(
                     _memoryDc,
                     0,
@@ -997,7 +1027,8 @@ internal sealed class VisualMotionGate : IDisposable
         {
             internal int Left;
             internal int Top;
-            internal int Right;            internal int Bottom;
+            internal int Right;
+            internal int Bottom;
         }
 
         [StructLayout(LayoutKind.Sequential)]

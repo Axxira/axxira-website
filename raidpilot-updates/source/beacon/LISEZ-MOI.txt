@@ -2,6 +2,8 @@ RAIDPILOT BEACON 0.2.3
 =======================
 
 LOCALISATION SLAM / RÉCUPÉRATION DE DÉRIVE 0.2.3
+- Beacon lit automatiquement le FOV vertical réel de Tarkov et calcule l'optique effective utilisée par la capture visuelle selon la fenêtre du teammate.
+- Les rotations hip-fire propres peuvent maintenant calibrer le yaw par consensus entre Raw Input et egomotion visuelle. ADS, free-look, déplacement et flux ambigu sont exclus; les corrections sont bornées à 0,5 %.
 - Beacon utilise maintenant le même loop closure global prudent que l'Overlay : un lieu exact déjà appris peut récupérer une grosse dérive lorsque l'incertitude dépasse 8 m.
 - Une récupération globale exige une signature visuelle exceptionnellement proche, une forte marge d'unicité et cinq confirmations consécutives; un cap ou un étage incompatible reste refusé.
 - Les recalages F8 sont maintenant adaptatifs à l'incertitude : jusqu'à environ 4,5 s de cooldown en forte dérive, 6 s en dérive moyenne et 8 s en régime normal.
