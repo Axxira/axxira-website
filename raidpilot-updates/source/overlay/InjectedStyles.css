@@ -688,6 +688,51 @@ html.raidpilot-interactive #leaflet-map > #raidpilot-zoom-controls {
     }
 }
 
+/* Champs de mines officiels projetés par RaidPilot dans le même repère
+   Leaflet que le joueur. Ils pulsent en rouge en permanence et accélèrent
+   lorsque le joueur entre dans la distance critique. */
+#leaflet-map > #raidpilot-minefield-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1070 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    shape-rendering: geometricPrecision !important;
+}
+
+#raidpilot-minefield-overlay .raidpilot-minefield-zone {
+    fill: rgb(255 0 0 / 18%) !important;
+    stroke: rgb(255 38 38 / 92%) !important;
+    stroke-width: 2.5px !important;
+    stroke-linejoin: round !important;
+    vector-effect: non-scaling-stroke !important;
+    pointer-events: none !important;
+    filter: drop-shadow(0 0 3px rgb(255 0 0 / 75%)) !important;
+    animation: raidpilot-minefield-flash 1.15s steps(2, end) infinite !important;
+}
+
+#raidpilot-minefield-overlay.raidpilot-minefield-overlay-critical
+    .raidpilot-minefield-zone {
+    fill: rgb(255 0 0 / 34%) !important;
+    stroke: #ff2525 !important;
+    stroke-width: 3.5px !important;
+    filter: drop-shadow(0 0 5px #ff1c1c) !important;
+    animation-duration: 0.52s !important;
+}
+
+@keyframes raidpilot-minefield-flash {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.24;
+    }
+}
+
 /* Alerte mine critique. Le calcul de proximité est fait côté C# avec les
    contours minefield officiels; ce calque ne fait qu'afficher l'avertissement. */
 #leaflet-map > #raidpilot-mine-warning {

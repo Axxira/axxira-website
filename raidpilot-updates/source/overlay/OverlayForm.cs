@@ -2652,6 +2652,12 @@ internal sealed partial class OverlayForm : Form
                 return;
             }
 
+            await RestoreMineHazardOverlayAsync();
+            if (!IsNavigationContinuationCurrent(completedNavigationSequence))
+            {
+                return;
+            }
+
             await RestoreSquadMarkersAsync();
             if (!IsNavigationContinuationCurrent(completedNavigationSequence))
             {

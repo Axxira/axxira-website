@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MapQualityTests
 {
-    internal const int TestCount = 13;
+    internal const int TestCount = 14;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -17,6 +17,7 @@ internal static class MapQualityTests
         Run("map quality: teammates hors écran", UsesOffscreenSquadIndicators, failures);
         Run("map quality: zoom tactique natif", UsesNativeMapZoomControls, failures);
         Run("map quality: alerte mine rouge critique", UsesCriticalMineWarning, failures);
+        Run("map quality: zones minées clignotent en rouge", MinefieldsFlashInsideMap, failures);
         Run("map quality: boussole horizontale type PUBG", UsesHorizontalCompass, failures);
         Run("map quality: étage actif accentué", EmphasizesConfirmedFloor, failures);
     }
@@ -161,6 +162,20 @@ internal static class MapQualityTests
             && styles.Contains("@keyframes raidpilot-mine-warning-flash", StringComparison.Ordinal)
             && styles.Contains("rgb(255 28 28 / 92%)", StringComparison.Ordinal),
             "l'alerte mine rouge autour de la map est absente");
+    }
+
+    private static void MinefieldsFlashInsideMap()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("__raidPilotSetMineHazards", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-minefield-overlay", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-minefield-zone", StringComparison.Ordinal)
+            && behavior.Contains("latLngToContainerPoint", StringComparison.Ordinal)
+            && styles.Contains("#leaflet-map > #raidpilot-minefield-overlay", StringComparison.Ordinal)
+            && styles.Contains("@keyframes raidpilot-minefield-flash", StringComparison.Ordinal)
+            && styles.Contains("raidpilot-minefield-overlay-critical", StringComparison.Ordinal),
+            "les champs de mines ne clignotent pas dans la map");
     }
 
     private static void UsesHorizontalCompass()

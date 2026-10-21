@@ -519,6 +519,149 @@
         compass.dataset.heading = yaw.toFixed(1);
     };
 
+    let mineHazardOverlayState = {
+        generation: -1,
+        map: "",
+        zones: [],
+    };
+    let mineHazardRenderRetry = 0;
+
+    const ensureMineHazardOverlay = (container) => {
+        let overlay = document.getElementById("raidpilot-minefield-overlay");
+        if (!overlay || overlay.parentElement !== container) {
+            overlay?.remove();
+            overlay = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "svg");
+            overlay.id = "raidpilot-minefield-overlay";
+            overlay.classList.add("raidpilot-minefield-overlay");
+            overlay.setAttribute("aria-hidden", "true");
+            overlay.setAttribute("focusable", "false");
+            container.appendChild(overlay);
+        }
+        return overlay;
+    };
+
+    const scheduleMineHazardRender = () => {
+        if (mineHazardRenderRetry) return;
+        mineHazardRenderRetry = window.setTimeout(() => {
+            mineHazardRenderRetry = 0;
+            renderMineHazards();
+        }, 120);
+    };
+
+    const renderMineHazards = () => {
+        const mapInstance = findLeafletMapInstance();
+        const container = document.getElementById("leaflet-map");
+        if (!mapInstance
+            || !container
+            || typeof mapInstance.latLngToContainerPoint !== "function") {
+            scheduleMineHazardRender();
+            return false;
+        }
+
+        const overlay = ensureMineHazardOverlay(container);
+        overlay.classList.toggle(
+            "raidpilot-minefield-overlay-critical",
+            localPlayerPoseState?.mineAlert === true);
+        overlay.replaceChildren();
+        overlay.setAttribute(
+            "viewBox",
+            "0 0 "
+                + Math.max(1, container.clientWidth)
+                + " "
+                + Math.max(1, container.clientHeight));
+
+        for (const zone of mineHazardOverlayState.zones) {
+            const outline = Array.isArray(zone?.outline)
+                ? zone.outline
+                    .map((point) => ({
+                        x: Number(point?.x),
+                        z: Number(point?.z),
+                    }))
+                    .filter((point) =>
+                        Number.isFinite(point.x)
+                        && Number.isFinite(point.z))
+                : [];
+
+            if (outline.length >= 3) {
+                const polygon = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "polygon");
+                const points = outline.map((point) => {
+                    const projected = mapInstance.latLngToContainerPoint(
+                        [point.z, point.x]);
+                    return Number(projected?.x).toFixed(1)
+                        + ","
+                        + Number(projected?.y).toFixed(1);
+                });
+                if (points.some((point) => point.includes("NaN"))) {
+                    continue;
+                }
+                polygon.setAttribute("points", points.join(" "));
+                polygon.classList.add("raidpilot-minefield-zone");
+                polygon.dataset.mineId = String(zone?.id ?? "");
+                overlay.appendChild(polygon);
+                continue;
+            }
+
+            const x = Number(zone?.x);
+            const z = Number(zone?.z);
+            if (!Number.isFinite(x) || !Number.isFinite(z)) {
+                continue;
+            }
+            const center = mapInstance.latLngToContainerPoint([z, x]);
+            const edge = mapInstance.latLngToContainerPoint([z, x + 10]);
+            const radius = Math.max(
+                6,
+                Math.hypot(
+                    Number(edge?.x) - Number(center?.x),
+                    Number(edge?.y) - Number(center?.y)));
+            if (![center?.x, center?.y, radius].every(Number.isFinite)) {
+                continue;
+            }
+            const circle = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "circle");
+            circle.setAttribute("cx", Number(center.x).toFixed(1));
+            circle.setAttribute("cy", Number(center.y).toFixed(1));
+            circle.setAttribute("r", radius.toFixed(1));
+            circle.classList.add("raidpilot-minefield-zone");
+            circle.dataset.mineId = String(zone?.id ?? "");
+            overlay.appendChild(circle);
+        }
+        return true;
+    };
+
+    window.__raidPilotSetMineHazards = (payload) => {
+        const generation = Number(payload?.generation);
+        const map = String(payload?.map ?? "").trim();
+        const zones = Array.isArray(payload?.zones) ? payload.zones : [];
+        if (!Number.isInteger(generation) || !map) return false;
+
+        mineHazardOverlayState = {
+            generation,
+            map,
+            zones,
+        };
+        renderMineHazards();
+        return true;
+    };
+
+    window.__raidPilotClearMineHazards = (generation) => {
+        if (Number.isInteger(generation)
+            && generation < mineHazardOverlayState.generation) {
+            return false;
+        }
+        mineHazardOverlayState = {
+            generation: Number.isInteger(generation) ? generation : -1,
+            map: "",
+            zones: [],
+        };
+        document.getElementById("raidpilot-minefield-overlay")?.remove();
+        return true;
+    };
+
     const ensureMineWarning = (container) => {
         let warning = document.getElementById("raidpilot-mine-warning");
         if (!warning || warning.parentElement !== container) {
@@ -541,6 +684,9 @@
             warning.classList.remove("raidpilot-mine-warning-critical");
             warning.removeAttribute("data-distance");
         }
+        document
+            .getElementById("raidpilot-minefield-overlay")
+            ?.classList.remove("raidpilot-minefield-overlay-critical");
     };
 
     const updateMineWarning = (container, pose) => {
@@ -550,6 +696,11 @@
         warning.classList.toggle(
             "raidpilot-mine-warning-critical",
             critical);
+        document
+            .getElementById("raidpilot-minefield-overlay")
+            ?.classList.toggle(
+                "raidpilot-minefield-overlay-critical",
+                critical);
         if (Number.isFinite(pose?.mineDistance)) {
             warning.dataset.distance =
                 Math.max(0, pose.mineDistance).toFixed(1);
@@ -669,6 +820,8 @@
             scheduleLocalPlayerRetry();
             return false;
         }
+
+        renderMineHazards();
 
         let binding = localPlayerBinding;
         if (!binding

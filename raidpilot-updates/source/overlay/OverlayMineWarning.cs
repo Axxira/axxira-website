@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace RaidPilot.Overlay;
 
@@ -118,6 +119,7 @@ internal sealed partial class OverlayForm
                 _mineHazardZones = zones;
                 _mineHazardMap = map;
                 _mineHazardLastFailureAt = 0;
+                _ = PushMineHazardOverlayAsync();
 
                 if (_realtimeEstimator.CurrentPose is { } pose)
                 {
@@ -134,6 +136,83 @@ internal sealed partial class OverlayForm
         }
     }
 
+    private async Task PushMineHazardOverlayAsync()
+    {
+        var core = _webView.CoreWebView2;
+        if (core is null
+            || !_webReady
+            || _navigationInProgress
+            || _formLifetime.IsCancellationRequested
+            || !string.Equals(
+                _mineHazardMap,
+                _currentMap,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var payload = JsonSerializer.Serialize(new
+        {
+            generation = _raidGeneration,
+            map = _mineHazardMap,
+            zones = _mineHazardZones.Select(zone => new
+            {
+                id = zone.Id,
+                x = zone.X,
+                z = zone.Z,
+                outline = zone.Outline.Select(point => new
+                {
+                    x = point.X,
+                    z = point.Z,
+                }),
+            }),
+        });
+
+        try
+        {
+            await core.ExecuteScriptAsync(
+                $"window.__raidPilotSetMineHazards?.({payload}); void 0;");
+        }
+        catch
+        {
+            // Navigation or renderer teardown already removes the SVG overlay.
+        }
+    }
+
+    private async Task RestoreMineHazardOverlayAsync()
+    {
+        if (!string.Equals(
+                _mineHazardMap,
+                _currentMap,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            await ClearMineHazardOverlayAsync(_raidGeneration);
+            EnsureMineHazardsLoaded();
+            return;
+        }
+
+        await PushMineHazardOverlayAsync();
+    }
+
+    private async Task ClearMineHazardOverlayAsync(int raidGeneration)
+    {
+        var core = _webView.CoreWebView2;
+        if (core is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await core.ExecuteScriptAsync(
+                $"window.__raidPilotClearMineHazards?.({raidGeneration}); void 0;");
+        }
+        catch
+        {
+            // Navigation or renderer teardown already removed the overlay.
+        }
+    }
+
     private void ResetMineAlertForRaid()
     {
         _mineAlertActive = false;
@@ -145,6 +224,7 @@ internal sealed partial class OverlayForm
         {
             _mineHazardZones = Array.Empty<MineHazardZone>();
             _mineHazardMap = string.Empty;
+            _ = ClearMineHazardOverlayAsync(_raidGeneration);
         }
     }
 }
