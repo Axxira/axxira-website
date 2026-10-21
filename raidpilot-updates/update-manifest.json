@@ -1,25 +1,25 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-21T12:21:24.3660975+00:00",
+  "publishedAt": "2026-10-21T12:46:18.2201221+00:00",
   "raidPilot": {
     "version": "0.12.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.12.0-b0.3.0-l0.2.8-92480be028cb/RaidPilot-Overlay-v0.12.0-Windows-x64.zip",
-    "sha256": "D35CE7F2F94A181ADACB17B2164993B47B142A00C56BB8BE949C506F732FDA28",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.12.0-b0.3.0-l0.2.8-38ecc6ce0922/RaidPilot-Overlay-v0.12.0-Windows-x64.zip",
+    "sha256": "40C6F4CAB110D821116EB64DAEFB7CB64A5A54ACD616F3286D98F588F6EB36ED",
     "sizeBytes": 58995914,
     "releaseNotes": "Squad Sync, localisation locale et correctifs RaidPilot."
   },
   "beacon": {
     "version": "0.3.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.12.0-b0.3.0-l0.2.8-92480be028cb/RaidPilot-Beacon-v0.3.0-Windows-x64.zip",
-    "sha256": "91A7B006E29D2B825CD9D8396151147C1CECEBD5C52769AA549C483F3F7E9DD0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.12.0-b0.3.0-l0.2.8-38ecc6ce0922/RaidPilot-Beacon-v0.3.0-Windows-x64.zip",
+    "sha256": "4577427051793DC2965EB6C06DC5AA8135F29C5A2AFAC66723DFA3077823163D",
     "sizeBytes": 58294504,
     "releaseNotes": "Beacon 0.2 : fusion visuelle, blocage anti-dérive, repères F8, recalage automatique prudent et calibration propre au joueur."
   },
   "launcher": {
     "version": "0.2.8",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.12.0-b0.3.0-l0.2.8-92480be028cb/RaidPilot-Launcher-v0.2.8-Windows-x64.zip",
-    "sha256": "F7FF8109F37C27C2C3E2F8DEAD24D6074039106C0E091C0D4D928D9C622A7BDE",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.12.0-b0.3.0-l0.2.8-38ecc6ce0922/RaidPilot-Launcher-v0.2.8-Windows-x64.zip",
+    "sha256": "271F35121F05913956AB75B01F16F0209665359C7A3556B3B4FF95C362AADA0D",
     "sizeBytes": 175515416,
     "releaseNotes": "Canal Stable automatique et mise à jour du launcher lui-même."
   }
