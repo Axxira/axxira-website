@@ -126,6 +126,27 @@ internal static class OverlayLayoutCalculator
         return new Rectangle(x, y, width, height);
     }
 
+    internal static double CalculateContentScale(
+        Rectangle currentBounds,
+        Rectangle referenceBounds)
+    {
+        if (currentBounds.Width <= 0
+            || currentBounds.Height <= 0
+            || referenceBounds.Width <= 0
+            || referenceBounds.Height <= 0)
+        {
+            return 1.0;
+        }
+
+        var widthScale = currentBounds.Width / (double)referenceBounds.Width;
+        var heightScale = currentBounds.Height / (double)referenceBounds.Height;
+
+        // Use the limiting axis so every information panel remains inside the
+        // available surface. A proportional resize therefore scales all text,
+        // markers, panels and controls exactly with the window.
+        return Math.Clamp(Math.Min(widthScale, heightScale), 0.25, 5.0);
+    }
+
     internal static double CalculateAutomaticScale(
         Rectangle workingArea,
         int effectiveDpi,

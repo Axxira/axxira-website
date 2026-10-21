@@ -2,13 +2,14 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class OverlayLayoutCalculatorTests
 {
-    internal const int TestCount = 15;
+    internal const int TestCount = 16;
     internal static void RunAll(ICollection<string> failures)
     {
         Run("coin supérieur droit à 96 DPI", () => BoundsAt(96, new(1072,16,832,412)), failures);
         Run("coin supérieur droit à 144 DPI", () => BoundsAt(144, new(648,24,1248,618)), failures);
         Run("les quatre coins sont disponibles", SupportsAllCorners, failures);
         Run("position libre reste proportionnelle à l'écran", FreeLayoutRoundTrips, failures);
+        Run("infos suivent l'agrandissement de la carte", ContentScaleFollowsWindowSize, failures);
         Run("surface de carte intacte à chaque DPI", PreservesMapViewport, failures);
         Run("ordre CSS et JavaScript extraction-carte-quêtes", SectionOrder, failures);
         Run("mise à jour préserve les captures existantes", UpdateDoesNotPurgeScreenshots, failures);
@@ -66,6 +67,26 @@ internal static class OverlayLayoutCalculatorTests
         Require(Math.Abs(restored.Width - requested.Width) <= 1, "largeur libre perdue");
         Require(Math.Abs(restored.Height - requested.Height) <= 1, "hauteur libre perdue");
         Require(area.Contains(restored), "la position libre sort de l'écran");
+    }
+
+    private static void ContentScaleFollowsWindowSize()
+    {
+        var reference = new Rectangle(0, 0, 832, 412);
+        Require(
+            Math.Abs(OverlayLayoutCalculator.CalculateContentScale(
+                new Rectangle(0, 0, 1664, 824),
+                reference) - 2.0) < 0.0001,
+            "une carte doublée devrait doubler textes et informations");
+        Require(
+            Math.Abs(OverlayLayoutCalculator.CalculateContentScale(
+                new Rectangle(0, 0, 2496, 1236),
+                reference) - 3.0) < 0.0001,
+            "l'ancienne limite 150% ne doit plus bloquer l'agrandissement");
+        Require(
+            Math.Abs(OverlayLayoutCalculator.CalculateContentScale(
+                new Rectangle(0, 0, 1664, 618),
+                reference) - 1.5) < 0.0001,
+            "l'axe limitant doit empêcher les informations de sortir verticalement");
     }
 
     private static void PreservesMapViewport()

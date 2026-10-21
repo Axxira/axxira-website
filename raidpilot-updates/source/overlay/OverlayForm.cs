@@ -283,6 +283,7 @@ internal sealed partial class OverlayForm : Form
 
         _realtimeTimer.Tick += OnRealtimeTimerTick;
         Shown += OnShown;
+        Resize += OnInteractiveResize;
         ResizeEnd += OnInteractiveMoveOrResizeEnd;
         FormClosing += OnFormClosing;
     }
@@ -5612,6 +5613,16 @@ internal sealed partial class OverlayForm : Form
         }
     }
 
+    private void OnInteractiveResize(object? sender, EventArgs e)
+    {
+        if (_clickThrough || _applyingInteractiveFrame || !Visible)
+        {
+            return;
+        }
+
+        UpdateInteractiveContentScale();
+    }
+
     private void OnInteractiveMoveOrResizeEnd(object? sender, EventArgs e)
     {
         if (_clickThrough || _applyingInteractiveFrame || !Visible)
@@ -5621,6 +5632,27 @@ internal sealed partial class OverlayForm : Form
 
         PersistCurrentFreeLayout();
         RefreshMapCornerMenu();
+    }
+
+    private void UpdateInteractiveContentScale()
+    {
+        var gameScreen = FindGameScreen(out var gameWindowDpi);
+        var targetScreen = gameScreen ?? Screen.PrimaryScreen;
+        var workingArea = gameScreen?.WorkingArea
+            ?? targetScreen?.WorkingArea
+            ?? SystemInformation.WorkingArea;
+        var effectiveDpi = ResolveEffectiveDpi(targetScreen, gameWindowDpi);
+        var referenceBounds = OverlayLayoutCalculator.CalculateBounds(
+            workingArea,
+            effectiveDpi,
+            _questContextVisible,
+            requestedScale: 1.0,
+            corner: OverlayCorner.TopLeft);
+
+        _effectiveMapScale = OverlayLayoutCalculator.CalculateContentScale(
+            Bounds,
+            referenceBounds);
+        ApplyMapScaleToWebView();
     }
 
     private void PersistCurrentFreeLayout()
@@ -5747,12 +5779,9 @@ internal sealed partial class OverlayForm : Form
                 requestedScale: 1.0,
                 corner: OverlayCorner.TopLeft);
 
-            _effectiveMapScale = Math.Clamp(
-                Math.Min(
-                    freeBounds.Width / (double)Math.Max(1, referenceBounds.Width),
-                    freeBounds.Height / (double)Math.Max(1, referenceBounds.Height)),
-                0.25,
-                1.50);
+            _effectiveMapScale = OverlayLayoutCalculator.CalculateContentScale(
+                freeBounds,
+                referenceBounds);
             Bounds = freeBounds;
         }
         else
