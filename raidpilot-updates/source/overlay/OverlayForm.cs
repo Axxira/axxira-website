@@ -1183,6 +1183,11 @@ internal sealed partial class OverlayForm : Form
             };
         }
 
+        motionEvidence = FilterAmbiguousStationaryEvidence(
+            motionEvidence,
+            movementInputActive,
+            sprint);
+
         var gaitSpeedScale = _slowWalkEnabled || sprint
             ? 1.0
             : _movementSpeedScale;
@@ -2062,6 +2067,23 @@ internal sealed partial class OverlayForm : Form
 
         var pressed = sample.WasPressedSinceLastPoll || (sample.IsDown && !wasDown);
         return pressed && allowToggle ? !current : current;
+    }
+
+    internal static RealtimeMotionEvidence FilterAmbiguousStationaryEvidence(
+        RealtimeMotionEvidence evidence,
+        bool movementInputActive,
+        bool sprint)
+    {
+        // At walking/slow-walking speed, distant scenery and low-resolution
+        // GDI capture can look stationary even while the player is moving.
+        // Sprint has enough expected visual flow for Stationary to remain a
+        // useful collision/frozen-motion guard. Idle Stationary is also kept
+        // for ZUPT and automatic re-anchoring.
+        return movementInputActive
+            && !sprint
+            && evidence == RealtimeMotionEvidence.Stationary
+                ? RealtimeMotionEvidence.Unknown
+                : evidence;
     }
 
     internal static bool ShouldAccumulateCalibrationDistance(bool visuallyReanchored) =>
