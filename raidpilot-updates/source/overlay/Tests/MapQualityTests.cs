@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MapQualityTests
 {
-    internal const int TestCount = 14;
+    internal const int TestCount = 15;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -18,6 +18,7 @@ internal static class MapQualityTests
         Run("map quality: zoom tactique natif", UsesNativeMapZoomControls, failures);
         Run("map quality: alerte mine rouge critique", UsesCriticalMineWarning, failures);
         Run("map quality: zones minées clignotent en rouge", MinefieldsFlashInsideMap, failures);
+        Run("map quality: protection limite de zone", UsesBoundaryGuard, failures);
         Run("map quality: boussole horizontale type PUBG", UsesHorizontalCompass, failures);
         Run("map quality: étage actif accentué", EmphasizesConfirmedFloor, failures);
     }
@@ -176,6 +177,19 @@ internal static class MapQualityTests
             && styles.Contains("@keyframes raidpilot-minefield-flash", StringComparison.Ordinal)
             && styles.Contains("raidpilot-minefield-overlay-critical", StringComparison.Ordinal),
             "les champs de mines ne clignotent pas dans la map");
+    }
+
+    private static void UsesBoundaryGuard()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("__raidPilotSetBoundaryHazards", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-boundary-warning", StringComparison.Ordinal)
+            && behavior.Contains("LIMITE DE ZONE — DEMI-TOUR", StringComparison.Ordinal)
+            && styles.Contains("#leaflet-map > #raidpilot-boundary-overlay", StringComparison.Ordinal)
+            && styles.Contains("raidpilot-boundary-overlay-critical", StringComparison.Ordinal)
+            && styles.Contains("@keyframes raidpilot-boundary-critical-pulse", StringComparison.Ordinal),
+            "la protection de limite de zone n'est pas complète");
     }
 
     private static void UsesHorizontalCompass()

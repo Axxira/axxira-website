@@ -688,6 +688,101 @@ html.raidpilot-interactive #leaflet-map > #raidpilot-zoom-controls {
     }
 }
 
+/* Protection des limites jouables. Les zones sniper/out-of-bounds officielles
+   sont visibles en ambre, puis passent au rouge lorsque le joueur approche. */
+#leaflet-map > #raidpilot-boundary-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1065 !important;
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    shape-rendering: geometricPrecision !important;
+}
+
+#raidpilot-boundary-overlay .raidpilot-boundary-zone {
+    fill: rgb(255 170 45 / 10%) !important;
+    stroke: rgb(255 187 64 / 72%) !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 7 5 !important;
+    stroke-linejoin: round !important;
+    vector-effect: non-scaling-stroke !important;
+    pointer-events: none !important;
+    filter: drop-shadow(0 0 2px rgb(255 160 20 / 45%)) !important;
+}
+
+#raidpilot-boundary-overlay.raidpilot-boundary-overlay-warning
+    .raidpilot-boundary-zone {
+    fill: rgb(255 146 0 / 20%) !important;
+    stroke: #ffae2b !important;
+    stroke-width: 3px !important;
+    animation: raidpilot-boundary-warning-pulse 0.9s steps(2, end) infinite !important;
+}
+
+#raidpilot-boundary-overlay.raidpilot-boundary-overlay-critical
+    .raidpilot-boundary-zone {
+    fill: rgb(255 0 0 / 32%) !important;
+    stroke: #ff2424 !important;
+    stroke-width: 4px !important;
+    stroke-dasharray: none !important;
+    filter: drop-shadow(0 0 5px rgb(255 0 0 / 85%)) !important;
+    animation: raidpilot-boundary-critical-pulse 0.42s steps(2, end) infinite !important;
+}
+
+#leaflet-map > #raidpilot-boundary-warning {
+    position: absolute !important;
+    left: 50% !important;
+    bottom: 18px !important;
+    z-index: 2895000 !important;
+    transform: translateX(-50%) !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    min-width: 250px !important;
+    max-width: calc(100% - 40px) !important;
+    padding: 7px 14px !important;
+    border: 2px solid #ffae2b !important;
+    border-radius: 7px !important;
+    background: rgb(25 14 0 / 88%) !important;
+    box-shadow: 0 0 12px rgb(255 150 0 / 48%) !important;
+    text-align: center !important;
+}
+
+#leaflet-map > #raidpilot-boundary-warning[hidden] {
+    display: none !important;
+}
+
+#raidpilot-boundary-warning .raidpilot-boundary-warning-label {
+    color: #ffd997 !important;
+    font: 900 12px/1.1 "Segoe UI", sans-serif !important;
+    letter-spacing: 0.06em !important;
+    text-shadow: 0 1px 2px #000 !important;
+}
+
+#leaflet-map > #raidpilot-boundary-warning.raidpilot-boundary-warning-critical {
+    border-color: #ff2424 !important;
+    background: rgb(45 0 0 / 92%) !important;
+    box-shadow: 0 0 18px rgb(255 0 0 / 72%) !important;
+    animation: raidpilot-boundary-critical-pulse 0.42s steps(2, end) infinite !important;
+}
+
+#raidpilot-boundary-warning.raidpilot-boundary-warning-critical
+    .raidpilot-boundary-warning-label {
+    color: #fff !important;
+}
+
+@keyframes raidpilot-boundary-warning-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.42; }
+}
+
+@keyframes raidpilot-boundary-critical-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.18; }
+}
+
 /* Champs de mines officiels projetés par RaidPilot dans le même repère
    Leaflet que le joueur. Ils pulsent en rouge en permanence et accélèrent
    lorsque le joueur entre dans la distance critique. */

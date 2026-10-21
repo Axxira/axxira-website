@@ -42,6 +42,7 @@ internal static class ScreenshotNameParserTests
         ExtractionAdvisorTests.RunAll(failures);
         TarkovDevExtractionProviderTests.RunAll(failures);
         TarkovDevMineProviderTests.RunAll(failures);
+        TarkovDevBoundaryProviderTests.RunAll(failures);
         TarkovDevQuestProviderTests.RunAll(failures);
         TarkovDevJsonCacheTests.RunAll(failures);
         QuestAdvisorTests.RunAll(failures);
@@ -86,6 +87,7 @@ internal static class ScreenshotNameParserTests
             + ExtractionAdvisorTests.TestCount
             + TarkovDevExtractionProviderTests.TestCount
             + TarkovDevMineProviderTests.TestCount
+            + TarkovDevBoundaryProviderTests.TestCount
             + TarkovDevQuestProviderTests.TestCount
             + TarkovDevJsonCacheTests.TestCount
             + QuestAdvisorTests.TestCount

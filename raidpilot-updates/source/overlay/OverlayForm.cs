@@ -1491,6 +1491,7 @@ internal sealed partial class OverlayForm : Form
 
         _visualRelocalization.ObserveTracking(pose, now);
         UpdateMineProximity(pose);
+        UpdateBoundaryProximity(pose);
         _realtimePoseHistory.Add(now, pose);
         ObserveLearnedRoutePose(
             pose,
@@ -2658,6 +2659,12 @@ internal sealed partial class OverlayForm : Form
                 return;
             }
 
+            await RestoreBoundaryOverlayAsync();
+            if (!IsNavigationContinuationCurrent(completedNavigationSequence))
+            {
+                return;
+            }
+
             await RestoreSquadMarkersAsync();
             if (!IsNavigationContinuationCurrent(completedNavigationSequence))
             {
@@ -3300,6 +3307,7 @@ internal sealed partial class OverlayForm : Form
                 0.0,
                 0.0);
             UpdateMineProximity(learnedPose);
+            UpdateBoundaryProximity(learnedPose);
             var learnedSource = !_liveTrackingEnabled || estimatedPoseAtCapture is null
                 ? LearnedPoseSource.ExactAnchor
                 : LearnedPoseSource.LiveEstimate;
@@ -5264,6 +5272,7 @@ internal sealed partial class OverlayForm : Form
         if (clearObservation)
         {
             ResetMineAlertForRaid();
+            ResetBoundaryAlertForRaid();
             _raidStartObservationBuffer.Clear();
             _learnedRouteGraph.BreakContinuity();
             _lastLearnedRouteObservationAt = 0;

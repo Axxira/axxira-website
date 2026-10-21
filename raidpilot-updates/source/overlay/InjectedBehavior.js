@@ -361,6 +361,11 @@
         const mineDistance = Number.isFinite(payload?.mineDistance)
             ? Math.max(0, payload.mineDistance)
             : null;
+        const boundaryWarning = payload?.boundaryWarning === true;
+        const boundaryCritical = payload?.boundaryCritical === true;
+        const boundaryDistance = Number.isFinite(payload?.boundaryDistance)
+            ? Math.max(0, payload.boundaryDistance)
+            : null;
         if (generation === null
             || ![x, y, z, yaw, uncertainty].every((value) => Number.isFinite(value))
             || Math.abs(x) > localPlayerCoordinateLimit
@@ -386,6 +391,9 @@
             snap: payload?.snap === true,
             mineAlert,
             mineDistance,
+            boundaryWarning,
+            boundaryCritical,
+            boundaryDistance,
         };
     };
 
@@ -662,6 +670,170 @@
         return true;
     };
 
+    let boundaryHazardOverlayState = {
+        generation: -1,
+        map: "",
+        zones: [],
+    };
+
+    const ensureBoundaryOverlay = (container) => {
+        let overlay = document.getElementById("raidpilot-boundary-overlay");
+        if (!overlay || overlay.parentElement !== container) {
+            overlay?.remove();
+            overlay = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "svg");
+            overlay.id = "raidpilot-boundary-overlay";
+            overlay.classList.add("raidpilot-boundary-overlay");
+            overlay.setAttribute("aria-hidden", "true");
+            overlay.setAttribute("focusable", "false");
+            container.appendChild(overlay);
+        }
+        return overlay;
+    };
+
+    const renderBoundaryHazards = () => {
+        const mapInstance = findLeafletMapInstance();
+        const container = document.getElementById("leaflet-map");
+        if (!mapInstance
+            || !container
+            || typeof mapInstance.latLngToContainerPoint !== "function") {
+            return false;
+        }
+
+        const overlay = ensureBoundaryOverlay(container);
+        overlay.classList.toggle(
+            "raidpilot-boundary-overlay-warning",
+            localPlayerPoseState?.boundaryWarning === true);
+        overlay.classList.toggle(
+            "raidpilot-boundary-overlay-critical",
+            localPlayerPoseState?.boundaryCritical === true);
+        overlay.replaceChildren();
+        overlay.setAttribute(
+            "viewBox",
+            "0 0 "
+                + Math.max(1, container.clientWidth)
+                + " "
+                + Math.max(1, container.clientHeight));
+
+        for (const zone of boundaryHazardOverlayState.zones) {
+            const outline = Array.isArray(zone?.outline)
+                ? zone.outline
+                    .map((point) => ({
+                        x: Number(point?.x),
+                        z: Number(point?.z),
+                    }))
+                    .filter((point) =>
+                        Number.isFinite(point.x)
+                        && Number.isFinite(point.z))
+                : [];
+
+            if (outline.length < 3) continue;
+
+            const polygon = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "polygon");
+            const points = outline.map((point) => {
+                const projected = mapInstance.latLngToContainerPoint(
+                    [point.z, point.x]);
+                return Number(projected?.x).toFixed(1)
+                    + ","
+                    + Number(projected?.y).toFixed(1);
+            });
+            if (points.some((point) => point.includes("NaN"))) continue;
+
+            polygon.setAttribute("points", points.join(" "));
+            polygon.classList.add("raidpilot-boundary-zone");
+            polygon.dataset.boundaryId = String(zone?.id ?? "");
+            overlay.appendChild(polygon);
+        }
+        return true;
+    };
+
+    window.__raidPilotSetBoundaryHazards = (payload) => {
+        const generation = Number(payload?.generation);
+        const map = String(payload?.map ?? "").trim();
+        const zones = Array.isArray(payload?.zones) ? payload.zones : [];
+        if (!Number.isInteger(generation) || !map) return false;
+
+        boundaryHazardOverlayState = {
+            generation,
+            map,
+            zones,
+        };
+        renderBoundaryHazards();
+        return true;
+    };
+
+    window.__raidPilotClearBoundaryHazards = (generation) => {
+        if (Number.isInteger(generation)
+            && generation < boundaryHazardOverlayState.generation) {
+            return false;
+        }
+        boundaryHazardOverlayState = {
+            generation: Number.isInteger(generation) ? generation : -1,
+            map: "",
+            zones: [],
+        };
+        document.getElementById("raidpilot-boundary-overlay")?.remove();
+        document.getElementById("raidpilot-boundary-warning")?.remove();
+        return true;
+    };
+
+    const ensureBoundaryWarning = (container) => {
+        let warning = document.getElementById("raidpilot-boundary-warning");
+        if (!warning || warning.parentElement !== container) {
+            warning?.remove();
+            warning = document.createElement("div");
+            warning.id = "raidpilot-boundary-warning";
+            warning.className = "raidpilot-boundary-warning";
+            warning.hidden = true;
+            warning.setAttribute("role", "presentation");
+            warning.setAttribute("aria-hidden", "true");
+
+            const label = document.createElement("div");
+            label.className = "raidpilot-boundary-warning-label";
+            warning.appendChild(label);
+            container.appendChild(warning);
+        }
+        return warning;
+    };
+
+    const updateBoundaryWarning = (container, pose) => {
+        const warning = ensureBoundaryWarning(container);
+        const active = pose?.boundaryWarning === true;
+        const critical = pose?.boundaryCritical === true;
+        warning.hidden = !active;
+        warning.classList.toggle(
+            "raidpilot-boundary-warning-critical",
+            critical);
+        const label = warning.querySelector(
+            ".raidpilot-boundary-warning-label");
+        if (label) {
+            const distance = Number.isFinite(pose?.boundaryDistance)
+                ? Math.max(0, pose.boundaryDistance)
+                : null;
+            label.textContent = critical
+                ? "LIMITE DE ZONE — DEMI-TOUR"
+                : "ATTENTION — LIMITE DE ZONE"
+                    + (distance === null ? "" : " · " + distance.toFixed(0) + " m");
+        }
+        renderBoundaryHazards();
+    };
+
+    const clearBoundaryWarning = () => {
+        const warning = document.getElementById("raidpilot-boundary-warning");
+        if (warning) {
+            warning.hidden = true;
+            warning.classList.remove("raidpilot-boundary-warning-critical");
+        }
+        document
+            .getElementById("raidpilot-boundary-overlay")
+            ?.classList.remove(
+                "raidpilot-boundary-overlay-warning",
+                "raidpilot-boundary-overlay-critical");
+    };
+
     const ensureMineWarning = (container) => {
         let warning = document.getElementById("raidpilot-mine-warning");
         if (!warning || warning.parentElement !== container) {
@@ -799,6 +971,7 @@
         const pose = localPlayerPoseState;
         if (!pose) {
             clearMineWarning();
+            clearBoundaryWarning();
             clearCompass();
             cancelLocalPlayerRetry();
             detachLocalPlayerBinding();
@@ -810,6 +983,7 @@
         const container = document.getElementById("leaflet-map");
         if (container) {
             updateMineWarning(container, pose);
+            updateBoundaryWarning(container, pose);
         }
         if (!mapInstance
             || !container
@@ -822,6 +996,7 @@
         }
 
         renderMineHazards();
+        renderBoundaryHazards();
 
         let binding = localPlayerBinding;
         if (!binding

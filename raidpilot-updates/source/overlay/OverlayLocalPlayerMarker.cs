@@ -13,7 +13,10 @@ internal sealed partial class OverlayForm
         double UncertaintyMeters,
         bool Snap,
         bool MineAlert,
-        double MineDistanceMeters)? _pendingLocalPlayerMarker;
+        double MineDistanceMeters,
+        bool BoundaryWarning,
+        bool BoundaryCritical,
+        double BoundaryDistanceMeters)? _pendingLocalPlayerMarker;
 
     internal static bool ShouldPublishLocalPlayerMarker(
         bool webReady,
@@ -38,7 +41,10 @@ internal sealed partial class OverlayForm
             uncertaintyMeters,
             snap,
             _mineAlertActive,
-            _mineAlertDistanceMeters));
+            _mineAlertDistanceMeters,
+            _boundaryWarningActive,
+            _boundaryCriticalActive,
+            _boundaryDistanceMeters));
 
     private async Task UpdateLocalPlayerMarkerAsync((
         ScreenshotObservation Observation,
@@ -47,7 +53,10 @@ internal sealed partial class OverlayForm
         double UncertaintyMeters,
         bool Snap,
         bool MineAlert,
-        double MineDistanceMeters) update)
+        double MineDistanceMeters,
+        bool BoundaryWarning,
+        bool BoundaryCritical,
+        double BoundaryDistanceMeters) update)
     {
         var core = _webView.CoreWebView2;
         if (!ShouldPublishLocalPlayerMarker(
@@ -79,6 +88,10 @@ internal sealed partial class OverlayForm
                     update.MineDistanceMeters)
                 ? Math.Clamp(update.MineDistanceMeters, 0.0, 10_000.0)
                 : null;
+            double? boundaryDistance = double.IsFinite(
+                    update.BoundaryDistanceMeters)
+                ? Math.Clamp(update.BoundaryDistanceMeters, 0.0, 10_000.0)
+                : null;
             var payload = JsonSerializer.Serialize(new
             {
                 generation = update.RaidGeneration,
@@ -91,6 +104,9 @@ internal sealed partial class OverlayForm
                 snap = update.Snap,
                 mineAlert = update.MineAlert,
                 mineDistance,
+                boundaryWarning = update.BoundaryWarning,
+                boundaryCritical = update.BoundaryCritical,
+                boundaryDistance,
             });
             await core!.ExecuteScriptAsync(
                 $"window.__raidPilotSetLocalPose?.({payload}); void 0;");
