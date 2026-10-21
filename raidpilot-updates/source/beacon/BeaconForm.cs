@@ -997,4 +997,640 @@ internal sealed class BeaconForm : Form
                 endTimestamp,
                 out var forward)
             || !_rawKeyboardTimeline.TrySample(
+                _controls.MoveBackward & Keys.KeyCode,                startTimestamp,
+                endTimestamp,
+                out var backward)
+            || !_rawKeyboardTimeline.TrySample(
+                _controls.MoveLeft & Keys.KeyCode,
+                startTimestamp,
+                endTimestamp,
+                out var left)
+            || !_rawKeyboardTimeline.TrySample(
+                _controls.MoveRight & Keys.KeyCode,
+                startTimestamp,
+                endTimestamp,
+                out var right))
+        {
+            return false;
+        }
+
+        activity = PrecisionMotionIntegrator.MovementActivity(
+            forward.HeldFraction,
+            backward.HeldFraction,
+            left.HeldFraction,
+            right.HeldFraction);
+        return true;
+    }
+
+    private void UpdateMovementSpeedScale(int wheelDelta, bool duckWheelChord)
+    {
+        if (wheelDelta == 0
+            || duckWheelChord
+            || IsKeyDown(_controls.Duck)
+            || IsKeyDown(Keys.R)
+            || IsKeyDown(Keys.LControlKey)
+            || IsKeyDown(Keys.RControlKey)
+            || IsKeyDown(Keys.LMenu)
+            || IsKeyDown(Keys.RMenu))
+        {
+            return;
+        }
+
+        // EFT utilise la molette pour une vitesse de marche continue. Sans ce
+        // multiplicateur, Beacon avançait trop vite dès qu'un teammate avait
+        // réduit sa vitesse sous 100 %.
+        var wheelSteps = wheelDelta / 120.0;
+        _movementSpeedScale = Math.Clamp(
+            _movementSpeedScale + (wheelSteps * 0.07),
+            0.25,
+            1.0);
+    }
+
+    private void OnTick(object? sender, EventArgs e)
+    {
+        var now = Stopwatch.GetTimestamp();
+        var previous = _lastTick;
+        _lastTick = now;
+        var elapsed = previous == 0
+            ? 0.0
+            : Math.Clamp((now - previous) / (double)Stopwatch.Frequency, 0.0, 0.15);
+
+        _tarkovForeground = IsTarkovForeground();
+        var canTrack = CanTrackGameInput();
+        var precisionIntervalReady = canTrack
+            && _controlTrackingActive
+            && previous > 0;
+        UpdateControlTrackingState(canTrack);
+
+        if (!_estimator.IsAnchored || elapsed <= 0)
+        {
+            return;
+        }
+
+        var forward = canTrack
+            ? (IsKeyDown(_controls.MoveForward) ? 1.0 : 0.0)
+                - (IsKeyDown(_controls.MoveBackward) ? 1.0 : 0.0)
+            : 0.0;
+        var right = canTrack
+            ? (IsKeyDown(_controls.MoveRight) ? 1.0 : 0.0)
+                - (IsKeyDown(_controls.MoveLeft) ? 1.0 : 0.0)
+            : 0.0;
+
+        var sprintKey = canTrack && IsKeyDown(_controls.Sprint);
+        var walkKey = canTrack && IsKeyDown(_controls.Walk);
+        var aimKey = canTrack && IsKeyDown(_controls.Aim);
+        UpdateToggle(sprintKey, ref _previousSprintKey, ref _sprintToggle, _controls.SprintIsToggle);
+        UpdateToggle(walkKey, ref _previousWalkKey, ref _walkToggle, _controls.WalkIsToggle);
+        UpdateToggle(aimKey, ref _previousAimKey, ref _aimToggle, _controls.AimIsToggle);
+        var sprint = _controls.SprintIsToggle ? _sprintToggle : sprintKey;
+        var slow = _controls.WalkIsToggle ? _walkToggle : walkKey;
+        var aiming = _controls.AimIsToggle ? _aimToggle : aimKey;
+        if (forward <= 0)
+        {
+            sprint = false;
+        }
+
+        var wheelDelta = canTrack
+            ? Interlocked.Exchange(ref _pendingRawMouseWheel, 0)
+            : 0;
+        var duckWheelChord = Interlocked.Exchange(ref _pendingDuckWheelChord, 0) != 0;
+        if (canTrack)
+        {
+            UpdateMovementSpeedScale(wheelDelta, duckWheelChord);
+        }
+
+        var mouseX = canTrack ? Interlocked.Exchange(ref _pendingMouseX, 0) : 0;
+        var rotationOccurred = Interlocked.Exchange(ref _rawRotationActivity, 0) != 0;
+        if (!canTrack)
+        {
+            Interlocked.Exchange(ref _pendingMouseX, 0);
+            Interlocked.Exchange(ref _pendingRawMouseWheel, 0);
+            _adaptiveCalibration.MarkTrackingGap();
+        }
+
+        var movementCommanded = canTrack
+            && (Math.Abs(forward) > 0.01 || Math.Abs(right) > 0.01);
+        if (precisionIntervalReady
+            && TryGetMovementActivity(previous, now, out var rawMovementActivity))
+        {
+            movementCommanded |= rawMovementActivity > 0.0;
+        }
+
+        if (movementCommanded || rotationOccurred)
+        {
+            _visualKeyframeRecognizer.CancelPendingMatch();
+        }
+
+        var visualEvidence = UpdateVisualMotionEvidence(
+            now,
+            canTrack,
+            movementCommanded);
+
+        if (Math.Abs(mouseX) > 3
+            && _visualMotionGate.State == VisualMotionState.Stationary)
+        {
+            // Une rotation du corps avec une image prétendument fixe signifie
+            // que la capture GDI s'est probablement figée. Elle ne doit pas
+            // bloquer le pion indéfiniment.
+            _visualMotionGate.InvalidateLiveness();
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = null;
+            visualEvidence = RealtimeMotionEvidence.Unknown;
+        }
+
+        if (movementCommanded
+            && _visualMotionGate.CaptureProvenLive
+            && _visualMotionGate.State == VisualMotionState.Stationary)
+        {
+            _commandedStationarySeconds += Math.Clamp(elapsed, 0.0, 0.25);
+            if (_commandedStationarySeconds >= MaximumCommandedStationarySeconds)
+            {
+                _visualMotionGate.InvalidateLiveness();
+                _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+                _lastVisualObservation = null;
+                visualEvidence = RealtimeMotionEvidence.Unknown;
+                _commandedStationarySeconds = 0.0;
+            }
+        }
+        else
+        {
+            _commandedStationarySeconds = 0.0;
+        }
+
+        if (!movementCommanded
+            && !rotationOccurred
+            && visualEvidence == RealtimeMotionEvidence.Stationary)
+        {
+            _reanchorIdleSeconds += Math.Clamp(elapsed, 0.0, 0.25);
+        }
+        else
+        {
+            _reanchorIdleSeconds = 0.0;
+        }
+
+        var movementSpeedScale = slow || sprint
+            ? 1.0
+            : _movementSpeedScale;
+        if (movementSpeedScale < 0.35)
+        {
+            // À très basse vitesse, 64×36 peut ressembler à une scène fixe.
+            // Conserver Unknown évite un faux arrêt pendant une marche lente.
+            visualEvidence = RealtimeMotionEvidence.Unknown;
+        }
+
+        var beforePose = _estimator.CurrentPose!.Value;
+        _adaptiveCalibration.RecordMouse(mouseX, aiming, canTrack);
+        if (movementCommanded
+            && !sprint
+            && !slow
+            && movementSpeedScale < 0.99)
+        {
+            // La molette change le multiplicateur courant, pas la vitesse de
+            // marche de base du joueur. Ne pas apprendre ce segment comme une
+            // nouvelle vitesse personnelle.
+            _adaptiveCalibration.MarkTrackingGap();
+        }
+
+        RealtimePose pose;
+        PrecisionMotionResult integrated = default;
+        var usedPrecision = precisionIntervalReady
+            && mouseX >= int.MinValue
+            && mouseX <= int.MaxValue
+            && CanUsePrecisionInput()
+            && _precisionMotionIntegrator.TryAdvance(
+                _estimator,
+                _rawKeyboardTimeline,
+                _precisionYaw,
+                previous,
+                now,
+                _controls.MoveForward & Keys.KeyCode,
                 _controls.MoveBackward & Keys.KeyCode,
+                _controls.MoveLeft & Keys.KeyCode,
+                _controls.MoveRight & Keys.KeyCode,
+                sprint,
+                slow,
+                movementSpeedScale,
+                visualEvidence,
+                (int)mouseX,
+                out integrated);
+
+        if (usedPrecision)
+        {
+            pose = integrated.Pose;
+        }
+        else
+        {
+            pose = _estimator.Advance(
+                elapsed,
+                forward,
+                right,
+                sprint,
+                slow,
+                mouseX,
+                aiming,
+                movementSpeedScale,
+                visualEvidence);
+        }
+
+        _adaptiveCalibration.RecordMotion(
+            beforePose,
+            pose,
+            forward,
+            right,
+            sprint,
+            slow,
+            canTrack,
+            elapsed);
+        DetectScreenshotCapturePoint(now, pose);
+        TryAutomaticReanchor(
+            now,
+            pose,
+            movementCommanded,
+            visualEvidence);
+
+        var calibrationSuffix = _playerCalibrationLoaded
+            ? " · profil adaptatif"
+            : string.Empty;
+        var visionSuffix = _lastVisualObservation is { CaptureProvenLive: true } visual
+            ? visual.State switch
+            {
+                VisualMotionState.Stationary => " · vision: arrêt",
+                VisualMotionState.Moving => " · vision: mouvement",
+                _ => " · vision: incertaine",
+            }
+            : string.Empty;
+        _poseLabel.Text =
+            $"Suivi : ±{pose.PositionUncertaintyMeters:F1} m · {pose.X:F1}, {pose.Z:F1} · cap {pose.YawDegrees:F0}°"
+            + calibrationSuffix
+            + visionSuffix;
+        _poseLabel.ForeColor = pose.PositionUncertaintyMeters <= 3
+            ? Color.FromArgb(141, 255, 203)
+            : pose.PositionUncertaintyMeters <= 8
+                ? Color.FromArgb(246, 214, 122)
+                : Color.FromArgb(255, 155, 103);
+
+        if (_client is not null
+            && (now - _lastSend) / (double)Stopwatch.Frequency >= SendIntervalSeconds)
+        {
+            _lastSend = now;
+            _ = SendCurrentPoseAsync(force: false);
+        }
+    }
+
+    private bool TryApplyVisualKeyframe(long now)
+    {
+        if (string.IsNullOrWhiteSpace(_currentMap)
+            || _estimator.CurrentPose is not { } estimatedPose
+            || !_visualMotionGate.TryCopyLatestLuminance(out var luminance)
+            || luminance.Length == 0)
+        {
+            return false;
+        }
+
+        VisualKeyframeRecognition recognition;
+        try
+        {
+            recognition = _visualKeyframeRecognizer.Observe(
+                _currentMap,
+                luminance,
+                _visualMotionGate.SampleWidth,
+                _visualMotionGate.SampleHeight,
+                new VisualKeyframePose(
+                    estimatedPose.X,
+                    estimatedPose.Y,
+                    estimatedPose.Z,
+                    estimatedPose.YawDegrees),
+                now,
+                estimatedPose.PositionUncertaintyMeters);
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (!recognition.IsConfirmed
+            || recognition.ExactPose is not { } exact)
+        {
+            return false;
+        }
+
+        var correction = Math.Sqrt(
+            ((exact.X - estimatedPose.X) * (exact.X - estimatedPose.X))
+            + ((exact.Z - estimatedPose.Z) * (exact.Z - estimatedPose.Z)));
+
+        _estimator.Anchor(new ScreenshotObservation(
+            "raidpilot-visual-keyframe",
+            exact.X,
+            exact.Y,
+            exact.Z,
+            0,
+            0,
+            0,
+            1,
+            exact.YawDegrees));
+        _adaptiveCalibration.MarkTrackingGap();
+
+        _poseLabel.Text =
+            $"Repère visuel reconnu · correction {correction:F1} m · {exact.X:F1}, {exact.Z:F1}";
+        _poseLabel.ForeColor = Color.FromArgb(112, 232, 255);
+
+        if (_client is not null)
+        {
+            _ = SendCurrentPoseAsync(force: true);
+        }
+
+        return true;
+    }
+
+    private void TryAutomaticReanchor(
+        long now,
+        RealtimePose pose,
+        bool movementCommanded,
+        RealtimeMotionEvidence visualEvidence)
+    {
+        var secondsSinceLastAttempt = _lastAutomaticReanchor == 0
+            ? double.PositiveInfinity
+            : (now - _lastAutomaticReanchor) / (double)Stopwatch.Frequency;
+        var recoveryReady = LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(
+            pose.PositionUncertaintyMeters,
+            _reanchorIdleSeconds,
+            secondsSinceLastAttempt);
+
+        if (_pendingCapture is not null
+            || movementCommanded
+            || visualEvidence != RealtimeMotionEvidence.Stationary
+            || !recoveryReady
+            || string.IsNullOrWhiteSpace(_currentMap)
+            || !_tarkovForeground
+            || !CanTrackGameInput()
+            || !ScreenshotHotkeySender.CanSend(_screenshotBinding))
+        {
+            return;
+        }
+
+        if (!ScreenshotHotkeySender.TrySend(_screenshotBinding))
+        {
+            return;
+        }
+
+        _pendingCapture = (
+            now,
+            pose,
+            _adaptiveCalibration.CaptureSegment(pose),
+            _currentMap);
+        _lastAutomaticReanchor = now;
+        _reanchorIdleSeconds = 0.0;
+
+        SetStatus(
+            $"Beacon actif · recalage automatique demandé (±{pose.PositionUncertaintyMeters:F1} m)",
+            warning: false);
+    }
+
+    private RealtimeMotionEvidence UpdateVisualMotionEvidence(
+        long now,
+        bool canTrack,
+        bool movementCommanded)
+    {
+        if (!canTrack || _lastForegroundWindow == nint.Zero)
+        {
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = null;
+            _previousMovementCommanded = movementCommanded;
+            return _visualMotionEvidence;
+        }
+
+        if (movementCommanded && !_previousMovementCommanded)
+        {
+            _visualMotionGate.ReleaseStationary();
+        }
+        _previousMovementCommanded = movementCommanded;
+
+        if (_lastVisualSample != 0
+            && (now - _lastVisualSample) / (double)Stopwatch.Frequency < 0.10)
+        {
+            return _visualMotionEvidence;
+        }
+
+        _lastVisualSample = now;
+        if (!_visualMotionGate.TryObserveWindow(
+                _lastForegroundWindow,
+                out var observation,
+                estimateEgomotion: true))
+        {
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = observation;
+            return _visualMotionEvidence;
+        }
+
+        _lastVisualObservation = observation;
+        if (!observation.CaptureProvenLive)
+        {
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            return _visualMotionEvidence;
+        }
+
+        _visualMotionEvidence = observation.State switch
+        {
+            VisualMotionState.Stationary => RealtimeMotionEvidence.Stationary,
+            VisualMotionState.Moving => RealtimeMotionEvidence.Moving,
+            _ => RealtimeMotionEvidence.Unknown,
+        };
+
+        // A keyboard command with a visually confirmed stationary scene means
+        // the character is probably blocked, exhausted or otherwise not
+        // translating as requested. Keep the adaptive speed learner away from
+        // that segment; it is not evidence that the player's base speed is low.
+        if (movementCommanded
+            && _visualMotionEvidence == RealtimeMotionEvidence.Stationary)
+        {
+            _adaptiveCalibration.MarkTrackingGap();
+        }
+
+        if (!movementCommanded
+            && observation.Egomotion.State == VisualEgomotionState.Stationary
+            && observation.Egomotion.IsReliable)
+        {
+            _ = TryApplyVisualKeyframe(now);
+        }
+        else
+        {
+            _visualKeyframeRecognizer.CancelPendingMatch();
+        }
+        return _visualMotionEvidence;
+    }
+
+    private void DetectScreenshotCapturePoint(long now, RealtimePose pose)
+    {
+        var keyDown = IsScreenshotBindingDown();
+        if (keyDown
+            && !_screenshotBindingWasDown
+            && _pendingCapture is null)
+        {
+            _pendingCapture = (
+                now,
+                pose,
+                _adaptiveCalibration.CaptureSegment(pose),
+                _currentMap);
+        }
+
+        _screenshotBindingWasDown = keyDown;
+    }
+
+    private bool IsScreenshotBindingDown()
+    {
+        if (!_screenshotBinding.IsReady
+            || _screenshotBinding.AxisName is not null
+            || _screenshotBinding.KeyCodes.Count == 0)
+        {
+            return false;
+        }
+
+        foreach (var keyCode in _screenshotBinding.KeyCodes)
+        {
+            if (!EftControlSettings.TryMapKeyCode(keyCode, out var key)
+                || key == Keys.None
+                || !IsKeyDown(key))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private async Task SendCurrentPoseAsync(bool force)
+    {
+        var client = _client;
+        if (client is null
+            || _sendInProgress
+            || _estimator.CurrentPose is not { } pose
+            || string.IsNullOrWhiteSpace(_currentMap))
+        {
+            return;
+        }
+
+        _sendInProgress = true;
+        try
+        {
+            var message = new SquadMemberPose(
+                _profile.MemberId,
+                _profile.Name,
+                _currentMap,
+                pose.X,
+                pose.Y,
+                pose.Z,
+                pose.YawDegrees,
+                pose.PositionUncertaintyMeters,
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            await client.SendPoseAsync(message, _lifetime.Token);
+            if (force)
+            {
+                SetStatus("Beacon actif · position F8 envoyée", warning: false);
+            }
+        }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
+        {
+        }
+        catch
+        {
+            SetStatus("Beacon actif · reconnexion à l’envoi…", warning: true);
+        }
+        finally
+        {
+            _sendInProgress = false;
+        }
+    }
+
+    private static void UpdateToggle(
+        bool keyDown,
+        ref bool previousDown,
+        ref bool toggled,
+        bool toggleMode)
+    {
+        if (toggleMode && keyDown && !previousDown)
+        {
+            toggled = !toggled;
+        }
+        previousDown = keyDown;
+    }
+
+    private static bool IsKeyDown(Keys key) =>
+        (NativeMethods.GetAsyncKeyState((int)(key & Keys.KeyCode)) & 0x8000) != 0;
+
+    private bool CanTrackGameInput() =>
+        _tarkovForeground && !NativeMethods.IsCursorVisible();
+
+    private bool IsTarkovForeground()
+    {
+        var window = NativeMethods.GetForegroundWindow();
+        if (window == nint.Zero)
+        {
+            _lastForegroundWindow = nint.Zero;
+            return false;
+        }
+
+        if (window == _lastForegroundWindow)
+        {
+            return _tarkovForeground;
+        }
+        _lastForegroundWindow = window;
+
+        try
+        {
+            NativeMethods.GetWindowThreadProcessId(window, out var processId);
+            if (processId == 0)
+            {
+                return false;
+            }
+            using var process = Process.GetProcessById((int)processId);
+            return string.Equals(
+                process.ProcessName,
+                "EscapeFromTarkov",
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private void SetStatus(string text, bool warning)
+    {
+        _statusLabel.Text = text;
+        _statusLabel.ForeColor = warning
+            ? Color.FromArgb(255, 202, 90)
+            : Color.FromArgb(112, 232, 255);
+    }
+
+    private void OnFormClosing(object? sender, FormClosingEventArgs e)
+    {
+        if (!_allowClose && e.CloseReason == CloseReason.UserClosing)
+        {
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+
+        _tickTimer.Stop();
+        _folderProbeTimer.Stop();
+        _lifetime.Cancel();
+        _screenshotWatcher?.Dispose();
+        _mapWatcher?.Dispose();
+        if (_client is not null)
+        {
+            _ = _client.DisposeAsync();
+            _client = null;
+        }
+        if (_rawInputRegistered)
+        {
+            RawMouseInput.Unregister();
+            _rawInputRegistered = false;
+        }
+        _trayIcon.Visible = false;
+        _trayIcon.Dispose();
+        _visualMotionGate.Dispose();
+        _tickTimer.Dispose();
+        _folderProbeTimer.Dispose();
+        _lifetime.Dispose();
+    }
+}
