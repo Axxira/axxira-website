@@ -1,5 +1,12 @@
-RAIDPILOT BEACON 0.2.1
+RAIDPILOT BEACON 0.2.2
 =======================
+
+RECALAGE TEAMMATE PLUS FRÉQUENT 0.2.2
+- Le délai minimum entre deux recalages automatiques passe de 25 secondes à 8 secondes.
+- Le seuil d'incertitude qui permet un recalage passe de 4,0 m à 3,5 m.
+- Beacon ne déclenche toujours un screenshot automatique que lorsque le joueur est réellement immobile visuellement, Tarkov au premier plan et le raccourci valide.
+- Après un F8 exact accepté, la position corrigée est envoyée immédiatement à l'escouade au lieu d'attendre le prochain envoi périodique.
+- La synchro réseau de pose reste à environ 10 Hz; ce changement vise spécifiquement à empêcher la dérive de s'accumuler trop longtemps entre deux points exacts.
 
 PRÉCISION TEAMMATE 0.2.1
 - W/A/S/D et la rotation sont maintenant rejoués avec leurs horodatages Raw Input; les taps très courts entre deux ticks ne sont plus perdus.
@@ -14,8 +21,8 @@ FUSION DE LOCALISATION 0.2.0
 - Beacon observe maintenant une petite trame locale 64x36 de la fenêtre EFT, sans enregistrer de vidéo ni transmettre d'image.
 - Si les touches commandent un déplacement mais que le décor confirme que le joueur reste immobile, la translation du pion est bloquée au lieu de dériver dans un mur/obstacle.
 - Les F8 exacts deviennent des repères visuels en mémoire. Une scène reconnue plusieurs fois consécutivement peut recaler le pion sur un repère déjà validé.
-- Lorsque l'incertitude dépasse 4 m, Beacon peut déclencher le raccourci de screenshot EFT automatiquement, uniquement lorsque le joueur est visuellement immobile, Tarkov au premier plan et le raccourci valide.
-- Deux recalages automatiques sont espacés d'au moins 25 secondes.
+- Lorsque l'incertitude dépasse 3,5 m, Beacon peut déclencher le raccourci de screenshot EFT automatiquement, uniquement lorsque le joueur est visuellement immobile, Tarkov au premier plan et le raccourci valide.
+- Deux recalages automatiques sont espacés d'au moins 8 secondes.
 - Raw Input capture maintenant les appuis screenshot très courts afin de mémoriser l'instant du F8 sans attendre le prochain tick.
 - La boucle d'estimation passe à 40 Hz; l'envoi Squad reste autour de 10 Hz.
 - Si la capture visuelle GDI n'est pas disponible dans un mode d'affichage donné, Beacon revient automatiquement au suivi adaptatif touches/souris/F8 sans bloquer le joueur.

@@ -7,8 +7,8 @@ internal sealed class BeaconForm : Form
 {
     private const double SendIntervalSeconds = 0.10;
     private const double PendingCaptureMaximumAgeSeconds = 3.0;
-    private const double AutomaticReanchorUncertaintyMeters = 4.0;
-    private const double AutomaticReanchorCooldownSeconds = 25.0;
+    internal const double AutomaticReanchorUncertaintyMeters = 3.5;
+    internal const double AutomaticReanchorCooldownSeconds = 8.0;
     private const double MaximumCommandedStationarySeconds = 1.25;
     private readonly TextBox _roomTextBox = new();
     private readonly TextBox _nameTextBox = new();
