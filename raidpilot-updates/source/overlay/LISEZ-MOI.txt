@@ -1,4 +1,13 @@
-RAIDPILOT OVERLAY 0.11.6
+RAIDPILOT OVERLAY 0.11.7
+
+MAP QUALITY+ 0.11.7
+- Le mode SVG reste forcé pour conserver la meilleure netteté disponible depuis tarkov.dev.
+- Les SVG de carte utilisent maintenant un rendu geometricPrecision et les libellés importants gagnent un contraste discret sans rasteriser la carte.
+- Le joueur local et les teammates affichent un halo d'incertitude calculé en mètres puis reprojeté au zoom courant : plus le halo est large, moins la pose est certaine.
+- Un rayon de cap prolonge chaque flèche pour rendre la direction lisible immédiatement, même à petite échelle.
+- Une trace tactique courte (7 s, maximum 48 points) montre le déplacement récent du joueur et des teammates; une correction instantanée importante remet la trace à zéro au lieu de dessiner une fausse téléportation.
+- Les traces sont reprojetées à chaque pan, zoom, resize et viewreset, restent sous les pions, et n'interceptent jamais la souris.
+- La couche Map Quality+ n'altère ni les coordonnées, ni les F8, ni la logique de localisation; elle améliore uniquement la lecture tactique de la carte.
 
 ORIENTATION DES PIONS 0.11.6
 - La flèche du joueur local et celles des teammates suivent maintenant la rotation cartographique native de tarkov.dev.

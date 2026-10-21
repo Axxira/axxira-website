@@ -72,6 +72,7 @@ internal static class ScreenshotNameParserTests
         AutomaticFloorTests.RunAll(failures);
         TimerReliabilityTests.RunAll(failures);
         LocalPlayerMarkerTests.RunAll(failures);
+        MapQualityTests.RunAll(failures);
         SquadSyncTests.RunAll(failures);
         PrecisionEngineTests.RunAll(failures);
 
@@ -111,6 +112,7 @@ internal static class ScreenshotNameParserTests
             + AutomaticFloorTests.TestCount
             + TimerReliabilityTests.TestCount
             + LocalPlayerMarkerTests.TestCount
+            + MapQualityTests.TestCount
             + SquadSyncTests.TestCount
             + PrecisionEngineTests.TestCount;
 

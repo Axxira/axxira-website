@@ -49,6 +49,28 @@ body > #root > .App > .MuiBox-root,
     background: #0b0e0d !important;
 }
 
+#leaflet-map {
+    isolation: isolate !important;
+    -webkit-font-smoothing: antialiased !important;
+    text-rendering: geometricPrecision !important;
+    box-shadow: inset 0 0 0 1px rgb(175 238 231 / 10%) !important;
+}
+
+#leaflet-map .leaflet-overlay-pane svg.base-layer,
+#leaflet-map .leaflet-overlay-pane svg.level-layer {
+    shape-rendering: geometricPrecision !important;
+    text-rendering: geometricPrecision !important;
+}
+
+#leaflet-map .leaflet-overlay-pane image {
+    image-rendering: auto !important;
+}
+
+#leaflet-map .leaflet-marker-pane > .map-area-label {
+    opacity: 0.96 !important;
+    filter: drop-shadow(0 1px 1px rgb(0 0 0 / 88%)) drop-shadow(0 0 2px rgb(0 0 0 / 65%)) !important;
+}
+
 /* Full kiosk view: pan/zoom remain available by mouse in interactive mode,
    but no tarkov.dev control, badge, popup, tooltip, banner or sidebar is drawn. */
 .leaflet-control-container,
@@ -128,6 +150,31 @@ body > #root > .App > .MuiBox-root,
     filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 5px rgb(112 232 255 / 70%));
 }
 
+#leaflet-map > #raidpilot-local-player-marker::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    width: calc(var(--raidpilot-local-uncertainty-radius, 0px) * 2) !important;
+    height: calc(var(--raidpilot-local-uncertainty-radius, 0px) * 2) !important;
+    box-sizing: border-box !important;
+    border: 1px dashed color-mix(in srgb, var(--raidpilot-local-color) 68%, transparent) !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle, transparent 58%, color-mix(in srgb, var(--raidpilot-local-color) 8%, transparent) 100%) !important;
+    transform: translate(-50%, -50%) !important;
+    opacity: 0.34 !important;
+    pointer-events: none !important;
+    transition: width 180ms ease, height 180ms ease, opacity 180ms ease !important;
+}
+
+#leaflet-map > #raidpilot-local-player-marker[data-quality="exact"]::before {
+    opacity: 0.18 !important;
+}
+
+#leaflet-map > #raidpilot-local-player-marker[data-quality="uncertain"]::before {
+    opacity: 0.52 !important;
+}
+
 #leaflet-map > #raidpilot-local-player-marker[hidden] {
     display: none !important;
 }
@@ -178,6 +225,20 @@ body > #root > .App > .MuiBox-root,
     will-change: transform !important;
 }
 
+#raidpilot-local-player-marker .raidpilot-local-player-heading::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 50% !important;
+    bottom: 50% !important;
+    width: 2px !important;
+    height: 23px !important;
+    border-radius: 2px !important;
+    background: linear-gradient(to top, var(--raidpilot-local-color), rgb(112 232 255 / 5%)) !important;
+    transform: translateX(-50%) !important;
+    opacity: 0.72 !important;
+    filter: drop-shadow(0 0 2px #000) !important;
+}
+
 #raidpilot-local-player-marker.raidpilot-local-player-snap .raidpilot-local-player-heading {
     transition: none !important;
 }
@@ -210,6 +271,26 @@ body > #root > .App > .MuiBox-root,
     filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 4px var(--raidpilot-squad-color)) !important;
 }
 
+#leaflet-map > .raidpilot-squad-marker::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    width: calc(var(--raidpilot-squad-uncertainty-radius, 0px) * 2) !important;
+    height: calc(var(--raidpilot-squad-uncertainty-radius, 0px) * 2) !important;
+    box-sizing: border-box !important;
+    border: 1px dashed color-mix(in srgb, var(--raidpilot-squad-color) 58%, transparent) !important;
+    border-radius: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    opacity: 0.28 !important;
+    pointer-events: none !important;
+    transition: width 180ms ease, height 180ms ease, opacity 180ms ease !important;
+}
+
+#leaflet-map > .raidpilot-squad-marker[data-state="uncertain"]::before {
+    opacity: 0.46 !important;
+}
+
 #leaflet-map > .raidpilot-squad-marker[hidden] {
     display: none !important;
 }
@@ -238,6 +319,20 @@ body > #root > .App > .MuiBox-root,
     transform: rotate(var(--raidpilot-squad-yaw, 0deg)) !important;
     transform-origin: 50% 50% !important;
     transition: transform 100ms linear !important;
+}
+
+.raidpilot-squad-marker .raidpilot-squad-heading::before {
+    content: "" !important;
+    position: absolute !important;
+    left: 50% !important;
+    bottom: 50% !important;
+    width: 1.5px !important;
+    height: 18px !important;
+    border-radius: 2px !important;
+    background: linear-gradient(to top, var(--raidpilot-squad-color), transparent) !important;
+    transform: translateX(-50%) !important;
+    opacity: 0.62 !important;
+    filter: drop-shadow(0 0 2px #000) !important;
 }
 
 .raidpilot-squad-marker .raidpilot-squad-arrow {
@@ -270,6 +365,53 @@ body > #root > .App > .MuiBox-root,
     font: 600 10px/1.2 "Segoe UI", sans-serif !important;
     text-shadow: 0 1px 2px #000 !important;
     box-shadow: 0 1px 4px rgb(0 0 0 / 60%) !important;
+}
+
+/* Short tactical trails. The SVG is projected with Leaflet at the current
+   zoom, lives above the base map/routes, and stays below every player marker. */
+#leaflet-map > #raidpilot-tactical-trails {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1080 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    shape-rendering: geometricPrecision !important;
+}
+
+#raidpilot-tactical-trails path {
+    fill: none !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    vector-effect: non-scaling-stroke !important;
+    pointer-events: none !important;
+}
+
+#raidpilot-tactical-trails .raidpilot-tactical-trail-local-base {
+    stroke: rgb(112 232 255 / 22%) !important;
+    stroke-width: 5px !important;
+}
+
+#raidpilot-tactical-trails .raidpilot-tactical-trail-local-recent {
+    stroke: #70e8ff !important;
+    stroke-width: 2.5px !important;
+    opacity: 0.78 !important;
+    filter: drop-shadow(0 0 2px rgb(0 0 0 / 80%)) !important;
+}
+
+#raidpilot-tactical-trails .raidpilot-tactical-trail-squad-base {
+    stroke: var(--raidpilot-trail-color, #50c8ff) !important;
+    stroke-width: 4px !important;
+    opacity: 0.16 !important;
+}
+
+#raidpilot-tactical-trails .raidpilot-tactical-trail-squad-recent {
+    stroke: var(--raidpilot-trail-color, #50c8ff) !important;
+    stroke-width: 2px !important;
+    opacity: 0.58 !important;
+    filter: drop-shadow(0 0 1px rgb(0 0 0 / 78%)) !important;
 }
 
 /* tarkov.dev replaces its player marker on every GPS packet. Keep those source

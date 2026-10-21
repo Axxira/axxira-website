@@ -291,6 +291,26 @@
         return ((yaw + addRotation) % 360 + 360) % 360;
     };
 
+    const raidPilotMetricRadiusPixels = (mapInstance, z, x, meters) => {
+        if (!Number.isFinite(meters) || meters <= 0.05
+            || typeof mapInstance?.latLngToContainerPoint !== "function") {
+            return 0;
+        }
+        try {
+            const center = mapInstance.latLngToContainerPoint([z, x]);
+            const east = mapInstance.latLngToContainerPoint([z, x + meters]);
+            const north = mapInstance.latLngToContainerPoint([z + meters, x]);
+            const rx = Math.hypot(Number(east?.x) - Number(center?.x), Number(east?.y) - Number(center?.y));
+            const rz = Math.hypot(Number(north?.x) - Number(center?.x), Number(north?.y) - Number(center?.y));
+            if (![rx, rz].every(Number.isFinite)) {
+                return 0;
+            }
+            return Math.min(120, Math.max(4, (rx + rz) * 0.5));
+        } catch {
+            return 0;
+        }
+    };
+
     const parseLocalPlayerGeneration = (value) => typeof value === "number"
         && Number.isSafeInteger(value)
         && value >= 0
@@ -507,7 +527,15 @@
         binding.marker.style.transform =
             `translate3d(${Math.round(x * 10) / 10}px, ${Math.round(y * 10) / 10}px, 0) translate(-50%, -50%)`;
         const displayYaw = raidPilotDisplayYaw(pose.yaw, mapInstance);
+        const uncertaintyRadius = raidPilotMetricRadiusPixels(
+            mapInstance,
+            pose.z,
+            pose.x,
+            pose.uncertainty);
         binding.marker.style.setProperty("--raidpilot-local-yaw", `${displayYaw}deg`);
+        binding.marker.style.setProperty(
+            "--raidpilot-local-uncertainty-radius",
+            `${Math.round(uncertaintyRadius * 10) / 10}px`);
         binding.marker.dataset.quality = pose.snap
             ? "exact"
             : pose.uncertainty <= 3
@@ -546,10 +574,15 @@
         if (!pose || pose.generation < localPlayerGeneration) {
             return false;
         }
+        if (pose.generation > localPlayerGeneration || pose.snap) {
+            localPlayerTrail.length = 0;
+        }
         localPlayerGeneration = pose.generation;
         localPlayerPoseState = pose;
+        rememberTacticalTrailSample(localPlayerTrail, pose);
         cancelLocalPlayerRetry();
         window.__raidPilotApplyLocalPose();
+        renderTacticalTrails();
         return true;
     };
 
@@ -560,6 +593,8 @@
         }
         localPlayerGeneration = requestedGeneration;
         localPlayerPoseState = null;
+        localPlayerTrail.length = 0;
+        renderTacticalTrails();
         cancelLocalPlayerRetry();
         detachLocalPlayerBinding();
         removeOrphanedLocalPlayerMarkers();
@@ -627,6 +662,221 @@
         }
         return palette[Math.abs(hash >>> 0) % palette.length];
     };
+
+    const tacticalTrailLifetimeMs = 7000;
+    const tacticalTrailPointLimit = 48;
+    const tacticalTrailEvents = ["move", "zoom", "resize", "viewreset"];
+    let localPlayerTrail = [];
+    let tacticalTrailBinding = null;
+
+    const rememberTacticalTrailSample = (trail, pose, at = performance.now()) => {
+        if (!Array.isArray(trail)
+            || !pose
+            || ![pose.x, pose.z].every(Number.isFinite)
+            || typeof pose.map !== "string") {
+            return;
+        }
+
+        const last = trail.at(-1);
+        if (last && last.map !== pose.map) {
+            trail.length = 0;
+        } else if (last) {
+            const meters = Math.hypot(pose.x - last.x, pose.z - last.z);
+            const elapsed = at - last.at;
+            // A large instantaneous correction is a recalage, not a travelled
+            // segment. Start a fresh trail instead of drawing a false teleport.
+            if (meters >= 12 && elapsed < 1200) {
+                trail.length = 0;
+            } else if (meters < 0.35 && elapsed < 350) {
+                return;
+            }
+        }
+
+        trail.push({ x: pose.x, z: pose.z, map: pose.map, at });
+        while (trail.length > tacticalTrailPointLimit) {
+            trail.shift();
+        }
+    };
+
+    const pruneTacticalTrail = (trail, now) => {
+        while (trail.length > 0 && now - trail[0].at > tacticalTrailLifetimeMs) {
+            trail.shift();
+        }
+    };
+
+    const tacticalPathData = (mapInstance, trail) => {
+        const points = [];
+        for (const sample of trail) {
+            try {
+                const projected = mapInstance.latLngToContainerPoint([sample.z, sample.x]);
+                const x = Number(projected?.x);
+                const y = Number(projected?.y);
+                if (Number.isFinite(x) && Number.isFinite(y)) {
+                    points.push({ x, y });
+                }
+            } catch {
+                return "";
+            }
+        }
+        if (points.length < 2) {
+            return "";
+        }
+        return points.map((point, index) =>
+            `${index === 0 ? "M" : "L"}${Math.round(point.x * 10) / 10} ${Math.round(point.y * 10) / 10}`).join(" ");
+    };
+
+    const makeTacticalTrailLayer = (container) => {
+        const namespace = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(namespace, "svg");
+        svg.id = "raidpilot-tactical-trails";
+        svg.setAttribute("aria-hidden", "true");
+        svg.setAttribute("focusable", "false");
+
+        const localBase = document.createElementNS(namespace, "path");
+        localBase.setAttribute("class", "raidpilot-tactical-trail-local-base");
+        const localRecent = document.createElementNS(namespace, "path");
+        localRecent.setAttribute("class", "raidpilot-tactical-trail-local-recent");
+        const squadGroup = document.createElementNS(namespace, "g");
+        squadGroup.setAttribute("class", "raidpilot-tactical-trails-squad");
+        svg.append(localBase, localRecent, squadGroup);
+        container.appendChild(svg);
+        return { svg, localBase, localRecent, squadGroup, squadPaths: new Map() };
+    };
+
+    const detachTacticalTrailLayer = () => {
+        const binding = tacticalTrailBinding;
+        tacticalTrailBinding = null;
+        if (!binding) {
+            return;
+        }
+        if (binding.frame) {
+            window.cancelAnimationFrame(binding.frame);
+        }
+        if (typeof binding.map?.off === "function") {
+            for (const eventName of tacticalTrailEvents) {
+                binding.map.off(eventName, binding.schedule);
+            }
+        }
+        binding.resizeObserver?.disconnect?.();
+        if (binding.windowResize) {
+            window.removeEventListener("resize", binding.schedule);
+        }
+        binding.svg.remove();
+    };
+
+    const renderTacticalTrails = () => {
+        const mapInstance = findLeafletMapInstance();
+        const container = document.getElementById("leaflet-map");
+        if (!mapInstance
+            || !container
+            || typeof mapInstance.latLngToContainerPoint !== "function") {
+            return false;
+        }
+
+        let binding = tacticalTrailBinding;
+        if (!binding
+            || binding.map !== mapInstance
+            || binding.container !== container
+            || !binding.svg.isConnected) {
+            detachTacticalTrailLayer();
+            const elements = makeTacticalTrailLayer(container);
+            const schedule = () => {
+                if (tacticalTrailBinding?.frame) {
+                    return;
+                }
+                tacticalTrailBinding.frame = window.requestAnimationFrame(() => {
+                    if (tacticalTrailBinding) {
+                        tacticalTrailBinding.frame = 0;
+                    }
+                    renderTacticalTrails();
+                });
+            };
+            binding = {
+                ...elements,
+                map: mapInstance,
+                container,
+                schedule,
+                frame: 0,
+                resizeObserver: null,
+                windowResize: false,
+            };
+            tacticalTrailBinding = binding;
+            if (typeof mapInstance.on === "function") {
+                for (const eventName of tacticalTrailEvents) {
+                    mapInstance.on(eventName, schedule);
+                }
+            }
+            if (typeof ResizeObserver === "function") {
+                binding.resizeObserver = new ResizeObserver(schedule);
+                binding.resizeObserver.observe(container);
+            } else {
+                window.addEventListener("resize", schedule, { passive: true });
+                binding.windowResize = true;
+            }
+        }
+
+        const width = Math.max(1, Math.round(container.clientWidth));
+        const height = Math.max(1, Math.round(container.clientHeight));
+        binding.svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+
+        const now = performance.now();
+        pruneTacticalTrail(localPlayerTrail, now);
+        const localMapMatches = localPlayerPoseState?.map
+            && localPlayerTrail.every((sample) => sample.map === localPlayerPoseState.map);
+        const localData = localMapMatches
+            ? tacticalPathData(mapInstance, localPlayerTrail)
+            : "";
+        binding.localBase.setAttribute("d", localData);
+        binding.localRecent.setAttribute(
+            "d",
+            localData && localPlayerTrail.length >= 2
+                ? tacticalPathData(mapInstance, localPlayerTrail.slice(-6))
+                : "");
+
+        const activeIds = new Set();
+        for (const [memberId, entry] of squadMembers) {
+            pruneTacticalTrail(entry.trail ??= [], now);
+            if (now - entry.pose.receivedAt >= squadMemberExpiryMs
+                || (localPlayerPoseState?.map && entry.pose.map !== localPlayerPoseState.map)
+                || entry.trail.length < 2) {
+                continue;
+            }
+
+            activeIds.add(memberId);
+            let paths = binding.squadPaths.get(memberId);
+            if (!paths) {
+                const namespace = "http://www.w3.org/2000/svg";
+                const base = document.createElementNS(namespace, "path");
+                const recent = document.createElementNS(namespace, "path");
+                base.setAttribute("class", "raidpilot-tactical-trail-squad-base");
+                recent.setAttribute("class", "raidpilot-tactical-trail-squad-recent");
+                const color = squadColorForId(memberId);
+                base.style.setProperty("--raidpilot-trail-color", color);
+                recent.style.setProperty("--raidpilot-trail-color", color);
+                binding.squadGroup.append(base, recent);
+                paths = { base, recent };
+                binding.squadPaths.set(memberId, paths);
+            }
+
+            paths.base.setAttribute("d", tacticalPathData(mapInstance, entry.trail));
+            paths.recent.setAttribute("d", tacticalPathData(mapInstance, entry.trail.slice(-6)));
+        }
+
+        for (const [memberId, paths] of [...binding.squadPaths]) {
+            if (!activeIds.has(memberId)) {
+                paths.base.remove();
+                paths.recent.remove();
+                binding.squadPaths.delete(memberId);
+            }
+        }
+        return true;
+    };
+
+    window.setInterval(() => {
+        if (localPlayerTrail.length > 0 || squadMembers.size > 0) {
+            renderTacticalTrails();
+        }
+    }, 1000);
 
     const makeSquadMarker = (container, pose) => {
         const marker = document.createElement("div");
@@ -709,7 +959,15 @@
             entry.marker.style.transform =
                 `translate3d(${Math.round(point.x * 10) / 10}px, ${Math.round(point.y * 10) / 10}px, 0) translate(-50%, -50%)`;
             const displayYaw = raidPilotDisplayYaw(entry.pose.yaw, mapInstance);
+            const uncertaintyRadius = raidPilotMetricRadiusPixels(
+                mapInstance,
+                entry.pose.z,
+                entry.pose.x,
+                entry.pose.uncertainty);
             entry.marker.style.setProperty("--raidpilot-squad-yaw", `${displayYaw}deg`);
+            entry.marker.style.setProperty(
+                "--raidpilot-squad-uncertainty-radius",
+                `${Math.round(uncertaintyRadius * 10) / 10}px`);
             entry.marker.dataset.state = age >= squadMemberStaleMs
                 ? "stale"
                 : entry.pose.uncertainty > 8
@@ -755,7 +1013,7 @@
             }
         }
         if (!entry) {
-            entry = { pose, marker: null };
+            entry = { pose, marker: null, trail: [] };
             squadMembers.set(pose.memberId, entry);
         } else {
             if (pose.sentAtUnixMs <= entry.pose.sentAtUnixMs) {
@@ -763,18 +1021,22 @@
             }
             entry.pose = pose;
         }
+        rememberTacticalTrailSample(entry.trail, pose, pose.receivedAt);
 
         if (!squadCleanupTimer) {
             squadCleanupTimer = window.setInterval(renderSquadMembers, 500);
         }
         renderSquadMembers();
+        renderTacticalTrails();
         return true;
     };
 
     window.__raidPilotRemoveSquadMember = (memberId) => {
         const entry = squadMembers.get(String(memberId ?? ""));
         entry?.marker?.remove();
-        return squadMembers.delete(String(memberId ?? ""));
+        const removed = squadMembers.delete(String(memberId ?? ""));
+        renderTacticalTrails();
+        return removed;
     };
 
     window.__raidPilotClearSquad = () => {
@@ -782,6 +1044,7 @@
             entry.marker?.remove();
         }
         squadMembers.clear();
+        renderTacticalTrails();
         if (squadBinding?.map && typeof squadBinding.map.off === "function") {
             for (const eventName of squadEvents) {
                 squadBinding.map.off(eventName, squadBinding.render);
