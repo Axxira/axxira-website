@@ -501,15 +501,19 @@ internal sealed partial class OverlayForm : Form
         var menu = new ContextMenuStrip();
         menu.Items.Add("Ouvrir (sans focus)", null, (_, _) =>
         {
+            SetManualOverlayHidden(false);
             SetClickThrough(true, activateWhenInteractive: false);
-            ShowNoActivate();
+            ShowNoActivate(force: true);
             ReassertTopMost();
         });
         menu.Items.Add("Interagir (Ctrl+Alt+I)", null, (_, _) =>
         {
             SetClickThrough(false, activateWhenInteractive: true);
         });
-        menu.Items.Add("Masquer (Ctrl+Alt+M)", null, (_, _) => Hide());
+        menu.Items.Add(
+            "Masquer (Ctrl+Alt+M)",
+            null,
+            (_, _) => SetManualOverlayHidden(true));
         _streamVisibilityMenuItem.Click += (_, _) =>
         {
             _ = TrySetStreamVisibility(
@@ -851,6 +855,7 @@ internal sealed partial class OverlayForm : Form
         EnsureLocalScreenshotWatcherStarted();
         _lastRealtimeTick = Stopwatch.GetTimestamp();
         _realtimeTimer.Start();
+        ApplyAutomaticOverlayVisibility();
         await InitializeWebViewAsync();
         await TryAutoJoinSquadAsync();
     }
@@ -878,9 +883,15 @@ internal sealed partial class OverlayForm : Form
         }
         _foregroundStateInitialized = true;
         TrackScreenshotBindingPress(now);
+        var tarkovCursorVisible =
+            _tarkovIsForeground && NativeMethods.IsCursorVisible();
+        UpdateAutomaticOverlayVisibility(
+            _tarkovIsForeground,
+            tarkovCursorVisible,
+            now);
         var controlsActive = _liveTrackingEnabled
             && _tarkovIsForeground
-            && !NativeMethods.IsCursorVisible();
+            && !tarkovCursorVisible;
         if (!controlsActive)
         {
             if (_controlTrackingActive)
@@ -5374,6 +5385,7 @@ internal sealed partial class OverlayForm : Form
         {
             watcher = new EftMapLogWatcher();
             watcher.MapDetected += OnMapDetected;
+            watcher.RaidEnded += OnRaidEnded;
             _mapLogWatcher = watcher;
             watcher.Start();
         }
@@ -5382,6 +5394,7 @@ internal sealed partial class OverlayForm : Form
             if (watcher is not null)
             {
                 watcher.MapDetected -= OnMapDetected;
+                watcher.RaidEnded -= OnRaidEnded;
                 watcher.Dispose();
             }
             _mapLogWatcher = null;
@@ -5426,6 +5439,8 @@ internal sealed partial class OverlayForm : Form
             {
                 return;
             }
+
+            SetRaidActive(true);
 
             // Un nouveau fichier de session représente un nouveau raid même si
             // le joueur relance exactement la même carte.
@@ -5476,10 +5491,30 @@ internal sealed partial class OverlayForm : Form
         });
     }
 
+    private void OnRaidEnded(object? sender, EventArgs args)
+    {
+        RunOnUiThread(() =>
+        {
+            if (!ReferenceEquals(sender, _mapLogWatcher))
+            {
+                return;
+            }
+
+            SetRaidActive(false);
+            _compassOverlay.ClearHeading();
+            _learnedRouteGraph.BreakContinuity();
+            _lastLearnedRouteObservationAt = 0;
+            SetStatus(
+                "Hors raid · overlay masqué automatiquement",
+                Color.FromArgb(145, 153, 160));
+        });
+    }
+
     private void NavigateToDetectedMap(EftMapRoute map, bool startsNewRaid = false)
     {
         if (startsNewRaid)
         {
+            SetRaidActive(true);
             _currentMap = map.NormalizedName;
             StartLearnedRouteSession(_currentMap);
             ResetExtractionGuidance(clearObservation: true);
@@ -5592,11 +5627,11 @@ internal sealed partial class OverlayForm : Form
     {
         if (Visible)
         {
-            Hide();
+            SetManualOverlayHidden(true);
         }
         else
         {
-            ShowNoActivate();
+            SetManualOverlayHidden(false);
         }
     }
 
@@ -5667,6 +5702,10 @@ internal sealed partial class OverlayForm : Form
         }
 
         _clickThrough = enabled;
+        if (!enabled)
+        {
+            _manualOverlayHidden = false;
+        }
         SetInteractiveWindowFrame(!enabled);
         ApplyClickThroughStyle();
         _ = ApplyWebInteractionStateAsync();
@@ -5676,8 +5715,8 @@ internal sealed partial class OverlayForm : Form
             if (Visible)
             {
                 Hide();
-                ShowNoActivate();
             }
+            ApplyAutomaticOverlayVisibility();
             return;
         }
 
@@ -5685,6 +5724,7 @@ internal sealed partial class OverlayForm : Form
         {
             Show();
         }
+        _compassOverlay.SetCompassVisible(false);
         if (activateWhenInteractive)
         {
             Activate();
@@ -5828,8 +5868,15 @@ internal sealed partial class OverlayForm : Form
             | NativeMethods.SwpFrameChanged);
     }
 
-    private void ShowNoActivate()
+    private void ShowNoActivate(bool force = false)
     {
+        if (!force
+            && _clickThrough
+            && (_manualOverlayHidden || !_raidActive || _lootUiVisible))
+        {
+            return;
+        }
+
         // Reissuing SW_SHOW/SWP_SHOWWINDOW against a visible WebView2 window can
         // briefly force a black composition frame over a fullscreen game.
         if (Visible)
@@ -6188,8 +6235,11 @@ internal sealed partial class OverlayForm : Form
         if (_mapLogWatcher is not null)
         {
             _mapLogWatcher.MapDetected -= OnMapDetected;
+            _mapLogWatcher.RaidEnded -= OnRaidEnded;
             _mapLogWatcher.Dispose();
         }
+        _compassOverlay.Close();
+        _compassOverlay.Dispose();
         _formLifetime.Dispose();
     }
 }

@@ -61,6 +61,8 @@ internal sealed partial class OverlayForm
             return;
         }
 
+        UpdateCompassHeading(update.Observation.YawDegrees);
+
         if (_localPlayerMarkerUpdateInProgress)
         {
             _pendingLocalPlayerMarker = update;
@@ -132,6 +134,7 @@ internal sealed partial class OverlayForm
     private async Task ClearLocalPlayerMarkerAsync(int raidGeneration)
     {
         _pendingLocalPlayerMarker = null;
+        _compassOverlay.ClearHeading();
         var core = _webView.CoreWebView2;
         if (core is null)
         {

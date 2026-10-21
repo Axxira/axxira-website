@@ -45,6 +45,8 @@ public sealed class EftMapLogWatcher : IDisposable
     private bool _discardUntilNewline;
     private string? _lastMapName;
     private DateTime? _lastMapDetectionLogTime;
+    private bool _raidEndPending;
+    private bool _lastLifecycleEventWasRaidEnd;
     private bool _started;
     private bool _disposed;
 
@@ -73,6 +75,7 @@ public sealed class EftMapLogWatcher : IDisposable
     }
 
     public event EventHandler<EftMapDetectedEventArgs>? MapDetected;
+    public event EventHandler? RaidEnded;
 
     /// <summary>Starts silently. False means EFT logs are not currently available.</summary>
     public bool Start()
@@ -489,6 +492,8 @@ public sealed class EftMapLogWatcher : IDisposable
         _discardUntilNewline = false;
         _lastMapName = null;
         _lastMapDetectionLogTime = null;
+        _raidEndPending = false;
+        _lastLifecycleEventWasRaidEnd = false;
         try
         {
             _position = startAtEnd ? new FileInfo(path).Length : 0;
@@ -562,9 +567,15 @@ public sealed class EftMapLogWatcher : IDisposable
                         if (contentLength > 0)
                         {
                             var line = Encoding.UTF8.GetString(lineBuffer, 0, contentLength);
+                            if (IsRaidEndedLine(line))
+                            {
+                                _raidEndPending = true;
+                                _lastLifecycleEventWasRaidEnd = true;
+                            }
                             if (EftMapLogParser.TryParseLine(line, out var map)
                                 && map is not null)
                             {
+                                _lastLifecycleEventWasRaidEnd = false;
                                 var sameMap = string.Equals(
                                     map.NormalizedName,
                                     _lastMapName,
@@ -656,8 +667,13 @@ public sealed class EftMapLogWatcher : IDisposable
 
         // ReadAppendedMapsLocked leaves the cursor on the last complete line it
         // actually consumed, including bytes appended while this snapshot ran.
-        var latestMap = detections?.LastOrDefault();
+        var latestMap = _lastLifecycleEventWasRaidEnd
+            ? null
+            : detections?.LastOrDefault();
         _lastMapName = latestMap?.NormalizedName;
+        // The bounded tail establishes startup state synchronously. Do not
+        // replay an older end marker on the next reconciliation tick.
+        _raidEndPending = false;
         return latestMap;
     }
 
@@ -681,6 +697,14 @@ public sealed class EftMapLogWatcher : IDisposable
 
     private void Publish(List<EftMapRoute>? detections)
     {
+        var raidEnded = _raidEndPending;
+        _raidEndPending = false;
+
+        if (raidEnded)
+        {
+            RaidEnded?.Invoke(this, EventArgs.Empty);
+        }
+
         if (detections is null)
         {
             return;
@@ -691,6 +715,12 @@ public sealed class EftMapLogWatcher : IDisposable
             MapDetected?.Invoke(this, new EftMapDetectedEventArgs(map));
         }
     }
+
+    internal static bool IsRaidEndedLine(string? line) =>
+        !string.IsNullOrWhiteSpace(line)
+        && line.Contains(
+            "BEClient exit successfully",
+            StringComparison.OrdinalIgnoreCase);
 
     private static string? FindLatestApplicationLog(string logsDirectory)
     {

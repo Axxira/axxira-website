@@ -659,7 +659,6 @@
         const container = document.getElementById("leaflet-map");
         if (container) {
             updateMineWarning(container, pose);
-            updateCompass(container, pose);
         }
         if (!mapInstance
             || !container

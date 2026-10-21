@@ -170,7 +170,7 @@ internal static class MapQualityTests
             behavior.Contains("ensureCompass", StringComparison.Ordinal)
             && behavior.Contains("compassCardinals", StringComparison.Ordinal)
             && behavior.Contains("compassTickCount = 25", StringComparison.Ordinal)
-            && behavior.Contains("updateCompass(container, pose)", StringComparison.Ordinal)
+            && !behavior.Contains("updateCompass(container, pose)", StringComparison.Ordinal)
             && behavior.Contains("padStart(3, \"0\") + \"°\"", StringComparison.Ordinal)
             && styles.Contains("#leaflet-map > #raidpilot-compass", StringComparison.Ordinal)
             && styles.Contains(".raidpilot-compass-pointer", StringComparison.Ordinal)
