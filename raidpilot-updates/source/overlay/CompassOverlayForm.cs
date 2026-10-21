@@ -162,15 +162,15 @@ internal sealed class CompassOverlayForm : Form
             * TickStepDegrees;
 
         using var shadowPen = new Pen(Color.FromArgb(190, 0, 0, 0), 4f);
-        using var tickPen = new Pen(Color.FromArgb(215, 238, 244, 248), 1.6f);
+        using var tickPen = new Pen(Color.FromArgb(220, 255, 255, 255), 1.6f);
         using var majorPen = new Pen(Color.White, 2.3f);
-        using var centerPen = new Pen(Color.FromArgb(255, 255, 218, 105), 2.8f);
+        using var centerPen = new Pen(Color.White, 2.8f);
         using var degreeFont = new Font("Segoe UI", 12f, FontStyle.Bold, GraphicsUnit.Point);
         using var cardinalFont = new Font("Segoe UI", 18f, FontStyle.Bold, GraphicsUnit.Point);
         using var headingFont = new Font("Segoe UI", 15f, FontStyle.Bold, GraphicsUnit.Point);
         using var whiteBrush = new SolidBrush(Color.White);
-        using var minorBrush = new SolidBrush(Color.FromArgb(225, 232, 239, 243));
-        using var goldBrush = new SolidBrush(Color.FromArgb(255, 255, 226, 143));
+        using var minorBrush = new SolidBrush(Color.White);
+        using var accentBrush = new SolidBrush(Color.White);
         using var shadowBrush = new SolidBrush(Color.FromArgb(215, 0, 0, 0));
 
         for (var degree = firstDegree;
@@ -244,7 +244,7 @@ internal sealed class CompassOverlayForm : Form
             new PointF(centerX + 6f, pointerY + 12f),
             new PointF(centerX, pointerY + 20f),
         };
-        graphics.FillPolygon(goldBrush, triangle);
+        graphics.FillPolygon(accentBrush, triangle);
 
         var heading = $"{Math.Round(_yawDegrees) % 360:000}°";
         var headingSize = graphics.MeasureString(heading, headingFont);
@@ -259,7 +259,7 @@ internal sealed class CompassOverlayForm : Form
         graphics.DrawString(
             heading,
             headingFont,
-            goldBrush,
+            accentBrush,
             headingX,
             headingY);
     }
