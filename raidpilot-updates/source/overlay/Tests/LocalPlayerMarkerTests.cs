@@ -10,7 +10,7 @@ internal static class LocalPlayerMarkerTests
         Run("point local refuse une ancienne génération", RejectsStaleGeneration, failures);
         Run("point local refuse une autre carte", RejectsWrongMap, failures);
         Run("point local possède son propre rendu Leaflet", HasIndependentLeafletRenderer, failures);
-        Run("point local applique la rotation cartographique tarkov.dev", AppliesMapCoordinateRotation, failures);
+        Run("point local projette le cap à travers Leaflet", AppliesMapCoordinateRotation, failures);
     }
 
     private static void PublishesLocalMarkerWithoutRemoteState()
@@ -68,11 +68,14 @@ internal static class LocalPlayerMarkerTests
     {
         var behavior = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "InjectedBehavior.js"));
         Require(
-            behavior.Contains("raidPilotDisplayYaw", StringComparison.Ordinal)
-            && behavior.Contains("options?.baseData?.coordinateRotation", StringComparison.Ordinal)
-            && behavior.Contains("normalizedRotation === 90 || normalizedRotation === 270", StringComparison.Ordinal)
-            && behavior.Contains("raidPilotDisplayYaw(pose.yaw, mapInstance)", StringComparison.Ordinal),
-            "la flèche locale n'utilise pas la rotation de carte native tarkov.dev");
+            behavior.Contains("raidPilotProjectedDisplayYaw", StringComparison.Ordinal)
+            && behavior.Contains("forwardX = x + Math.sin(radians)", StringComparison.Ordinal)
+            && behavior.Contains("forwardZ = z + Math.cos(radians)", StringComparison.Ordinal)
+            && behavior.Contains("Math.atan2(dx, -dy)", StringComparison.Ordinal)
+            && behavior.Contains("raidPilotProjectedDisplayYaw(", StringComparison.Ordinal)
+            && behavior.Contains("pose.x,", StringComparison.Ordinal)
+            && behavior.Contains("pose.z,", StringComparison.Ordinal),
+            "la flèche locale n'est pas projetée géométriquement par Leaflet");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)

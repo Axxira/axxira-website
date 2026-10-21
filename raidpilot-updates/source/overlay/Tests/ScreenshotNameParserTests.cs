@@ -56,6 +56,7 @@ internal static class ScreenshotNameParserTests
         VisualYawCalibrationTests.RunAll(failures);
         VisualKeyframeRecognizerTests.RunAll(failures);
         VisualKeyframeStoreTests.RunAll(failures);
+        SuperKeyframeRecognizerTests.RunAll(failures);
         LocalizationRecoveryPolicyTests.RunAll(failures);
         ScreenshotHotkeySenderTests.RunAll(failures);
         AutomaticReanchorRequestTests.RunAll(failures);
@@ -96,6 +97,7 @@ internal static class ScreenshotNameParserTests
             + VisualYawCalibrationTests.TestCount
             + VisualKeyframeRecognizerTests.TestCount
             + VisualKeyframeStoreTests.TestCount
+            + SuperKeyframeRecognizerTests.TestCount
             + LocalizationRecoveryPolicyTests.TestCount
             + ScreenshotHotkeySenderTests.TestCount
             + AutomaticReanchorRequestTests.TestCount
@@ -163,8 +165,10 @@ internal static class ScreenshotNameParserTests
 
     private static void KeepsYawWhileLookingUp()
     {
-        // Rotation composée : cap 30 degrés, regard 60 degrés vers le haut.
-        const string fileName = "2026-01-03[16-20]_0, 0, 0_0.482963, 0.224144, -0.129410, 0.836516_0.png";
+        // Rotation EFT composée : cap 30 degrés, regard 60 degrés vers
+        // le haut. Le nom de screenshot encode l'axe heading avec Y/Z
+        // échangés, comme TarkovMonitor.
+        const string fileName = "2026-01-03[16-20]_0, 0, 0_-0.129410, 0.224144, 0.482963, 0.836516_0.png";
 
         if (!ScreenshotNameParser.TryParse(fileName, out var observation) || observation is null)
         {

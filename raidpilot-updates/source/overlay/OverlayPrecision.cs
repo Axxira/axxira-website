@@ -97,12 +97,27 @@ internal sealed partial class OverlayForm
         }
 
         var settings = _realtimeEstimator.Settings;
+        var visualContextAiming = aiming || yawSummary.Aiming || yawSummary.MixedAiming;
+        var realtimeCorrection = _visualYawCalibration.TryGetRealtimeCorrection(
+            visualObservation.Egomotion,
+            yawSummary.Counts,
+            yawSummary.Magnitude,
+            movementActive,
+            visualContextAiming,
+            _middleMouseDown,
+            settings.HipYawDegreesPerMouseCount);
+        if (realtimeCorrection is { } correction
+            && _realtimeEstimator.IsAnchored)
+        {
+            _realtimeEstimator.ApplyYawCorrection(correction);
+        }
+
         var proposed = _visualYawCalibration.Observe(
             visualObservation.Egomotion,
             yawSummary.Counts,
             yawSummary.Magnitude,
             movementActive,
-            aiming || yawSummary.Aiming || yawSummary.MixedAiming,
+            visualContextAiming,
             _middleMouseDown,
             settings.HipYawDegreesPerMouseCount);
         if (proposed is not { } hipYaw

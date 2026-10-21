@@ -1,4 +1,25 @@
-RAIDPILOT OVERLAY 0.11.8
+RAIDPILOT OVERLAY 0.12.0
+
+CAP GEOMETRIQUE + FAST RECOVERY 0.12.0
+- Heading EFT corrige selon la convention TarkovMonitor Y/Z.
+- Fleches local + squad projetees par le vrai CRS Leaflet via un point 4 m devant le joueur.
+- Correction yaw vision directe bornee a +/-0,75 deg lors des rotations pures fiables.
+- F8 auto des 2,25 m; cooldown adaptatif 2,0 a 4,5 s; immobilite 0,22 a 0,50 s.
+- SuperKeyframe a ~0,20 s: 2 confirmations locales, 3 pour loop closure global.
+
+SUPER-KEYFRAME / RELOCALISATION PASSIVE 0.12.0
+- Chaque F8 propre peut maintenant devenir une SuperKeyframe haute résolution 160x90 liée à la position X/Y/Z et au yaw exacts du fichier Tarkov.
+- La mémoire SuperKeyframe ne conserve jamais le screenshot : seulement des descripteurs numériques bornés, persistés séparément par joueur.
+- Le descripteur combine quatre familles de preuves : signature globale normalisée multi-zone, Census haute résolution robuste à l'exposition, histogrammes de gradients et 15 hashes régionaux indépendants.
+- La reconnaissance est hiérarchique : le moteur 64x36 reste le filtre rapide; dès qu'une base SuperKeyframe existe, une correction visuelle exige la confirmation haute résolution.
+- Une reconnaissance locale exige 2 observations haute résolution cohérentes; un loop closure global exige 3 preuves fortes et des seuils beaucoup plus stricts.
+- Les faux sosies sont combattus par la marge entre le meilleur et le deuxième candidat, le consensus régional, la compatibilité d'altitude/yaw et la cohérence temporelle.
+- Si le matcher 64x36 et le SuperKeyframe proposent deux poses incompatibles, RaidPilot refuse entièrement le recalage.
+- Les F8 automatiques apprennent directement depuis le PNG exact; les F8 manuels apprennent la SuperKeyframe seulement après retour à une scène de jeu propre et stationnaire.
+- La base est bornée à 96 SuperKeyframes par carte et 16 cartes; le fichier persistant est limité à 12 Mo et une corruption ne remplace jamais une mémoire saine.
+- La vérification 160x90 est déclenchée à ~0,20 s seulement quand le joueur est immobile et que l'incertitude mérite une vérification; elle ne tourne pas en permanence.
+- Le ZUPT visuel réduit maintenant fortement la nouvelle dérive de position/cap pendant un arrêt confirmé, sans effacer l'incertitude historique déjà accumulée.
+- Après confirmation, le snap passif alimente les mêmes protections que les autres ancres : pose, étage, route et synchronisation Squad restent cohérents.
 
 TACTICAL MAP++ 0.11.8
 - Les teammates qui sortent de la zone visible ne disparaissent plus : un indicateur reste au bord de la carte avec leur nom, leur direction relative, leur distance et la différence d'altitude significative.

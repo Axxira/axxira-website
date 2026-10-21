@@ -1,5 +1,15 @@
-RAIDPILOT BEACON 0.2.3
+RAIDPILOT BEACON 0.3.0
 =======================
+
+SUPER-KEYFRAME TEAMMATE 0.3.0
+- Beacon possède maintenant la même mémoire SuperKeyframe 160x90 que l'Overlay, persistée séparément pour chaque identité de joueur.
+- Un F8 automatique propre nourrit directement les descripteurs haute résolution; un F8 manuel programme un apprentissage différé seulement lorsque Tarkov est revenu sur une scène stationnaire fiable.
+- Dès qu'une base SuperKeyframe existe, le matcher rapide 64x36 ne peut plus corriger seul la pose du teammate : la couche haute résolution doit confirmer.
+- Les corrections locales demandent 2 preuves haute résolution; les récupérations de grosse dérive demandent 3 preuves fortes et un consensus régional beaucoup plus strict.
+- Les deux couches visuelles doivent être compatibles lorsqu'elles confirment simultanément; sinon aucune correction n'est appliquée.
+- Après un SuperKeyframe confirmé, la pose corrigée est envoyée immédiatement à l'escouade.
+- Le ZUPT visuel réduit la propagation future de dérive pendant les vrais arrêts sans prétendre effacer une erreur absolue déjà accumulée.
+- Les screenshots ne sont pas conservés par cette mémoire; seuls des descripteurs numériques bornés sont stockés localement.
 
 LOCALISATION SLAM / RÉCUPÉRATION DE DÉRIVE 0.2.3
 - Beacon lit automatiquement le FOV vertical réel de Tarkov et calcule l'optique effective utilisée par la capture visuelle selon la fenêtre du teammate.

@@ -26,6 +26,68 @@ internal sealed class VisualYawCalibration
         LastDecision = "vision yaw nouvelle session";
     }
 
+    internal double? TryGetRealtimeCorrection(
+        VisualEgomotionEstimate visual,
+        long mouseCounts,
+        long mouseMagnitude,
+        bool movementActive,
+        bool aiming,
+        bool freeLook,
+        double currentSensitivity)
+    {
+        if (!double.IsFinite(currentSensitivity)
+            || currentSensitivity is < 0.005 or > 0.5)
+        {
+            throw new ArgumentOutOfRangeException(nameof(currentSensitivity));
+        }
+
+        if (movementActive
+            || aiming
+            || freeLook
+            || visual.State != VisualEgomotionState.Tracking
+            || !visual.IsReliable
+            || visual.Confidence < 0.82
+            || visual.InlierRatio < 0.78
+            || visual.InlierFeatureCount < 9
+            || visual.ResidualPixels > 0.65
+            || Math.Abs(visual.SceneShiftY) > 0.90
+            || mouseCounts == 0
+            || mouseMagnitude < 5)
+        {
+            return null;
+        }
+
+        var cancellationRatio = Math.Abs(mouseCounts) / (double)mouseMagnitude;
+        var visualYaw = visual.EstimatedYawDeltaDegrees;
+        var expectedYaw = mouseCounts * currentSensitivity;
+        if (cancellationRatio < 0.93
+            || !double.IsFinite(visualYaw)
+            || !double.IsFinite(expectedYaw)
+            || Math.Abs(visualYaw) is < 0.25 or > 7.0
+            || Math.Abs(expectedYaw) is < 0.20 or > 8.0
+            || Math.Sign(visualYaw) != Math.Sign(expectedYaw))
+        {
+            return null;
+        }
+
+        var scaleRatio = Math.Abs(visualYaw / expectedYaw);
+        if (scaleRatio is < 0.70 or > 1.30)
+        {
+            return null;
+        }
+
+        var innovation = NormalizeSigned180(visualYaw - expectedYaw);
+        if (Math.Abs(innovation) > 2.5)
+        {
+            return null;
+        }
+
+        var correction = Math.Clamp(innovation * 0.55, -0.75, 0.75);
+        return Math.Abs(correction) >= 0.04
+            ? correction
+            : null;
+    }
+
     internal double? Observe(
         VisualEgomotionEstimate visual,
         long mouseCounts,
@@ -145,6 +207,20 @@ internal sealed class VisualYawCalibration
         LastDecision = $"vision yaw fusionnée · {currentSensitivity:F5} → {updated:F5}";
         _candidates.Clear();
         return updated;
+    }
+
+    private static double NormalizeSigned180(double angle)
+    {
+        angle %= 360.0;
+        if (angle <= -180.0)
+        {
+            angle += 360.0;
+        }
+        else if (angle > 180.0)
+        {
+            angle -= 360.0;
+        }
+        return angle;
     }
 
     private void Reject(string reason)

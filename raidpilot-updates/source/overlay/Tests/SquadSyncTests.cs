@@ -13,7 +13,7 @@ internal static class SquadSyncTests
         Run("rendu escouade Leaflet autonome", HasSquadMapRenderer, failures);
         Run("rendu escouade expire les positions anciennes", HasStaleAndExpiryPolicy, failures);
         Run("rendu escouade refuse les poses hors ordre", RejectsOutOfOrderRenderedPoses, failures);
-        Run("rendu escouade applique la rotation cartographique", AppliesMapCoordinateRotation, failures);
+        Run("rendu escouade projette le cap à travers Leaflet", AppliesMapCoordinateRotation, failures);
     }
 
     private static void GeneratesShareableCode()
@@ -109,9 +109,11 @@ internal static class SquadSyncTests
     {
         var behavior = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "InjectedBehavior.js"));
         Require(
-            behavior.Contains("raidPilotDisplayYaw(entry.pose.yaw, mapInstance)", StringComparison.Ordinal)
-            && behavior.Contains("options?.baseData?.coordinateRotation", StringComparison.Ordinal),
-            "les flèches teammates n'utilisent pas la rotation native de la carte");
+            behavior.Contains("raidPilotProjectedDisplayYaw", StringComparison.Ordinal)
+            && behavior.Contains("entry.pose.x,", StringComparison.Ordinal)
+            && behavior.Contains("entry.pose.z,", StringComparison.Ordinal)
+            && behavior.Contains("Math.atan2(dx, -dy)", StringComparison.Ordinal),
+            "les flèches teammates ne projettent pas leur direction par Leaflet");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)

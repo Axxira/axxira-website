@@ -27,6 +27,11 @@ internal sealed partial class OverlayForm : Form
     private const double MaximumCommandedStationarySeconds = 1.25;
     private const double ManualVisualKeyframeMinimumDelaySeconds = 1.8;
     private const double ManualVisualKeyframeMaximumDelaySeconds = 6.0;
+    private const double SuperKeyframeSampleIntervalSeconds = 0.20;
+    private const double SuperKeyframeMinimumUncertaintyMeters = 1.5;
+    private const double SuperKeyframeAnchorConsistencyMeters = 4.0;
+    private const double SuperKeyframeAnchorConsistencyVerticalMeters = 3.0;
+    private const double SuperKeyframeAnchorConsistencyYawDegrees = 20.0;
     private const double LearnedWaypointArrivalRadiusMeters = 0.25;
     private const double LearnedWaypointVerticalToleranceMeters = 0.75;
     private static readonly TimeSpan ScreenshotSessionClockTolerance = TimeSpan.FromSeconds(2);
@@ -61,6 +66,7 @@ internal sealed partial class OverlayForm : Form
     private readonly WindowsScreenshotTextReader _screenshotTextReader = new();
     private readonly VisualMotionGate _visualMotionGate = new();
     private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
+    private readonly SuperKeyframeRecognizer _superKeyframeRecognizer = new();
     private readonly RealtimePoseHistory _realtimePoseHistory = new(capacity: 256);
     private readonly RawKeyboardTimeline _rawKeyboardTimeline = new();
     private readonly RaidCountdown _raidCountdown = new();
@@ -142,6 +148,7 @@ internal sealed partial class OverlayForm : Form
     private long _lastLiveSocketUpdate;
     private long _lastLiveGuidanceUpdate;
     private long _lastVisualMotionSample;
+    private long _lastSuperKeyframeSample;
     private long _lastExactAnchorAt;
     private long _lastAutoReanchorAttempt;
     private long _lastManualScreenshotPressAt;
@@ -240,6 +247,10 @@ internal sealed partial class OverlayForm : Form
         _ = VisualKeyframeStore.TryLoad(
             _visualKeyframeRecognizer,
             VisualKeyframeStore.GetPath(_squadProfile.MemberId));
+        _superKeyframeRecognizer.ClearAllKeyframes();
+        _ = SuperKeyframeStore.TryLoad(
+            _superKeyframeRecognizer,
+            SuperKeyframeStore.GetPath(_squadProfile.MemberId));
         _streamVisibilityMenuItem.Checked = OverlayPreferencesStore.LoadVisibleInCaptures();
         _mapScalePercent = OverlayPreferencesStore.LoadMapScalePercent();
         Text = "RaidPilot Overlay";
@@ -764,6 +775,7 @@ internal sealed partial class OverlayForm : Form
                 _precisionGaps++;
                 _visualMotionGate.Reset();
                 _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
                 _pendingVisualKeyframeLearning = null;
             }
             _controlTrackingActive = false;
@@ -962,6 +974,7 @@ internal sealed partial class OverlayForm : Form
         if (movementInputActive || rotationOccurred || mouseDelta != 0)
         {
             _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
             // Un repère différé doit rester exactement à la pose F8. Dès que
             // le joueur bouge ou tourne, la vue courante n'est plus une ancre
             // absolue sûre et l'apprentissage est abandonné.
@@ -980,6 +993,7 @@ internal sealed partial class OverlayForm : Form
             _skipNextRealtimeCalibration = true;
             _visualMotionGate.Reset();
             _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
             _pendingVisualKeyframeLearning = null;
             ResetRealtimePoseHistory(now);
             return;
@@ -1023,6 +1037,7 @@ internal sealed partial class OverlayForm : Form
                         now);
                     if (!learnedPendingKeyframe)
                     {
+                        VisualKeyframePose? lowResolutionPose = null;
                         var recognition = _visualKeyframeRecognizer.Observe(
                             _currentMap,
                             visualFrame,
@@ -1037,18 +1052,84 @@ internal sealed partial class OverlayForm : Form
                             estimatedVisualPose.PositionUncertaintyMeters);
                         if (recognition.IsConfirmed)
                         {
-                            recognizedVisualPose = recognition.ExactPose;
+                            lowResolutionPose = recognition.ExactPose;
+                        }
+
+                        var superAvailable =
+                            _superKeyframeRecognizer.KeyframeCountForMap(
+                                _currentMap) > 0;
+                        SuperKeyframeRecognition superRecognition =
+                            SuperKeyframeRecognition.NoMatch();
+                        var superDue = superAvailable
+                            && estimatedVisualPose.PositionUncertaintyMeters
+                                >= SuperKeyframeMinimumUncertaintyMeters
+                            && (_lastSuperKeyframeSample == 0
+                                || (now - _lastSuperKeyframeSample)
+                                    / (double)Stopwatch.Frequency
+                                    >= SuperKeyframeSampleIntervalSeconds);
+                        if (superDue)
+                        {
+                            _lastSuperKeyframeSample = now;
+                            if (HighResolutionVisualSampler.TryCaptureWindow(
+                                    _lastForegroundWindow,
+                                    out var highResolutionFrame))
+                            {
+                                superRecognition =
+                                    _superKeyframeRecognizer.Observe(
+                                        _currentMap,
+                                        highResolutionFrame,
+                                        new VisualKeyframePose(
+                                            estimatedVisualPose.X,
+                                            estimatedVisualPose.Y,
+                                            estimatedVisualPose.Z,
+                                            estimatedVisualPose.YawDegrees),
+                                        now,
+                                        estimatedVisualPose
+                                            .PositionUncertaintyMeters);
+                            }
+                            else
+                            {
+                                _superKeyframeRecognizer.CancelPendingMatch();
+                            }
+                        }
+
+                        if (superRecognition.IsConfirmed
+                            && superRecognition.ExactPose is { } superPose)
+                        {
+                            if (lowResolutionPose is null
+                                || VisualAnchorsConsistent(
+                                    lowResolutionPose.Value,
+                                    superPose))
+                            {
+                                recognizedVisualPose = superPose;
+                            }
+                            else
+                            {
+                                _visualKeyframeRecognizer.CancelPendingMatch();
+                                _superKeyframeRecognizer.CancelPendingMatch();
+                            }
+                        }
+                        else if (!superAvailable
+                            && lowResolutionPose is { } legacyPose)
+                        {
+                            // Migration douce : tant que le joueur n'a pas
+                            // encore de SuperKeyframes, conserver le moteur
+                            // 64×36 existant. Dès que la base haute résolution
+                            // existe, elle devient l'arbitre final.
+                            recognizedVisualPose = legacyPose;
                         }
                     }
                 }
                 else
                 {
                     _visualKeyframeRecognizer.CancelPendingMatch();
+                    _superKeyframeRecognizer.CancelPendingMatch();
                 }
             }
             else
             {
                 _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
             }
         }
         if (Math.Abs(mouseDelta) > 3
@@ -1356,7 +1437,7 @@ internal sealed partial class OverlayForm : Form
             || !recoveryReady
             || !ScreenshotHotkeySender.CanSend(_screenshotBinding)
             || _screenshotWatcher is null
-            || (now - _lastExactAnchorAt) / (double)Stopwatch.Frequency < 4.0)
+            || (now - _lastExactAnchorAt) / (double)Stopwatch.Frequency < 1.5)
         {
             return;
         }
@@ -1673,6 +1754,7 @@ internal sealed partial class OverlayForm : Form
         _idleSeconds = 0.0;
         _visualMotionGate.Reset();
         _visualKeyframeRecognizer.CancelPendingMatch();
+        _superKeyframeRecognizer.CancelPendingMatch();
         _pendingVisualKeyframeLearning = null;
         ResetDistanceCalibrationCounters();
         ResetControlTrackingState();
@@ -1985,6 +2067,26 @@ internal sealed partial class OverlayForm : Form
     internal static bool ShouldAccumulateCalibrationDistance(bool visuallyReanchored) =>
         !visuallyReanchored;
 
+    internal static bool VisualAnchorsConsistent(
+        VisualKeyframePose lowResolution,
+        VisualKeyframePose highResolution)
+    {
+        var horizontal = Math.Sqrt(
+            ((lowResolution.X - highResolution.X)
+                * (lowResolution.X - highResolution.X))
+            + ((lowResolution.Z - highResolution.Z)
+                * (lowResolution.Z - highResolution.Z)));
+        var vertical = Math.Abs(
+            lowResolution.Y - highResolution.Y);
+        var yaw = Math.Abs(NormalizeSigned180(
+            lowResolution.YawDegrees
+            - highResolution.YawDegrees));
+
+        return horizontal <= SuperKeyframeAnchorConsistencyMeters
+            && vertical <= SuperKeyframeAnchorConsistencyVerticalMeters
+            && yaw <= SuperKeyframeAnchorConsistencyYawDegrees;
+    }
+
     internal static bool IsScreenshotTimestampFromCurrentSession(
         DateTimeOffset fileTimestampUtc,
         DateTimeOffset sessionStartedAtUtc) =>
@@ -2041,23 +2143,48 @@ internal sealed partial class OverlayForm : Form
             return false;
         }
 
-        if (!_visualKeyframeRecognizer.AddExactKeyframe(
+        var lowResolutionLearned =
+            _visualKeyframeRecognizer.AddExactKeyframe(
                 pending.MapId,
                 visualFrame,
                 _visualMotionGate.SampleWidth,
                 _visualMotionGate.SampleHeight,
                 pending.Pose,
                 now,
+                out _);
+        if (lowResolutionLearned)
+        {
+            _ = VisualKeyframeStore.TrySave(
+                _visualKeyframeRecognizer,
+                VisualKeyframeStore.GetPath(_squadProfile.MemberId));
+        }
+
+        var superLearned = false;
+        if (_lastForegroundWindow != nint.Zero
+            && HighResolutionVisualSampler.TryCaptureWindow(
+                _lastForegroundWindow,
+                out var superFrame)
+            && _superKeyframeRecognizer.AddExactKeyframe(
+                pending.MapId,
+                superFrame,
+                pending.Pose,
+                now,
                 out _))
+        {
+            superLearned = true;
+            _ = SuperKeyframeStore.TrySave(
+                _superKeyframeRecognizer,
+                SuperKeyframeStore.GetPath(_squadProfile.MemberId));
+        }
+
+        if (!lowResolutionLearned && !superLearned)
         {
             return false;
         }
 
-        _ = VisualKeyframeStore.TrySave(
-            _visualKeyframeRecognizer,
-            VisualKeyframeStore.GetPath(_squadProfile.MemberId));
         _pendingVisualKeyframeLearning = null;
         _visualKeyframeRecognizer.CancelPendingMatch();
+        _superKeyframeRecognizer.CancelPendingMatch();
         return true;
     }
 
@@ -3001,34 +3128,61 @@ internal sealed partial class OverlayForm : Form
     {
         try
         {
-            var frame = await _visualMotionGate.CreateLuminanceFrameFromImageWithRetryAsync(
-                screenshotPath,
-                _formLifetime.Token);
-            if (frame is null
-                || _formLifetime.IsCancellationRequested
+            var lowResolutionTask =
+                _visualMotionGate.CreateLuminanceFrameFromImageWithRetryAsync(
+                    screenshotPath,
+                    _formLifetime.Token);
+            var highResolutionTask =
+                HighResolutionVisualSampler.CreateLuminanceFrameFromImageWithRetryAsync(
+                    screenshotPath,
+                    _formLifetime.Token);
+            await Task.WhenAll(lowResolutionTask, highResolutionTask);
+
+            if (_formLifetime.IsCancellationRequested
                 || request.IsAmbiguous
                 || raidGeneration != _raidGeneration
-                || !string.Equals(mapId, _currentMap, StringComparison.OrdinalIgnoreCase))
+                || !string.Equals(
+                    mapId,
+                    _currentMap,
+                    StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
 
-            if (_visualKeyframeRecognizer.AddExactKeyframe(
+            var exactPose = new VisualKeyframePose(
+                observation.X,
+                observation.Y,
+                observation.Z,
+                observation.YawDegrees);
+
+            var frame = await lowResolutionTask;
+            if (frame is not null
+                && _visualKeyframeRecognizer.AddExactKeyframe(
                     mapId,
                     frame,
                     _visualMotionGate.SampleWidth,
                     _visualMotionGate.SampleHeight,
-                    new VisualKeyframePose(
-                        observation.X,
-                        observation.Y,
-                        observation.Z,
-                        observation.YawDegrees),
+                    exactPose,
                     captureTimestamp,
                     out _))
             {
                 _ = VisualKeyframeStore.TrySave(
                     _visualKeyframeRecognizer,
                     VisualKeyframeStore.GetPath(_squadProfile.MemberId));
+            }
+
+            var superFrame = await highResolutionTask;
+            if (superFrame is not null
+                && _superKeyframeRecognizer.AddExactKeyframe(
+                    mapId,
+                    superFrame,
+                    exactPose,
+                    captureTimestamp,
+                    out _))
+            {
+                _ = SuperKeyframeStore.TrySave(
+                    _superKeyframeRecognizer,
+                    SuperKeyframeStore.GetPath(_squadProfile.MemberId));
             }
         }
         catch (OperationCanceledException) when (_formLifetime.IsCancellationRequested)
@@ -3562,6 +3716,8 @@ internal sealed partial class OverlayForm : Form
         _lastLearnedRouteObservationAt = 0;
         _learnedRouteGraph.BeginSession(mapId);
         _visualKeyframeRecognizer.ResetSession();
+        _superKeyframeRecognizer.ResetSession();
+        _lastSuperKeyframeSample = 0;
         _pendingVisualKeyframeLearning = null;
         InvalidateLearnedRoutePlan();
     }
@@ -4868,6 +5024,8 @@ internal sealed partial class OverlayForm : Form
             _idleSeconds = 0.0;
             _visualMotionGate.Reset();
             _visualKeyframeRecognizer.ResetSession();
+            _superKeyframeRecognizer.ResetSession();
+            _lastSuperKeyframeSample = 0;
             _pendingVisualKeyframeLearning = null;
             ResetDistanceCalibrationCounters();
             ResetControlTrackingState();
@@ -5220,6 +5378,7 @@ internal sealed partial class OverlayForm : Form
         // backends from ever comparing one frame from each visibility mode.
         _visualMotionGate.Reset();
         _visualKeyframeRecognizer.CancelPendingMatch();
+        _superKeyframeRecognizer.CancelPendingMatch();
         _pendingVisualKeyframeLearning = null;
 
         if (persistPreference

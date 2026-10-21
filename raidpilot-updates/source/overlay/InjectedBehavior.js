@@ -291,6 +291,39 @@
         return ((yaw + addRotation) % 360 + 360) % 360;
     };
 
+    // Source of truth for marker heading: project the player's world position
+    // and a point four meters straight ahead through Leaflet's live CRS. This
+    // automatically absorbs coordinateRotation, axis inversion, anisotropic
+    // scale and any future map transform. The old tarkov.dev angle rule is
+    // retained only as a fallback if projection is temporarily unavailable.
+    const raidPilotProjectedDisplayYaw = (yaw, x, z, mapInstance) => {
+        if (![yaw, x, z].every(Number.isFinite)
+            || typeof mapInstance?.latLngToContainerPoint !== "function") {
+            return raidPilotDisplayYaw(yaw, mapInstance);
+        }
+
+        const radians = yaw * Math.PI / 180;
+        const distance = 4;
+        const forwardX = x + Math.sin(radians) * distance;
+        const forwardZ = z + Math.cos(radians) * distance;
+        try {
+            const origin = mapInstance.latLngToContainerPoint([z, x]);
+            const ahead = mapInstance.latLngToContainerPoint([forwardZ, forwardX]);
+            const dx = Number(ahead?.x) - Number(origin?.x);
+            const dy = Number(ahead?.y) - Number(origin?.y);
+            if (Number.isFinite(dx)
+                && Number.isFinite(dy)
+                && Math.hypot(dx, dy) >= 0.01) {
+                // CSS marker arrow points upward at 0°. Positive rotation is
+                // clockwise, hence atan2(screenX, -screenY).
+                return ((Math.atan2(dx, -dy) * 180 / Math.PI) + 360) % 360;
+            }
+        } catch {
+        }
+
+        return raidPilotDisplayYaw(yaw, mapInstance);
+    };
+
     const raidPilotMetricRadiusPixels = (mapInstance, z, x, meters) => {
         if (!Number.isFinite(meters) || meters <= 0.05
             || typeof mapInstance?.latLngToContainerPoint !== "function") {
@@ -526,7 +559,11 @@
 
         binding.marker.style.transform =
             `translate3d(${Math.round(x * 10) / 10}px, ${Math.round(y * 10) / 10}px, 0) translate(-50%, -50%)`;
-        const displayYaw = raidPilotDisplayYaw(pose.yaw, mapInstance);
+        const displayYaw = raidPilotProjectedDisplayYaw(
+            pose.yaw,
+            pose.x,
+            pose.z,
+            mapInstance);
         const uncertaintyRadius = raidPilotMetricRadiusPixels(
             mapInstance,
             pose.z,
@@ -1206,7 +1243,11 @@
 
             entry.marker.style.transform =
                 `translate3d(${Math.round(point.x * 10) / 10}px, ${Math.round(point.y * 10) / 10}px, 0) translate(-50%, -50%)`;
-            const displayYaw = raidPilotDisplayYaw(entry.pose.yaw, mapInstance);
+            const displayYaw = raidPilotProjectedDisplayYaw(
+                entry.pose.yaw,
+                entry.pose.x,
+                entry.pose.z,
+                mapInstance);
             const uncertaintyRadius = raidPilotMetricRadiusPixels(
                 mapInstance,
                 entry.pose.z,

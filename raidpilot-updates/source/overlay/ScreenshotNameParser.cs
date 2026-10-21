@@ -53,10 +53,13 @@ public static partial class ScreenshotNameParser
         qz /= magnitude;
         qw /= magnitude;
 
-        // Project the Unity quaternion's forward (+Z) vector onto the X/Z
-        // plane. This keeps the compass yaw stable while looking up or down.
+        // EFT's screenshot heading follows the same convention used by
+        // TarkovMonitor/tarkov.dev integrations: the camera quaternion is
+        // written x,y,z,w, but the heading calculation uses the Unity camera
+        // axes with Y/Z exchanged. Using the ordinary Unity forward-vector
+        // denominator makes the heading drift when pitch is present.
         var sinYaw = 2.0 * ((qw * qy) + (qx * qz));
-        var cosYaw = 1.0 - (2.0 * ((qx * qx) + (qy * qy)));
+        var cosYaw = 1.0 - (2.0 * ((qz * qz) + (qy * qy)));
         var yaw = Math.Atan2(sinYaw, cosYaw) * (180.0 / Math.PI);
 
         observation = new ScreenshotObservation(safeName, x, y, z, qx, qy, qz, qw, yaw);

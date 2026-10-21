@@ -1014,7 +1014,7 @@ internal sealed class VisualMotionGate : IDisposable
         bool HasLocalizedActivity,
         bool IsDistributed);
 
-    private static class GdiCaptureMethods
+    internal static class GdiCaptureMethods
     {
         internal const uint SourceCopy = 0x00CC0020;
         internal const int ColorOnColor = 3;

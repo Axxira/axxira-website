@@ -120,6 +120,39 @@ public sealed class RealtimePoseEstimator
     }
 
     /// <summary>
+    /// Applique une petite correction relative de cap issue d'une seconde
+    /// source (vision). La position n'est jamais déplacée. La vélocité est
+    /// tournée du même angle pour garder l'état dynamique cohérent.
+    /// </summary>
+    public RealtimePose ApplyYawCorrection(double correctionDegrees)
+    {
+        if (CurrentPose is not { } pose)
+        {
+            throw new InvalidOperationException("Une pose courante est requise pour corriger le cap.");
+        }
+        if (!double.IsFinite(correctionDegrees)
+            || Math.Abs(correctionDegrees) > 5.0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(correctionDegrees));
+        }
+
+        var radians = correctionDegrees * DegreesToRadians;
+        var cosine = Math.Cos(radians);
+        var sine = Math.Sin(radians);
+        var correctedVelocityX = (_velocityX * cosine) + (_velocityZ * sine);
+        var correctedVelocityZ = (-_velocityX * sine) + (_velocityZ * cosine);
+
+        var corrected = pose with
+        {
+            YawDegrees = Normalize360(pose.YawDegrees + correctionDegrees),
+        };
+        CurrentPose = corrected;
+        _velocityX = correctedVelocityX;
+        _velocityZ = correctedVelocityZ;
+        return corrected;
+    }
+
+    /// <summary>
     /// Remplace l'estimation par une mesure absolue et remet l'incertitude à sa
     /// valeur initiale.
     /// </summary>
@@ -336,8 +369,18 @@ public sealed class RealtimePoseEstimator
             // Le freinage continue brièvement après le relâchement des touches.
             movementActivity = 1.0;
         }
+        // ZUPT visuel conservateur : l'arrêt confirmé ne révèle pas la
+        // position absolue, donc il ne réduit jamais l'incertitude historique.
+        // En revanche, il supprime presque toute nouvelle dérive de translation
+        // tant que la scène reste réellement immobile.
+        var stationaryDriftScale =
+            motionEvidence == RealtimeMotionEvidence.Stationary
+                ? 0.10
+                : 1.0;
         var positionUncertainty = pose.PositionUncertaintyMeters
-            + (_settings.PositionDriftMetersPerSecond * deltaTimeSeconds)
+            + (_settings.PositionDriftMetersPerSecond
+                * deltaTimeSeconds
+                * stationaryDriftScale)
             + (_settings.DistanceErrorFraction * distance)
             // Les touches indiquent une intention, pas un déplacement confirmé :
             // collision, terrain ou stamina peuvent annuler tout le pas estimé.
@@ -345,10 +388,17 @@ public sealed class RealtimePoseEstimator
                 * deltaTimeSeconds
                 * movementActivity)
             + uncertaintyFromHeading;
+        var stationaryYawDriftScale =
+            motionEvidence == RealtimeMotionEvidence.Stationary
+                && Math.Abs(mouseDeltaCounts) < 0.5
+                ? 0.25
+                : 1.0;
         var yawUncertainty = Math.Min(
             180.0,
             pose.YawUncertaintyDegrees
-            + (_settings.YawDriftDegreesPerSecond * deltaTimeSeconds)
+            + (_settings.YawDriftDegreesPerSecond
+                * deltaTimeSeconds
+                * stationaryYawDriftScale)
             + (Math.Abs(yawDelta) * _settings.MouseYawErrorFraction));
 
         var nextPose = new RealtimePose(

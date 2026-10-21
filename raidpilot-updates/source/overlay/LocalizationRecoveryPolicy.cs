@@ -8,7 +8,7 @@ namespace RaidPilot.Overlay;
 /// </summary>
 internal static class LocalizationRecoveryPolicy
 {
-    internal const double AutomaticReanchorUncertaintyMeters = 3.5;
+    internal const double AutomaticReanchorUncertaintyMeters = 2.25;
 
     internal static double AutomaticReanchorCooldownSeconds(double uncertaintyMeters)
     {
@@ -16,9 +16,10 @@ internal static class LocalizationRecoveryPolicy
 
         return uncertaintyMeters switch
         {
-            >= 12.0 => 4.5,
-            >= 7.0 => 6.0,
-            _ => 8.0,
+            >= 12.0 => 2.0,
+            >= 7.0 => 2.75,
+            >= 4.0 => 3.5,
+            _ => 4.5,
         };
     }
 
@@ -28,9 +29,10 @@ internal static class LocalizationRecoveryPolicy
 
         return uncertaintyMeters switch
         {
-            >= 12.0 => 0.55,
-            >= 7.0 => 0.70,
-            _ => 0.90,
+            >= 12.0 => 0.22,
+            >= 7.0 => 0.30,
+            >= 4.0 => 0.40,
+            _ => 0.50,
         };
     }
 

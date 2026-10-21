@@ -8,6 +8,11 @@ internal sealed class BeaconForm : Form
     private const double SendIntervalSeconds = 0.10;
     private const double PendingCaptureMaximumAgeSeconds = 3.0;
     private const double MaximumCommandedStationarySeconds = 1.25;
+    private const double SuperKeyframeSampleIntervalSeconds = 0.20;
+    private const double SuperKeyframeMinimumUncertaintyMeters = 1.5;
+    private const double SuperKeyframeAnchorConsistencyMeters = 4.0;
+    private const double SuperKeyframeAnchorConsistencyVerticalMeters = 3.0;
+    private const double SuperKeyframeAnchorConsistencyYawDegrees = 20.0;
     private readonly TextBox _roomTextBox = new();
     private readonly TextBox _nameTextBox = new();
     private readonly Label _statusLabel = new();
@@ -28,6 +33,7 @@ internal sealed class BeaconForm : Form
     private readonly CancellationTokenSource _lifetime = new();
     private readonly VisualMotionGate _visualMotionGate = new();
     private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
+    private readonly SuperKeyframeRecognizer _superKeyframeRecognizer = new();
     private readonly VisualYawCalibration _visualYawCalibration = new();
     private readonly RawKeyboardTimeline _rawKeyboardTimeline = new();
     private readonly PrecisionYawTimeline _precisionYaw = new();
@@ -65,6 +71,7 @@ internal sealed class BeaconForm : Form
     private bool _rawScreenshotBindingDown;
     private bool _playerCalibrationLoaded;
     private long _lastVisualSample;
+    private long _lastSuperKeyframeSample;
     private long _lastAutomaticReanchor;
     private double _movementSpeedScale = 1.0;
     private double _commandedStationarySeconds;
@@ -72,11 +79,13 @@ internal sealed class BeaconForm : Form
     private RealtimeMotionEvidence _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
     private bool _previousMovementCommanded;
     private VisualMotionObservation? _lastVisualObservation;
+    private PendingSuperKeyframeLearning? _pendingSuperKeyframeLearning;
     private (
         long Timestamp,
         RealtimePose Pose,
         BeaconCalibrationSegment Calibration,
-        string? Map)? _pendingCapture;
+        string? Map,
+        bool Automatic)? _pendingCapture;
 
     internal BeaconForm()
     {
@@ -108,6 +117,10 @@ internal sealed class BeaconForm : Form
         _ = VisualKeyframeStore.TryLoad(
             _visualKeyframeRecognizer,
             VisualKeyframeStore.GetPath(_profile.MemberId));
+        _superKeyframeRecognizer.ClearAllKeyframes();
+        _ = SuperKeyframeStore.TryLoad(
+            _superKeyframeRecognizer,
+            SuperKeyframeStore.GetPath(_profile.MemberId));
         _screenshotBinding = EftScreenshotBindingReader.Read();
 
         BuildUi();
@@ -159,7 +172,13 @@ internal sealed class BeaconForm : Form
         _ = VisualKeyframeStore.TryLoad(
             _visualKeyframeRecognizer,
             VisualKeyframeStore.GetPath(memberId));
+        _superKeyframeRecognizer.ClearAllKeyframes();
+        _ = SuperKeyframeStore.TryLoad(
+            _superKeyframeRecognizer,
+            SuperKeyframeStore.GetPath(memberId));
+        _lastSuperKeyframeSample = 0;
         _visualYawCalibration.Reset();
+        _pendingSuperKeyframeLearning = null;
         _pendingCapture = null;
         _screenshotBindingWasDown = false;
         _controlTrackingActive = false;
@@ -432,7 +451,8 @@ internal sealed class BeaconForm : Form
                 now,
                 pose,
                 _adaptiveCalibration.CaptureSegment(pose),
-                _currentMap);
+                _currentMap,
+                false);
         }
 
         _rawScreenshotBindingDown = screenshotDown;
@@ -637,11 +657,30 @@ internal sealed class BeaconForm : Form
 
         BeginInvoke(() =>
         {
+            var now = Stopwatch.GetTimestamp();
+            var automaticCapture = _pendingCapture is { Automatic: true } pending
+                && (now - pending.Timestamp) / (double)Stopwatch.Frequency
+                    <= PendingCaptureMaximumAgeSeconds;
             AnchorFromScreenshot(observation);
             _ = RememberVisualKeyframeFromScreenshotAsync(
                 args.FullPath,
                 observation,
-                _currentMap);
+                _currentMap,
+                automaticCapture);
+
+            if (!automaticCapture
+                && !string.IsNullOrWhiteSpace(_currentMap))
+            {
+                _pendingSuperKeyframeLearning = new PendingSuperKeyframeLearning(
+                    _currentMap!,
+                    new VisualKeyframePose(
+                        observation.X,
+                        observation.Y,
+                        observation.Z,
+                        observation.YawDegrees),
+                    now + (long)Math.Ceiling(1.8 * Stopwatch.Frequency),
+                    now + (long)Math.Ceiling(6.0 * Stopwatch.Frequency));
+            }
         });
     }
 
@@ -736,7 +775,8 @@ internal sealed class BeaconForm : Form
     private async Task RememberVisualKeyframeFromScreenshotAsync(
         string screenshotPath,
         ScreenshotObservation observation,
-        string? map)
+        string? map,
+        bool allowSuperKeyframeFromScreenshot)
     {
         if (string.IsNullOrWhiteSpace(map)
             || _lifetime.IsCancellationRequested)
@@ -746,30 +786,52 @@ internal sealed class BeaconForm : Form
 
         try
         {
-            var luminance = await _visualMotionGate.CreateLuminanceFrameFromImageWithRetryAsync(
-                screenshotPath,
-                _lifetime.Token);
-            if (luminance is null)
-            {
-                return;
-            }
+            var lowResolutionTask =
+                _visualMotionGate.CreateLuminanceFrameFromImageWithRetryAsync(
+                    screenshotPath,
+                    _lifetime.Token);
+            Task<byte[]?>? highResolutionTask = allowSuperKeyframeFromScreenshot
+                ? HighResolutionVisualSampler.CreateLuminanceFrameFromImageWithRetryAsync(
+                    screenshotPath,
+                    _lifetime.Token)
+                : null;
 
-            if (_visualKeyframeRecognizer.AddExactKeyframe(
+            var luminance = await lowResolutionTask;
+            var exactPose = new VisualKeyframePose(
+                observation.X,
+                observation.Y,
+                observation.Z,
+                observation.YawDegrees);
+            if (luminance is not null
+                && _visualKeyframeRecognizer.AddExactKeyframe(
                     map,
                     luminance,
                     _visualMotionGate.SampleWidth,
                     _visualMotionGate.SampleHeight,
-                    new VisualKeyframePose(
-                        observation.X,
-                        observation.Y,
-                        observation.Z,
-                        observation.YawDegrees),
+                    exactPose,
                     Stopwatch.GetTimestamp(),
                     out _))
             {
                 _ = VisualKeyframeStore.TrySave(
                     _visualKeyframeRecognizer,
                     VisualKeyframeStore.GetPath(_profile.MemberId));
+            }
+
+            if (highResolutionTask is not null)
+            {
+                var superFrame = await highResolutionTask;
+                if (superFrame is not null
+                    && _superKeyframeRecognizer.AddExactKeyframe(
+                        map,
+                        superFrame,
+                        exactPose,
+                        Stopwatch.GetTimestamp(),
+                        out _))
+                {
+                    _ = SuperKeyframeStore.TrySave(
+                        _superKeyframeRecognizer,
+                        SuperKeyframeStore.GetPath(_profile.MemberId));
+                }
             }
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)
@@ -798,11 +860,14 @@ internal sealed class BeaconForm : Form
                 _adaptiveCalibration.ResetRaid();
                 _visualMotionGate.Reset();
                 _visualKeyframeRecognizer.ResetSession();
+                _superKeyframeRecognizer.ResetSession();
                 _visualYawCalibration.Reset();
                 _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
                 _lastVisualObservation = null;
                 _lastVisualSample = 0;
+                _lastSuperKeyframeSample = 0;
                 _lastAutomaticReanchor = 0;
+                _pendingSuperKeyframeLearning = null;
                 _previousMovementCommanded = false;
                 _pendingCapture = null;
                 _screenshotBindingWasDown = false;
@@ -1283,6 +1348,50 @@ internal sealed class BeaconForm : Form
         }
     }
 
+    private bool TryLearnPendingSuperKeyframe(long now)
+    {
+        if (_pendingSuperKeyframeLearning is not { } pending)
+        {
+            return false;
+        }
+
+        if (now > pending.ExpiresAtTimestamp
+            || !string.Equals(
+                pending.MapId,
+                _currentMap,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            _pendingSuperKeyframeLearning = null;
+            return false;
+        }
+
+        if (now < pending.EarliestAtTimestamp)
+        {
+            return false;
+        }
+
+        if (_lastForegroundWindow == nint.Zero
+            || !HighResolutionVisualSampler.TryCaptureWindow(
+                _lastForegroundWindow,
+                out var frame)
+            || !_superKeyframeRecognizer.AddExactKeyframe(
+                pending.MapId,
+                frame,
+                pending.Pose,
+                now,
+                out _))
+        {
+            return false;
+        }
+
+        _ = SuperKeyframeStore.TrySave(
+            _superKeyframeRecognizer,
+            SuperKeyframeStore.GetPath(_profile.MemberId));
+        _pendingSuperKeyframeLearning = null;
+        _superKeyframeRecognizer.CancelPendingMatch();
+        return true;
+    }
+
     private bool TryApplyVisualKeyframe(long now)
     {
         if (string.IsNullOrWhiteSpace(_currentMap)
@@ -1293,10 +1402,10 @@ internal sealed class BeaconForm : Form
             return false;
         }
 
-        VisualKeyframeRecognition recognition;
+        VisualKeyframePose? lowResolutionPose = null;
         try
         {
-            recognition = _visualKeyframeRecognizer.Observe(
+            var recognition = _visualKeyframeRecognizer.Observe(
                 _currentMap,
                 luminance,
                 _visualMotionGate.SampleWidth,
@@ -1308,36 +1417,106 @@ internal sealed class BeaconForm : Form
                     estimatedPose.YawDegrees),
                 now,
                 estimatedPose.PositionUncertaintyMeters);
+            if (recognition.IsConfirmed)
+            {
+                lowResolutionPose = recognition.ExactPose;
+            }
         }
         catch
         {
             return false;
         }
 
-        if (!recognition.IsConfirmed
-            || recognition.ExactPose is not { } exact)
+        var superAvailable =
+            _superKeyframeRecognizer.KeyframeCountForMap(_currentMap) > 0;
+        SuperKeyframeRecognition superRecognition =
+            SuperKeyframeRecognition.NoMatch();
+        var superDue = superAvailable
+            && estimatedPose.PositionUncertaintyMeters
+                >= SuperKeyframeMinimumUncertaintyMeters
+            && (_lastSuperKeyframeSample == 0
+                || (now - _lastSuperKeyframeSample)
+                    / (double)Stopwatch.Frequency
+                    >= SuperKeyframeSampleIntervalSeconds);
+
+        if (superDue)
+        {
+            _lastSuperKeyframeSample = now;
+            if (HighResolutionVisualSampler.TryCaptureWindow(
+                    _lastForegroundWindow,
+                    out var highResolutionFrame))
+            {
+                try
+                {
+                    superRecognition = _superKeyframeRecognizer.Observe(
+                        _currentMap,
+                        highResolutionFrame,
+                        new VisualKeyframePose(
+                            estimatedPose.X,
+                            estimatedPose.Y,
+                            estimatedPose.Z,
+                            estimatedPose.YawDegrees),
+                        now,
+                        estimatedPose.PositionUncertaintyMeters);
+                }
+                catch
+                {
+                    _superKeyframeRecognizer.CancelPendingMatch();
+                }
+            }
+            else
+            {
+                _superKeyframeRecognizer.CancelPendingMatch();
+            }
+        }
+
+        VisualKeyframePose? exact = null;
+        if (superRecognition.IsConfirmed
+            && superRecognition.ExactPose is { } superPose)
+        {
+            if (lowResolutionPose is null
+                || VisualAnchorsConsistent(
+                    lowResolutionPose.Value,
+                    superPose))
+            {
+                exact = superPose;
+            }
+            else
+            {
+                _visualKeyframeRecognizer.CancelPendingMatch();
+                _superKeyframeRecognizer.CancelPendingMatch();
+                return false;
+            }
+        }
+        else if (!superAvailable
+            && lowResolutionPose is { } legacyPose)
+        {
+            exact = legacyPose;
+        }
+
+        if (exact is not { } anchor)
         {
             return false;
         }
 
         var correction = Math.Sqrt(
-            ((exact.X - estimatedPose.X) * (exact.X - estimatedPose.X))
-            + ((exact.Z - estimatedPose.Z) * (exact.Z - estimatedPose.Z)));
+            ((anchor.X - estimatedPose.X) * (anchor.X - estimatedPose.X))
+            + ((anchor.Z - estimatedPose.Z) * (anchor.Z - estimatedPose.Z)));
 
         _estimator.Anchor(new ScreenshotObservation(
-            "raidpilot-visual-keyframe",
-            exact.X,
-            exact.Y,
-            exact.Z,
+            "raidpilot-super-keyframe",
+            anchor.X,
+            anchor.Y,
+            anchor.Z,
             0,
             0,
             0,
             1,
-            exact.YawDegrees));
+            anchor.YawDegrees));
         _adaptiveCalibration.MarkTrackingGap();
 
         _poseLabel.Text =
-            $"Repère visuel reconnu · correction {correction:F1} m · {exact.X:F1}, {exact.Z:F1}";
+            $"Super-repère reconnu · correction {correction:F1} m · {anchor.X:F1}, {anchor.Z:F1}";
         _poseLabel.ForeColor = Color.FromArgb(112, 232, 255);
 
         if (_client is not null)
@@ -1348,12 +1527,61 @@ internal sealed class BeaconForm : Form
         return true;
     }
 
+    private static bool VisualAnchorsConsistent(
+        VisualKeyframePose lowResolution,
+        VisualKeyframePose highResolution)
+    {
+        var horizontal = Math.Sqrt(
+            ((lowResolution.X - highResolution.X)
+                * (lowResolution.X - highResolution.X))
+            + ((lowResolution.Z - highResolution.Z)
+                * (lowResolution.Z - highResolution.Z)));
+        var vertical = Math.Abs(
+            lowResolution.Y - highResolution.Y);
+        var yaw = AngleDistance(
+            lowResolution.YawDegrees,
+            highResolution.YawDegrees);
+
+        return horizontal <= SuperKeyframeAnchorConsistencyMeters
+            && vertical <= SuperKeyframeAnchorConsistencyVerticalMeters
+            && yaw <= SuperKeyframeAnchorConsistencyYawDegrees;
+    }
+
+    private static double AngleDistance(double a, double b)
+    {
+        var delta = (a - b) % 360.0;
+        if (delta <= -180)
+        {
+            delta += 360;
+        }
+        else if (delta > 180)
+        {
+            delta -= 360;
+        }
+        return Math.Abs(delta);
+    }
+
+    private readonly record struct PendingSuperKeyframeLearning(
+        string MapId,
+        VisualKeyframePose Pose,
+        long EarliestAtTimestamp,
+        long ExpiresAtTimestamp);
+
     private void TryAutomaticReanchor(
         long now,
         RealtimePose pose,
         bool movementCommanded,
         RealtimeMotionEvidence visualEvidence)
     {
+        if (_pendingCapture is { } stalePending
+            && (now - stalePending.Timestamp) / (double)Stopwatch.Frequency
+                > PendingCaptureMaximumAgeSeconds)
+        {
+            // A lost/blocked screenshot must never freeze automatic recovery.
+            _pendingCapture = null;
+            _adaptiveCalibration.MarkTrackingGap();
+        }
+
         var secondsSinceLastAttempt = _lastAutomaticReanchor == 0
             ? double.PositiveInfinity
             : (now - _lastAutomaticReanchor) / (double)Stopwatch.Frequency;
@@ -1383,7 +1611,8 @@ internal sealed class BeaconForm : Form
             now,
             pose,
             _adaptiveCalibration.CaptureSegment(pose),
-            _currentMap);
+            _currentMap,
+            true);
         _lastAutomaticReanchor = now;
         _reanchorIdleSeconds = 0.0;
 
@@ -1402,12 +1631,18 @@ internal sealed class BeaconForm : Form
             _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
             _lastVisualObservation = null;
             _previousMovementCommanded = movementCommanded;
+            _pendingSuperKeyframeLearning = null;
+            _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
             return _visualMotionEvidence;
         }
 
         if (movementCommanded && !_previousMovementCommanded)
         {
             _visualMotionGate.ReleaseStationary();
+            _pendingSuperKeyframeLearning = null;
+            _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
         }
         _previousMovementCommanded = movementCommanded;
 
@@ -1426,6 +1661,9 @@ internal sealed class BeaconForm : Form
         {
             _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
             _lastVisualObservation = observation;
+            _pendingSuperKeyframeLearning = null;
+            _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
             return _visualMotionEvidence;
         }
 
@@ -1438,6 +1676,9 @@ internal sealed class BeaconForm : Form
         if (!observation.CaptureProvenLive)
         {
             _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _pendingSuperKeyframeLearning = null;
+            _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
             return _visualMotionEvidence;
         }
 
@@ -1462,11 +1703,14 @@ internal sealed class BeaconForm : Form
             && observation.Egomotion.State == VisualEgomotionState.Stationary
             && observation.Egomotion.IsReliable)
         {
+            _ = TryLearnPendingSuperKeyframe(now);
             _ = TryApplyVisualKeyframe(now);
         }
         else
         {
+            _pendingSuperKeyframeLearning = null;
             _visualKeyframeRecognizer.CancelPendingMatch();
+            _superKeyframeRecognizer.CancelPendingMatch();
         }
         return _visualMotionEvidence;
     }
@@ -1492,12 +1736,27 @@ internal sealed class BeaconForm : Form
             ? _aimToggle
             : IsKeyDown(_controls.Aim);
         var settings = _estimator.Settings;
+        var visualContextAiming = aiming || yawSummary.Aiming || yawSummary.MixedAiming;
+        var realtimeCorrection = _visualYawCalibration.TryGetRealtimeCorrection(
+            observation.Egomotion,
+            yawSummary.Counts,
+            yawSummary.Magnitude,
+            movementCommanded,
+            visualContextAiming,
+            _middleMouseDown,
+            settings.HipYawDegreesPerMouseCount);
+        if (realtimeCorrection is { } correction
+            && _estimator.IsAnchored)
+        {
+            _estimator.ApplyYawCorrection(correction);
+        }
+
         var proposed = _visualYawCalibration.Observe(
             observation.Egomotion,
             yawSummary.Counts,
             yawSummary.Magnitude,
             movementCommanded,
-            aiming || yawSummary.Aiming || yawSummary.MixedAiming,
+            visualContextAiming,
             _middleMouseDown,
             settings.HipYawDegreesPerMouseCount);
         if (proposed is not { } hipYaw
@@ -1526,7 +1785,8 @@ internal sealed class BeaconForm : Form
                 now,
                 pose,
                 _adaptiveCalibration.CaptureSegment(pose),
-                _currentMap);
+                _currentMap,
+                false);
         }
 
         _screenshotBindingWasDown = keyDown;

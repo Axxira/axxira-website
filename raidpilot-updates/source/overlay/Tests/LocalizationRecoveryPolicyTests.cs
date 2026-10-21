@@ -16,45 +16,45 @@ internal static class LocalizationRecoveryPolicyTests
 
     private static void UsesNominalThresholds()
     {
-        Require(LocalizationRecoveryPolicy.AutomaticReanchorUncertaintyMeters == 3.5,
+        Require(LocalizationRecoveryPolicy.AutomaticReanchorUncertaintyMeters == 2.25,
             "seuil d'incertitude automatique inattendu");
-        RequireNear(LocalizationRecoveryPolicy.AutomaticReanchorCooldownSeconds(4.0), 8.0, 0.001,
+        RequireNear(LocalizationRecoveryPolicy.AutomaticReanchorCooldownSeconds(3.0), 4.5, 0.001,
             "cooldown nominal");
-        RequireNear(LocalizationRecoveryPolicy.MinimumIdleSeconds(4.0), 0.90, 0.001,
+        RequireNear(LocalizationRecoveryPolicy.MinimumIdleSeconds(3.0), 0.50, 0.001,
             "immobilité nominale");
     }
 
     private static void UsesMediumUncertaintyCadence()
     {
-        RequireNear(LocalizationRecoveryPolicy.AutomaticReanchorCooldownSeconds(8.0), 6.0, 0.001,
+        RequireNear(LocalizationRecoveryPolicy.AutomaticReanchorCooldownSeconds(8.0), 2.75, 0.001,
             "cooldown moyen");
-        RequireNear(LocalizationRecoveryPolicy.MinimumIdleSeconds(8.0), 0.70, 0.001,
+        RequireNear(LocalizationRecoveryPolicy.MinimumIdleSeconds(8.0), 0.30, 0.001,
             "immobilité moyenne");
     }
 
     private static void UsesCriticalUncertaintyCadence()
     {
-        RequireNear(LocalizationRecoveryPolicy.AutomaticReanchorCooldownSeconds(14.0), 4.5, 0.001,
+        RequireNear(LocalizationRecoveryPolicy.AutomaticReanchorCooldownSeconds(14.0), 2.0, 0.001,
             "cooldown critique");
-        RequireNear(LocalizationRecoveryPolicy.MinimumIdleSeconds(14.0), 0.55, 0.001,
+        RequireNear(LocalizationRecoveryPolicy.MinimumIdleSeconds(14.0), 0.22, 0.001,
             "immobilité critique");
     }
 
     private static void RejectsReliablePose()
     {
-        Require(!LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(3.0, 10.0, 100.0),
+        Require(!LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(2.0, 10.0, 100.0),
             "une position fiable ne doit pas déclencher de screenshot automatique");
     }
 
     private static void RequiresIdleWindow()
     {
-        Require(!LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(8.0, 0.4, 100.0),
+        Require(!LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(8.0, 0.20, 100.0),
             "le recalage ne doit pas partir avant une immobilité suffisante");
     }
 
     private static void AllowsFastRecoveryWhenUncertain()
     {
-        Require(LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(14.0, 0.6, 4.6),
+        Require(LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(14.0, 0.25, 2.1),
             "une forte dérive devrait autoriser une récupération accélérée");
     }
 

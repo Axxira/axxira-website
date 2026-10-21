@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>RaidPilot.Beacon</AssemblyName>
     <RootNamespace>RaidPilot.Beacon</RootNamespace>
-    <Version>0.2.3</Version>
+    <Version>0.3.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
@@ -26,6 +26,9 @@
     <Compile Include="..\overlay\RealtimeCalibrationStore.cs" Link="Shared\RealtimeCalibrationStore.cs" />
     <Compile Include="..\overlay\PrecisionCalibration.cs" Link="Shared\PrecisionCalibration.cs" />
     <Compile Include="..\overlay\VisualYawCalibration.cs" Link="Shared\VisualYawCalibration.cs" />
+    <Compile Include="..\overlay\HighResolutionVisualSampler.cs" Link="Shared\HighResolutionVisualSampler.cs" />
+    <Compile Include="..\overlay\SuperKeyframeRecognizer.cs" Link="Shared\SuperKeyframeRecognizer.cs" />
+    <Compile Include="..\overlay\SuperKeyframeStore.cs" Link="Shared\SuperKeyframeStore.cs" />
     <Compile Include="..\overlay\VisualEgomotionEstimator.cs" Link="Shared\VisualEgomotionEstimator.cs" />
     <Compile Include="..\overlay\VisualMotionGate.cs" Link="Shared\VisualMotionGate.cs" />
     <Compile Include="..\overlay\VisualKeyframeRecognizer.cs" Link="Shared\VisualKeyframeRecognizer.cs" />

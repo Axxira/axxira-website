@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class VisualYawCalibrationTests
 {
-    internal const int TestCount = 6;
+    internal const int TestCount = 8;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -12,6 +12,8 @@ internal static class VisualYawCalibrationTests
         Run("yaw visuel: free-look interdit", RejectsFreeLook, failures);
         Run("yaw visuel: flux faible rejeté", RejectsWeakFlow, failures);
         Run("yaw visuel: rotation annulée rejetée", RejectsCancellingMouseMotion, failures);
+        Run("yaw visuel: correction temps réel bornée", ProducesBoundedRealtimeCorrection, failures);
+        Run("yaw visuel: correction temps réel refuse mouvement", RealtimeCorrectionRejectsMovement, failures);
     }
 
     private static VisualEgomotionEstimate Good(double yaw = 5.0) => new(
@@ -74,6 +76,35 @@ internal static class VisualYawCalibrationTests
         Require(calibration.Observe(Good(), 10, 100, false, false, false, 0.05) is null,
             "un aller-retour souris ne doit pas devenir une calibration");
         Require(calibration.RejectedSamples >= 1, "le rejet statistique devrait être comptabilisé");
+    }
+
+    private static void ProducesBoundedRealtimeCorrection()
+    {
+        var calibration = new VisualYawCalibration();
+        var correction = calibration.TryGetRealtimeCorrection(
+            Good(yaw: 5.0),
+            mouseCounts: 100,
+            mouseMagnitude: 100,
+            movementActive: false,
+            aiming: false,
+            freeLook: false,
+            currentSensitivity: 0.04);
+        Require(correction is > 0 and <= 0.75,
+            $"correction visuelle temps réel attendue, reçu {correction}");
+    }
+
+    private static void RealtimeCorrectionRejectsMovement()
+    {
+        var calibration = new VisualYawCalibration();
+        Require(calibration.TryGetRealtimeCorrection(
+            Good(yaw: 5.0),
+            100,
+            100,
+            movementActive: true,
+            aiming: false,
+            freeLook: false,
+            currentSensitivity: 0.04) is null,
+            "la vision ne doit pas corriger le yaw pendant une translation");
     }
 
     private static void Require(bool condition, string message)
