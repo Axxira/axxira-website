@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MapQualityTests
 {
-    internal const int TestCount = 10;
+    internal const int TestCount = 11;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -15,6 +15,7 @@ internal static class MapQualityTests
         Run("map quality: empreinte de formation", UsesSquadFormationFootprint, failures);
         Run("map quality: décluttering adaptatif", UsesAdaptiveLabelDecluttering, failures);
         Run("map quality: teammates hors écran", UsesOffscreenSquadIndicators, failures);
+        Run("map quality: zoom tactique natif", UsesNativeMapZoomControls, failures);
         Run("map quality: étage actif accentué", EmphasizesConfirmedFloor, failures);
     }
 
@@ -128,6 +129,22 @@ internal static class MapQualityTests
             && styles.Contains(".raidpilot-squad-edge-indicator", StringComparison.Ordinal)
             && styles.Contains(".raidpilot-squad-edge-arrow", StringComparison.Ordinal),
             "les indicateurs de teammates hors écran sont absents");
+    }
+
+    private static void UsesNativeMapZoomControls()
+    {
+        var (behavior, styles) = Load();
+        Require(
+            behavior.Contains("ensureMapZoomControls", StringComparison.Ordinal)
+            && behavior.Contains("scrollWheelZoom?.enable?.()", StringComparison.Ordinal)
+            && behavior.Contains("raidpilot-zoom-controls", StringComparison.Ordinal)
+            && behavior.Contains("mapZoomStoragePrefix", StringComparison.Ordinal)
+            && behavior.Contains("liveMap.setView?.(", StringComparison.Ordinal)
+            && styles.Contains("#leaflet-map > #raidpilot-zoom-controls", StringComparison.Ordinal)
+            && styles.Contains("display: none !important", StringComparison.Ordinal)
+            && styles.Contains("html.raidpilot-interactive #leaflet-map > #raidpilot-zoom-controls", StringComparison.Ordinal)
+            && styles.Contains("#raidpilot-zoom-controls button", StringComparison.Ordinal),
+            "le zoom RaidPilot n'est pas relié à Leaflet ou au mode interactif");
     }
 
     private static void EmphasizesConfirmedFloor()

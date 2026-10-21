@@ -2380,6 +2380,12 @@ internal sealed partial class OverlayForm : Form
                 return;
             }
 
+            await ApplyWebInteractionStateAsync();
+            if (!IsNavigationContinuationCurrent(completedNavigationSequence))
+            {
+                return;
+            }
+
             await core.ExecuteScriptAsync("window.dispatchEvent(new Event('resize')); void 0;");
             if (!IsNavigationContinuationCurrent(completedNavigationSequence))
             {
@@ -5410,6 +5416,7 @@ internal sealed partial class OverlayForm : Form
     {
         _clickThrough = enabled;
         ApplyClickThroughStyle();
+        _ = ApplyWebInteractionStateAsync();
 
         if (enabled)
         {
@@ -5429,6 +5436,27 @@ internal sealed partial class OverlayForm : Form
         {
             Activate();
             _webView.Focus();
+        }
+    }
+
+    private async Task ApplyWebInteractionStateAsync()
+    {
+        var core = _webView.CoreWebView2;
+        if (core is null || !_webReady || _formLifetime.IsCancellationRequested)
+        {
+            return;
+        }
+
+        try
+        {
+            var interactive = _clickThrough ? "false" : "true";
+            await core.ExecuteScriptAsync(
+                $"document.documentElement.classList.toggle('raidpilot-interactive', {interactive}); void 0;");
+        }
+        catch
+        {
+            // A navigation can replace the document between the hotkey and this
+            // call. NavigationCompleted reapplies the authoritative state.
         }
     }
 

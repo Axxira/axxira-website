@@ -529,18 +529,42 @@
 
         let screenPoint;
         try {
+            const playerLatLng = [pose.z, pose.x];
+            const currentZoom = Number(mapInstance.getZoom?.());
+            const currentCenter = mapInstance.getCenter?.();
+            const centerLat = Number(currentCenter?.lat);
+            const centerLng = Number(currentCenter?.lng);
+            const centerDrift = Number.isFinite(centerLat) && Number.isFinite(centerLng)
+                ? Math.hypot(centerLng - pose.x, centerLat - pose.z)
+                : Number.POSITIVE_INFINITY;
+            if (centerDrift > 0.01) {
+                if (typeof mapInstance.setView === "function" && Number.isFinite(currentZoom)) {
+                    // GPS-style center lock: the player stays fixed in the middle
+                    // while Leaflet moves the world, teammates and tactical layers
+                    // underneath the marker at the current user-selected zoom.
+                    mapInstance.setView(playerLatLng, currentZoom, { animate: false });
+                } else {
+                    mapInstance.panTo?.(playerLatLng, { animate: false });
+                }
+            }
             screenPoint = mapInstance.latLngToContainerPoint([pose.z, pose.x]);
         } catch {
             binding.marker.setAttribute("hidden", "");
             scheduleLocalPlayerRetry();
             return false;
         }
-        const x = Number(screenPoint?.x);
-        const y = Number(screenPoint?.y);
-        if (!Number.isFinite(x)
+        const projectedX = Number(screenPoint?.x);
+        const projectedY = Number(screenPoint?.y);
+        const centerX = Number(container.clientWidth) * 0.5;
+        const centerY = Number(container.clientHeight) * 0.5;
+        const x = Number.isFinite(centerX) && centerX > 0 ? centerX : projectedX;
+        const y = Number.isFinite(centerY) && centerY > 0 ? centerY : projectedY;
+        if (!Number.isFinite(projectedX)
+            || !Number.isFinite(projectedY)
+            || !Number.isFinite(x)
             || !Number.isFinite(y)
-            || Math.abs(x) > 10_000_000
-            || Math.abs(y) > 10_000_000) {
+            || Math.abs(projectedX) > 10_000_000
+            || Math.abs(projectedY) > 10_000_000) {
             binding.marker.setAttribute("hidden", "");
             scheduleLocalPlayerRetry();
             return false;
@@ -2023,6 +2047,130 @@
         }
     };
 
+    const mapZoomStoragePrefix = "raidpilot.mapZoom.";
+    let mapZoomBoundInstance = null;
+    let mapZoomBoundHandlers = null;
+
+    const mapZoomStorageKey = () => `${mapZoomStoragePrefix}${location.pathname.toLowerCase()}`;
+
+    const clampMapZoom = (mapInstance, zoom) => {
+        if (zoom === null || zoom === undefined || zoom === "") return null;
+        let value = Number(zoom);
+        if (!Number.isFinite(value)) return null;
+        const minimum = Number(mapInstance?.getMinZoom?.());
+        const maximum = Number(mapInstance?.getMaxZoom?.());
+        if (Number.isFinite(minimum)) value = Math.max(minimum, value);
+        if (Number.isFinite(maximum)) value = Math.min(maximum, value);
+        return value;
+    };
+
+    const updateMapZoomControls = (mapInstance = mapZoomBoundInstance) => {
+        const controls = document.getElementById("raidpilot-zoom-controls");
+        if (!controls || !mapInstance) return;
+        const zoom = Number(mapInstance.getZoom?.());
+        const baseZoom = Number(mapInstance.__raidPilotBaseZoom);
+        const output = controls.querySelector(".raidpilot-zoom-value");
+        if (output && Number.isFinite(zoom)) {
+            const percent = Number.isFinite(baseZoom)
+                ? Math.round(100 * (2 ** (zoom - baseZoom)))
+                : 100;
+            output.textContent = `${Math.max(1, percent)}%`;
+        }
+        const min = Number(mapInstance.getMinZoom?.());
+        const max = Number(mapInstance.getMaxZoom?.());
+        const minus = controls.querySelector('[data-raidpilot-zoom="out"]');
+        const plus = controls.querySelector('[data-raidpilot-zoom="in"]');
+        if (minus) minus.disabled = Number.isFinite(min) && Number.isFinite(zoom) && zoom <= min;
+        if (plus) plus.disabled = Number.isFinite(max) && Number.isFinite(zoom) && zoom >= max;
+    };
+
+    const persistMapZoom = (mapInstance) => {
+        const zoom = Number(mapInstance?.getZoom?.());
+        if (!Number.isFinite(zoom)) return;
+        try {
+            localStorage.setItem(mapZoomStorageKey(), String(zoom));
+        } catch {
+        }
+    };
+
+    const ensureMapZoomControls = () => {
+        const container = document.getElementById("leaflet-map");
+        const mapInstance = findLeafletMapInstance();
+        if (!container || !mapInstance) return false;
+
+        mapInstance.scrollWheelZoom?.enable?.();
+        mapInstance.dragging?.enable?.();
+
+        if (mapZoomBoundInstance !== mapInstance) {
+            if (mapZoomBoundInstance && mapZoomBoundHandlers) {
+                mapZoomBoundInstance.off?.("zoomend", mapZoomBoundHandlers.zoomend);
+                mapZoomBoundInstance.off?.("viewreset", mapZoomBoundHandlers.viewreset);
+            }
+            mapZoomBoundInstance = mapInstance;
+            mapInstance.__raidPilotBaseZoom = Number(mapInstance.getZoom?.());
+            if (mapInstance.__raidPilotZoomRestored !== true) {
+                mapInstance.__raidPilotZoomRestored = true;
+                try {
+                    const stored = clampMapZoom(mapInstance, localStorage.getItem(mapZoomStorageKey()));
+                    if (stored !== null) mapInstance.setZoom?.(stored, { animate: false });
+                } catch {
+                }
+            }
+            mapZoomBoundHandlers = {
+                zoomend: () => {
+                    persistMapZoom(mapInstance);
+                    updateMapZoomControls(mapInstance);
+                },
+                viewreset: () => updateMapZoomControls(mapInstance),
+            };
+            mapInstance.on?.("zoomend", mapZoomBoundHandlers.zoomend);
+            mapInstance.on?.("viewreset", mapZoomBoundHandlers.viewreset);
+        }
+
+        let controls = document.getElementById("raidpilot-zoom-controls");
+        if (!controls || controls.parentElement !== container) {
+            controls?.remove();
+            controls = document.createElement("div");
+            controls.id = "raidpilot-zoom-controls";
+            controls.className = "raidpilot-zoom-controls";
+            controls.innerHTML = [
+                '<button type="button" data-raidpilot-zoom="out" aria-label="Zoom arrière" title="Zoom arrière">−</button>',
+                '<output class="raidpilot-zoom-value" aria-live="polite">100%</output>',
+                '<button type="button" data-raidpilot-zoom="in" aria-label="Zoom avant" title="Zoom avant">+</button>',
+                '<button type="button" data-raidpilot-zoom="center" aria-label="Recentrer sur mon joueur" title="Recentrer sur mon joueur">⌖</button>',
+            ].join("");
+            for (const eventName of ["pointerdown", "mousedown", "dblclick", "wheel"]) {
+                controls.addEventListener(eventName, (event) => event.stopPropagation(), { passive: eventName === "wheel" });
+            }
+            controls.addEventListener("click", (event) => {
+                const button = event.target?.closest?.("button[data-raidpilot-zoom]");
+                if (!button) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const liveMap = mapZoomBoundInstance || findLeafletMapInstance();
+                if (!liveMap) return;
+                const action = button.dataset.raidpilotZoom;
+                if (action === "in") {
+                    liveMap.zoomIn?.(1, { animate: false });
+                } else if (action === "out") {
+                    liveMap.zoomOut?.(1, { animate: false });
+                } else if (action === "center"
+                    && localPlayerPoseState
+                    && Number.isFinite(localPlayerPoseState.x)
+                    && Number.isFinite(localPlayerPoseState.z)) {
+                    liveMap.setView?.(
+                        [localPlayerPoseState.z, localPlayerPoseState.x],
+                        liveMap.getZoom?.(),
+                        { animate: false });
+                }
+            });
+            container.appendChild(controls);
+        }
+
+        updateMapZoomControls(mapInstance);
+        return true;
+    };
+
     const mapViewportHeight = "calc(100vh - var(--raidpilot-guidance-height, 72px) - var(--raidpilot-quest-height, 0px))";
     let kioskMapElement = null;
     let kioskMapResizeObserver = null;
@@ -2150,6 +2298,7 @@
         installStablePlayerFollow();
         applyKioskLayout();
         observeMapViewportSize();
+        ensureMapZoomControls();
         for (const group of document.querySelectorAll(".leaflet-control-layers-group")) {
             turnOffGroup(group);
         }

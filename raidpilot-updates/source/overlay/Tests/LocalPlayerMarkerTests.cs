@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class LocalPlayerMarkerTests
 {
-    internal const int TestCount = 5;
+    internal const int TestCount = 6;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -11,6 +11,7 @@ internal static class LocalPlayerMarkerTests
         Run("point local refuse une autre carte", RejectsWrongMap, failures);
         Run("point local possède son propre rendu Leaflet", HasIndependentLeafletRenderer, failures);
         Run("point local projette le cap à travers Leaflet", AppliesMapCoordinateRotation, failures);
+        Run("point local reste centré et la carte suit", KeepsPlayerCenteredWhileMapMoves, failures);
     }
 
     private static void PublishesLocalMarkerWithoutRemoteState()
@@ -76,6 +77,17 @@ internal static class LocalPlayerMarkerTests
             && behavior.Contains("pose.x,", StringComparison.Ordinal)
             && behavior.Contains("pose.z,", StringComparison.Ordinal),
             "la flèche locale n'est pas projetée géométriquement par Leaflet");
+    }
+
+    private static void KeepsPlayerCenteredWhileMapMoves()
+    {
+        var behavior = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "InjectedBehavior.js"));
+        Require(
+            behavior.Contains("mapInstance.setView(playerLatLng, currentZoom, { animate: false })", StringComparison.Ordinal)
+            && behavior.Contains("container.clientWidth) * 0.5", StringComparison.Ordinal)
+            && behavior.Contains("container.clientHeight) * 0.5", StringComparison.Ordinal)
+            && behavior.Contains("GPS-style center lock", StringComparison.Ordinal),
+            "le joueur n'est pas verrouillé au centre de la carte");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)
