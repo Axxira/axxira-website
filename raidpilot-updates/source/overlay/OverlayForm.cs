@@ -277,6 +277,7 @@ internal sealed partial class OverlayForm : Form
         BuildWebView();
         BuildTrayMenu();
         InitializeSquad();
+        InitializeCollectiveAtlas();
         InitializeQuestContext();
         InitializeAutomaticFloors();
         InitializeRaidClockUi();
@@ -1203,6 +1204,8 @@ internal sealed partial class OverlayForm : Form
 
                             var lowRecognition =
                                 VisualKeyframeRecognition.NoMatch();
+                            var collectiveLowRecognition =
+                                VisualKeyframeRecognition.NoMatch();
                             var lowAttempted = false;
                             if (canMatch
                                 && _visualRelocalization
@@ -1221,33 +1224,55 @@ internal sealed partial class OverlayForm : Form
                                         now,
                                         estimatedVisualPose
                                             .PositionUncertaintyMeters);
+
+                                if (CollectiveAtlasHasLowResolution(
+                                        _currentMap))
+                                {
+                                    collectiveLowRecognition =
+                                        ObserveCollectiveLow(
+                                            _currentMap,
+                                            visualFrame,
+                                            estimatedKeyframePose,
+                                            now,
+                                            estimatedVisualPose
+                                                .PositionUncertaintyMeters);
+                                }
                             }
 
                             var superAvailable =
                                 _superKeyframeRecognizer
                                     .KeyframeCountForMap(
                                         _currentMap) > 0;
+                            var collectiveSuperAvailable =
+                                CollectiveAtlasHasSuperKeyframes(
+                                    _currentMap);
+                            var anySuperAvailable =
+                                superAvailable
+                                || collectiveSuperAvailable;
                             var adaptiveHighResolutionDue =
                                 canMatch
                                 && _visualRelocalization
                                     .ShouldRunHighResolution(
                                         estimatedVisualPose,
-                                        superAvailable,
+                                        anySuperAvailable,
                                         now);
                             var lowNeedsCorroboration =
                                 canMatch
-                                && superAvailable
-                                && lowRecognition.IsConfirmed
+                                && anySuperAvailable
+                                && (lowRecognition.IsConfirmed
+                                    || collectiveLowRecognition.IsConfirmed)
                                 && (_lastSuperKeyframeSample == 0
                                     || (now - _lastSuperKeyframeSample)
                                         / (double)Stopwatch.Frequency
                                         >= SuperKeyframeSampleIntervalSeconds);
                             var superDue =
-                                superAvailable
+                                anySuperAvailable
                                 && (adaptiveHighResolutionDue
                                     || lowNeedsCorroboration);
 
                             var superRecognition =
+                                SuperKeyframeRecognition.NoMatch();
+                            var collectiveSuperRecognition =
                                 SuperKeyframeRecognition.NoMatch();
                             var highResolutionAttempted = false;
                             if (superDue)
@@ -1259,18 +1284,35 @@ internal sealed partial class OverlayForm : Form
                                         _lastForegroundWindow,
                                         out var highResolutionFrame))
                                 {
-                                    superRecognition =
-                                        _superKeyframeRecognizer.Observe(
-                                            _currentMap,
-                                            highResolutionFrame,
-                                            estimatedKeyframePose,
-                                            now,
-                                            estimatedVisualPose
-                                                .PositionUncertaintyMeters);
+                                    if (superAvailable)
+                                    {
+                                        superRecognition =
+                                            _superKeyframeRecognizer.Observe(
+                                                _currentMap,
+                                                highResolutionFrame,
+                                                estimatedKeyframePose,
+                                                now,
+                                                estimatedVisualPose
+                                                    .PositionUncertaintyMeters);
+                                    }
+
+                                    if (collectiveSuperAvailable)
+                                    {
+                                        collectiveSuperRecognition =
+                                            ObserveCollectiveSuper(
+                                                _currentMap,
+                                                highResolutionFrame,
+                                                estimatedKeyframePose,
+                                                now,
+                                                estimatedVisualPose
+                                                    .PositionUncertaintyMeters);
+                                    }
                                 }
                                 else
                                 {
                                     _superKeyframeRecognizer
+                                        .CancelPendingMatch();
+                                    _collectiveSuperKeyframeRecognizer
                                         .CancelPendingMatch();
                                 }
                             }
@@ -1292,6 +1334,26 @@ internal sealed partial class OverlayForm : Form
                                     visualRelocalizationPoseAtCapture =
                                         estimatedVisualPose;
                                 }
+                                else if (collectiveLowRecognition.IsConfirmed
+                                    || collectiveSuperRecognition.IsConfirmed)
+                                {
+                                    var collectiveDecision =
+                                        _collectiveAtlasRelocalization.Evaluate(
+                                            estimatedVisualPose,
+                                            collectiveLowRecognition,
+                                            collectiveSuperRecognition,
+                                            collectiveSuperAvailable,
+                                            now);
+                                    if (ShouldAcceptCollectiveCorrection(
+                                            collectiveDecision,
+                                            true))
+                                    {
+                                        visualRelocalizationDecision =
+                                            collectiveDecision;
+                                        visualRelocalizationPoseAtCapture =
+                                            estimatedVisualPose;
+                                    }
+                                }
                             }
 
                             if (!canMatch)
@@ -1300,6 +1362,10 @@ internal sealed partial class OverlayForm : Form
                                     .CancelPendingMatch();
                                 _superKeyframeRecognizer
                                     .CancelPendingMatch();
+                                _collectiveVisualKeyframeRecognizer
+                                    .CancelPendingMatch();
+                                _collectiveSuperKeyframeRecognizer
+                                    .CancelPendingMatch();
                             }
                         }
                     }
@@ -1307,6 +1373,8 @@ internal sealed partial class OverlayForm : Form
                     {
                         _visualKeyframeRecognizer.CancelPendingMatch();
                         _superKeyframeRecognizer.CancelPendingMatch();
+                        _collectiveVisualKeyframeRecognizer.CancelPendingMatch();
+                        _collectiveSuperKeyframeRecognizer.CancelPendingMatch();
                     }
                 }
             }
@@ -1314,6 +1382,8 @@ internal sealed partial class OverlayForm : Form
             {
                 _visualKeyframeRecognizer.CancelPendingMatch();
                 _superKeyframeRecognizer.CancelPendingMatch();
+                _collectiveVisualKeyframeRecognizer.CancelPendingMatch();
+                _collectiveSuperKeyframeRecognizer.CancelPendingMatch();
             }
         }
         if (Math.Abs(mouseDelta) > 3
@@ -2437,6 +2507,9 @@ internal sealed partial class OverlayForm : Form
             return false;
         }
 
+        CollectiveAtlasObserveLocalExact(
+            pending.MapId,
+            pending.Pose);
         _pendingVisualKeyframeLearning = null;
         _visualKeyframeRecognizer.CancelPendingMatch();
         _superKeyframeRecognizer.CancelPendingMatch();
@@ -3228,6 +3301,13 @@ internal sealed partial class OverlayForm : Form
             _lastExactObservation = observation;
             _lastExactAnchorAt = now;
             _visualRelocalization.NoteAbsoluteAnchor(now);
+            MarkCollectiveAtlasLocallyValidated(
+                _currentMap,
+                new VisualKeyframePose(
+                    observation.X,
+                    observation.Y,
+                    observation.Z,
+                    observation.YawDegrees));
             if (ShouldScheduleVisualKeyframeLearning(
                     isAutomaticReanchor,
                     hasFileTimestamp,
@@ -5382,6 +5462,7 @@ internal sealed partial class OverlayForm : Form
             if (!string.Equals(_currentMap, map.NormalizedName, StringComparison.OrdinalIgnoreCase))
             {
                 _currentMap = map.NormalizedName;
+                SwitchCollectiveAtlasMap(_currentMap);
                 StartLearnedRouteSession(_currentMap);
                 ResetExtractionGuidance(clearObservation: true);
             }
@@ -5516,6 +5597,7 @@ internal sealed partial class OverlayForm : Form
             }
 
             SetRaidActive(false);
+            StopCollectiveAtlasRelay();
             _compassOverlay.ClearHeading();
             _learnedRouteGraph.BreakContinuity();
             _lastLearnedRouteObservationAt = 0;
@@ -5531,6 +5613,7 @@ internal sealed partial class OverlayForm : Form
         {
             SetRaidActive(true);
             _currentMap = map.NormalizedName;
+            SwitchCollectiveAtlasMap(_currentMap);
             StartLearnedRouteSession(_currentMap);
             ResetExtractionGuidance(clearObservation: true);
         }
@@ -6229,6 +6312,7 @@ internal sealed partial class OverlayForm : Form
             _ = _squadClient.DisposeAsync();
             _squadClient = null;
         }
+        DisposeCollectiveAtlas();
         DisposePrecision();
         DisposeRaidClockUi();
         DisposeAutomaticFloors();
