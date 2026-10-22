@@ -68,6 +68,8 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  context.__raidPilotClearSquad();
  check(api.health().teammateCount===0,'Squad clear retained teammate');
  check(api.canonicalMapKey('labs')==='the-lab','Local map alias missing');
+ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:160,y:2,z:40,yaw:180});
+ check(!!marker('__player'),'Local marker did not recover after soft map switch');
  ids.search.value='no-such-marker';ids.search.dispatchEvent(new context.Event('input'));check(!!marker('__player'),'Search hid player');
  ids.search.value='';ids.search.dispatchEvent(new context.Event('input'));
  context.__raidPilotClearLocalPose(4);check(!marker('__player'),'Clear left stale player');
