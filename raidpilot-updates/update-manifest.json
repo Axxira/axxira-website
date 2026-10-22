@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-22T22:14:51.2566545+00:00",
+  "publishedAt": "2026-10-22T22:37:53.8559117+00:00",
   "raidPilot": {
-    "version": "0.14.2.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.10-b0.3.0-l0.2.12-20a605eadf5b/RaidPilot-Overlay-v0.14.2.10-Windows-x64.zip",
-    "sha256": "67A6CFBE8DA5B450DA91D6BF858BD2B94E2A08AF79CA6A23356F9C3521679AF8",
-    "sizeBytes": 234387074,
-    "releaseNotes": "HOTFIX10 : cartes HD locales, pion centré, plans Usine et Labo, quêtes/objets hors ligne, extractions et dangers. Calage du Labo estimé : nouvel essai en jeu nécessaire."
+    "version": "0.14.2.11",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.11-b0.3.0-l0.2.12-96bbf5db2e1f/RaidPilot-Overlay-v0.14.2.11-Windows-x64.zip",
+    "sha256": "123504B1285650C39045356833AF999BD8C3D283AE1032B9DFD9009492403DF6",
+    "sizeBytes": 234387890,
+    "releaseNotes": "HOTFIX11 : marqueurs des coéquipiers filtrés par carte, retrait immédiat après changement de carte, rejet des anciennes positions et contrôles du relais local. La réception réelle sur deux PC reste à confirmer en raid."
   },
   "beacon": {
     "version": "0.3.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.10-b0.3.0-l0.2.12-20a605eadf5b/RaidPilot-Beacon-v0.3.0-Windows-x64.zip",
-    "sha256": "2D427C5BBF0D7F6A18DA63EE2D903CD50B15082D6BBAC1DF98C33410B569B6E4",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.11-b0.3.0-l0.2.12-96bbf5db2e1f/RaidPilot-Beacon-v0.3.0-Windows-x64.zip",
+    "sha256": "03AB95AF35B973E410AA7466F388A77257C417F26FD6D06E878534B6F26CA9C8",
     "sizeBytes": 58295330,
     "releaseNotes": "Beacon 0.3 : fusion visuelle, blocage anti-dérive, repères F8, recalage automatique prudent et calibration propre au joueur."
   },
   "launcher": {
     "version": "0.2.12",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.10-b0.3.0-l0.2.12-20a605eadf5b/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
-    "sha256": "BCBFA4CAD0DF0595CB3F7D20C9156FD2751B086C4B58EC6C5C9BD3090A0AC506",
-    "sizeBytes": 350910775,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.11-b0.3.0-l0.2.12-96bbf5db2e1f/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
+    "sha256": "AFFEBCA9EC1396ECE172C5D38C98C2E1F21CD75FCEF7C3157C6318F07A965AEA",
+    "sizeBytes": 350911591,
     "releaseNotes": "Launcher 0.2.12 : canal Stable actualisé sans cache intermédiaire ; vérification SHA-256 et sauvegarde de retour arrière conservées. Développé par Peko."
   }
 }
