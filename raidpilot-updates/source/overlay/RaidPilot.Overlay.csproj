@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
@@ -8,7 +8,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>RaidPilot.Overlay</AssemblyName>
     <RootNamespace>RaidPilot.Overlay</RootNamespace>
-    <Version>0.14.1</Version>
+    <Version>0.14.2.10</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
   </PropertyGroup>
@@ -42,4 +42,12 @@
       <Reference Remove="@(Reference)" Condition="'%(Reference.Filename)' == 'Microsoft.Web.WebView2.Wpf'" />
     </ItemGroup>
   </Target>
+  <ItemGroup>
+    <None Update="LocalMap\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="scratch\**\*.cs" />
+  </ItemGroup>
 </Project>
+
+

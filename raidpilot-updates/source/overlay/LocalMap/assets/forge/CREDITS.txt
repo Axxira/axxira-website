@@ -1,0 +1,48 @@
+Fonds locaux consultés depuis TarkovForge le 22 octobre 2026.
+
+Images originales, non retouchées. Les textes et symboles déjà dessinés dans les images restent présents. Leurs versions ne garantissent pas les dernières modifications du jeu.
+
+re3mr : https://reemr.se — licence annoncée sur le site : CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
+The Lab : monkimonkimonk, image référencée et hébergée par TarkovForge. Conserver l'attribution d'origine ; aucune nouvelle licence n'est accordée ici.
+L'intégration locale ne confère pas de droit de redistribution commerciale.
+
+Le calage du pion est un ajout RaidPilot distinct des images. Repères d'extraction du cache tarkov.dev et repères visuels relevés sur les illustrations ; estimation initiale, non validée en raid. Les cartes sans calage n'affichent pas de faux pion. Un calage personnel peut être enregistré depuis le panneau « Caler le pion ».
+
+Customs — re3mr
+https://maps.reemr.se/Customs/re3mrCustoms2.png
+
+Shoreline — re3mr
+https://reemr.se/maps/Shoreline/re3mrShoreline2.png
+
+Woods — re3mr
+https://www.reemr.se/maps/Woods/WoodsRe3mrPNG.png
+
+Interchange — re3mr
+https://maps.reemr.se/Interchange/re3mrInterchange.png
+
+Reserve — re3mr
+https://reemr.se/maps/Reserve/Re3mrReserveLossless.png
+
+Lighthouse — re3mr
+https://reemr.se/maps/Lighthouse/re3mrLighthouseVERT.png
+
+Streets of Tarkov — re3mr
+https://reemr.se/maps/Streets/re3mrStreetsofTarkov.png
+
+The Lab — monkimonkimonk
+https://tarkovforge.com/map-images/the-lab-2d.jpg
+
+The Labyrinth — re3mr
+https://www.re3mr.com/maps/Labyrinth/re3mrLabyrinthPNG.png
+
+Factory — re3mr
+https://www.re3mr.com/maps/Factory/FactorybyRe3mr.png
+
+Ground Zero — re3mr
+https://www.re3mr.com/maps/Groundzero/GroundZero.png
+
+Terminal — re3mr
+https://reemr.se/maps/Terminal/WikiTerminalMap.jpg
+
+Icebreaker — re3mr
+https://reemr.se/maps/Icebreaker/re3mrIcebreaker.png

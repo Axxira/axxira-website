@@ -9,12 +9,8 @@ namespace RaidPilot.Overlay;
 
 internal sealed partial class OverlayForm : Form
 {
+    private readonly RaidPilotLocalMapHost _localMapHost = new();
     private const string DefaultMapUrl = "https://tarkov.dev/map/customs";
-    private const string OfflineMapHost = WebNavigationPolicy.OfflineMapHost;
-    private static readonly HttpClient MapAvailabilityHttpClient = new()
-    {
-        Timeout = TimeSpan.FromSeconds(4),
-    };
     private const int ToggleVisibilityHotkeyId = 0x5250;
     private const int ToggleInteractionHotkeyId = 0x5251;
     private const int ToggleGpsHotkeyId = 0x5252;
@@ -43,10 +39,10 @@ internal sealed partial class OverlayForm : Form
     private static readonly TimeSpan RaidStartMapDetectionGracePeriod = TimeSpan.FromMilliseconds(1750);
 
     private readonly WebView2 _webView = new();
-    private readonly ToolStripMenuItem _gpsMenuItem = new("Afficher mon point sur tarkov.dev (Ctrl+Alt+G)…");
-    private readonly ToolStripMenuItem _positionKeyMenuItem = new("Touche de position…");
-    private readonly ToolStripMenuItem _extractionMenuItem = new("Extraction auto : O×2 puis F8 (Ctrl+Alt+E secours)");
-    private readonly ToolStripMenuItem _questMenuItem = new("Quêtes : ouvre TÂCHES puis F8");
+    private readonly ToolStripMenuItem _gpsMenuItem = new("Afficher mon point sur tarkov.dev (Ctrl+Alt+G)Ã¢â‚¬Â¦");
+    private readonly ToolStripMenuItem _positionKeyMenuItem = new("Touche de positionÃ¢â‚¬Â¦");
+    private readonly ToolStripMenuItem _extractionMenuItem = new("Extraction auto : OÃƒâ€”2 puis F8 (Ctrl+Alt+E secours)");
+    private readonly ToolStripMenuItem _questMenuItem = new("QuÃƒÂªtes : ouvre TÃƒâ€šCHES puis F8");
     private readonly ToolStripMenuItem _streamVisibilityMenuItem = new("Visible dans le stream Discord")
     {
         Checked = true,
@@ -97,7 +93,6 @@ internal sealed partial class OverlayForm : Form
     private bool _webReady;
     private bool _navigationInProgress;
     private bool _navigationStartPending;
-    private bool _offlineMapMode;
     private bool _gpsEnabled;
     private bool _clickThrough = true;
     private bool _allowClose;
@@ -371,7 +366,7 @@ internal sealed partial class OverlayForm : Form
             BeginInvoke(() => _trayIcon.ShowBalloonTip(
                 5000,
                 "RaidPilot",
-                "Un raccourci global RaidPilot est déjà utilisé. Le menu de la zone de notification reste disponible.",
+                "Un raccourci global RaidPilot est dÃƒÂ©jÃƒÂ  utilisÃƒÂ©. Le menu de la zone de notification reste disponible.",
                 ToolTipIcon.Warning));
         }
     }
@@ -437,8 +432,8 @@ internal sealed partial class OverlayForm : Form
                         _duckChordUsed = true;
                         Interlocked.Exchange(ref _pendingDuckWheelChord, 1);
                     }
-                    // Le bouton du milieu maintient le free-look EFT : la caméra
-                    // tourne, mais pas l'axe du corps utilisé par W/A/S/D.
+                    // Le bouton du milieu maintient le free-look EFT : la camÃƒÂ©ra
+                    // tourne, mais pas l'axe du corps utilisÃƒÂ© par W/A/S/D.
                     if (!_middleMouseDown)
                     {
                         Interlocked.Add(ref _pendingRawMouseX, packet.DeltaX);
@@ -551,10 +546,10 @@ internal sealed partial class OverlayForm : Form
             Interlocked.Exchange(ref _autoReanchorRequestedAt, 0);
             _trayIcon.ShowBalloonTip(
                 3000,
-                "RaidPilot — recalage",
+                "RaidPilot Ã¢â‚¬â€ recalage",
                 _autoReanchorEnabled
-                    ? "Recalage discret activé : RaidPilot corrige le point seulement quand tu es au repos."
-                    : "Recalage automatique désactivé : F8 reste disponible manuellement.",
+                    ? "Recalage discret activÃƒÂ© : RaidPilot corrige le point seulement quand tu es au repos."
+                    : "Recalage automatique dÃƒÂ©sactivÃƒÂ© : F8 reste disponible manuellement.",
                 ToolTipIcon.Info);
         };
         menu.Items.Add(_autoReanchorMenuItem);
@@ -611,10 +606,10 @@ internal sealed partial class OverlayForm : Form
             _effectiveMapScale * 100.0,
             MidpointRounding.AwayFromZero);
         _mapSizeMenuItem.Text = _mapScalePercent is { } requested
-            ? $"Taille de la carte ({requested}% → {effectivePercent}%)"
-            : $"Taille de la carte (Auto · {effectivePercent}%)";
+            ? $"Taille de la carte ({requested}% Ã¢â€ â€™ {effectivePercent}%)"
+            : $"Taille de la carte (Auto Ã‚Â· {effectivePercent}%)";
 
-        var autoItem = new ToolStripMenuItem("Auto — recommandé")
+        var autoItem = new ToolStripMenuItem("Auto Ã¢â‚¬â€ recommandÃƒÂ©")
         {
             Checked = !_mapScalePercent.HasValue,
             CheckOnClick = false,
@@ -639,7 +634,7 @@ internal sealed partial class OverlayForm : Form
 
         _mapSizeMenuItem.DropDownItems.Add(new ToolStripSeparator());
 
-        var reduceItem = new ToolStripMenuItem("− Réduire de 5%");
+        var reduceItem = new ToolStripMenuItem("Ã¢Ë†â€™ RÃƒÂ©duire de 5%");
         reduceItem.Click += (_, _) => AdjustMapScalePercent(-5);
         _mapSizeMenuItem.DropDownItems.Add(reduceItem);
 
@@ -649,7 +644,7 @@ internal sealed partial class OverlayForm : Form
 
         _mapSizeMenuItem.DropDownItems.Add(new ToolStripSeparator());
 
-        var resetItem = new ToolStripMenuItem("Réinitialiser en Auto");
+        var resetItem = new ToolStripMenuItem("RÃƒÂ©initialiser en Auto");
         resetItem.Click += (_, _) => SetMapScalePercent(null, showSuccess: true);
         _mapSizeMenuItem.DropDownItems.Add(resetItem);
     }
@@ -694,8 +689,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 4500,
-                "RaidPilot — taille de carte",
-                "La taille a changé pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
+                "RaidPilot Ã¢â‚¬â€ taille de carte",
+                "La taille a changÃƒÂ© pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
                 ToolTipIcon.Warning);
             return;
         }
@@ -706,14 +701,14 @@ internal sealed partial class OverlayForm : Form
                 _effectiveMapScale * 100.0,
                 MidpointRounding.AwayFromZero);
             var message = percent is null
-                ? $"Mode Auto activé · taille actuelle {effectivePercent}%."
+                ? $"Mode Auto activÃƒÂ© Ã‚Â· taille actuelle {effectivePercent}%."
                 : effectivePercent == percent.Value
-                    ? $"Taille de carte réglée à {percent.Value}%."
-                    : $"Taille demandée {percent.Value}% · limitée à {effectivePercent}% pour rester dans l'écran.";
+                    ? $"Taille de carte rÃƒÂ©glÃƒÂ©e ÃƒÂ  {percent.Value}%."
+                    : $"Taille demandÃƒÂ©e {percent.Value}% Ã‚Â· limitÃƒÂ©e ÃƒÂ  {effectivePercent}% pour rester dans l'ÃƒÂ©cran.";
 
             _trayIcon.ShowBalloonTip(
                 3000,
-                "RaidPilot — taille de carte",
+                "RaidPilot Ã¢â‚¬â€ taille de carte",
                 message,
                 ToolTipIcon.Info);
         }
@@ -752,7 +747,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         _mapCornerMenuItem.DropDownItems.Add(new ToolStripSeparator());
-        var freeItem = new ToolStripMenuItem("Libre — déplacer et redimensionner")
+        var freeItem = new ToolStripMenuItem("Libre Ã¢â‚¬â€ dÃƒÂ©placer et redimensionner")
         {
             Checked = _freeLayout.HasValue,
             CheckOnClick = false,
@@ -778,8 +773,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 4500,
-                "RaidPilot — position de carte",
-                "La position a changé pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
+                "RaidPilot Ã¢â‚¬â€ position de carte",
+                "La position a changÃƒÂ© pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
                 ToolTipIcon.Warning);
             return;
         }
@@ -788,8 +783,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 2500,
-                "RaidPilot — position de carte",
-                $"Carte placée : {MapCornerLabel(corner)}.",
+                "RaidPilot Ã¢â‚¬â€ position de carte",
+                $"Carte placÃƒÂ©e : {MapCornerLabel(corner)}.",
                 ToolTipIcon.Info);
         }
     }
@@ -803,8 +798,8 @@ internal sealed partial class OverlayForm : Form
         SetClickThrough(false, activateWhenInteractive: true);
         _trayIcon.ShowBalloonTip(
             4000,
-            "RaidPilot — position libre",
-            "Déplace ou redimensionne la fenêtre, puis refais Ctrl+Alt+I pour verrouiller la carte.",
+            "RaidPilot Ã¢â‚¬â€ position libre",
+            "DÃƒÂ©place ou redimensionne la fenÃƒÂªtre, puis refais Ctrl+Alt+I pour verrouiller la carte.",
             ToolTipIcon.Info);
     }
 
@@ -1091,9 +1086,9 @@ internal sealed partial class OverlayForm : Form
         var movementInputActive = inputMagnitude > 0.0;
         if (movementInputActive && !_movementInputWasActive)
         {
-            // Toute nouvelle commande invalide la séquence visuelle précédente.
-            // La capture doit de nouveau montrer un mouvement réel avant qu'une
-            // image possiblement figée puisse autoriser un recalage de lieu.
+            // Toute nouvelle commande invalide la sÃƒÂ©quence visuelle prÃƒÂ©cÃƒÂ©dente.
+            // La capture doit de nouveau montrer un mouvement rÃƒÂ©el avant qu'une
+            // image possiblement figÃƒÂ©e puisse autoriser un recalage de lieu.
             _visualMotionGate.InvalidateLiveness();
         }
         _movementInputWasActive = movementInputActive;
@@ -1107,8 +1102,8 @@ internal sealed partial class OverlayForm : Form
         // La relocalisation v2 peut confirmer un lieu pendant une marche
         // rectiligne. Seule une rotation significative invalide donc les
         // confirmations partielles des recognizers. L'apprentissage d'un
-        // NOUVEAU repère, lui, reste strictement immobile et est annulé au
-        // moindre déplacement comme auparavant.
+        // NOUVEAU repÃƒÂ¨re, lui, reste strictement immobile et est annulÃƒÂ© au
+        // moindre dÃƒÂ©placement comme auparavant.
         if (rotationOccurred || Math.Abs(mouseDelta) > 3)
         {
             _visualKeyframeRecognizer.CancelPendingMatch();
@@ -1120,8 +1115,8 @@ internal sealed partial class OverlayForm : Form
         }
 
         // Une longue pause de la boucle UI ne doit jamais compter comme une
-        // nouvelle preuve visuelle ni déclencher le cooldown d'un recalage qui
-        // ne sera pas appliqué.
+        // nouvelle preuve visuelle ni dÃƒÂ©clencher le cooldown d'un recalage qui
+        // ne sera pas appliquÃƒÂ©.
         if (_realtimeEstimator.IsAnchored && elapsedSeconds > 2.0)
         {
             _realtimeEstimator.SuspendMotion(elapsedSeconds);
@@ -1150,9 +1145,9 @@ internal sealed partial class OverlayForm : Form
             if (_visualMotionGate.TryObserveWindow(
                     _lastForegroundWindow,
                     out var visualObservation,
-                    // Le suivi de points 64×36 tourne à 10 Hz. Il renforce
-                    // l'hystérésis de mouvement même quand aucun repère n'est
-                    // recherché, tout en restant indépendant de la pose absolue.
+                    // Le suivi de points 64Ãƒâ€”36 tourne ÃƒÂ  10 Hz. Il renforce
+                    // l'hystÃƒÂ©rÃƒÂ©sis de mouvement mÃƒÂªme quand aucun repÃƒÂ¨re n'est
+                    // recherchÃƒÂ©, tout en restant indÃƒÂ©pendant de la pose absolue.
                     estimateEgomotion: true))
             {
                 TryCalibrateYawFromVision(
@@ -1189,9 +1184,9 @@ internal sealed partial class OverlayForm : Form
                                 now);
                         if (learnedPendingKeyframe)
                         {
-                            // Le nouveau repère vient d'être appris à une pose
-                            // absolue. Une confirmation commencée avant cet
-                            // apprentissage ne doit pas survivre à ce changement
+                            // Le nouveau repÃƒÂ¨re vient d'ÃƒÂªtre appris ÃƒÂ  une pose
+                            // absolue. Une confirmation commencÃƒÂ©e avant cet
+                            // apprentissage ne doit pas survivre ÃƒÂ  ce changement
                             // de base visuelle.
                             _visualKeyframeRecognizer.CancelPendingMatch();
                             _superKeyframeRecognizer.CancelPendingMatch();
@@ -1395,8 +1390,8 @@ internal sealed partial class OverlayForm : Form
         if (Math.Abs(mouseDelta) > 3
             && _visualMotionGate.State == VisualMotionState.Stationary)
         {
-            // Une rotation réelle avec des pixels prétendument figés indique
-            // que la surface GDI ne se rafraîchit plus. Retirer sa confiance.
+            // Une rotation rÃƒÂ©elle avec des pixels prÃƒÂ©tendument figÃƒÂ©s indique
+            // que la surface GDI ne se rafraÃƒÂ®chit plus. Retirer sa confiance.
             _visualMotionGate.InvalidateLiveness();
         }
         var visualCaptureAvailable = _visualMotionGate.CaptureProvenLive;
@@ -1408,10 +1403,10 @@ internal sealed partial class OverlayForm : Form
             _commandedStationarySeconds += Math.Clamp(elapsedSeconds, 0.0, 0.25);
             if (_commandedStationarySeconds >= MaximumCommandedStationarySeconds)
             {
-                // Une surface GDI peut se figer après avoir déjà montré du
-                // mouvement. Comme un mur réel et une image gelée sont alors
+                // Une surface GDI peut se figer aprÃƒÂ¨s avoir dÃƒÂ©jÃƒÂ  montrÃƒÂ© du
+                // mouvement. Comme un mur rÃƒÂ©el et une image gelÃƒÂ©e sont alors
                 // indiscernables, Stationary expire au lieu de bloquer le point
-                // indéfiniment pendant qu'une touche reste maintenue.
+                // indÃƒÂ©finiment pendant qu'une touche reste maintenue.
                 _visualMotionGate.InvalidateLiveness();
                 visualCaptureAvailable = false;
                 visualMotionState = VisualMotionState.Unknown;
@@ -1423,8 +1418,8 @@ internal sealed partial class OverlayForm : Form
             _commandedStationarySeconds = 0.0;
         }
 
-        // Une courte pause UI conserve le déplacement; pour une pause plus
-        // longue, borner l'intégration évite autant un saut qu'une perte totale.
+        // Une courte pause UI conserve le dÃƒÂ©placement; pour une pause plus
+        // longue, borner l'intÃƒÂ©gration ÃƒÂ©vite autant un saut qu'une perte totale.
         if (!_realtimeEstimator.IsAnchored
             || elapsedSeconds <= 0.0)
         {
@@ -1459,9 +1454,9 @@ internal sealed partial class OverlayForm : Form
         var movementSpeedScale = gaitSpeedScale * stanceSpeedScale;
         if (movementSpeedScale < 0.35)
         {
-            // À très basse vitesse, quelques centimètres entre deux trames
-            // peuvent ressembler à une image fixe après réduction. Ne jamais
-            // transformer ce doute en faux arrêt.
+            // Ãƒâ‚¬ trÃƒÂ¨s basse vitesse, quelques centimÃƒÂ¨tres entre deux trames
+            // peuvent ressembler ÃƒÂ  une image fixe aprÃƒÂ¨s rÃƒÂ©duction. Ne jamais
+            // transformer ce doute en faux arrÃƒÂªt.
             motionEvidence = RealtimeMotionEvidence.Unknown;
         }
         if (elapsedSeconds > 0.75)
@@ -1531,7 +1526,7 @@ internal sealed partial class OverlayForm : Form
                     or VisualCorrectionMode.HardSnap;
 
             // Une correction moyenne ou un loop-closure change suffisamment
-            // le repère pour casser la continuité d'une route apprise. Une
+            // le repÃƒÂ¨re pour casser la continuitÃƒÂ© d'une route apprise. Une
             // micro-correction reste au contraire sous le bruit normal du
             // graphe et ne doit pas fragmenter le trajet.
             if (visualCorrectionAuthoritative)
@@ -1552,9 +1547,9 @@ internal sealed partial class OverlayForm : Form
                     : "visual-v2");
             _lastExactAnchorAt = now;
             _idleSeconds = 0.0;
-            // Une correction visuelle crée une discontinuité par rapport au
-            // segment utilisé pour apprendre les vitesses. Le prochain F8 ne
-            // doit donc pas calibrer une vitesse à travers cette correction.
+            // Une correction visuelle crÃƒÂ©e une discontinuitÃƒÂ© par rapport au
+            // segment utilisÃƒÂ© pour apprendre les vitesses. Le prochain F8 ne
+            // doit donc pas calibrer une vitesse ÃƒÂ  travers cette correction.
             _skipNextRealtimeCalibration = true;
             _precisionSegmentClean = false;
             _realtimePoseHistory.Reset();
@@ -1577,9 +1572,9 @@ internal sealed partial class OverlayForm : Form
             pose.PositionUncertaintyMeters,
             now,
             force: visualCorrectionAuthoritative);
-        // Le garde interne limite l'écriture à une fois toutes les 45 s. Le
-        // solliciter à chaque tick évite de perdre tout le trajet depuis le
-        // dernier F8 si le jeu ou Windows s'arrête brutalement.
+        // Le garde interne limite l'ÃƒÂ©criture ÃƒÂ  une fois toutes les 45 s. Le
+        // solliciter ÃƒÂ  chaque tick ÃƒÂ©vite de perdre tout le trajet depuis le
+        // dernier F8 si le jeu ou Windows s'arrÃƒÂªte brutalement.
         MaybeSaveLearnedRouteGraph(now);
 
         // Une correction de relocalisation n'est pas une distance parcourue
@@ -1681,9 +1676,9 @@ internal sealed partial class OverlayForm : Form
             return;
         }
 
-        // EFT règle la vitesse de marche sur une échelle continue avec la
-        // molette. Sept centièmes par cran reproduisent les paliers usuels sans
-        // laisser une molette haute résolution sortir des bornes.
+        // EFT rÃƒÂ¨gle la vitesse de marche sur une ÃƒÂ©chelle continue avec la
+        // molette. Sept centiÃƒÂ¨mes par cran reproduisent les paliers usuels sans
+        // laisser une molette haute rÃƒÂ©solution sortir des bornes.
         var wheelSteps = wheelDelta / 120.0;
         _movementSpeedScale = Math.Clamp(
             _movementSpeedScale + (wheelSteps * 0.07),
@@ -1811,7 +1806,7 @@ internal sealed partial class OverlayForm : Form
             or UnauthorizedAccessException
             or DirectoryNotFoundException)
         {
-            // Un inventaire incomplet empêche seulement la suppression automatique.
+            // Un inventaire incomplet empÃƒÂªche seulement la suppression automatique.
         }
 
         return names;
@@ -1949,8 +1944,8 @@ internal sealed partial class OverlayForm : Form
             or UnauthorizedAccessException
             or DirectoryNotFoundException)
         {
-            // Le recalage est déjà appliqué; conserver le PNG en cas de verrou
-            // temporaire est préférable à gêner le suivi.
+            // Le recalage est dÃƒÂ©jÃƒÂ  appliquÃƒÂ©; conserver le PNG en cas de verrou
+            // temporaire est prÃƒÂ©fÃƒÂ©rable ÃƒÂ  gÃƒÂªner le suivi.
         }
         finally
         {
@@ -1978,8 +1973,8 @@ internal sealed partial class OverlayForm : Form
         }
         if (_livePositionSendInProgress)
         {
-            // Ne jamais empiler les 20 mises à jour par seconde : conserver
-            // uniquement la pose la plus récente, avec sa carte et son raid,
+            // Ne jamais empiler les 20 mises ÃƒÂ  jour par seconde : conserver
+            // uniquement la pose la plus rÃƒÂ©cente, avec sa carte et son raid,
             // pendant l'envoi courant.
             _pendingLivePosition = update;
             return;
@@ -2004,7 +1999,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // La prochaine mise à jour ou le prochain F8 réessaiera.
+            // La prochaine mise ÃƒÂ  jour ou le prochain F8 rÃƒÂ©essaiera.
         }
         finally
         {
@@ -2106,10 +2101,10 @@ internal sealed partial class OverlayForm : Form
 
         _trayIcon.ShowBalloonTip(
             3500,
-            "RaidPilot — suivi",
+            "RaidPilot Ã¢â‚¬â€ suivi",
             enabled
-                ? "Suivi fluide activé : la position bouge entre les recalibrages F8."
-                : "Suivi fluide désactivé : la position change seulement avec F8.",
+                ? "Suivi fluide activÃƒÂ© : la position bouge entre les recalibrages F8."
+                : "Suivi fluide dÃƒÂ©sactivÃƒÂ© : la position change seulement avec F8.",
             ToolTipIcon.Info);
     }
 
@@ -2596,7 +2591,7 @@ internal sealed partial class OverlayForm : Form
                     document.addEventListener('DOMContentLoaded', install, { once: true });
                 })();
                 """;
-            await core.AddScriptToExecuteOnDocumentCreatedAsync(injectionScript);
+            await core.AddScriptToExecuteOnDocumentCreatedAsync("if (location.hostname !== 'raidpilot-map.local') {\n" + (injectionScript) + "\n}");
             // Map detection starts before WebView2 initialization. If EFT has
             // already announced the raid, skip the default Customs navigation
             // entirely instead of loading two maps back-to-back.
@@ -2606,17 +2601,19 @@ internal sealed partial class OverlayForm : Form
             _offlineMapMode = await ShouldPreferOfflineMapAsync(
                 remoteInitialUri,
                 _formLifetime.Token);
-            var initialUri = _offlineMapMode
+            var initialUrl = _offlineMapMode
                 ? BuildOfflineMapUri(
                     initialMap?.NormalizedName ?? "customs")
-                : remoteInitialUri;
+                    .AbsoluteUri
+                : remoteInitialUri.AbsoluteUri;
             if (_offlineMapMode)
             {
                 SetStatus(
-                    "tarkov.dev bloqué · carte locale activée",
+                    "tarkov.dev bloquÃƒÂ© Ã‚Â· carte locale activÃƒÂ©e",
                     Color.FromArgb(217, 170, 78));
             }
-            BeginWebNavigation(core, initialUri.AbsoluteUri);
+            await _localMapHost.AttachAsync(_webView);
+            BeginWebNavigation(core, initialUrl);
         }
         catch (OperationCanceledException) when (_formLifetime.IsCancellationRequested)
         {
@@ -2696,7 +2693,7 @@ internal sealed partial class OverlayForm : Form
         {
             if (_pendingDetectedMap is not null)
             {
-                SetStatus("Nouvelle tentative de carte…", Color.FromArgb(217, 170, 78));
+                SetStatus("Nouvelle tentative de carteÃ¢â‚¬Â¦", Color.FromArgb(217, 170, 78));
                 _ = RetryPendingDetectedMapAsync(_pendingDetectedMap);
             }
             else
@@ -2712,12 +2709,7 @@ internal sealed partial class OverlayForm : Form
         {
             return;
         }
-        SetStatus(
-            _offlineMapMode
-                ? "Carte locale prête"
-                : _gpsEnabled
-                    ? "GPS actif"
-                    : "Carte prête");
+        SetStatus(_gpsEnabled ? "GPS actif" : "Carte prÃƒÂªte");
         try
         {
             if (_raidQuestGameMode is { } gameMode)
@@ -2816,7 +2808,7 @@ internal sealed partial class OverlayForm : Form
             if (!_formLifetime.IsCancellationRequested
                 && IsNavigationContinuationCurrent(completedNavigationSequence))
             {
-                SetStatus(_gpsEnabled ? "GPS actif" : "Carte prête");
+                SetStatus(_gpsEnabled ? "GPS actif" : "Carte prÃƒÂªte");
             }
         }
     }
@@ -2834,6 +2826,8 @@ internal sealed partial class OverlayForm : Form
         CoreWebView2 core,
         long navigationSequence)
     {
+        if (RaidPilotLocalMapHost.IsLocalMapUri(_webView.Source)) return true;
+
         try
         {
             var installed = await core.ExecuteScriptAsync(
@@ -2936,7 +2930,7 @@ internal sealed partial class OverlayForm : Form
         if (!_webReady || _webView.CoreWebView2 is null)
         {
             MessageBox.Show(
-                "Attendez que la carte tarkov.dev soit chargée.",
+                "Attendez que la carte tarkov.dev soit chargÃƒÂ©e.",
                 "RaidPilot",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -2945,11 +2939,11 @@ internal sealed partial class OverlayForm : Form
 
         var consent = MessageBox.Show(
             "Afficher aussi ton point sur la carte tarkov.dev ?\n\n"
-            + "La lecture locale des captures, la flèche et le clignotement des sorties fonctionnent déjà sans cette option. "
-            + "Si tu acceptes, seuls la carte, x/y/z et la rotation mesurés ou estimés seront envoyés à wss://socket.tarkov.dev afin d'afficher ton point. "
+            + "La lecture locale des captures, la flÃƒÂ¨che et le clignotement des sorties fonctionnent dÃƒÂ©jÃƒÂ  sans cette option. "
+            + "Si tu acceptes, seuls la carte, x/y/z et la rotation mesurÃƒÂ©s ou estimÃƒÂ©s seront envoyÃƒÂ©s ÃƒÂ  wss://socket.tarkov.dev afin d'afficher ton point. "
             + "Les captures, les lignes OCR, les touches, la souris et les lignes du journal restent sur ce PC. "
-            + "RaidPilot ne lit pas la mémoire ou le trafic réseau du jeu et ne simule aucune touche.",
-            "Point tarkov.dev — RaidPilot",
+            + "RaidPilot ne lit pas la mÃƒÂ©moire ou le trafic rÃƒÂ©seau du jeu et ne simule aucune touche.",
+            "Point tarkov.dev Ã¢â‚¬â€ RaidPilot",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question,
             MessageBoxDefaultButton.Button2);
@@ -2960,7 +2954,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         _gpsMenuItem.Enabled = false;
-        SetStatus("Connexion GPS…", Color.FromArgb(217, 170, 78));
+        SetStatus("Connexion GPSÃ¢â‚¬Â¦", Color.FromArgb(217, 170, 78));
 
         try
         {
@@ -2979,7 +2973,7 @@ internal sealed partial class OverlayForm : Form
                 }
                 catch (OperationCanceledException) when (!_formLifetime.IsCancellationRequested)
                 {
-                    throw new TimeoutException("Le service GPS tarkov.dev n'a pas répondu sous 12 secondes.");
+                    throw new TimeoutException("Le service GPS tarkov.dev n'a pas rÃƒÂ©pondu sous 12 secondes.");
                 }
 
                 _gpsClient = client;
@@ -2988,8 +2982,8 @@ internal sealed partial class OverlayForm : Form
                 RefreshPositionKeyMenu();
                 SetStatus(
                     _screenshotBinding.IsReady
-                        ? $"Point actif · suivi local · {_screenshotBinding.UserLabel}"
-                        : "Point actif · touche à configurer",
+                        ? $"Point actif Ã‚Â· suivi local Ã‚Â· {_screenshotBinding.UserLabel}"
+                        : "Point actif Ã‚Â· touche ÃƒÂ  configurer",
                     Color.FromArgb(88, 168, 138));
                 if (_lastObservation is { } observation)
                 {
@@ -3009,9 +3003,9 @@ internal sealed partial class OverlayForm : Form
         catch (Exception exception)
         {
             await ClearMapReceiverAsync(reload: true);
-            SetStatus("GPS non connecté", Color.FromArgb(214, 93, 84));
+            SetStatus("GPS non connectÃƒÂ©", Color.FromArgb(214, 93, 84));
             MessageBox.Show(
-                $"La connexion GPS n'a pas pu être activée.\n\n{exception.Message}",
+                $"La connexion GPS n'a pas pu ÃƒÂªtre activÃƒÂ©e.\n\n{exception.Message}",
                 "RaidPilot",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
@@ -3072,7 +3066,7 @@ internal sealed partial class OverlayForm : Form
             }
         }
 
-        throw new InvalidOperationException("tarkov.dev n'a pas confirmé la session distante.");
+        throw new InvalidOperationException("tarkov.dev n'a pas confirmÃƒÂ© la session distante.");
     }
 
     private string GetCurrentMapUrl()
@@ -3182,10 +3176,10 @@ internal sealed partial class OverlayForm : Form
             await client.DisposeAsync();
         }
 
-        _gpsMenuItem.Text = "Afficher mon point sur tarkov.dev (Ctrl+Alt+G)…";
+        _gpsMenuItem.Text = "Afficher mon point sur tarkov.dev (Ctrl+Alt+G)Ã¢â‚¬Â¦";
         _gpsMenuItem.Enabled = true;
         await ClearMapReceiverAsync(reload: !_formLifetime.IsCancellationRequested);
-        SetStatus("Point distant masqué · guidage local actif");
+        SetStatus("Point distant masquÃƒÂ© Ã‚Â· guidage local actif");
     }
 
     private async Task ClearMapReceiverAsync(bool reload)
@@ -3261,7 +3255,7 @@ internal sealed partial class OverlayForm : Form
                     _raidSessionStartedAtUtc))
             {
                 // Une notification tardive de l'ancien raid ne doit ni ancrer
-                // le joueur sur la nouvelle carte, ni y enregistrer un repère.
+                // le joueur sur la nouvelle carte, ni y enregistrer un repÃƒÂ¨re.
                 return;
             }
 
@@ -3322,10 +3316,10 @@ internal sealed partial class OverlayForm : Form
                     || postCaptureYaw > CalibrationPostCaptureYawToleranceDegrees;
             }
 
-            // Les compteurs sont remis à zéro à la détection du fichier, alors
-            // que l'observation exacte appartient à l'instant de capture. Si un
-            // trajet significatif sépare les deux, ni ce segment ni le suivant
-            // ne doit apprendre une calibration avec deux intervalles décalés.
+            // Les compteurs sont remis ÃƒÂ  zÃƒÂ©ro ÃƒÂ  la dÃƒÂ©tection du fichier, alors
+            // que l'observation exacte appartient ÃƒÂ  l'instant de capture. Si un
+            // trajet significatif sÃƒÂ©pare les deux, ni ce segment ni le suivant
+            // ne doit apprendre une calibration avec deux intervalles dÃƒÂ©calÃƒÂ©s.
             var allowCalibration = !postCaptureIntervalContaminated
                 && !_skipNextRealtimeCalibration
                 && !_raidStartReplayCrossedTransition;
@@ -3349,8 +3343,8 @@ internal sealed partial class OverlayForm : Form
                     hasCaptureTimestamp)
                 && automaticRequest is not null)
             {
-                // Une capture automatique déclenchée au repos est déjà une vue
-                // de jeu propre: elle peut être transformée immédiatement en
+                // Une capture automatique dÃƒÂ©clenchÃƒÂ©e au repos est dÃƒÂ©jÃƒÂ  une vue
+                // de jeu propre: elle peut ÃƒÂªtre transformÃƒÂ©e immÃƒÂ©diatement en
                 // signature visuelle exacte.
                 _ = LearnAutomaticVisualKeyframeAsync(
                     automaticRequest,
@@ -3367,10 +3361,10 @@ internal sealed partial class OverlayForm : Form
                 && estimatedPoseAtCapture is not null
                 && !postCaptureIntervalContaminated)
             {
-                // Un F8 manuel peut afficher O ou TÂCHES. Ne jamais apprendre
-                // le PNG lui-même. Attendre que l'écran de jeu soit revenu,
-                // exiger une scène vivante puis stationnaire, et annuler au
-                // moindre déplacement/virage pour conserver exactement la pose F8.
+                // Un F8 manuel peut afficher O ou TÃƒâ€šCHES. Ne jamais apprendre
+                // le PNG lui-mÃƒÂªme. Attendre que l'ÃƒÂ©cran de jeu soit revenu,
+                // exiger une scÃƒÂ¨ne vivante puis stationnaire, et annuler au
+                // moindre dÃƒÂ©placement/virage pour conserver exactement la pose F8.
                 ScheduleManualVisualKeyframeLearning(observation, now);
             }
             else if (!isAutomaticReanchor)
@@ -3389,8 +3383,8 @@ internal sealed partial class OverlayForm : Form
                 if (estimatedPoseAtCapture is { } historicalAnchorPose
                     && _realtimeEstimator.CurrentPose is not null)
                 {
-                    // La capture décrit l'état passé. Corriger cet instant puis
-                    // conserver le trajet déjà parcouru évite le saut arrière
+                    // La capture dÃƒÂ©crit l'ÃƒÂ©tat passÃƒÂ©. Corriger cet instant puis
+                    // conserver le trajet dÃƒÂ©jÃƒÂ  parcouru ÃƒÂ©vite le saut arriÃƒÂ¨re
                     // perceptible lorsque le PNG arrive quelques trames plus tard.
                     anchoredPose = _realtimeEstimator.ReanchorFromHistoricalPose(
                         observation,
@@ -3670,13 +3664,13 @@ internal sealed partial class OverlayForm : Form
             var panel = ExtractionAdvisor.ResolveOcrExtractionPanel(compatible, lines);
             if (panel.SlotCount < 2)
             {
-                SetStatus("Sorties non lues · O deux fois puis F8", Color.FromArgb(217, 170, 78));
+                SetStatus("Sorties non lues Ã‚Â· O deux fois puis F8", Color.FromArgb(217, 170, 78));
                 return;
             }
             // ResolveOcrExtractionPanel ne conserve que les rangs EXFIL valides;
             // les lignes TRANSIT et EXFIL?? restent donc exclues ici. Garder
-            // toutes les EXFIL confirmées est important sur Reserve PMC, où
-            // aucune sortie disponible n'est entièrement sans condition.
+            // toutes les EXFIL confirmÃƒÂ©es est important sur Reserve PMC, oÃƒÂ¹
+            // aucune sortie disponible n'est entiÃƒÂ¨rement sans condition.
             var newlyRecognized = compatible
                 .Where(candidate => panel.ConfirmedIds.Contains(candidate.Id))
                 .ToArray();
@@ -3684,8 +3678,8 @@ internal sealed partial class OverlayForm : Form
             {
                 SetStatus(
                     panel.IsComplete
-                        ? "Aucune sortie EXFIL reconnue · O deux fois puis F8"
-                        : $"Lecture incomplète {panel.ConfirmedIds.Count}/{panel.SlotCount} · laisse O ouvert puis refais F8",
+                        ? "Aucune sortie EXFIL reconnue Ã‚Â· O deux fois puis F8"
+                        : $"Lecture incomplÃƒÂ¨te {panel.ConfirmedIds.Count}/{panel.SlotCount} Ã‚Â· laisse O ouvert puis refais F8",
                     Color.FromArgb(217, 170, 78));
                 return;
             }
@@ -3710,7 +3704,7 @@ internal sealed partial class OverlayForm : Form
             if (!panel.IsComplete)
             {
                 SetStatus(
-                    $"Guidage actif · lecture {panel.ConfirmedIds.Count}/{panel.SlotCount} · F8 pour compléter",
+                    $"Guidage actif Ã‚Â· lecture {panel.ConfirmedIds.Count}/{panel.SlotCount} Ã‚Â· F8 pour complÃƒÂ©ter",
                     Color.FromArgb(88, 168, 138));
             }
         }
@@ -3722,7 +3716,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch (Exception)
         {
-            SetStatus("Lecture des sorties à reprendre · O deux fois puis F8", Color.FromArgb(217, 170, 78));
+            SetStatus("Lecture des sorties ÃƒÂ  reprendre Ã‚Â· O deux fois puis F8", Color.FromArgb(217, 170, 78));
         }
         finally
         {
@@ -3773,7 +3767,7 @@ internal sealed partial class OverlayForm : Form
         catch
         {
             // Un enrichissement facultatif ne doit jamais devenir une exception
-            // non observée ni remonter dans le chemin critique des extractions.
+            // non observÃƒÂ©e ni remonter dans le chemin critique des extractions.
         }
     }
 
@@ -3879,8 +3873,8 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Le chrono est un enrichissement indépendant. Une lecture ratée
-            // ne doit jamais empêcher la reconnaissance des extractions.
+            // Le chrono est un enrichissement indÃƒÂ©pendant. Une lecture ratÃƒÂ©e
+            // ne doit jamais empÃƒÂªcher la reconnaissance des extractions.
             return Array.Empty<string>();
         }
     }
@@ -3974,13 +3968,13 @@ internal sealed partial class OverlayForm : Form
                 .ToArray();
 
             _questMenuItem.Text = confirmed.Count == 1
-                ? "Quêtes : 1 repérée sur cette carte"
-                : $"Quêtes : {confirmed.Count} repérées sur cette carte";
+                ? "QuÃƒÂªtes : 1 repÃƒÂ©rÃƒÂ©e sur cette carte"
+                : $"QuÃƒÂªtes : {confirmed.Count} repÃƒÂ©rÃƒÂ©es sur cette carte";
 
-            // Les identifiants de certaines quêtes diffèrent entre PvE et PvP.
+            // Les identifiants de certaines quÃƒÂªtes diffÃƒÂ¨rent entre PvE et PvP.
             // tarkov.dev construit ses couches depuis le mode Redux lu au
             // chargement; persister le bon mode puis recharger une seule fois
-            // garantit que les questId OCR existent réellement sur la carte.
+            // garantit que les questId OCR existent rÃƒÂ©ellement sur la carte.
             if (await EnsureWebMapGameModeAsync(gameMode, raidGeneration))
             {
                 return;
@@ -3991,8 +3985,8 @@ internal sealed partial class OverlayForm : Form
             {
                 SetStatus(
                     confirmed.Count == 1
-                        ? "1 quête placée sur la carte"
-                        : $"{confirmed.Count} quêtes placées sur la carte",
+                        ? "1 quÃƒÂªte placÃƒÂ©e sur la carte"
+                        : $"{confirmed.Count} quÃƒÂªtes placÃƒÂ©es sur la carte",
                     Color.FromArgb(196, 113, 237));
             }
         }
@@ -4005,7 +3999,7 @@ internal sealed partial class OverlayForm : Form
         catch
         {
             // La capture reste une ancre de position valide. Une prochaine F8
-            // réessaiera le catalogue ou l'OCR des quêtes sans gêner le guidage.
+            // rÃƒÂ©essaiera le catalogue ou l'OCR des quÃƒÂªtes sans gÃƒÂªner le guidage.
         }
         finally
         {
@@ -4196,7 +4190,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Le prochain intervalle ou la fermeture réessaiera.
+            // Le prochain intervalle ou la fermeture rÃƒÂ©essaiera.
         }
 
         if (!ReferenceEquals(_learnedRouteSaveTask, saveTask))
@@ -4313,7 +4307,7 @@ internal sealed partial class OverlayForm : Form
                 if (_selectedExtraction is null)
                 {
                     SetStatus(
-                        $"Position mise à jour · {DateTime.Now:HH:mm:ss}",
+                        $"Position mise ÃƒÂ  jour Ã‚Â· {DateTime.Now:HH:mm:ss}",
                         Color.FromArgb(88, 168, 138));
                 }
             });
@@ -4337,7 +4331,7 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot — extraction",
+                "RaidPilot Ã¢â‚¬â€ extraction",
                 "Appuie sur F8 en raid avant de choisir une extraction.",
                 ToolTipIcon.Info);
             return;
@@ -4386,8 +4380,8 @@ internal sealed partial class OverlayForm : Form
             {
                 _trayIcon.ShowBalloonTip(
                     5000,
-                    "RaidPilot — extraction",
-                    $"Aucune extraction {_raidSide} n’a été trouvée pour {_currentMap}.",
+                    "RaidPilot Ã¢â‚¬â€ extraction",
+                    $"Aucune extraction {_raidSide} nÃ¢â‚¬â„¢a ÃƒÂ©tÃƒÂ© trouvÃƒÂ©e pour {_currentMap}.",
                     ToolTipIcon.Warning);
                 return;
             }
@@ -4412,8 +4406,8 @@ internal sealed partial class OverlayForm : Form
             SetStatus("Extractions indisponibles", Color.FromArgb(217, 170, 78));
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot — extraction",
-                "Les données d’extraction tarkov.dev sont momentanément indisponibles.",
+                "RaidPilot Ã¢â‚¬â€ extraction",
+                "Les donnÃƒÂ©es dÃ¢â‚¬â„¢extraction tarkov.dev sont momentanÃƒÂ©ment indisponibles.",
                 ToolTipIcon.Warning);
         }
         finally
@@ -4452,8 +4446,8 @@ internal sealed partial class OverlayForm : Form
             }
             catch
             {
-                // Le prochain mouvement ou F8 réessaiera avec le catalogue gardé
-                // en mémoire.
+                // Le prochain mouvement ou F8 rÃƒÂ©essaiera avec le catalogue gardÃƒÂ©
+                // en mÃƒÂ©moire.
             }
             return;
         }
@@ -4548,8 +4542,8 @@ internal sealed partial class OverlayForm : Form
             }
             else if (_cachedLearnedRoutePlan is null)
             {
-                // Un échec est aussi un résultat de cache. Sans cela, un
-                // graphe déconnecté relancerait A* dix fois par seconde.
+                // Un ÃƒÂ©chec est aussi un rÃƒÂ©sultat de cache. Sans cela, un
+                // graphe dÃƒÂ©connectÃƒÂ© relancerait A* dix fois par seconde.
                 target = recommendation.Target;
                 return true;
             }
@@ -4676,7 +4670,7 @@ internal sealed partial class OverlayForm : Form
         catch
         {
             // Une navigation peut remplacer le document entre la lecture OCR
-            // et l'injection. RestoreRaidCountdownAsync réapplique l'ancre.
+            // et l'injection. RestoreRaidCountdownAsync rÃƒÂ©applique l'ancre.
         }
     }
 
@@ -4698,7 +4692,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Le document en cours de remplacement détruit déjà son compteur.
+            // Le document en cours de remplacement dÃƒÂ©truit dÃƒÂ©jÃƒÂ  son compteur.
         }
     }
 
@@ -4771,8 +4765,8 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Une reconstruction Leaflet ou la prochaine navigation réappliquera
-            // la liste gardée en mémoire.
+            // Une reconstruction Leaflet ou la prochaine navigation rÃƒÂ©appliquera
+            // la liste gardÃƒÂ©e en mÃƒÂ©moire.
         }
     }
 
@@ -4790,7 +4784,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Navigation ou fermeture : le document détruit déjà les marqueurs.
+            // Navigation ou fermeture : le document dÃƒÂ©truit dÃƒÂ©jÃƒÂ  les marqueurs.
         }
     }
 
@@ -4821,6 +4815,8 @@ internal sealed partial class OverlayForm : Form
         var payload = JsonSerializer.Serialize(new
         {
             generation = raidGeneration,
+            gameMode = _raidQuestGameMode ?? "regular",
+            map = _currentMap,
             quests = quests.Select(quest => new
             {
                 id = quest.Id,
@@ -4856,8 +4852,8 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Le script garde les IDs et les réapplique lorsque tarkov.dev finit
-            // de construire ses couches de quêtes.
+            // Le script garde les IDs et les rÃƒÂ©applique lorsque tarkov.dev finit
+            // de construire ses couches de quÃƒÂªtes.
         }
     }
 
@@ -4906,7 +4902,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // La navigation en cours réessaiera la synchronisation avant de
+            // La navigation en cours rÃƒÂ©essaiera la synchronisation avant de
             // restaurer les marqueurs. La capture reste une ancre valide.
             return false;
         }
@@ -4926,7 +4922,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Une navigation détruit déjà les marqueurs du document précédent.
+            // Une navigation dÃƒÂ©truit dÃƒÂ©jÃƒÂ  les marqueurs du document prÃƒÂ©cÃƒÂ©dent.
         }
     }
 
@@ -5198,7 +5194,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch
         {
-            // Une navigation détruit aussi le SVG et ses écouteurs.
+            // Une navigation dÃƒÂ©truit aussi le SVG et ses ÃƒÂ©couteurs.
         }
         finally
         {
@@ -5316,8 +5312,8 @@ internal sealed partial class OverlayForm : Form
                 : $"Extraction auto : {target.Name}";
             SetStatus(
                 destinationGuidance.HasArrived
-                    ? $"Arrivé · {target.Name}"
-                    : $"{target.Name} · {displayedDistance:F0} m",
+                    ? $"ArrivÃƒÂ© Ã‚Â· {target.Name}"
+                    : $"{target.Name} Ã‚Â· {displayedDistance:F0} m",
                 Color.FromArgb(88, 168, 138));
             ShowNoActivate();
         }
@@ -5329,7 +5325,7 @@ internal sealed partial class OverlayForm : Form
         InvalidateLearnedRoutePlan();
         var clearGeneration = _guidanceGeneration;
         _selectedExtraction = null;
-        _extractionMenuItem.Text = "Extraction auto : O×2 puis F8 (Ctrl+Alt+E secours)";
+        _extractionMenuItem.Text = "Extraction auto : OÃƒâ€”2 puis F8 (Ctrl+Alt+E secours)";
         await ClearLearnedRouteOverlayAsync(clearGeneration);
         await ClearGuidanceOverlayAsync(clearGeneration);
     }
@@ -5425,8 +5421,8 @@ internal sealed partial class OverlayForm : Form
             ResetDistanceCalibrationCounters();
             ResetControlTrackingState();
         }
-        _extractionMenuItem.Text = "Extraction auto : O×2 puis F8 (Ctrl+Alt+E secours)";
-        _questMenuItem.Text = "Quêtes : ouvre TÂCHES puis F8";
+        _extractionMenuItem.Text = "Extraction auto : OÃƒâ€”2 puis F8 (Ctrl+Alt+E secours)";
+        _questMenuItem.Text = "QuÃƒÂªtes : ouvre TÃƒâ€šCHES puis F8";
         _ = ClearExtractionGuidanceAsync();
         _ = ClearRaidExtractionMarkersAsync(_raidGeneration);
         _ = ClearRaidQuestMarkersAsync(_raidGeneration);
@@ -5443,8 +5439,8 @@ internal sealed partial class OverlayForm : Form
         ResetExtractionGuidance(clearObservation: false);
         _trayIcon.ShowBalloonTip(
             3500,
-            "RaidPilot — extraction",
-            side == RaidSide.Pmc ? "Guidage réglé sur PMC." : "Guidage réglé sur Scav.",
+            "RaidPilot Ã¢â‚¬â€ extraction",
+            side == RaidSide.Pmc ? "Guidage rÃƒÂ©glÃƒÂ© sur PMC." : "Guidage rÃƒÂ©glÃƒÂ© sur Scav.",
             ToolTipIcon.Info);
     }
 
@@ -5482,262 +5478,39 @@ internal sealed partial class OverlayForm : Form
 
     private void UpdateCurrentMapFromSource()
     {
+        if (RaidPilotLocalMapHost.IsLocalMapUri(_webView.Source) && RaidPilotLocalMapHost.TryExtractMapKey(_webView.Source?.AbsoluteUri, out var localFirstMap))
+        {
+            if (!string.Equals(_currentMap, localFirstMap, StringComparison.OrdinalIgnoreCase))
+            {
+                _currentMap = localFirstMap;
+                SwitchCollectiveAtlasMap(_currentMap);
+                StartLearnedRouteSession(_currentMap);
+                ResetExtractionGuidance(clearObservation: true);
+            }
+            return;
+        }
+
         var source = _webView.Source;
-        if (source is null
-            || !TryGetMapNameFromSource(
-                source,
-                out var normalizedMap))
+        if (source is null)
         {
             return;
         }
 
-        if (!string.Equals(
-                _currentMap,
-                normalizedMap,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            _currentMap = normalizedMap;
-            SwitchCollectiveAtlasMap(_currentMap);
-            StartLearnedRouteSession(_currentMap);
-            ResetExtractionGuidance(clearObservation: true);
-        }
-    }
-
-    private static bool IsOfflineMapUri(Uri? uri) =>
-        uri is not null
-        && string.Equals(
-            uri.Scheme,
-            Uri.UriSchemeHttps,
-            StringComparison.OrdinalIgnoreCase)
-        && string.Equals(
-            uri.Host,
-            OfflineMapHost,
-            StringComparison.OrdinalIgnoreCase)
-        && string.Equals(
-            uri.AbsolutePath,
-            WebNavigationPolicy.OfflineMapPath,
-            StringComparison.OrdinalIgnoreCase);
-
-    private static Uri BuildOfflineMapUri(string mapName)
-    {
-        var normalized = new string(
-            (mapName ?? string.Empty)
-                .Trim()
-                .ToLowerInvariant()
-                .Where(character =>
-                    char.IsAsciiLetterOrDigit(character)
-                    || character is '-' or '_')
-                .Take(64)
-                .ToArray());
-        if (normalized.Length == 0)
-        {
-            normalized = "customs";
-        }
-
-        return new Uri(
-            $"https://{OfflineMapHost}"
-            + WebNavigationPolicy.OfflineMapPath
-            + "?map="
-            + Uri.EscapeDataString(normalized));
-    }
-
-    private static bool TryGetMapNameFromSource(
-        Uri source,
-        out string normalizedMap)
-    {
-        normalizedMap = string.Empty;
-        string? token = null;
-
-        if (IsOfflineMapUri(source))
-        {
-            foreach (var part in source.Query.TrimStart('?')
-                .Split('&', StringSplitOptions.RemoveEmptyEntries))
-            {
-                var separator = part.IndexOf('=');
-                if (separator <= 0)
-                {
-                    continue;
-                }
-
-                var key = Uri.UnescapeDataString(part[..separator]);
-                if (!string.Equals(
-                        key,
-                        "map",
-                        StringComparison.OrdinalIgnoreCase))
-                {
-                    continue;
-                }
-
-                token = Uri.UnescapeDataString(
-                    part[(separator + 1)..]);
-                break;
-            }
-        }
-        else
-        {
-            var segments = source.AbsolutePath.Split(
-                '/',
-                StringSplitOptions.RemoveEmptyEntries);
-            if (segments.Length >= 2
-                && string.Equals(
-                    segments[0],
-                    "map",
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                token = segments[1];
-            }
-        }
-
-        if (string.IsNullOrWhiteSpace(token)
-            || !token.All(character =>
-                char.IsAsciiLetterOrDigit(character)
-                || character is '-' or '_'))
-        {
-            return false;
-        }
-
-        if (EftMapLogParser.TryNormalizeMapToken(
-                token,
-                out var map)
+        var segments = source.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length >= 2
+            && string.Equals(segments[0], "map", StringComparison.OrdinalIgnoreCase)
+            && segments[1].All(character => char.IsAsciiLetterOrDigit(character) || character == '-')
+            && EftMapLogParser.TryNormalizeMapToken(segments[1], out var map)
             && map is not null)
         {
-            normalizedMap = map.NormalizedName;
-            return true;
-        }
-
-        normalizedMap = token.ToLowerInvariant();
-        return true;
-    }
-
-    private static bool IsCurrentSourceForMap(
-        Uri? source,
-        EftMapRoute map) =>
-        source is not null
-        && TryGetMapNameFromSource(
-            source,
-            out var normalizedMap)
-        && string.Equals(
-            normalizedMap,
-            map.NormalizedName,
-            StringComparison.OrdinalIgnoreCase);
-
-    private static async Task<bool> ShouldPreferOfflineMapAsync(
-        Uri remoteUri,
-        CancellationToken cancellationToken)
-    {
-        if (!string.Equals(
-                remoteUri.Host,
-                "tarkov.dev",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        try
-        {
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                remoteUri);
-            request.Headers.UserAgent.ParseAdd(
-                "RaidPilot-MapProbe/0.14.1");
-            using var response =
-                await MapAvailabilityHttpClient.SendAsync(
-                    request,
-                    HttpCompletionOption.ResponseHeadersRead,
-                    cancellationToken);
-            return !response.IsSuccessStatusCode;
-        }
-        catch (OperationCanceledException)
-            when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch
-        {
-            return true;
-        }
-    }
-
-    private async Task<bool> TryFallbackToOfflineMapAsync(
-        CoreWebView2NavigationCompletedEventArgs args)
-    {
-        var activeUri = _activeNavigationUri;
-        if (activeUri is null
-            || IsOfflineMapUri(activeUri)
-            || !string.Equals(
-                activeUri.Host,
-                "tarkov.dev",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        var blocked = !args.IsSuccess;
-        if (!blocked
-            && _webView.CoreWebView2 is { } core)
-        {
-            try
+            if (!string.Equals(_currentMap, map.NormalizedName, StringComparison.OrdinalIgnoreCase))
             {
-                var serialized = await core.ExecuteScriptAsync(
-                    "(() => ((document.title || '') + '\n' "
-                    + "+ (document.body?.innerText || '').slice(0, 1600)))();");
-                var pageText =
-                    JsonSerializer.Deserialize<string>(serialized)
-                    ?? string.Empty;
-                blocked =
-                    pageText.Contains(
-                        "you have been blocked",
-                        StringComparison.OrdinalIgnoreCase)
-                    || pageText.Contains(
-                        "unable to access tarkov.dev",
-                        StringComparison.OrdinalIgnoreCase)
-                    || pageText.Contains(
-                        "access denied",
-                        StringComparison.OrdinalIgnoreCase);
-            }
-            catch
-            {
-                // A successful remote document that cannot be inspected remains
-                // online; only explicit failure/block evidence triggers fallback.
+                _currentMap = map.NormalizedName;
+                SwitchCollectiveAtlasMap(_currentMap);
+                StartLearnedRouteSession(_currentMap);
+                ResetExtractionGuidance(clearObservation: true);
             }
         }
-
-        if (!blocked
-            || _webView.CoreWebView2 is not { } web)
-        {
-            return false;
-        }
-
-        _offlineMapMode = true;
-        var mapName =
-            _pendingDetectedMap?.NormalizedName
-            ?? _currentMap;
-        SetStatus(
-            "tarkov.dev bloqué · bascule carte locale",
-            Color.FromArgb(217, 170, 78));
-        BeginWebNavigation(
-            web,
-            BuildOfflineMapUri(mapName).AbsoluteUri);
-        return true;
-    }
-
-    private void NavigateToOfflineMap(
-        EftMapRoute map,
-        string reason)
-    {
-        if (_webView.CoreWebView2 is not { } core)
-        {
-            return;
-        }
-
-        _offlineMapMode = true;
-        SetStatus(
-            $"Carte locale · {map.NormalizedName} · {reason}",
-            Color.FromArgb(217, 170, 78));
-        BeginWebNavigation(
-            core,
-            BuildOfflineMapUri(
-                map.NormalizedName).AbsoluteUri);
     }
 
     private void EnsureMapLogWatcherStarted()
@@ -5809,8 +5582,8 @@ internal sealed partial class OverlayForm : Form
 
             SetRaidActive(true);
 
-            // Un nouveau fichier de session représente un nouveau raid même si
-            // le joueur relance exactement la même carte.
+            // Un nouveau fichier de session reprÃƒÂ©sente un nouveau raid mÃƒÂªme si
+            // le joueur relance exactement la mÃƒÂªme carte.
             var transitionTimestamp = Stopwatch.GetTimestamp();
             var previousRaidGeneration = _raidGeneration;
             var carriedObservations = new List<RaidStartObservation>(capacity: 2);
@@ -5838,7 +5611,7 @@ internal sealed partial class OverlayForm : Form
                 preserveRealtimePoseForImmediateReplay: carryFirstObservation);
             RefreshPositionKeyMenu();
             EnsureLocalScreenshotWatcherStarted();
-            SetStatus($"Raid détecté · {_currentMap} · position prête", Color.FromArgb(88, 168, 138));
+            SetStatus($"Raid dÃƒÂ©tectÃƒÂ© Ã‚Â· {_currentMap} Ã‚Â· position prÃƒÂªte", Color.FromArgb(88, 168, 138));
             NavigateToDetectedMap(args.Map);
 
             if (carryFirstObservation && _screenshotWatcher is { } screenshotWatcher)
@@ -5873,7 +5646,7 @@ internal sealed partial class OverlayForm : Form
             _learnedRouteGraph.BreakContinuity();
             _lastLearnedRouteObservationAt = 0;
             SetStatus(
-                "Hors raid · overlay masqué automatiquement",
+                "Hors raid Ã‚Â· overlay masquÃƒÂ© automatiquement",
                 Color.FromArgb(145, 153, 160));
         });
     }
@@ -5896,9 +5669,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         if (_navigationInProgress
-            && IsCurrentSourceForMap(
-                _activeNavigationUri,
-                map))
+            && IsCurrentSourceForMap(_activeNavigationUri, map))
         {
             // The correct map is already loading. The pending marker is kept so
             // completion restores the current raid state exactly once.
@@ -5907,9 +5678,7 @@ internal sealed partial class OverlayForm : Form
 
         var source = _webView.Source;
         if (_webReady
-            && IsCurrentSourceForMap(
-                source,
-                map))
+            && IsCurrentSourceForMap(source, map))
         {
             _pendingDetectedMap = null;
             UpdateCurrentMapFromSource();
@@ -5918,27 +5687,22 @@ internal sealed partial class OverlayForm : Form
 
         if (_offlineMapMode)
         {
-            NavigateToOfflineMap(
-                map,
-                "mode offline");
+            NavigateToOfflineMap(map, "mode offline");
             return;
         }
 
-        SetStatus(
-            $"Carte détectée · {map.NormalizedName}",
-            Color.FromArgb(88, 168, 138));
-        BeginWebNavigation(
-            _webView.CoreWebView2,
-            map.Url.AbsoluteUri);
+        SetStatus($"Carte dÃƒÂ©tectÃƒÂ©e Ã‚Â· {map.NormalizedName}", Color.FromArgb(88, 168, 138));
+        BeginWebNavigation(_webView.CoreWebView2, map.Url.AbsoluteUri);
     }
 
     private void BeginWebNavigation(CoreWebView2 core, string url)
     {
+        if (_localMapHost.IsAttached && RaidPilotLocalMapHost.TryExtractMapKey(url, out var localFirstMap))
+            url = RaidPilotLocalMapHost.GetMapUrl(localFirstMap);
+
         if (!WebNavigationPolicy.TryGetAllowedMapUri(url, out _))
         {
-            throw new ArgumentException(
-                "Only RaidPilot map URLs can be opened.",
-                nameof(url));
+            throw new ArgumentException("Only tarkov.dev map URLs can be opened.", nameof(url));
         }
 
         var previousStartPending = _navigationStartPending;
@@ -5971,9 +5735,7 @@ internal sealed partial class OverlayForm : Form
 
         var source = _webView.Source;
         if (_webReady
-            && IsCurrentSourceForMap(
-                source,
-                pendingMap))
+            && IsCurrentSourceForMap(source, pendingMap))
         {
             _pendingDetectedMap = null;
             return false;
@@ -6035,8 +5797,8 @@ internal sealed partial class OverlayForm : Form
             _streamVisibilityMenuItem.Checked = _visibleInScreenCaptures;
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot — partage Discord",
-                $"Windows n'a pas pu changer la visibilité de la carte (erreur {error.NativeErrorCode}). Le réglage précédent est conservé.",
+                "RaidPilot Ã¢â‚¬â€ partage Discord",
+                $"Windows n'a pas pu changer la visibilitÃƒÂ© de la carte (erreur {error.NativeErrorCode}). Le rÃƒÂ©glage prÃƒÂ©cÃƒÂ©dent est conservÃƒÂ©.",
                 ToolTipIcon.Warning);
             return false;
         }
@@ -6057,8 +5819,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot — partage Discord",
-                "Le changement fonctionne pour cette session, mais RaidPilot n'a pas pu l'enregistrer pour le prochain démarrage.",
+                "RaidPilot Ã¢â‚¬â€ partage Discord",
+                "Le changement fonctionne pour cette session, mais RaidPilot n'a pas pu l'enregistrer pour le prochain dÃƒÂ©marrage.",
                 ToolTipIcon.Warning);
             return true;
         }
@@ -6067,10 +5829,10 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 3500,
-                "RaidPilot — partage Discord",
+                "RaidPilot Ã¢â‚¬â€ partage Discord",
                 visibleInScreenCaptures
-                    ? "La carte est maintenant visible dans ton partage d'écran Discord."
-                    : "La carte est maintenant masquée dans ton partage d'écran Discord.",
+                    ? "La carte est maintenant visible dans ton partage d'ÃƒÂ©cran Discord."
+                    : "La carte est maintenant masquÃƒÂ©e dans ton partage d'ÃƒÂ©cran Discord.",
                 ToolTipIcon.Info);
         }
 
@@ -6484,7 +6246,7 @@ internal sealed partial class OverlayForm : Form
     private void SetStatus(string text, Color? color = null)
     {
         const int notifyIconTextLimit = 63;
-        var tooltip = $"RaidPilot — {text}";
+        var tooltip = $"RaidPilot Ã¢â‚¬â€ {text}";
         _trayIcon.Text = tooltip.Length <= notifyIconTextLimit
             ? tooltip
             : tooltip[..notifyIconTextLimit];
@@ -6496,9 +6258,9 @@ internal sealed partial class OverlayForm : Form
         _positionKeyMenuItem.Text = _screenshotBinding.Status switch
         {
             EftScreenshotBindingStatus.Ready => $"Touche de position : {_screenshotBinding.UserLabel}",
-            EftScreenshotBindingStatus.NeedsRebind => "Configurer la touche de position (F8 conseillé)…",
-            EftScreenshotBindingStatus.Unbound => "Configurer la touche de position…",
-            _ => "Touche de position : réglage introuvable…",
+            EftScreenshotBindingStatus.NeedsRebind => "Configurer la touche de position (F8 conseillÃƒÂ©)Ã¢â‚¬Â¦",
+            EftScreenshotBindingStatus.Unbound => "Configurer la touche de positionÃ¢â‚¬Â¦",
+            _ => "Touche de position : rÃƒÂ©glage introuvableÃ¢â‚¬Â¦",
         };
     }
 
@@ -6508,10 +6270,10 @@ internal sealed partial class OverlayForm : Form
 
         var message = _screenshotBinding.IsReady
             ? $"Ta touche de position est {_screenshotBinding.UserLabel}.\n\n"
-                + $"Au début du raid, appuie deux fois sur O puis une fois sur {_screenshotBinding.UserLabel} pendant que la liste reste visible. RaidPilot recalera la position et lira localement les sorties normales."
-            : "Réglage unique dans Tarkov :\n\n"
-                + "Paramètres → Commandes → Capture d’écran → attribue F8.\n\n"
-                + "Au début du raid : O deux fois, puis F8 pendant que la liste est visible. RaidPilot ne simule aucune touche; le panneau est lu localement et jamais envoyé.";
+                + $"Au dÃƒÂ©but du raid, appuie deux fois sur O puis une fois sur {_screenshotBinding.UserLabel} pendant que la liste reste visible. RaidPilot recalera la position et lira localement les sorties normales."
+            : "RÃƒÂ©glage unique dans Tarkov :\n\n"
+                + "ParamÃƒÂ¨tres Ã¢â€ â€™ Commandes Ã¢â€ â€™ Capture dÃ¢â‚¬â„¢ÃƒÂ©cran Ã¢â€ â€™ attribue F8.\n\n"
+                + "Au dÃƒÂ©but du raid : O deux fois, puis F8 pendant que la liste est visible. RaidPilot ne simule aucune touche; le panneau est lu localement et jamais envoyÃƒÂ©.";
 
         MessageBox.Show(
             message,
@@ -6525,10 +6287,10 @@ internal sealed partial class OverlayForm : Form
         RefreshPositionKeyMenu();
         var key = _screenshotBinding.IsReady ? _screenshotBinding.UserLabel : "F8";
         MessageBox.Show(
-            $"Dans le raid, ouvre l'onglet TÂCHES afin que les noms de quêtes soient visibles, puis appuie sur {key}.\n\n"
-            + "RaidPilot lit les noms localement et ajoute seulement leurs objectifs géolocalisés sur la carte. "
-            + "Si la liste défile, prends une deuxième capture après l'avoir descendue. Les quêtes reconnues s'additionnent pour ce raid.",
-            "Quêtes sur la carte — RaidPilot",
+            $"Dans le raid, ouvre l'onglet TÃƒâ€šCHES afin que les noms de quÃƒÂªtes soient visibles, puis appuie sur {key}.\n\n"
+            + "RaidPilot lit les noms localement et ajoute seulement leurs objectifs gÃƒÂ©olocalisÃƒÂ©s sur la carte. "
+            + "Si la liste dÃƒÂ©file, prends une deuxiÃƒÂ¨me capture aprÃƒÂ¨s l'avoir descendue. Les quÃƒÂªtes reconnues s'additionnent pour ce raid.",
+            "QuÃƒÂªtes sur la carte Ã¢â‚¬â€ RaidPilot",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
     }
@@ -6536,12 +6298,12 @@ internal sealed partial class OverlayForm : Form
     private void AnnouncePositionKey()
     {
         var message = _screenshotBinding.IsReady
-            ? $"Suivi fluide prêt : {_screenshotBinding.UserLabel} donne une ancre exacte et corrige la dérive."
-            : "Dans Tarkov, règle Commandes → Capture d’écran sur F8. Ensuite F8 recalera ta position.";
+            ? $"Suivi fluide prÃƒÂªt : {_screenshotBinding.UserLabel} donne une ancre exacte et corrige la dÃƒÂ©rive."
+            : "Dans Tarkov, rÃƒÂ¨gle Commandes Ã¢â€ â€™ Capture dÃ¢â‚¬â„¢ÃƒÂ©cran sur F8. Ensuite F8 recalera ta position.";
 
         _trayIcon.ShowBalloonTip(
             7000,
-            "RaidPilot — localisation",
+            "RaidPilot Ã¢â‚¬â€ localisation",
             message,
             _screenshotBinding.IsReady ? ToolTipIcon.Info : ToolTipIcon.Warning);
     }

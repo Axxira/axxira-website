@@ -6,6 +6,9 @@ on:
       - raidpilot-updates
     paths:
       - "raidpilot-updates/source/**"
+      - "raidpilot-updates/Restore-*.ps1"
+      - "raidpilot-updates/Restore-*.cjs"
+      - "raidpilot-updates/public-catalogues.json"
       - ".github/workflows/raidpilot-release.yml"
   workflow_dispatch:
 
@@ -25,8 +28,13 @@ jobs:
       - name: Checkout update branch
         uses: actions/checkout@v4
         with:
-          ref: raidpilot-updates
+          ref: ${{ github.sha }}
           fetch-depth: 0
+
+      - name: Restore verified local map catalogues and HD assets
+        shell: pwsh
+        run: |
+          & ./raidpilot-updates/Restore-LocalMapAssets.ps1
 
       - name: Install .NET 10
         uses: actions/setup-dotnet@v4
@@ -54,15 +62,30 @@ jobs:
         shell: pwsh
         run: |
           $src = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\source"
+          $PSNativeCommandUseErrorActionPreference = $true
           dotnet run --project (Join-Path $src "brand\icon-builder\IconBuilder.csproj") -c Release -- (Join-Path $src "brand")
           if (-not (Test-Path -LiteralPath (Join-Path $src "brand\RaidPilot.ico"))) {
             throw "RaidPilot.ico was not generated."
           }
 
+      - name: Test local map and native overlay
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
+          $src = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates/source/overlay"
+          dotnet run --project (Join-Path $src "Tests/RaidPilot.Overlay.Tests.csproj") -c Release
+          dotnet run --project (Join-Path $src "../launcher/Tests/RaidPilot.Launcher.Tests.csproj") -c Release
+          node (Join-Path $src "Tests/test-local-map.cjs")
+          node (Join-Path $src "Tests/test-map-quality.cjs")
+          node (Join-Path $src "Tests/test-raid-tactics.cjs")
+          node (Join-Path $src "Tests/test-projection.js")
+
       - name: Publish Windows x64 components
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
           $src = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\source"
           $out = Join-Path $env:GITHUB_WORKSPACE "release-output"
           New-Item -ItemType Directory -Force -Path $out | Out-Null
@@ -77,10 +100,7 @@ jobs:
           dotnet publish (Join-Path $src "launcher\RaidPilot.Launcher.csproj") -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out "launcher")
 
           Get-ChildItem -LiteralPath $out -Filter *.pdb -File -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
-          Get-ChildItem -LiteralPath $out -Directory -Recurse -Force -ErrorAction SilentlyContinue |
-            Where-Object Name -eq "UserData" |
-            Sort-Object FullName -Descending |
-            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          if (Get-ChildItem -LiteralPath $out -Directory -Recurse -Force | Where-Object Name -in @("UserData", "Screenshots", "logs")) { throw "Données personnelles inattendues dans la publication." }
 
       - name: Bundle payloads into launcher
         shell: pwsh
@@ -139,9 +159,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $ErrorActionPreference = "Stop"
+          $PSNativeCommandUseErrorActionPreference = $true
           $repo = $env:GITHUB_REPOSITORY
           $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`nPublication immuable : cette Release n'est jamais remplacée. Le manifeste Stable bascule vers elle seulement après création complète des ZIP et calcul des SHA-256."
-          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP --repo $repo --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
+          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP --repo $repo --target $env:GITHUB_SHA --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
 
       - name: Update Stable manifest
         shell: pwsh
@@ -157,21 +179,21 @@ jobs:
               url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
               sha256 = $env:RP_SHA
               sizeBytes = [int64]$env:RP_SIZE
-              releaseNotes = "Squad Sync, localisation locale et correctifs RaidPilot."
+              releaseNotes = "HOTFIX10 : cartes HD locales, pion centré, plans Usine et Labo, quêtes/objets hors ligne, extractions et dangers. Calage du Labo estimé : nouvel essai en jeu nécessaire."
             }
             beacon = [ordered]@{
               version = $env:BEACON_VERSION
               url = "$base/RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
               sha256 = $env:BEACON_SHA
               sizeBytes = [int64]$env:BEACON_SIZE
-              releaseNotes = "Beacon 0.2 : fusion visuelle, blocage anti-dérive, repères F8, recalage automatique prudent et calibration propre au joueur."
+              releaseNotes = "Beacon 0.3 : fusion visuelle, blocage anti-dérive, repères F8, recalage automatique prudent et calibration propre au joueur."
             }
             launcher = [ordered]@{
               version = $env:LAUNCHER_VERSION
               url = "$base/RaidPilot-Launcher-v$env:LAUNCHER_VERSION-Windows-x64.zip"
               sha256 = $env:LAUNCHER_SHA
               sizeBytes = [int64]$env:LAUNCHER_SIZE
-              releaseNotes = "Canal Stable automatique et mise à jour du launcher lui-même."
+              releaseNotes = "Développé par Peko ; HOTFIX10 ; conservation des réglages et récupération du profil après un ancien launcher."
             }
           }
 
@@ -182,6 +204,7 @@ jobs:
           # built. Rebase the publication step on the current update branch
           # before writing the manifest so the push is always fast-forward.
           git fetch origin raidpilot-updates
+          if ((git rev-parse origin/raidpilot-updates) -ne $env:GITHUB_SHA) { throw "La branche a changé : ne pas publier un manifeste obsolète." }
           git checkout -B raidpilot-updates origin/raidpilot-updates
 
           $manifestPath = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\update-manifest.json"

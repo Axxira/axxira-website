@@ -14,9 +14,12 @@ internal sealed class TarkovDevJsonCache
         new(StringComparer.OrdinalIgnoreCase);
 
     private readonly string _rootDirectory;
+    private readonly string? _bundledDirectory;
 
-    internal TarkovDevJsonCache(string? rootDirectory = null)
+    internal TarkovDevJsonCache(string? rootDirectory = null, string? bundledDirectory = null)
     {
+        _bundledDirectory = bundledDirectory ?? (rootDirectory is null
+            ? Path.Combine(AppContext.BaseDirectory, "LocalMap", "cache") : null);
         _rootDirectory = rootDirectory ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RaidPilot",
@@ -47,6 +50,21 @@ internal sealed class TarkovDevJsonCache
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            // A complete release catalogue is available immediately during a raid.
+            // An unsupported mode never borrows quests from another game mode.
+            if (_bundledDirectory is not null)
+            {
+                var mode = cacheKey.StartsWith("regular-", StringComparison.Ordinal) ? "regular"
+                    : cacheKey.StartsWith("pve-", StringComparison.Ordinal) ? "pve" : null;
+                if (mode is not null)
+                {
+                    var endpoint = cacheKey[(mode.Length + 1)..].Replace('-', '_');
+                    var folder = mode == "regular" ? _bundledDirectory : Path.Combine(_bundledDirectory, mode);
+                    var bundled = await TryLoadAsync(Path.Combine(folder, endpoint + ".json"),
+                        maximumBytes, requiredDataProperty, cancellationToken).ConfigureAwait(false);
+                    if (bundled is not null) return bundled;
+                }
+            }
             try
             {
                 var downloaded = await fetchAsync(cancellationToken).ConfigureAwait(false);

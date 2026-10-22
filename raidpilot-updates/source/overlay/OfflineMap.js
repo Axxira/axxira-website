@@ -139,10 +139,10 @@
     const api = {
         options: {
             id: requestedMap,
-            baseData: { coordinateRotation: 0 },
+            baseData: {
+                coordinateRotation: 0,
+            },
         },
-        _layers: {},
-        layerControl: { _layers: [] },
         getContainer: () => container,
         getCenter: () => ({ ...center }),
         getZoom: () => zoom,
@@ -176,8 +176,6 @@
         zoomOut(delta = 1) { return api.setZoom(zoom - Number(delta || 1)); },
         latLngToContainerPoint,
         containerPointToLatLng,
-        hasLayer: () => false,
-        removeLayer: () => api,
         on,
         off,
         invalidateSize() {
@@ -214,8 +212,7 @@
             };
             const wanted = aliases[requestedMap] || requestedMap;
             config = Array.isArray(items)
-                ? items.find((item) =>
-                    String(item?.normalizedName || "").toLowerCase() === wanted)
+                ? items.find((item) => String(item?.normalizedName || "").toLowerCase() === wanted)
                 : null;
             if (!config) throw new Error("offline map not found: " + wanted);
 
@@ -223,18 +220,12 @@
             api.options.baseData = {
                 coordinateRotation: Number(config.coordinateRotation || 0),
             };
-            zoom = Math.max(
-                Number(config.minZoom || 1),
-                Math.min(
-                    Number(config.maxZoom || 7),
-                    Number(config.minZoom || 1) + 1));
+            zoom = Math.max(Number(config.minZoom || 1), Math.min(Number(config.maxZoom || 7), Number(config.minZoom || 1) + 1));
             boundsProjected = calculateProjectedBounds();
             if (!boundsProjected) throw new Error("offline bounds invalid");
             center = boundsProjected.centerWorld;
 
-            asset.src = config.assetUrl
-                ? String(config.assetUrl)
-                : "/OfflineMaps/" + encodeURIComponent(config.asset);
+            asset.src = "/OfflineMaps/" + encodeURIComponent(config.asset);
             asset.onload = () => {
                 render();
                 emit("viewreset");
@@ -246,7 +237,6 @@
             render();
         })
         .catch((error) => {
-            document.documentElement.dataset.raidpilotOfflineError =
-                String(error?.message || error);
+            document.documentElement.dataset.raidpilotOfflineError = String(error?.message || error);
         });
 })();

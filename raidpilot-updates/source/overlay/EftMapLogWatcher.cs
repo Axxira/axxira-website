@@ -571,6 +571,11 @@ public sealed class EftMapLogWatcher : IDisposable
                             {
                                 _raidEndPending = true;
                                 _lastLifecycleEventWasRaidEnd = true;
+                                // Solo training can reload the same scene without a
+                                // NetworkGameCreate line. An ended raid must not
+                                // suppress the next scene as a same-map duplicate.
+                                _lastMapName = null;
+                                _lastMapDetectionLogTime = null;
                             }
                             if (EftMapLogParser.TryParseLine(line, out var map)
                                 && map is not null)

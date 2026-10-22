@@ -1,0 +1,1722 @@
+{
+  "version": 6,
+  "mode": "local-tarkovforge",
+  "maps": {
+    "customs": {
+      "path": "assets/forge/customs.png",
+      "tacticalPath": "https://raidpilot-assets.local/Customs.svg",
+      "sha256": "bc4645ba07b0a03129c775ca7495b3d36a85d9a7c9824e4f68470912af511a40",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://maps.reemr.se/Customs/re3mrCustoms2.png",
+      "referencePage": "https://tarkovforge.com/maps/customs",
+      "focus": [
+        0,
+        0.17,
+        1,
+        0.78
+      ],
+      "calibration": {
+        "affine": [
+          -0.0009366762938216835,
+          0.0000069673904502195555,
+          0.6556895749288505,
+          -0.000014658641822332285,
+          0.0010665242246401788,
+          0.5221958858069266
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 10,
+        "rmsMeters": 7.620901056927796,
+        "maxMeters": 13.4059472978388,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Vue générale de surface",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 10.89083781189022,
+        "points": [
+          {
+            "name": "ZB-1011",
+            "x": 621.5,
+            "z": -126.48,
+            "u": 0.06955645161290322,
+            "v": 0.3831628638867034
+          },
+          {
+            "name": "ZB-1013",
+            "x": 200.98,
+            "z": -153.09,
+            "u": 0.46622983870967744,
+            "v": 0.3493312352478363
+          },
+          {
+            "name": "Old Gas",
+            "x": 310.71,
+            "z": -174.95,
+            "u": 0.36643145161290325,
+            "v": 0.33202202989771834
+          },
+          {
+            "name": "Crossroads",
+            "x": -336.33,
+            "z": -86.39,
+            "u": 0.9712701612903226,
+            "v": 0.4492525570416995
+          },
+          {
+            "name": "Admin gate",
+            "x": 664.71,
+            "z": -55.33,
+            "u": 0.03276209677419355,
+            "v": 0.46105428796223447
+          },
+          {
+            "name": "Dorms gate",
+            "x": 181.08,
+            "z": 213.25,
+            "u": 0.4889112903225806,
+            "v": 0.7450826121164438
+          },
+          {
+            "name": "Rail reserve",
+            "x": 489.06,
+            "z": 221.39,
+            "u": 0.2001008064516129,
+            "v": 0.7427222659323367
+          },
+          {
+            "name": "Trailer park",
+            "x": -316.05,
+            "z": -233.13,
+            "u": 0.9490927419354839,
+            "v": 0.2753737214791503
+          },
+          {
+            "name": "Rail Tarkov",
+            "x": -153.36,
+            "z": -217.71,
+            "u": 0.7993951612903226,
+            "v": 0.27930763178599527
+          },
+          {
+            "name": "Rail port",
+            "x": -149.11,
+            "z": 46.68,
+            "u": 0.7918346774193549,
+            "v": 0.5790715971675846
+          }
+        ]
+      }
+    },
+    "shoreline": {
+      "path": "assets/forge/shoreline.png",
+      "tacticalPath": "https://raidpilot-assets.local/Shoreline.svg",
+      "sha256": "02d8b6b136f4ce0f7d95b7966f41c4b0526f8326844e043b752e03f5aa2ebc11",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://reemr.se/maps/Shoreline/re3mrShoreline2.png",
+      "referencePage": "https://tarkovforge.com/maps/shoreline",
+      "focus": [
+        0.08,
+        0.04,
+        0.96,
+        0.75
+      ],
+      "calibration": {
+        "affine": [
+          -0.0005138206043179489,
+          0.000016555313375652078,
+          0.38288433018197177,
+          0.000015909145950511886,
+          0.0006518152078822018,
+          0.3367093988241087
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 10,
+        "rmsMeters": 44.59576875532831,
+        "maxMeters": 80.07379835870752,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Vue générale de surface",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 72.41806138652471,
+        "points": [
+          {
+            "name": "Climber",
+            "x": -214.3,
+            "z": -361.8,
+            "u": 0.484375,
+            "v": 0.0954861111111111
+          },
+          {
+            "name": "Admin basement",
+            "x": -256.87,
+            "z": -149.78,
+            "u": 0.51318359375,
+            "v": 0.20052083333333334
+          },
+          {
+            "name": "Tunnel",
+            "x": 376.36,
+            "z": 319.25,
+            "u": 0.16357421875,
+            "v": 0.5208333333333334
+          },
+          {
+            "name": "Lighthouse",
+            "x": -458.15,
+            "z": 567.29,
+            "u": 0.634765625,
+            "v": 0.7109375
+          },
+          {
+            "name": "Smugglers",
+            "x": -729.4,
+            "z": -255.1,
+            "u": 0.73583984375,
+            "v": 0.15625
+          },
+          {
+            "name": "Path Lighthouse",
+            "x": 448.9,
+            "z": -254.6,
+            "u": 0.18115234375,
+            "v": 0.2092013888888889
+          },
+          {
+            "name": "Road Customs",
+            "x": -859.05,
+            "z": 0.49,
+            "u": 0.82373046875,
+            "v": 0.3098958333333333
+          },
+          {
+            "name": "Railway",
+            "x": -1025.05,
+            "z": 297.65,
+            "u": 0.93115234375,
+            "v": 0.5190972222222222
+          },
+          {
+            "name": "Pier",
+            "x": -335.89,
+            "z": 564.14,
+            "u": 0.56689453125,
+            "v": 0.7161458333333334
+          },
+          {
+            "name": "North car",
+            "x": -543.13,
+            "z": -378.59,
+            "u": 0.64794921875,
+            "v": 0.09895833333333333
+          }
+        ]
+      }
+    },
+    "woods": {
+      "path": "assets/forge/woods.png",
+      "tacticalPath": "https://raidpilot-assets.local/Woods.svg",
+      "sha256": "2ae933f667d1b70ca48d2fde97336a9a5c807be3589a8c838092cf14202c2e85",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://www.reemr.se/maps/Woods/WoodsRe3mrPNG.png",
+      "referencePage": "https://tarkovforge.com/maps/woods",
+      "focus": [
+        0.06,
+        0,
+        0.9,
+        0.77
+      ],
+      "calibration": {
+        "affine": [
+          -0.0006475903009339851,
+          0.0000037530714674593566,
+          0.4742661555263828,
+          0.000003817989963471244,
+          0.0005223299555634243,
+          0.533919871775235
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 11,
+        "rmsMeters": 28.955943906623986,
+        "maxMeters": 66.8231885574284,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Vue générale de surface",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 39.12766418387196,
+        "points": [
+          {
+            "name": "UN roadblock",
+            "x": -535.24,
+            "z": 287.05,
+            "u": 0.8234375,
+            "v": 0.6816421378776143
+          },
+          {
+            "name": "Scav house",
+            "x": 413.69,
+            "z": 242.17,
+            "u": 0.19583333333333333,
+            "v": 0.6615027110766848
+          },
+          {
+            "name": "Eastern rocks",
+            "x": -509.36,
+            "z": -35.33,
+            "u": 0.8197916666666667,
+            "v": 0.5313710302091402
+          },
+          {
+            "name": "Power line",
+            "x": 573.99,
+            "z": -85.26,
+            "u": 0.14322916666666666,
+            "v": 0.5027110766847405
+          },
+          {
+            "name": "Outskirts",
+            "x": 349.04,
+            "z": 358.58,
+            "u": 0.23958333333333334,
+            "v": 0.7234701781564679
+          },
+          {
+            "name": "Scav bunker",
+            "x": 220.43,
+            "z": -705.8,
+            "u": 0.31666666666666665,
+            "v": 0.16266460108443068
+          },
+          {
+            "name": "RUAF gate",
+            "x": -142.5,
+            "z": 447.58,
+            "u": 0.5598958333333334,
+            "v": 0.7482571649883811
+          },
+          {
+            "name": "ZB014",
+            "x": 447.24,
+            "z": 57.46,
+            "u": 0.178125,
+            "v": 0.5677769171185127
+          },
+          {
+            "name": "Dead man",
+            "x": 195.55,
+            "z": 259.21,
+            "u": 0.3458333333333333,
+            "v": 0.6700232378001549
+          },
+          {
+            "name": "Friendship bridge",
+            "x": 93.17,
+            "z": -843.98,
+            "u": 0.40260416666666665,
+            "v": 0.08520526723470179
+          },
+          {
+            "name": "Bridge car",
+            "x": -485.33,
+            "z": -504.06,
+            "u": 0.7880208333333333,
+            "v": 0.26800929512006194
+          }
+        ]
+      }
+    },
+    "interchange": {
+      "path": "assets/forge/interchange.png",
+      "tacticalPath": "https://raidpilot-assets.local/Interchange.svg",
+      "sha256": "3a5edcf3338908d9d77378ee4c2f5faeb557652f1e5cfe3b9f463fa9d8b498a4",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://maps.reemr.se/Interchange/re3mrInterchange.png",
+      "referencePage": "https://tarkovforge.com/maps/interchange",
+      "focus": [
+        0,
+        0.12,
+        0.54,
+        1
+      ],
+      "calibration": {
+        "affine": [
+          -0.0005081195700141367,
+          0.000019166186169438683,
+          0.31787005117980016,
+          0.000008927540517700715,
+          0.000962161231372986,
+          0.5690360552827591
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 6,
+        "rmsMeters": 27.15095269258156,
+        "maxMeters": 44.765932585374436,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Extérieur / rez-de-chaussée sur la vue générale",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 53.22538725035828,
+        "points": [
+          {
+            "name": "Rail",
+            "x": 474.57,
+            "z": -433.74,
+            "u": 0.055,
+            "v": 0.14708785784797632
+          },
+          {
+            "name": "Emercom",
+            "x": -321.56,
+            "z": 266.74,
+            "u": 0.49166666666666664,
+            "v": 0.8292201382033564
+          },
+          {
+            "name": "Power",
+            "x": -302.89,
+            "z": -367.73,
+            "u": 0.4677777777777778,
+            "v": 0.20533070088845015
+          },
+          {
+            "name": "River",
+            "x": 613.9,
+            "z": 71.3,
+            "u": 0.03,
+            "v": 0.6475814412635735
+          },
+          {
+            "name": "Customs",
+            "x": 280.26,
+            "z": 435.08,
+            "u": 0.1661111111111111,
+            "v": 0.983218163869694
+          },
+          {
+            "name": "Streets",
+            "x": 271.85,
+            "z": -453.65,
+            "u": 0.1711111111111111,
+            "v": 0.14708785784797632
+          }
+        ]
+      }
+    },
+    "reserve": {
+      "path": "assets/forge/reserve.png",
+      "tacticalPath": "https://raidpilot-assets.local/Reserve.svg",
+      "sha256": "b00692eba5c04cdab77429edca280b6bb5d2328da3420c852185c4dc5ce6066f",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://reemr.se/maps/Reserve/Re3mrReserveLossless.png",
+      "referencePage": "https://tarkovforge.com/maps/reserve",
+      "focus": [
+        0.06,
+        0,
+        1,
+        0.76
+      ],
+      "calibration": {
+        "affine": [
+          -0.0014957878203969708,
+          0.00040810060473950207,
+          0.5165770598013676,
+          0.000492545209685731,
+          0.001720682452466415,
+          0.3768630885563541
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 9,
+        "rmsMeters": 14.808344871304117,
+        "maxMeters": 23.071394561322503,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Surface ; les sous-sols illustrés ne partagent pas ce calage",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 29.204220853991682,
+        "points": [
+          {
+            "name": "Heating pipe",
+            "x": -35.26,
+            "z": -180.12,
+            "u": 0.482421875,
+            "v": 0.04600694444444445
+          },
+          {
+            "name": "Exit woods",
+            "x": 36.53,
+            "z": -221.56,
+            "u": 0.38525390625,
+            "v": 0.024305555555555556
+          },
+          {
+            "name": "Scav lands",
+            "x": -127.9,
+            "z": -142.59,
+            "u": 0.63427734375,
+            "v": 0.08680555555555555
+          },
+          {
+            "name": "Customs",
+            "x": -195.85,
+            "z": -115.66,
+            "u": 0.74462890625,
+            "v": 0.0798611111111111
+          },
+          {
+            "name": "Woods",
+            "x": 215.99,
+            "z": -202.36,
+            "u": 0.1220703125,
+            "v": 0.12239583333333333
+          },
+          {
+            "name": "Lighthouse",
+            "x": 238.75,
+            "z": -124.28,
+            "u": 0.09521484375,
+            "v": 0.2526041666666667
+          },
+          {
+            "name": "Hole fence",
+            "x": -261.43,
+            "z": 48.52,
+            "u": 0.9560546875,
+            "v": 0.3064236111111111
+          },
+          {
+            "name": "Train",
+            "x": 140.83,
+            "z": -146.25,
+            "u": 0.26513671875,
+            "v": 0.2170138888888889
+          },
+          {
+            "name": "Checkpoint",
+            "x": 61.97,
+            "z": 134.31,
+            "u": 0.46630859375,
+            "v": 0.6579861111111112
+          }
+        ]
+      }
+    },
+    "lighthouse": {
+      "path": "assets/forge/lighthouse.png",
+      "tacticalPath": "https://raidpilot-assets.local/Lighthouse.svg",
+      "sha256": "f7f20b03f7d158d28496a60d1919456c9f145d6ea3ea5fedd11b7c4973315d0b",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://reemr.se/maps/Lighthouse/re3mrLighthouseVERT.png",
+      "referencePage": "https://tarkovforge.com/maps/lighthouse",
+      "focus": [
+        0.4,
+        0.02,
+        0.92,
+        0.84
+      ],
+      "calibration": {
+        "affine": [
+          -0.0006193928285420122,
+          0.000006313413971166644,
+          0.6544554042999506,
+          0.000008190278372831769,
+          0.0005472091070326368,
+          0.5769162680218536
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 11,
+        "rmsMeters": 20.43461402472609,
+        "maxMeters": 38.72222457507437,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Vue générale de surface",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 28.778230483160538,
+        "points": [
+          {
+            "name": "Northern",
+            "x": 114.67,
+            "z": -989.46,
+            "u": 0.5746478873239437,
+            "v": 0.047692307692307694
+          },
+          {
+            "name": "Train",
+            "x": 6.27,
+            "z": -869.48,
+            "u": 0.6471830985915493,
+            "v": 0.10307692307692308
+          },
+          {
+            "name": "Grotto",
+            "x": 180.66,
+            "z": -485.94,
+            "u": 0.5253521126760563,
+            "v": 0.3069230769230769
+          },
+          {
+            "name": "Landing",
+            "x": 133.07,
+            "z": 286.84,
+            "u": 0.5753521126760563,
+            "v": 0.7315384615384616
+          },
+          {
+            "name": "South road",
+            "x": -295.8,
+            "z": 420.6,
+            "u": 0.823943661971831,
+            "v": 0.8115384615384615
+          },
+          {
+            "name": "Path Shoreline",
+            "x": -364.4,
+            "z": -121.4,
+            "u": 0.8767605633802817,
+            "v": 0.49846153846153846
+          },
+          {
+            "name": "Lake",
+            "x": -377.29,
+            "z": -643.19,
+            "u": 0.8788732394366198,
+            "v": 0.2276923076923077
+          },
+          {
+            "name": "Industrial",
+            "x": -152.56,
+            "z": -794.1,
+            "u": 0.7528169014084507,
+            "v": 0.13230769230769232
+          },
+          {
+            "name": "Side tunnel",
+            "x": -68.3,
+            "z": 318.11,
+            "u": 0.721830985915493,
+            "v": 0.7561538461538462
+          },
+          {
+            "name": "Reserve",
+            "x": -293.34,
+            "z": -780.71,
+            "u": 0.8380281690140845,
+            "v": 0.1453846153846154
+          },
+          {
+            "name": "Icebreaker",
+            "x": 147.37,
+            "z": -182.55,
+            "u": 0.5605633802816902,
+            "v": 0.4753846153846154
+          }
+        ]
+      }
+    },
+    "streets-of-tarkov": {
+      "path": "assets/forge/streets-of-tarkov.png",
+      "tacticalPath": "https://raidpilot-assets.local/StreetsOfTarkov.svg",
+      "sha256": "64ea1ac771e5ec516df5e55202b54ccba276ce5ffeee7d6086106fcc4531311d",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://reemr.se/maps/Streets/re3mrStreetsofTarkov.png",
+      "referencePage": "https://tarkovforge.com/maps/streets-of-tarkov",
+      "focus": [
+        0.35,
+        0.09,
+        0.95,
+        1
+      ],
+      "calibration": {
+        "affine": [
+          -0.000867422827920149,
+          -0.0001609650969497357,
+          0.7148392365119418,
+          -0.00019374144757274039,
+          0.0011246804851142297,
+          0.3817354067002554
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 16,
+        "rmsMeters": 12.937966455914466,
+        "maxMeters": 35.324603019997355,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Vue générale de surface",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 15.83481387595996,
+        "points": [
+          {
+            "name": "Crane",
+            "x": 216.12,
+            "z": 272.7,
+            "u": 0.4816666666666667,
+            "v": 0.643979057591623
+          },
+          {
+            "name": "Crash",
+            "x": 312.74,
+            "z": 405.96,
+            "u": 0.3761111111111111,
+            "v": 0.7853403141361257
+          },
+          {
+            "name": "Damaged house",
+            "x": -245.41,
+            "z": 344.82,
+            "u": 0.8783333333333333,
+            "v": 0.8167539267015707
+          },
+          {
+            "name": "Cardinal",
+            "x": 104.84,
+            "z": -161.17,
+            "u": 0.6561111111111111,
+            "v": 0.1823734729493892
+          },
+          {
+            "name": "Pinewood",
+            "x": -114.28,
+            "z": 64.88,
+            "u": 0.8211111111111111,
+            "v": 0.48080279232111695
+          },
+          {
+            "name": "Shopping",
+            "x": -163.82,
+            "z": -5.66,
+            "u": 0.8688888888888889,
+            "v": 0.4144851657940663
+          },
+          {
+            "name": "Stylobate",
+            "x": -44.74,
+            "z": -72.15,
+            "u": 0.7638888888888888,
+            "v": 0.3228621291448517
+          },
+          {
+            "name": "Klimov",
+            "x": -263.41,
+            "z": 43.19,
+            "u": 0.9083333333333333,
+            "v": 0.4642233856893543
+          },
+          {
+            "name": "Kamchat",
+            "x": 259.57,
+            "z": 48.72,
+            "u": 0.475,
+            "v": 0.3769633507853403
+          },
+          {
+            "name": "Courtyard",
+            "x": -150.51,
+            "z": 500.13,
+            "u": 0.7722222222222223,
+            "v": 0.9650959860383944
+          },
+          {
+            "name": "Vent",
+            "x": -124.13,
+            "z": 423.93,
+            "u": 0.7577777777777778,
+            "v": 0.8900523560209425
+          },
+          {
+            "name": "Expo",
+            "x": 213.12,
+            "z": -104.96,
+            "u": 0.5455555555555556,
+            "v": 0.21902268760907503
+          },
+          {
+            "name": "Smugglers",
+            "x": 75.99,
+            "z": 50.01,
+            "u": 0.6422222222222222,
+            "v": 0.4205933682373473
+          },
+          {
+            "name": "Sewer river",
+            "x": -267.04,
+            "z": 219.48,
+            "u": 0.9072222222222223,
+            "v": 0.6815008726003491
+          },
+          {
+            "name": "Primorsky",
+            "x": -2.19,
+            "z": 461.23,
+            "u": 0.6322222222222222,
+            "v": 0.9048865619546248
+          },
+          {
+            "name": "Manhole",
+            "x": 276.11,
+            "z": 345.39,
+            "u": 0.4222222222222222,
+            "v": 0.712914485165794
+          }
+        ]
+      }
+    },
+    "the-lab": {
+      "path": "assets/forge/the-lab.jpg",
+      "tacticalPath": "https://raidpilot-assets.local/the-lab.jpg",
+      "sha256": "35e779cdb7f1c715864827508e80443eb574c4423b1b54f193c90c7b5bc6dd08",
+      "author": "monkimonkimonk",
+      "authorUrl": "https://www.reddit.com/user/monkimonkimonk/",
+      "sourceUrl": "https://tarkovforge.com/map-images/the-lab-2d.jpg",
+      "referencePage": "https://tarkovforge.com/maps/the-lab",
+      "focus": [
+        0.31,
+        0.42,
+        0.69,
+        0.98
+      ],
+      "calibration": {
+        "affine": [
+          -0.00007801816047405711,
+          0.0017179221499158093,
+          1.052188009298344,
+          0.0032033479882397796,
+          0.000014360334444081219,
+          1.316928271248129
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 5,
+        "rmsMeters": 0.5444086008310672,
+        "maxMeters": 0.7065365909269575,
+        "points": [
+          {
+            "name": "Blue room door",
+            "x": -123.23,
+            "z": -406.52,
+            "u": 0.3633507853403141,
+            "v": 0.9161616161616162,
+            "sourcePosition": {
+              "x": -123.23,
+              "y": 1.04,
+              "z": -406.52
+            },
+            "sourceId": "2e653b6dd3ae2033cd93efc74c338f2a30ce9ebb"
+          },
+          {
+            "name": "Black room upper door",
+            "x": -132.89,
+            "z": -348.72,
+            "u": 0.46230366492146596,
+            "v": 0.8868686868686869,
+            "sourcePosition": {
+              "x": -132.89,
+              "y": 1.41,
+              "z": -348.72
+            },
+            "sourceId": "6b9c65d4d24e1df1f5df7cf787875741de5aa980"
+          },
+          {
+            "name": "Black room lower door",
+            "x": -128.79,
+            "z": -349.92,
+            "u": 0.46230366492146596,
+            "v": 0.898989898989899,
+            "sourcePosition": {
+              "x": -128.79,
+              "y": 1.41,
+              "z": -349.92
+            },
+            "sourceId": "577b9b90d0f1d11d15817ab2114deefb6307f964"
+          },
+          {
+            "name": "Weapon testing left door",
+            "x": -181.97,
+            "z": -318.21,
+            "u": 0.5204188481675392,
+            "v": 0.7303030303030303,
+            "sourcePosition": {
+              "x": -181.97,
+              "y": 1.38,
+              "z": -318.21
+            },
+            "sourceId": "96da8622c621cb42229d48719286ce1d746033f9"
+          },
+          {
+            "name": "Weapon testing bottom door",
+            "x": -179.86,
+            "z": -310.33,
+            "u": 0.5324607329842932,
+            "v": 0.7353535353535353,
+            "sourcePosition": {
+              "x": -179.86,
+              "y": 1.38,
+              "z": -310.33
+            },
+            "sourceId": "ec956305ecff4a40051d641ec96eecfcf30c930e"
+          }
+        ],
+        "leaveOneOut": [
+          {
+            "name": "Blue room door",
+            "meters": 5.169128440751749
+          },
+          {
+            "name": "Black room upper door",
+            "meters": 1.2450969417487712
+          },
+          {
+            "name": "Black room lower door",
+            "meters": 1.5910824473464604
+          },
+          {
+            "name": "Weapon testing left door",
+            "meters": 1.0777720302579443
+          },
+          {
+            "name": "Weapon testing bottom door",
+            "meters": 0.9416265001218271
+          }
+        ],
+        "leaveOneOutRmsMeters": 2.5631992353515076,
+        "leaveOneOutMaxMeters": 5.169128440751749,
+        "scope": "Premier niveau",
+        "worldHeight": [
+          -0.9,
+          3
+        ],
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "independentChecks": [
+          {
+            "plane": "first",
+            "name": "Parking gate entrance face",
+            "x": -231.46,
+            "z": -436.98,
+            "u": 0.3217277486910995,
+            "v": 0.5909090909090909,
+            "sourcePosition": {
+              "x": -231.46,
+              "y": 6.19,
+              "z": -436.98
+            },
+            "sourceId": "99477cb352520521b92ba91a2c1cfd7fc219ad26",
+            "meters": 6.949063686793238
+          },
+          {
+            "plane": "first",
+            "name": "Hangar gate entrance face",
+            "x": -170.49,
+            "z": -240.06,
+            "u": 0.6617801047120419,
+            "v": 0.7717171717171717,
+            "sourcePosition": {
+              "x": -170.49,
+              "y": 5.54,
+              "z": -240.06
+            },
+            "sourceId": "e4449767a7b69f57de8efbd2cf7dd5ee11a8468d",
+            "meters": 5.295508497789577
+          }
+        ],
+        "limitation": "Calage initial sur les repères du dessin ; précision en jeu non validée."
+      },
+      "floorCalibrations": [
+        {
+          "affine": [
+            -0.000012687421090667732,
+            0.0016368603991779838,
+            0.6915487481244549,
+            0.0031196415235844517,
+            0.000006569931644234986,
+            0.924746099372435
+          ],
+          "width": 1,
+          "height": 1,
+          "controlPoints": 6,
+          "rmsMeters": 2.4720257423257355,
+          "maxMeters": 4.537300015154146,
+          "points": [
+            {
+              "name": "Main elevator",
+              "x": -282.69,
+              "z": -334.73,
+              "u": 0.14712041884816754,
+              "v": 0.045454545454545456,
+              "sourcePosition": {
+                "x": -282.69,
+                "y": -2.81,
+                "z": -334.73
+              },
+              "sourceId": "718b3e098cf256525a98ad84c481876082391b18"
+            },
+            {
+              "name": "Medical elevator",
+              "x": -112.3,
+              "z": -344.04,
+              "u": 0.12879581151832462,
+              "v": 0.5747474747474748,
+              "sourcePosition": {
+                "x": -112.3,
+                "y": -3.11,
+                "z": -344.04
+              },
+              "sourceId": "9f0ea7a638bbcc3e2d855a66ef7a9f643cc06265"
+            },
+            {
+              "name": "Ventilation shaft",
+              "x": -145.06,
+              "z": -396.83,
+              "u": 0.040837696335078534,
+              "v": 0.47474747474747475,
+              "sourcePosition": {
+                "x": -145.06,
+                "y": -2.46,
+                "z": -396.83
+              },
+              "sourceId": "bb32a5dbbe8116e0765ed80a5ec7980e47676dc6"
+            },
+            {
+              "name": "Main elevator power",
+              "x": -271.439,
+              "z": -366.10498,
+              "u": 0.09633507853403141,
+              "v": 0.0696969696969697,
+              "sourcePosition": {
+                "x": -271.439,
+                "y": -2.380001,
+                "z": -366.10498
+              },
+              "sourceId": "911ef57b76415c1d42fdba3b5c8fdb587dd229a7"
+            },
+            {
+              "name": "Medical elevator power",
+              "x": -124.758,
+              "z": -313.806,
+              "u": 0.17670157068062828,
+              "v": 0.5343434343434343,
+              "sourcePosition": {
+                "x": -124.758,
+                "y": -2.31599617,
+                "z": -313.806
+              },
+              "sourceId": "014e9122e0fad99bcff6f93161712c3c6e1a2a75"
+            },
+            {
+              "name": "Cargo elevator power",
+              "x": -121.007996,
+              "z": -353.548,
+              "u": 0.1206806282722513,
+              "v": 0.5373737373737374,
+              "sourcePosition": {
+                "x": -121.007996,
+                "y": -2.83698225,
+                "z": -353.548
+              },
+              "sourceId": "c39cf1e7caac3b830c00b539ee12dfddeb061e2b"
+            }
+          ],
+          "leaveOneOut": [
+            {
+              "name": "Main elevator",
+              "meters": 3.945531586396688
+            },
+            {
+              "name": "Medical elevator",
+              "meters": 1.5070124598217407
+            },
+            {
+              "name": "Ventilation shaft",
+              "meters": 9.53523631758071
+            },
+            {
+              "name": "Main elevator power",
+              "meters": 3.8561499082599227
+            },
+            {
+              "name": "Medical elevator power",
+              "meters": 4.033267614140537
+            },
+            {
+              "name": "Cargo elevator power",
+              "meters": 6.1271562721178014
+            }
+          ],
+          "leaveOneOutRmsMeters": 5.438109681231499,
+          "leaveOneOutMaxMeters": 9.53523631758071,
+          "scope": "Niveau technique",
+          "worldHeight": [
+            -10000,
+            -0.9
+          ],
+          "status": "initial-landmark-fit",
+          "validatedInRaid": false,
+          "independentChecks": [
+            {
+              "plane": "technical",
+              "name": "Sewage conduit",
+              "x": -122.89,
+              "z": -258.32,
+              "u": 0.26544502617801047,
+              "v": 0.4919191919191919,
+              "sourcePosition": {
+                "x": -122.89,
+                "y": -3.66,
+                "z": -258.32
+              },
+              "sourceId": "70e59e240344a72e8dbb151c370f32851997fd50",
+              "meters": 15.60672571276866
+            },
+            {
+              "plane": "technical",
+              "name": "Sewage pump",
+              "x": -136.76,
+              "z": -254.510513,
+              "u": 0.26544502617801047,
+              "v": 0.4702020202020202,
+              "sourcePosition": {
+                "x": -136.76,
+                "y": -2.82599926,
+                "z": -254.510513
+              },
+              "sourceId": "a948c3ba250ffcaaa508230d0b3392bf09cb6964",
+              "meters": 10.885988145374
+            }
+          ],
+          "limitation": "Dessin schématique : écart de 11 à 16 m observé sur les repères des égouts ; précision en jeu non validée."
+        },
+        {
+          "affine": [
+            0.000026619489899949926,
+            0.001730258878440627,
+            1.404256809793615,
+            0.0030101824704952067,
+            -0.00007782431540535679,
+            0.848357732329848
+          ],
+          "width": 1,
+          "height": 1,
+          "controlPoints": 8,
+          "rmsMeters": 1.0669408730303303,
+          "maxMeters": 1.750971310164881,
+          "points": [
+            {
+              "name": "Red room door",
+              "x": -257.22,
+              "z": -322.93,
+              "u": 0.8390052356020943,
+              "v": 0.1,
+              "sourcePosition": {
+                "x": -257.22,
+                "y": 5.25,
+                "z": -322.93
+              },
+              "sourceId": "035905a190db56d233238cdd56c01cd8f79ed0c0"
+            },
+            {
+              "name": "Violet room door",
+              "x": -261.99,
+              "z": -317.24,
+              "u": 0.8460732984293193,
+              "v": 0.08787878787878788,
+              "sourcePosition": {
+                "x": -261.99,
+                "y": 5.15,
+                "z": -317.24
+              },
+              "sourceId": "8b40ef064ab348da611f5f26e4bdf2d90a963cea"
+            },
+            {
+              "name": "Yellow room door",
+              "x": -212.69,
+              "z": -376.54,
+              "u": 0.7481675392670157,
+              "v": 0.23434343434343435,
+              "sourcePosition": {
+                "x": -212.69,
+                "y": 5.15,
+                "z": -376.54
+              },
+              "sourceId": "ecb5504f3bfbb161c114e263611c30bf89b8a0c2"
+            },
+            {
+              "name": "Green room door",
+              "x": -135.9,
+              "z": -346.97,
+              "u": 0.8,
+              "v": 0.4626262626262626,
+              "sourcePosition": {
+                "x": -135.9,
+                "y": 5.19,
+                "z": -346.97
+              },
+              "sourceId": "05963f7358b42b260526df45e60b5755d09c0366"
+            },
+            {
+              "name": "Manager left door",
+              "x": -165.25,
+              "z": -349.22,
+              "u": 0.7965968586387434,
+              "v": 0.3787878787878788,
+              "sourcePosition": {
+                "x": -165.25,
+                "y": 5.16,
+                "z": -349.22
+              },
+              "sourceId": "ead614596fd574cca7efcb7ab67adce6b93f7f29"
+            },
+            {
+              "name": "Manager right door",
+              "x": -165.24,
+              "z": -338.1,
+              "u": 0.8154450261780105,
+              "v": 0.3787878787878788,
+              "sourcePosition": {
+                "x": -165.24,
+                "y": 5.15,
+                "z": -338.1
+              },
+              "sourceId": "9b5b989dece7e75befe2cb87c1973f04b7553fae"
+            },
+            {
+              "name": "Arsenal door",
+              "x": -250.84,
+              "z": -326.76,
+              "u": 0.8329842931937173,
+              "v": 0.11616161616161616,
+              "sourcePosition": {
+                "x": -250.84,
+                "y": 5.1,
+                "z": -326.76
+              },
+              "sourceId": "2154804303b2611819f44d335a087e3e16d935ed"
+            },
+            {
+              "name": "Cargo elevator",
+              "x": -111.79,
+              "z": -408.55,
+              "u": 0.6931937172774869,
+              "v": 0.5464646464646464,
+              "sourcePosition": {
+                "x": -111.79,
+                "y": 5.38,
+                "z": -408.55
+              },
+              "sourceId": "aecf93f8def45d42877594c4170f5a71b5b41b39"
+            }
+          ],
+          "leaveOneOut": [
+            {
+              "name": "Red room door",
+              "meters": 0.4655631612488221
+            },
+            {
+              "name": "Violet room door",
+              "meters": 2.565509288789989
+            },
+            {
+              "name": "Yellow room door",
+              "meters": 2.458718098928194
+            },
+            {
+              "name": "Green room door",
+              "meters": 2.177518551643796
+            },
+            {
+              "name": "Manager left door",
+              "meters": 0.7633856851723814
+            },
+            {
+              "name": "Manager right door",
+              "meters": 0.885104127834281
+            },
+            {
+              "name": "Arsenal door",
+              "meters": 1.2870739374817848
+            },
+            {
+              "name": "Cargo elevator",
+              "meters": 3.6261459644971246
+            }
+          ],
+          "leaveOneOutRmsMeters": 2.054176525963285,
+          "leaveOneOutMaxMeters": 3.6261459644971246,
+          "scope": "Deuxième niveau",
+          "worldHeight": [
+            3,
+            10000
+          ],
+          "status": "initial-landmark-fit",
+          "validatedInRaid": false,
+          "independentChecks": [
+            {
+              "plane": "second",
+              "name": "Parking gate console",
+              "x": -243.443,
+              "z": -382.513,
+              "u": 0.7392670157068063,
+              "v": 0.1414141414141414,
+              "sourcePosition": {
+                "x": -243.443,
+                "y": 5.076,
+                "z": -382.513
+              },
+              "sourceId": "07fe694c3915c1363b5fa1faa604c68fe5849aba",
+              "meters": 2.3126636277394423
+            },
+            {
+              "plane": "second",
+              "name": "Hangar console",
+              "x": -170.18,
+              "z": -281.508,
+              "u": 0.9136125654450262,
+              "v": 0.35858585858585856,
+              "sourcePosition": {
+                "x": -170.18,
+                "y": 5.185,
+                "z": -281.508
+              },
+              "sourceId": "40ec0101fbf68e6d1b762a72080b9b9b9c91f6f1",
+              "meters": 0.5947614557213385
+            }
+          ],
+          "limitation": "Calage initial sur les repères du dessin ; précision en jeu non validée."
+        }
+      ]
+    },
+    "the-labyrinth": {
+      "path": "assets/forge/labyrinth.png",
+      "tacticalPath": "https://raidpilot-assets.local/the-labyrinth.jpg",
+      "sha256": "88e26541a6ffb5f86b24b24e490a82989deea101b58b9fe2c72540f892737ab6",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://www.re3mr.com/maps/Labyrinth/re3mrLabyrinthPNG.png",
+      "referencePage": "https://tarkovforge.com/maps/labyrinth",
+      "focus": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "calibration": null
+    },
+    "factory": {
+      "path": "assets/forge/factory.png",
+      "tacticalPath": "https://raidpilot-assets.local/Factory.svg",
+      "sha256": "9893433ba729530924b70980ff38ad6e6cfffeb2d9bedad79103ee230b6fc596",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://www.re3mr.com/maps/Factory/FactorybyRe3mr.png",
+      "referencePage": "https://tarkovforge.com/maps/factory",
+      "focus": [
+        0.48,
+        0.1,
+        0.74,
+        0.7
+      ],
+      "calibration": {
+        "affine": [
+          -0.000026020861528733968,
+          -0.0018404763014444737,
+          0.6114194376162192,
+          -0.0037373922713466582,
+          0.00005483577124156975,
+          0.4138791855312869
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 5,
+        "rmsMeters": 2.7554069323719252,
+        "maxMeters": 3.783541965342182,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Rez-de-chaussée",
+        "worldHeight": [
+          -1,
+          3
+        ],
+        "leaveOneOutRmsMeters": 6.2533362952288485,
+        "points": [
+          {
+            "name": "Gate3",
+            "x": 58.71,
+            "z": 60.87,
+            "u": 0.4931640625,
+            "v": 0.20216962524654833
+          },
+          {
+            "name": "Courtyard",
+            "x": 23.76,
+            "z": 68.94,
+            "u": 0.48779296875,
+            "v": 0.3264299802761341
+          },
+          {
+            "name": "Gate0",
+            "x": -63.67,
+            "z": 55.88,
+            "u": 0.51025390625,
+            "v": 0.6538461538461539
+          },
+          {
+            "name": "MedTent",
+            "x": -17.53,
+            "z": -61.27,
+            "u": 0.7197265625,
+            "v": 0.4832347140039448
+          },
+          {
+            "name": "Customs",
+            "x": 17.34,
+            "z": -49.62,
+            "u": 0.7080078125,
+            "v": 0.33826429980276135
+          }
+        ]
+      },
+      "floorCalibrations": [
+        {
+          "affine": [
+            -0.000026020861528733968,
+            -0.0018404763014444737,
+            0.8543509852352669,
+            -0.0037373922713466582,
+            0.00005483577124156975,
+            0.4138791855312869
+          ],
+          "width": 1,
+          "height": 1,
+          "controlPoints": 5,
+          "rmsMeters": 2.7554069323719252,
+          "maxMeters": 3.783541965342182,
+          "status": "initial-fit-registered-image-plane",
+          "validatedInRaid": false,
+          "scope": "Tunnels",
+          "worldHeight": [
+            -10000,
+            -1
+          ],
+          "leaveOneOutRmsMeters": 6.2533362952288485,
+          "points": [
+            {
+              "name": "Gate3",
+              "x": 58.71,
+              "z": 60.87,
+              "u": 0.7360956101190477,
+              "v": 0.20216962524654833
+            },
+            {
+              "name": "Courtyard",
+              "x": 23.76,
+              "z": 68.94,
+              "u": 0.7307245163690477,
+              "v": 0.3264299802761341
+            },
+            {
+              "name": "Gate0",
+              "x": -63.67,
+              "z": 55.88,
+              "u": 0.7531854538690477,
+              "v": 0.6538461538461539
+            },
+            {
+              "name": "MedTent",
+              "x": -17.53,
+              "z": -61.27,
+              "u": 0.9626581101190477,
+              "v": 0.4832347140039448
+            },
+            {
+              "name": "Customs",
+              "x": 17.34,
+              "z": -49.62,
+              "u": 0.9509393601190477,
+              "v": 0.33826429980276135
+            }
+          ],
+          "imageRegistration": {
+            "source": "Rez-de-chaussée",
+            "offsetPixels": [
+              3265,
+              0
+            ],
+            "imageSize": [
+              13440,
+              6656
+            ],
+            "patchCount": 3,
+            "maxPatchDisagreementPixels": 4
+          }
+        },
+        {
+          "affine": [
+            -0.000026020861528733968,
+            -0.0018404763014444737,
+            0.3691575328543144,
+            -0.0037373922713466582,
+            0.00005483577124156975,
+            0.4138791855312869
+          ],
+          "width": 1,
+          "height": 1,
+          "controlPoints": 5,
+          "rmsMeters": 2.7554069323719252,
+          "maxMeters": 3.783541965342182,
+          "status": "initial-fit-registered-image-plane",
+          "validatedInRaid": false,
+          "scope": "Étage intermédiaire",
+          "worldHeight": [
+            3,
+            6
+          ],
+          "leaveOneOutRmsMeters": 6.2533362952288485,
+          "points": [
+            {
+              "name": "Gate3",
+              "x": 58.71,
+              "z": 60.87,
+              "u": 0.2509021577380952,
+              "v": 0.20216962524654833
+            },
+            {
+              "name": "Courtyard",
+              "x": 23.76,
+              "z": 68.94,
+              "u": 0.24553106398809524,
+              "v": 0.3264299802761341
+            },
+            {
+              "name": "Gate0",
+              "x": -63.67,
+              "z": 55.88,
+              "u": 0.2679920014880952,
+              "v": 0.6538461538461539
+            },
+            {
+              "name": "MedTent",
+              "x": -17.53,
+              "z": -61.27,
+              "u": 0.4774646577380952,
+              "v": 0.4832347140039448
+            },
+            {
+              "name": "Customs",
+              "x": 17.34,
+              "z": -49.62,
+              "u": 0.4657459077380952,
+              "v": 0.33826429980276135
+            }
+          ],
+          "imageRegistration": {
+            "source": "Rez-de-chaussée",
+            "offsetPixels": [
+              -3256,
+              0
+            ],
+            "imageSize": [
+              13440,
+              6656
+            ],
+            "patchCount": 3,
+            "maxPatchDisagreementPixels": 4
+          }
+        },
+        {
+          "affine": [
+            -0.000026020861528733968,
+            -0.0018404763014444737,
+            0.12674681856860015,
+            -0.0037373922713466582,
+            0.00005483577124156975,
+            0.4137289451466715
+          ],
+          "width": 1,
+          "height": 1,
+          "controlPoints": 5,
+          "rmsMeters": 2.7554069323719252,
+          "maxMeters": 3.783541965342182,
+          "status": "initial-fit-registered-image-plane",
+          "validatedInRaid": false,
+          "scope": "Étage supérieur",
+          "worldHeight": [
+            6,
+            10000
+          ],
+          "leaveOneOutRmsMeters": 6.2533362952288485,
+          "points": [
+            {
+              "name": "Gate3",
+              "x": 58.71,
+              "z": 60.87,
+              "u": 0.008491443452380953,
+              "v": 0.20201938486193294
+            },
+            {
+              "name": "Courtyard",
+              "x": 23.76,
+              "z": 68.94,
+              "u": 0.0031203497023809534,
+              "v": 0.32627973989151876
+            },
+            {
+              "name": "Gate0",
+              "x": -63.67,
+              "z": 55.88,
+              "u": 0.025581287202380953,
+              "v": 0.6536959134615384
+            },
+            {
+              "name": "MedTent",
+              "x": -17.53,
+              "z": -61.27,
+              "u": 0.23505394345238095,
+              "v": 0.48308447361932944
+            },
+            {
+              "name": "Customs",
+              "x": 17.34,
+              "z": -49.62,
+              "u": 0.22333519345238095,
+              "v": 0.338114059418146
+            }
+          ],
+          "imageRegistration": {
+            "source": "Rez-de-chaussée",
+            "offsetPixels": [
+              -6514,
+              -1
+            ],
+            "imageSize": [
+              13440,
+              6656
+            ],
+            "patchCount": 3,
+            "maxPatchDisagreementPixels": 4
+          }
+        }
+      ]
+    },
+    "ground-zero": {
+      "path": "assets/forge/ground-zero.png",
+      "tacticalPath": "https://raidpilot-assets.local/GroundZero.svg",
+      "sha256": "79baf9939f8942238a240fa70466f94054ae108bf32048acc036d6da181c7194",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://www.re3mr.com/maps/Groundzero/GroundZero.png",
+      "referencePage": "https://tarkovforge.com/maps/ground-zero",
+      "focus": [
+        0.47,
+        0.06,
+        0.94,
+        0.93
+      ],
+      "calibration": {
+        "affine": [
+          -0.0013834976991890804,
+          -0.0000606836605293374,
+          0.7958064069740364,
+          0.0003897401572248371,
+          0.0016454648085505023,
+          0.2941378782221432
+        ],
+        "width": 1,
+        "height": 1,
+        "controlPoints": 6,
+        "rmsMeters": 22.46018813097943,
+        "maxMeters": 39.23546830056164,
+        "status": "initial-landmark-fit",
+        "validatedInRaid": false,
+        "scope": "Vue générale de surface",
+        "worldHeight": null,
+        "leaveOneOutRmsMeters": 41.44317536100081,
+        "points": [
+          {
+            "name": "Emercom",
+            "x": 151.63,
+            "z": -97.46,
+            "u": 0.600375234521576,
+            "v": 0.15076923076923077
+          },
+          {
+            "name": "Scav checkpoint",
+            "x": 25.22,
+            "z": -79.54,
+            "u": 0.7560975609756098,
+            "v": 0.17076923076923076
+          },
+          {
+            "name": "Mira",
+            "x": 218.23,
+            "z": -38.51,
+            "u": 0.5059412132582864,
+            "v": 0.37538461538461537
+          },
+          {
+            "name": "Police",
+            "x": -19.51,
+            "z": 114.94,
+            "u": 0.815509693558474,
+            "v": 0.49153846153846154
+          },
+          {
+            "name": "Nakatani",
+            "x": -16.12,
+            "z": 335.06,
+            "u": 0.8055034396497811,
+            "v": 0.8407692307692308
+          },
+          {
+            "name": "Tartowers",
+            "x": 190.8,
+            "z": 133.39,
+            "u": 0.5078173858661663,
+            "v": 0.5553846153846154
+          }
+        ]
+      }
+    },
+    "terminal": {
+      "path": "assets/forge/terminal.jpg",
+      "tacticalPath": "https://raidpilot-assets.local/Terminal.svg",
+      "sha256": "ba442c4e1bed00cf4417e9cd8592c595ae6b215a079f81e5aebf0665bdd92583",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://reemr.se/maps/Terminal/WikiTerminalMap.jpg",
+      "referencePage": "https://tarkovforge.com/maps/terminal",
+      "focus": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "calibration": null
+    },
+    "icebreaker": {
+      "path": "assets/forge/icebreaker.png",
+      "tacticalPath": "https://raidpilot-assets.local/icebreaker.jpg",
+      "sha256": "13d5cead3b2949981f4dfb8445b2280f3a8e5cc9ba30cee42a1c301e311d3329",
+      "author": "re3mr",
+      "authorUrl": "https://reemr.se",
+      "sourceUrl": "https://reemr.se/maps/Icebreaker/re3mrIcebreaker.png",
+      "referencePage": "https://tarkovforge.com/maps/icebreaker",
+      "focus": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "calibration": null
+    }
+  }
+}

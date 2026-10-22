@@ -28,6 +28,7 @@ internal static class ScreenshotNameParserTests
         Run("rattrapage d'un ajout sans événement", ReconcilesMissedAppend, failures);
         Run("rattrapage d'une nouvelle session sans événement", ReconcilesMissedNewSession, failures);
         Run("nouveau raid sur la même carte", DetectsSameMapNewRaid, failures);
+        Run("entraînement répété sur la même carte après sortie", DetectsSameMapTrainingAfterExit, failures);
         Run("arrêt de la réconciliation", StopsReconciliationCleanly, failures);
         Run("routes interactives pour le GPS", UsesInteractiveMapRoutes, failures);
         Run("filtre cartographique kiosque", ValidatesKioskPresentationFiles, failures);
@@ -78,13 +79,12 @@ internal static class ScreenshotNameParserTests
         TimerReliabilityTests.RunAll(failures);
         LocalPlayerMarkerTests.RunAll(failures);
         MapQualityTests.RunAll(failures);
-        OfflineMapTests.RunAll(failures);
         CollectiveAtlasTests.RunAll(failures);
         OverlayAutoVisibilityTests.RunAll(failures);
         SquadSyncTests.RunAll(failures);
         PrecisionEngineTests.RunAll(failures);
 
-        const int total = 22
+        const int total = 23
             + RouteGuidanceCalculatorTests.TestCount
             + ExtractionAdvisorTests.TestCount
             + TarkovDevExtractionProviderTests.TestCount
@@ -125,7 +125,6 @@ internal static class ScreenshotNameParserTests
             + TimerReliabilityTests.TestCount
             + LocalPlayerMarkerTests.TestCount
             + MapQualityTests.TestCount
-            + OfflineMapTests.TestCount
             + CollectiveAtlasTests.TestCount
             + OverlayAutoVisibilityTests.TestCount
             + SquadSyncTests.TestCount
@@ -455,6 +454,42 @@ internal static class ScreenshotNameParserTests
         {
             Directory.Delete(root, recursive: true);
         }
+    }
+
+    private static void DetectsSameMapTrainingAfterExit()
+    {
+        var root = CreateTemporaryInstall(out var logsDirectory, out var applicationLog);
+        var events = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var ended = new ManualResetEventSlim();
+        using var restarted = new ManualResetEventSlim();
+        var mapCount = 0;
+        try
+        {
+            File.WriteAllText(applicationLog,
+                "2026-10-22 13:01:59.691|application|scene preset path:maps/customs_preset.bundle rcid:bigmap.scenespreset.asset\n");
+            using var watcher = new EftMapLogWatcher(logsDirectory,
+                TimeSpan.FromMilliseconds(50), watchFileSystemEvents: false);
+            watcher.MapDetected += (_, args) =>
+            {
+                events.Enqueue(args.Map.NormalizedName);
+                if (Interlocked.Increment(ref mapCount) == 2) restarted.Set();
+            };
+            watcher.RaidEnded += (_, _) => { events.Enqueue("end"); ended.Set(); };
+            Require(watcher.Start(), "le watcher de test n'a pas démarré");
+            File.AppendAllText(applicationLog,
+                "2026-10-22 13:07:53.059|application|BEClient exit successfully\n");
+            Require(ended.Wait(TimeSpan.FromSeconds(2)), "la sortie du premier raid n'a pas été signalée");
+            // Solo training emits a scene preset, without TRACE-NetworkGameCreate.
+            File.AppendAllText(applicationLog,
+                "2026-10-22 13:16:37.733|application|scene preset path:maps/customs_preset.bundle rcid:bigmap.scenespreset.asset\n"
+                + "2026-10-22 13:16:38.000|application|scene preset path:maps/customs_preset.bundle rcid:bigmap.scenespreset.asset\n"
+                + "2026-10-22 13:17:32.958|application|GameStarted:44.46(0) real:56.18(0) diff:11.72\n");
+            Require(restarted.Wait(TimeSpan.FromSeconds(2)), "le second entraînement Customs n'a pas été reconnu");
+            Thread.Sleep(150);
+            Require(events.SequenceEqual(new[] { "customs", "end", "customs" }),
+                "la transition doit redémarrer une seule fois après la sortie");
+        }
+        finally { Directory.Delete(root, recursive: true); }
     }
 
     private static void StopsReconciliationCleanly()

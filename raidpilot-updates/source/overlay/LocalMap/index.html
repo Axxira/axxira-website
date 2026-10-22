@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RaidPilot Local Map</title>
+  <link rel="stylesheet" href="raidpilot-local-map.css">
+</head>
+<body>
+  <div id="rp-root">
+    <header id="toolbar">
+      <button id="layers-btn" type="button" title="Filtres">☰ Couches</button>
+      <select id="map-style" aria-label="Fond de carte"><option value="forge">TarkovForge HD</option><option value="tactical">Tactique</option></select>
+      <select id="profile" aria-label="Profil d'affichage"></select>
+      <input id="search" type="search" placeholder="Rechercher coffre, quête, item…" aria-label="Rechercher sur la carte">
+      <select id="floor" aria-label="Étage"></select>
+      <select id="label-mode" aria-label="Affichage des noms" title="Les noms évitent de se chevaucher">
+        <option value="auto">Noms : auto</option>
+        <option value="hover">Noms : au survol</option>
+      </select>
+      <button id="zoom-out" type="button" title="Dézoomer">−</button>
+      <span id="zoom-value">100%</span>
+      <button id="zoom-in" type="button" title="Zoomer">+</button>
+      <button id="fit" type="button" title="Ajuster la carte">Ajuster</button>
+      <button id="center-player" type="button" title="Centrer sur mon pion">Centrer</button>
+      <button id="calibrate" type="button">Caler le pion</button>
+      <span class="stat"><span id="map-name">—</span> · <span id="marker-count">0/0</span></span>
+    </header>
+
+    <div id="health" class="health warn">INITIALISATION…</div>
+
+    <main id="workspace">
+      <aside id="panel" class="hidden">
+        <div class="panel-title">Afficher sur la carte</div>
+        <div class="panel-subtitle">Points ajoutés par RaidPilot. Les repères dessinés dans le fond restent visibles.</div>
+        <label for="game-mode">Catalogue de quêtes</label>
+        <select id="game-mode"><option value="regular">PvP</option><option value="pve">PvE</option><option value="pvp-season" disabled>PvP saison — indisponible</option></select>
+        <div id="catalogue-status" class="panel-subtitle"></div>
+        <div id="filters"></div>
+      </aside>
+
+      <section id="viewport" aria-label="Carte RaidPilot">
+        <div id="stage">
+          <img id="base-map" alt="">
+          <div id="missing-asset">
+            <strong>Fond de carte local non installé</strong>
+            <span>Le moteur, les coordonnées et les marqueurs restent actifs. Ajoutez un asset autorisé dans LocalMap/assets.</span>
+          </div>
+          <svg id="overlay" xmlns="http://www.w3.org/2000/svg" aria-label="Marqueurs RaidPilot"></svg>
+        </div>
+        <div id="details" aria-live="polite" hidden></div>
+        <div id="tactical-warning" role="status" aria-live="polite" hidden></div>
+        <div id="feature-hud">
+          <div id="raid-timer" aria-label="Temps restant du raid" hidden></div>
+          <div id="guidance-hud" hidden><span id="guidance-arrow" aria-hidden="true">↑</span><div><strong id="guidance-name"></strong><small id="guidance-details"></small></div></div>
+        </div>
+        <div id="calibration-panel" hidden>
+          <strong>Caler le pion · <span id="calibration-map"></span></strong>
+          <p id="calibration-status">Le calage reste propre à cette carte et à ce fond.</p>
+          <select id="calibration-landmark" aria-label="Repère de calage"></select>
+          <button id="calibration-reference" type="button">Pointer ce repère</button>
+          <button id="calibration-position" type="button">Pointer ma position actuelle</button>
+          <button id="calibration-offset" type="button">Décaler le pion ici</button>
+          <button id="calibration-save" type="button" disabled>Enregistrer les 3 repères</button>
+          <button id="calibration-reset" type="button">Calage initial</button>
+          <button id="calibration-close" type="button">Fermer</button>
+        </div>
+        <div id="map-credit"></div>
+      </section>
+    </main>
+    <section id="quest-context" aria-label="Quête proche, progression non vérifiée" hidden><strong id="quest-name"></strong><span id="quest-where"></span><span id="quest-instruction"></span><small id="quest-note"></small></section>
+  </div>
+  <script src="projection.js"></script>
+  <script src="map-calibration.js"></script>
+  <script src="map-display.js"></script>
+  <script src="raid-tactics.js"></script>
+  <script src="automatic-floors.js"></script>
+  <script src="raidpilot-local-map.js"></script>
+  <script src="map-features.js"></script>
+  <script src="legacy-bridge.js"></script>
+</body>
+</html>

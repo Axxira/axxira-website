@@ -1,0 +1,11 @@
+RaidPilot HOTFIX10 — Overlay 0.14.2.10, Launcher 0.2.11, Beacon 0.3.0
+
+Développé par Peko. Les launchers utilisant le canal Stable officiel détectent la mise à jour automatiquement. Ouvrir Mise à jour pour l'installer.
+
+Cartes HD en local, catalogue de quêtes et objets, filtres, extractions et dangers, pion fixe et fond mobile. Correction de la détection d'un nouvel entraînement sur la même carte. Usine : tunnels et plans selon l'altitude. Le Labo : trois plans avec calage initial estimé.
+
+Le launcher conserve le profil de carte et récupère celui laissé dans .previous par un ancien launcher lorsque le profil actuel est absent. Une copie de retour arrière est conservée. Aucun profil personnel n'est distribué.
+
+Essais : dix cartes accessibles lancées en entraînement sans bots/bosses ; déplacement réel observé sur Douanes et Usine. Le nouveau calage du Labo est vérifié par rejeu local ; il reste à retester en jeu. Écart de 11 à 16 mètres sur les repères des égouts du Labo. Le suivi entre les positions F8 est estimé. Labyrinth, Terminal et Icebreaker demandent un calage personnel.
+
+Contrôles de comportement précédents : 96/96 dans WebView2. La publication refait les tests natifs et de carte. Pour tester en groupe, utiliser le même code d'escouade puis F8 sur chaque PC. La réception réelle sur les autres PC reste à confirmer.

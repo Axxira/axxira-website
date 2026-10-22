@@ -77,6 +77,8 @@ Run("état à jour ignore les suffixes Git", () =>
 });
 Run("version affichée suit le binaire réel", () =>
 {
+    Require(UpdateService.NormalizeVersionForDisplay("0.14.2.9") == "0.14.2.9",
+        "numéro du hotfix masqué dans le launcher");
     Require(UpdateService.NormalizeVersionForDisplay("0.2.7") == "0.2.7",
         "version simple mal affichée");
     Require(UpdateService.NormalizeVersionForDisplay("0.2.3+63309c9f") == "0.2.3",
@@ -172,6 +174,9 @@ await RunAsync("installation atomique et rollback", async () =>
         var target = Path.Combine(root, "app");
         Directory.CreateDirectory(target);
         await File.WriteAllTextAsync(Path.Combine(target, "Dummy.exe"), "v1");
+        var profilePath = Path.Combine("UserData", "EBWebView", "Default", "Local Storage", "settings.test");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(target, profilePath))!);
+        await File.WriteAllTextAsync(Path.Combine(target, profilePath), "filters-and-calibration");
         var package = CreatePackage(root, "Dummy.exe", "v2");
         var component = BuildComponent(package, "2.0.0");
         using var service = new UpdateService();
@@ -184,9 +189,35 @@ await RunAsync("installation atomique et rollback", async () =>
         Require(await File.ReadAllTextAsync(Path.Combine(target, "Dummy.exe")) == "v2",
             "nouvelle version non installée");
         Require(Directory.Exists(target + ".previous"), "rollback non conservé");
+        Require(await File.ReadAllTextAsync(Path.Combine(target, profilePath)) == "filters-and-calibration",
+            "réglages de carte perdus pendant la mise à jour");
+        Require(await File.ReadAllTextAsync(Path.Combine(target + ".previous", profilePath)) == "filters-and-calibration",
+            "réglages absents du rollback");
         Require(UpdateService.Rollback(target, "Dummy.exe"), "rollback refusé");
         Require(await File.ReadAllTextAsync(Path.Combine(target, "Dummy.exe")) == "v1",
             "ancienne version non restaurée");
+    }
+    finally { SafeDelete(root); }
+});
+Run("payload embarqué conserve les réglages WebView2", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var target = Path.Combine(root, "app");
+        var bundled = Path.Combine(root, "bundle");
+        var relative = Path.Combine("UserData", "EBWebView", "Default", "Local Storage", "settings.test");
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(target, relative))!);
+        File.WriteAllText(Path.Combine(target, relative), "personal-calibration");
+        Directory.CreateDirectory(bundled);
+        File.Copy(typeof(UpdateService).Assembly.Location, Path.Combine(bundled, "Dummy.exe"));
+        UpdateService.EnsureBundledComponentInstalled(bundled, target, "Dummy.exe");
+        Require(File.Exists(Path.Combine(target, "Dummy.exe")), "payload non installé");
+        Require(File.ReadAllText(Path.Combine(target, relative)) == "personal-calibration",
+            "profil perdu à l'installation du payload");
+        Require(File.ReadAllText(Path.Combine(target + ".previous", relative)) == "personal-calibration",
+            "profil perdu dans la sauvegarde");
+        Require(!Directory.Exists(Path.Combine(bundled, "UserData")), "profil personnel copié dans le paquet public");
     }
     finally { SafeDelete(root); }
 });
@@ -256,12 +287,35 @@ Run("profil d'escouade launcher persistant", () =>
     }
 });
 
+Run("migration depuis ancien launcher sans écraser le profil actuel", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var target = Path.Combine(root, "installed");
+        var previous = target + ".previous";
+        Directory.CreateDirectory(target);
+        Directory.CreateDirectory(Path.Combine(previous, "UserData", "Default"));
+        var saved = Path.Combine("UserData", "Default", "settings");
+        File.WriteAllText(Path.Combine(previous, saved), "filtres-et-calage");
+        UpdateService.EnsureBundledComponentInstalled(Path.Combine(root, "missing-bundle"), target, "RaidPilot.Overlay.exe");
+        Require(File.ReadAllText(Path.Combine(target, saved)) == "filtres-et-calage", "profil précédent non restauré avant retour anticipé");
+        Require(File.Exists(Path.Combine(previous, saved)), "sauvegarde supprimée");
+        File.WriteAllText(Path.Combine(target, saved), "reglage-recent");
+        UpdateService.RecoverPreviousUserData(target);
+        Require(File.ReadAllText(Path.Combine(target, saved)) == "reglage-recent", "profil courant écrasé");
+        Require(UpdateService.IsNewer("0.14.2.9", "0.14.2.10"), "HOTFIX10 non proposé après HOTFIX9");
+        Require(UpdateService.ShouldInstallBundledVersion("0.14.2.9", "0.14.2.10+build"), "payload signé par une révision Git ignoré");
+    }
+    finally { SafeDelete(root); }
+});
+
 if (failures.Count == 0)
 {
-    Console.WriteLine("15/15 tests launcher réussis.");
+    Console.WriteLine("17/17 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/15 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/17 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 

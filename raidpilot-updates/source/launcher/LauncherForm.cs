@@ -997,6 +997,7 @@ internal sealed class LauncherSurface : Control
             _appIcon?.Dispose();
             _appIcon = null;
         }
+
         base.Dispose(disposing);
     }
 
@@ -1120,7 +1121,7 @@ internal sealed class LauncherSurface : Control
 
         using var titleFont = FontOf("Segoe UI Semibold", 8.5F, FontStyle.Bold);
         using var titleBrush = new SolidBrush(Color.FromArgb(128, 148, 158));
-        g.DrawString("TACTICAL COMPANION  ·  WINDOWS", titleFont, titleBrush, x + 22, 12);
+        g.DrawString("TACTICAL COMPANION  ·  WINDOWS — Développé par Peko", titleFont, titleBrush, x + 22, 12);
 
         var minimize = new Rectangle(Width - 86, 5, 34, 28);
         var close = new Rectangle(Width - 46, 5, 34, 28);
@@ -1996,7 +1997,8 @@ internal sealed class SquadLauncherDialog : Form
 
         Controls.Add(new Label
         {
-            Text = codeReadOnly                ? "Modifie le nom qui sera visible par ton équipe."
+            Text = codeReadOnly
+                ? "Modifie le nom qui sera visible par ton équipe."
                 : "Entre le code reçu du joueur qui a créé l'escouade.",
             Location = new Point(24, 55),
             Size = new Size(510, 32),

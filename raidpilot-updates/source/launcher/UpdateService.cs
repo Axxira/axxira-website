@@ -77,6 +77,10 @@ internal sealed class UpdateService : IDisposable
         var core = NormalizeVersionCore(version) ?? version;
         if (Version.TryParse(core, out var parsed))
         {
+            if (parsed.Revision > 0)
+            {
+                return parsed.ToString(4);
+            }
             return parsed.Build > 0
                 ? $"{parsed.Major}.{parsed.Minor}.{parsed.Build}"
                 : $"{parsed.Major}.{parsed.Minor}";
@@ -252,6 +256,8 @@ internal sealed class UpdateService : IDisposable
                 throw new InvalidOperationException(
                     $"L’archive ne contient pas {expectedExecutable}.");
             }
+
+            PreservePortableUserData(targetDirectory, payloadRoot);
 
             if (Directory.Exists(previous))
             {
@@ -578,7 +584,7 @@ finally {
         string? installedVersion,
         string? bundledVersion)
     {
-        if (!Version.TryParse(bundledVersion, out _))
+        if (!Version.TryParse(NormalizeVersionCore(bundledVersion), out _))
         {
             return false;
         }
@@ -587,11 +593,14 @@ finally {
             || IsNewer(installedVersion, bundledVersion);
     }
 
-    private static void EnsureBundledComponentInstalled(
+    internal static void EnsureBundledComponentInstalled(
         string bundledDirectory,
         string targetDirectory,
         string executableName)
     {
+        // Older launchers moved the profile into .previous before updating
+        // themselves. Recover it before the equal-version early return.
+        RecoverPreviousUserData(targetDirectory);
         var bundledExecutable = Path.Combine(bundledDirectory, executableName);
         if (!Directory.Exists(bundledDirectory)
             || !File.Exists(bundledExecutable))
@@ -613,6 +622,7 @@ finally {
         try
         {
             CopyDirectory(bundledDirectory, staging);
+            PreservePortableUserData(targetDirectory, staging);
 
             if (Directory.Exists(previous))
             {
@@ -638,6 +648,29 @@ finally {
                 }
                 throw;
             }
+        }
+        finally
+        {
+            TryDeleteDirectory(staging);
+        }
+    }
+
+    internal static void RecoverPreviousUserData(string targetDirectory)
+    {
+        var target = Path.Combine(targetDirectory, "UserData");
+        var previous = Path.Combine(targetDirectory + ".previous", "UserData");
+        if (!Directory.Exists(targetDirectory) || Directory.Exists(target)
+            || !Directory.Exists(previous))
+        {
+            return;
+        }
+
+        // Copy completely before making it visible; retain the rollback copy.
+        var staging = targetDirectory + ".profile-recovery-" + Guid.NewGuid().ToString("N");
+        try
+        {
+            CopyDirectory(previous, staging);
+            Directory.Move(staging, target);
         }
         finally
         {
@@ -814,6 +847,18 @@ finally {
             || component.SizeBytes is < 1)
         {
             throw new InvalidOperationException($"Composant de mise à jour invalide : {name}.");
+        }
+    }
+
+    private static void PreservePortableUserData(string currentDirectory, string stagedDirectory)
+    {
+        // WebView2 stores map filters and manual map calibration in this
+        // portable profile. Copy it before swapping the binaries so both
+        // the new installation and the rollback retain the user's settings.
+        var profile = Path.Combine(currentDirectory, "UserData");
+        if (Directory.Exists(profile))
+        {
+            CopyDirectory(profile, Path.Combine(stagedDirectory, "UserData"));
         }
     }
 

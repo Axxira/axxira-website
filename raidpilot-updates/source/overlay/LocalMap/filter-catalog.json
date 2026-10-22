@@ -1,0 +1,458 @@
+{
+  "version": "0.14.2-localfirst",
+  "groups": [
+    {
+      "id": "system",
+      "name": "RaidPilot",
+      "default": true,
+      "layers": [
+        {
+          "id": "player-position",
+          "name": "Mon pion",
+          "default": true,
+          "always": true,
+          "kind": "system"
+        },
+        {
+          "id": "teammate",
+          "name": "Escouade",
+          "default": true,
+          "kind": "system"
+        },
+        {
+          "id": "boundary",
+          "name": "Zones sniper / limites",
+          "default": true,
+          "kind": "outline"
+        }
+      ]
+    },
+    {
+      "id": "extracts",
+      "name": "Extractions",
+      "default": true,
+      "layers": [
+        {
+          "id": "extract_pmc",
+          "name": "PMC",
+          "default": true
+        },
+        {
+          "id": "extract_scav",
+          "name": "Scav",
+          "default": true
+        },
+        {
+          "id": "extract_shared",
+          "name": "Communes",
+          "default": true
+        },
+        {
+          "id": "extract_transit",
+          "name": "Transit",
+          "default": true
+        }
+      ]
+    },
+    {
+      "id": "tasks",
+      "name": "Quêtes",
+      "default": true,
+      "layers": [
+        {
+          "id": "quest_item",
+          "name": "Objets de quête",
+          "default": true
+        },
+        {
+          "id": "quest_objective",
+          "name": "Objectifs",
+          "default": true
+        }
+      ]
+    },
+    {
+      "id": "lootable",
+      "name": "Conteneurs / Fouillables",
+      "default": false,
+      "dynamicPrefix": "container_",
+      "layers": [
+        {
+          "id": "container_safe",
+          "name": "Coffres-forts",
+          "default": false,
+          "linked": [
+            "container_bank-safe"
+          ]
+        },
+        {
+          "id": "container_ground-cache",
+          "name": "Caches au sol",
+          "default": false
+        },
+        {
+          "id": "container_buried-barrel-cache",
+          "name": "Caches tonneaux",
+          "default": false
+        },
+        {
+          "id": "container_weapon-box",
+          "name": "Caisses d'armes",
+          "default": false
+        },
+        {
+          "id": "container_wooden-ammo-box",
+          "name": "Caisses de munitions",
+          "default": false
+        },
+        {
+          "id": "container_wooden-crate",
+          "name": "Caisses en bois",
+          "default": false
+        },
+        {
+          "id": "container_grenade-box",
+          "name": "Boîtes de grenades",
+          "default": false
+        },
+        {
+          "id": "container_medbag",
+          "name": "Sacs médicaux",
+          "default": false
+        },
+        {
+          "id": "container_medcase",
+          "name": "Caisses médicales",
+          "default": false
+        },
+        {
+          "id": "container_medical-supply-crate",
+          "name": "Caisses de fournitures médicales",
+          "default": false
+        },
+        {
+          "id": "container_technical-supply-crate",
+          "name": "Caisses techniques",
+          "default": false
+        },
+        {
+          "id": "container_ration-supply-crate",
+          "name": "Caisses de rations",
+          "default": false
+        },
+        {
+          "id": "container_toolbox",
+          "name": "Boîtes à outils",
+          "default": false
+        },
+        {
+          "id": "container_pc-block",
+          "name": "PC",
+          "default": false
+        },
+        {
+          "id": "container_drawer",
+          "name": "Tiroirs",
+          "default": false
+        },
+        {
+          "id": "container_jacket",
+          "name": "Vestes",
+          "default": false
+        },
+        {
+          "id": "container_duffle-bag",
+          "name": "Sacs de sport",
+          "default": false
+        },
+        {
+          "id": "container_plastic-suitcase",
+          "name": "Valises",
+          "default": false
+        },
+        {
+          "id": "container_cash-register",
+          "name": "Caisses enregistreuses",
+          "default": false
+        },
+        {
+          "id": "container_bank-cash-register",
+          "name": "Caisses enregistreuses (banque)",
+          "default": false
+        },
+        {
+          "id": "container_dead-scav",
+          "name": "Corps fouillables",
+          "default": false
+        },
+        {
+          "id": "container_dead-civilian",
+          "name": "Civils morts",
+          "default": false
+        },
+        {
+          "id": "container_pmc-body",
+          "name": "Corps PMC",
+          "default": false
+        },
+        {
+          "id": "container_scav-body",
+          "name": "Corps Scav",
+          "default": false
+        },
+        {
+          "id": "container_shturmans-stash",
+          "name": "Cache de Shturman",
+          "default": false
+        },
+        {
+          "id": "container_festive-airdrop-supply-crate",
+          "name": "Caisse d'airdrop festive",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "loose",
+      "name": "Loot au sol",
+      "default": false,
+      "dynamicPrefix": "loose_",
+      "layers": [
+        {
+          "id": "loose_loot",
+          "name": "Tout le loot au sol",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "spawns",
+      "name": "Spawns",
+      "default": false,
+      "layers": [
+        {
+          "id": "spawn_pmc",
+          "name": "PMC",
+          "default": false
+        },
+        {
+          "id": "spawn_scav",
+          "name": "Scavs",
+          "default": false
+        },
+        {
+          "id": "spawn_sniper_scav",
+          "name": "Sniper Scav",
+          "default": true
+        },
+        {
+          "id": "spawn_boss",
+          "name": "Boss",
+          "default": false
+        },
+        {
+          "id": "spawn_cultist-priest",
+          "name": "Cultistes",
+          "default": false
+        },
+        {
+          "id": "spawn_rogue",
+          "name": "Rogues",
+          "default": false
+        },
+        {
+          "id": "spawn_bloodhound",
+          "name": "Bloodhounds",
+          "default": false
+        },
+        {
+          "id": "spawn_black-div",
+          "name": "Black Division",
+          "default": false
+        },
+        {
+          "id": "spawn_af",
+          "name": "AF",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "hazards",
+      "name": "Dangers",
+      "default": true,
+      "dynamicPrefix": "hazard_",
+      "layers": [
+        {
+          "id": "hazard_minefield",
+          "name": "Mines",
+          "default": true
+        },
+        {
+          "id": "hazard_sniper",
+          "name": "Snipers hors-zone",
+          "default": true
+        },
+        {
+          "id": "hazard_mortar",
+          "name": "Mortiers / artillerie",
+          "default": true
+        },
+        {
+          "id": "hazard",
+          "name": "Autres dangers",
+          "default": true
+        }
+      ]
+    },
+    {
+      "id": "usable",
+      "name": "Utilisables",
+      "default": false,
+      "layers": [
+        {
+          "id": "lock",
+          "name": "Serrures / portes verrouillées",
+          "default": false
+        },
+        {
+          "id": "switch",
+          "name": "Interrupteurs",
+          "default": false
+        },
+        {
+          "id": "stationarygun",
+          "name": "Armes stationnaires",
+          "default": false
+        }
+      ]
+    },
+    {
+      "id": "landmarks",
+      "name": "Repères",
+      "default": true,
+      "layers": [
+        {
+          "id": "place-names",
+          "name": "Noms des lieux",
+          "default": true
+        },
+        {
+          "id": "btr-stop",
+          "name": "Arrêts BTR",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "profiles": {
+    "illustrated": {
+      "name": "Carte + pion",
+      "enabled": [
+        "player-position",
+        "teammate",
+        "boundary",
+        "hazard_minefield"
+      ]
+    },
+    "minimal": {
+      "name": "Minimal",
+      "enabled": [
+        "player-position",
+        "teammate",
+        "boundary",
+        "extract_pmc",
+        "extract_scav",
+        "extract_shared",
+        "extract_transit",
+        "hazard_minefield",
+        "hazard_sniper"
+      ]
+    },
+    "quests": {
+      "name": "Quêtes",
+      "enabled": [
+        "player-position",
+        "teammate",
+        "boundary",
+        "extract_pmc",
+        "extract_scav",
+        "extract_shared",
+        "extract_transit",
+        "quest_item",
+        "quest_objective",
+        "lock",
+        "switch",
+        "hazard_minefield",
+        "hazard_sniper",
+        "place-names"
+      ]
+    },
+    "loot": {
+      "name": "Loot",
+      "enabled": [
+        "player-position",
+        "teammate",
+        "boundary",
+        "extract_pmc",
+        "extract_scav",
+        "extract_shared",
+        "extract_transit",
+        "container_safe",
+        "container_bank-safe",
+        "container_ground-cache",
+        "container_buried-barrel-cache",
+        "container_weapon-box",
+        "container_wooden-ammo-box",
+        "container_wooden-crate",
+        "container_grenade-box",
+        "container_medbag",
+        "container_medcase",
+        "container_medical-supply-crate",
+        "container_technical-supply-crate",
+        "container_ration-supply-crate",
+        "container_toolbox",
+        "container_pc-block",
+        "container_drawer",
+        "container_jacket",
+        "container_duffle-bag",
+        "container_plastic-suitcase",
+        "container_cash-register",
+        "loose_loot",
+        "hazard_minefield",
+        "hazard_sniper",
+        "place-names"
+      ]
+    },
+    "combat": {
+      "name": "Combat / Boss",
+      "enabled": [
+        "player-position",
+        "teammate",
+        "boundary",
+        "extract_pmc",
+        "extract_scav",
+        "extract_shared",
+        "extract_transit",
+        "spawn_pmc",
+        "spawn_scav",
+        "spawn_sniper_scav",
+        "spawn_boss",
+        "spawn_cultist-priest",
+        "spawn_rogue",
+        "spawn_bloodhound",
+        "spawn_black-div",
+        "spawn_af",
+        "hazard_minefield",
+        "hazard_sniper",
+        "hazard_mortar",
+        "stationarygun",
+        "place-names"
+      ]
+    },
+    "complete": {
+      "name": "Complet",
+      "all": true
+    }
+  }
+}

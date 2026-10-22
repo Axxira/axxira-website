@@ -1,10 +1,7 @@
 (() => {
     "use strict";
 
-    const raidPilotAllowedOrigin =
-        location.origin === "https://tarkov.dev"
-        || location.origin === "https://raidpilot.local";
-    if (window.top !== window || !raidPilotAllowedOrigin) {
+    if (window.top !== window || location.origin !== "https://tarkov.dev") {
         return;
     }
 

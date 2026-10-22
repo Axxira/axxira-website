@@ -6,11 +6,18 @@ namespace RaidPilot.Overlay;
 /// </summary>
 internal static class WebNavigationPolicy
 {
-    internal const string OfflineMapHost = "raidpilot.local";
-    internal const string OfflineMapPath = "/OfflineMap.html";
-
     internal static bool TryGetAllowedMapUri(string? value, out Uri? uri)
     {
+        // LocalFirst uses its own host to preserve the legacy offline mapping.
+        if (Uri.TryCreate(value, UriKind.Absolute, out var localFirstUri)
+            && localFirstUri.Scheme == Uri.UriSchemeHttps && localFirstUri.Port == 443
+            && string.Equals(localFirstUri.Host, "raidpilot-map.local", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(localFirstUri.AbsolutePath, "/index.html", StringComparison.OrdinalIgnoreCase))
+        {
+            uri = localFirstUri;
+            return true;
+        }
+
         uri = null;
         if (!Uri.TryCreate(value, UriKind.Absolute, out var candidate)
             || candidate.Scheme != Uri.UriSchemeHttps
@@ -31,13 +38,12 @@ internal static class WebNavigationPolicy
         var offlineMap =
             string.Equals(
                 candidate.Host,
-                OfflineMapHost,
+                "raidpilot.local",
                 StringComparison.OrdinalIgnoreCase)
             && string.Equals(
                 candidate.AbsolutePath,
-                OfflineMapPath,
-                StringComparison.OrdinalIgnoreCase)
-            && IsSafeOfflineMapQuery(candidate.Query);
+                "/OfflineMap.html",
+                StringComparison.OrdinalIgnoreCase);
 
         if (!remoteMap && !offlineMap)
         {
@@ -46,38 +52,6 @@ internal static class WebNavigationPolicy
 
         uri = candidate;
         return true;
-    }
-
-    private static bool IsSafeOfflineMapQuery(string query)
-    {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return false;
-        }
-
-        foreach (var part in query.TrimStart('?')
-            .Split('&', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var separator = part.IndexOf('=');
-            if (separator <= 0)
-            {
-                continue;
-            }
-
-            var key = Uri.UnescapeDataString(part[..separator]);
-            if (!string.Equals(key, "map", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var value = Uri.UnescapeDataString(part[(separator + 1)..]);
-            return value.Length is > 0 and <= 64
-                && value.All(character =>
-                    char.IsAsciiLetterOrDigit(character)
-                    || character is '-' or '_');
-        }
-
-        return false;
     }
 
     internal static bool IsActiveCompletion(

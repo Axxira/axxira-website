@@ -1,0 +1,71 @@
+{
+  "downloads": [
+    {
+      "file": "maps.json",
+      "endpoint": "regular/maps",
+      "table": "maps",
+      "checkedSha256": "f505676253de72b136cd491831a887b8a4e288d33e2e4cc483d1c2806ec1ef47"
+    },
+    {
+      "file": "items.json",
+      "endpoint": "regular/items",
+      "table": "items",
+      "identities": true,
+      "checkedSha256": "0ea512d61a01563b5df682bbe3cc758a5804025e9562e99c2721b977ae1bc750"
+    },
+    {
+      "file": "tasks.json",
+      "endpoint": "regular/tasks",
+      "checkedSha256": "c1765a0c91cc64bf6922b3602c5aa7897f54b5f7b797308ec4a1b87f4b303880",
+      "omitAchievementStatistics": true
+    },
+    {
+      "file": "tasks_en.json",
+      "endpoint": "regular/tasks_en",
+      "checkedSha256": "5d3f134e95020aab87241997a6897c67b84debf1280ea6e6b7021c7a52edf3dc"
+    },
+    {
+      "file": "pve/maps.json",
+      "endpoint": "pve/maps",
+      "table": "maps",
+      "checkedSha256": "741bb59fce51abe00f450bf02bbb62131784484790a97bbd9925b2e289479418"
+    },
+    {
+      "file": "pve/tasks.json",
+      "endpoint": "pve/tasks",
+      "checkedSha256": "39d3597986ce8b7e9ccf972d28f1aff08d3b8241bd1c68bec90678bf84269fa0",
+      "omitAchievementStatistics": true
+    },
+    {
+      "file": "pve/tasks_en.json",
+      "endpoint": "pve/tasks_en",
+      "checkedSha256": "7b972c7c62355f68c53de0cc9508fb50663efff055e137b08074543b5f743462"
+    }
+  ],
+  "translations": [
+    {
+      "file": "maps_fr.json",
+      "sha256": "9ca7e26229134c63b3da209bf29a83a5b33b4494f7cf9557249aebfc57360bf3"
+    },
+    {
+      "file": "maps_en.json",
+      "sha256": "ba7de84f83da7b3bc014ba35b9b6ecdf2a1860ec2d4a9e39c6b7bf837fc1f3bf"
+    },
+    {
+      "file": "items_fr.json",
+      "sha256": "c90d25c4740d6ce5a6d08b97e16d2cf6f2eb66b2b9a38fa987363381652c3ea5"
+    },
+    {
+      "file": "tasks_fr.json",
+      "sha256": "45030337e8f7473dd736dab341d85a2ff289cd17c3f949c6ab94b28d28bf88bc"
+    },
+    {
+      "file": "pve/maps_fr.json",
+      "sha256": "9ca7e26229134c63b3da209bf29a83a5b33b4494f7cf9557249aebfc57360bf3"
+    },
+    {
+      "file": "pve/tasks_fr.json",
+      "sha256": "faced80f19bce3f865fcad454fe9ed9d2abb6c8832762b03c93a459c40f78782"
+    }
+  ]
+}

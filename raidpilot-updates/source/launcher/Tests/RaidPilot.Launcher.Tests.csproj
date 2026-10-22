@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+
+    <Compile Include="..\UpdateService.cs" Link="UpdateService.cs" />
+    <Compile Include="..\..\overlay\SquadRelayClient.cs" Link="Shared\SquadRelayClient.cs" />
+    <Compile Include="..\..\overlay\SquadProfileStore.cs" Link="Shared\SquadProfileStore.cs" />
+  </ItemGroup>
+</Project>
