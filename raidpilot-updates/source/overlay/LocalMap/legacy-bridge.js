@@ -15,7 +15,7 @@
   // Support the previous minimal map bridge as well as the full LocalFirst renderer.
   const canonicalSquadMap = key => typeof api()?.canonicalMapKey === "function"
     ? api().canonicalMapKey(key)
-    : String(key ?? "").trim().toLowerCase().replace(/[\\s_]+/g, "-");
+    : String(key ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
   const ready = () => api()?.health().initialized === true;
   const valid = p => p && p.x != null && p.z != null && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.z));
   function submit(key, fn, next = -1) {
