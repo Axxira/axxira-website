@@ -12,6 +12,10 @@
   let renderedTeamMap = null;
   const pending = new Map();
   const api = () => window.RaidPilotLocalMap;
+  // Support the previous minimal map bridge as well as the full LocalFirst renderer.
+  const canonicalSquadMap = key => typeof api()?.canonicalMapKey === "function"
+    ? api().canonicalMapKey(key)
+    : String(key ?? "").trim().toLowerCase().replace(/[\\s_]+/g, "-");
   const ready = () => api()?.health().initialized === true;
   const valid = p => p && p.x != null && p.z != null && Number.isFinite(Number(p.x)) && Number.isFinite(Number(p.z));
   function submit(key, fn, next = -1) {
@@ -30,7 +34,7 @@
     if (!valid(payload)) return false;
     return submit("player", () => {
       if (!acceptGeneration(payload.generation)) return false;
-      const nextMap = api().canonicalMapKey(payload.map);
+      const nextMap = canonicalSquadMap(payload.map);
       if (currentMap && nextMap !== currentMap) { team.clear(); renderedTeamMap = null; api().setTeam([]); }
       currentMap = nextMap;
       return api().setPlayer({...payload,position:{x:payload.x,y:payload.y,z:payload.z},rotation:payload.yaw});
@@ -127,7 +131,7 @@
         renderedTeamMap = activeMap;
         api().setTeam([]);
       }
-      if (payload.map && api().canonicalMapKey(payload.map) !== activeMap) return false;
+      if (payload.map && canonicalSquadMap(payload.map) !== activeMap) return false;
       const last = latestMemberTimestamp.get(payload.memberId);
       if (last !== undefined && (sequence < 0 || sequence <= last)) return false;
       if (sequence >= 0) latestMemberTimestamp.set(payload.memberId, sequence);

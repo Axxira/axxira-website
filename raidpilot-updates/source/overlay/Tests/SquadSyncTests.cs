@@ -134,7 +134,7 @@ internal static class SquadSyncTests
         Require(bridge.Contains("latestMemberTimestamp", StringComparison.Ordinal)
             && bridge.Contains("sequence <= last", StringComparison.Ordinal)
             && bridge.Contains("sequence < last", StringComparison.Ordinal)
-            && bridge.Contains("canonicalMapKey(payload.map)", StringComparison.Ordinal)
+            && bridge.Contains("canonicalSquadMap(payload.map)", StringComparison.Ordinal)
             && bridge.Contains("__raidPilotRemoveSquadMember = (id, sentAtUnixMs)", StringComparison.Ordinal),
             "pont escouade local sans protection d’ordre et de changement de carte");
     }
