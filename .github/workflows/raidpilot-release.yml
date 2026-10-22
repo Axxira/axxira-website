@@ -193,7 +193,7 @@ jobs:
               url = "$base/RaidPilot-Launcher-v$env:LAUNCHER_VERSION-Windows-x64.zip"
               sha256 = $env:LAUNCHER_SHA
               sizeBytes = [int64]$env:LAUNCHER_SIZE
-              releaseNotes = "Développé par Peko ; HOTFIX10 ; conservation des réglages et récupération du profil après un ancien launcher."
+              releaseNotes = "Launcher 0.2.12 : canal Stable actualisé sans cache intermédiaire ; vérification SHA-256 et sauvegarde de retour arrière conservées. Développé par Peko."
             }
           }
 

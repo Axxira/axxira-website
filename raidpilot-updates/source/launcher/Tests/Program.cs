@@ -25,6 +25,25 @@ Run("source HTTP refusée", () =>
     Require(UpdateService.IsAllowedManifestLocation("https://example.com/manifest.json"),
         "HTTPS refusé");
 });
+Run("rafraîchissement manifeste GitHub sans cache", () =>
+{
+    var official = new Uri(LauncherSettings.StableManifestUrl);
+    var refreshed = UpdateService.BuildFreshManifestUri(official, 1760000000000L);
+    Require(refreshed.Scheme == Uri.UriSchemeHttps, "HTTPS perdu lors du rafraîchissement");
+    Require(refreshed.AbsoluteUri.Contains("raidpilot_refresh=1760000000000", StringComparison.Ordinal),
+        "paramètre anti-cache absent du canal officiel");
+    Require(refreshed.AbsoluteUri.StartsWith(official.GetLeftPart(UriPartial.Path), StringComparison.Ordinal),
+        "adresse du manifeste officiel modifiée");
+    var custom = new Uri("https://example.com/stable.json?tenant=x");
+    Require(UpdateService.BuildFreshManifestUri(custom, 123L) == custom,
+        "source HTTPS personnalisée altérée");
+    var local = new Uri("file:///C:/RaidPilot/manifest.json");
+    Require(UpdateService.BuildFreshManifestUri(local, 123L) == local,
+        "source locale altérée");
+    var withQuery = new Uri(official.AbsoluteUri + "?channel=stable");
+    Require(UpdateService.BuildFreshManifestUri(withQuery, 42L).Query.Contains("channel=stable&raidpilot_refresh=42", StringComparison.Ordinal),
+        "paramètres existants non préservés");
+});
 Run("payload embarqué met à niveau seulement vers une version plus récente", () =>
 {
     Require(UpdateService.ShouldInstallBundledVersion(null, "0.11.1"),
@@ -312,10 +331,10 @@ Run("migration depuis ancien launcher sans écraser le profil actuel", () =>
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("17/17 tests launcher réussis.");
+    Console.WriteLine("18/18 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/17 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/18 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 

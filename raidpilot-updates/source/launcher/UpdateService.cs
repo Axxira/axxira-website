@@ -17,8 +17,9 @@ internal sealed class UpdateService : IDisposable
 
     internal UpdateService()
     {
+        var currentVersion = typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "0.2.12";
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("RaidPilot-Launcher", "0.2.8"));
+            new ProductInfoHeaderValue("RaidPilot-Launcher", currentVersion));
     }
 
     internal static bool IsAllowedManifestLocation(string? value)
@@ -127,6 +128,21 @@ internal sealed class UpdateService : IDisposable
         }
     }
 
+    internal static Uri BuildFreshManifestUri(Uri uri, long cacheToken)
+    {
+        if (uri.IsFile || !uri.Host.Equals("raw.githubusercontent.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return uri;
+        }
+
+        var builder = new UriBuilder(uri);
+        var previousQuery = builder.Query.TrimStart('?');
+        builder.Query = string.IsNullOrEmpty(previousQuery)
+            ? $"raidpilot_refresh={cacheToken}"
+            : $"{previousQuery}&raidpilot_refresh={cacheToken}";
+        return builder.Uri;
+    }
+
     internal async Task<UpdateManifest> LoadManifestAsync(
         string manifestLocation,
         CancellationToken cancellationToken)
@@ -151,8 +167,13 @@ internal sealed class UpdateService : IDisposable
         }
         else
         {
-            using var response = await _httpClient.GetAsync(
-                uri,
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                BuildFreshManifestUri(uri, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()));
+            request.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true, NoStore = true };
+            request.Headers.Pragma.ParseAdd("no-cache");
+            using var response = await _httpClient.SendAsync(
+                request,
                 HttpCompletionOption.ResponseHeadersRead,
                 cancellationToken);
             response.EnsureSuccessStatusCode();
