@@ -78,6 +78,7 @@ internal static class ScreenshotNameParserTests
         TimerReliabilityTests.RunAll(failures);
         LocalPlayerMarkerTests.RunAll(failures);
         MapQualityTests.RunAll(failures);
+        OfflineMapTests.RunAll(failures);
         CollectiveAtlasTests.RunAll(failures);
         OverlayAutoVisibilityTests.RunAll(failures);
         SquadSyncTests.RunAll(failures);
@@ -124,6 +125,7 @@ internal static class ScreenshotNameParserTests
             + TimerReliabilityTests.TestCount
             + LocalPlayerMarkerTests.TestCount
             + MapQualityTests.TestCount
+            + OfflineMapTests.TestCount
             + CollectiveAtlasTests.TestCount
             + OverlayAutoVisibilityTests.TestCount
             + SquadSyncTests.TestCount

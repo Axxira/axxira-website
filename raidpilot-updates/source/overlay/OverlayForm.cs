@@ -10,6 +10,11 @@ namespace RaidPilot.Overlay;
 internal sealed partial class OverlayForm : Form
 {
     private const string DefaultMapUrl = "https://tarkov.dev/map/customs";
+    private const string OfflineMapHost = WebNavigationPolicy.OfflineMapHost;
+    private static readonly HttpClient MapAvailabilityHttpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(4),
+    };
     private const int ToggleVisibilityHotkeyId = 0x5250;
     private const int ToggleInteractionHotkeyId = 0x5251;
     private const int ToggleGpsHotkeyId = 0x5252;
@@ -92,6 +97,7 @@ internal sealed partial class OverlayForm : Form
     private bool _webReady;
     private bool _navigationInProgress;
     private bool _navigationStartPending;
+    private bool _offlineMapMode;
     private bool _gpsEnabled;
     private bool _clickThrough = true;
     private bool _allowClose;
@@ -2541,6 +2547,10 @@ internal sealed partial class OverlayForm : Form
             ApplyMapScaleToWebView();
 
             var core = _webView.CoreWebView2;
+            core.SetVirtualHostNameToFolderMapping(
+                OfflineMapHost,
+                AppContext.BaseDirectory,
+                CoreWebView2HostResourceAccessKind.Allow);
             core.Settings.AreDefaultContextMenusEnabled = false;
             core.Settings.AreDevToolsEnabled = false;
             core.Settings.IsStatusBarEnabled = false;
@@ -2590,8 +2600,23 @@ internal sealed partial class OverlayForm : Form
             // Map detection starts before WebView2 initialization. If EFT has
             // already announced the raid, skip the default Customs navigation
             // entirely instead of loading two maps back-to-back.
-            var initialUrl = _pendingDetectedMap?.Url.AbsoluteUri ?? DefaultMapUrl;
-            BeginWebNavigation(core, initialUrl);
+            var initialMap = _pendingDetectedMap;
+            var remoteInitialUri =
+                initialMap?.Url ?? new Uri(DefaultMapUrl);
+            _offlineMapMode = await ShouldPreferOfflineMapAsync(
+                remoteInitialUri,
+                _formLifetime.Token);
+            var initialUri = _offlineMapMode
+                ? BuildOfflineMapUri(
+                    initialMap?.NormalizedName ?? "customs")
+                : remoteInitialUri;
+            if (_offlineMapMode)
+            {
+                SetStatus(
+                    "tarkov.dev bloqué · carte locale activée",
+                    Color.FromArgb(217, 170, 78));
+            }
+            BeginWebNavigation(core, initialUri.AbsoluteUri);
         }
         catch (OperationCanceledException) when (_formLifetime.IsCancellationRequested)
         {
@@ -2656,6 +2681,11 @@ internal sealed partial class OverlayForm : Form
             return;
         }
 
+        if (await TryFallbackToOfflineMapAsync(args))
+        {
+            return;
+        }
+
         var completedNavigationSequence = _navigationSequence;
         _activeNavigationId = null;
         _activeNavigationUri = null;
@@ -2682,7 +2712,12 @@ internal sealed partial class OverlayForm : Form
         {
             return;
         }
-        SetStatus(_gpsEnabled ? "GPS actif" : "Carte prête");
+        SetStatus(
+            _offlineMapMode
+                ? "Carte locale prête"
+                : _gpsEnabled
+                    ? "GPS actif"
+                    : "Carte prête");
         try
         {
             if (_raidQuestGameMode is { } gameMode)
@@ -4830,7 +4865,8 @@ internal sealed partial class OverlayForm : Form
         string gameMode,
         int raidGeneration)
     {
-        if (gameMode is not ("regular" or "pve" or "pvp-season")
+        if (_offlineMapMode
+            || gameMode is not ("regular" or "pve" or "pvp-season")
             || raidGeneration != _raidGeneration
             || _webView.CoreWebView2 is null
             || !_webReady
@@ -5447,26 +5483,261 @@ internal sealed partial class OverlayForm : Form
     private void UpdateCurrentMapFromSource()
     {
         var source = _webView.Source;
-        if (source is null)
+        if (source is null
+            || !TryGetMapNameFromSource(
+                source,
+                out var normalizedMap))
         {
             return;
         }
 
-        var segments = source.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        if (segments.Length >= 2
-            && string.Equals(segments[0], "map", StringComparison.OrdinalIgnoreCase)
-            && segments[1].All(character => char.IsAsciiLetterOrDigit(character) || character == '-')
-            && EftMapLogParser.TryNormalizeMapToken(segments[1], out var map)
-            && map is not null)
+        if (!string.Equals(
+                _currentMap,
+                normalizedMap,
+                StringComparison.OrdinalIgnoreCase))
         {
-            if (!string.Equals(_currentMap, map.NormalizedName, StringComparison.OrdinalIgnoreCase))
+            _currentMap = normalizedMap;
+            SwitchCollectiveAtlasMap(_currentMap);
+            StartLearnedRouteSession(_currentMap);
+            ResetExtractionGuidance(clearObservation: true);
+        }
+    }
+
+    private static bool IsOfflineMapUri(Uri? uri) =>
+        uri is not null
+        && string.Equals(
+            uri.Scheme,
+            Uri.UriSchemeHttps,
+            StringComparison.OrdinalIgnoreCase)
+        && string.Equals(
+            uri.Host,
+            OfflineMapHost,
+            StringComparison.OrdinalIgnoreCase)
+        && string.Equals(
+            uri.AbsolutePath,
+            WebNavigationPolicy.OfflineMapPath,
+            StringComparison.OrdinalIgnoreCase);
+
+    private static Uri BuildOfflineMapUri(string mapName)
+    {
+        var normalized = new string(
+            (mapName ?? string.Empty)
+                .Trim()
+                .ToLowerInvariant()
+                .Where(character =>
+                    char.IsAsciiLetterOrDigit(character)
+                    || character is '-' or '_')
+                .Take(64)
+                .ToArray());
+        if (normalized.Length == 0)
+        {
+            normalized = "customs";
+        }
+
+        return new Uri(
+            $"https://{OfflineMapHost}"
+            + WebNavigationPolicy.OfflineMapPath
+            + "?map="
+            + Uri.EscapeDataString(normalized));
+    }
+
+    private static bool TryGetMapNameFromSource(
+        Uri source,
+        out string normalizedMap)
+    {
+        normalizedMap = string.Empty;
+        string? token = null;
+
+        if (IsOfflineMapUri(source))
+        {
+            foreach (var part in source.Query.TrimStart('?')
+                .Split('&', StringSplitOptions.RemoveEmptyEntries))
             {
-                _currentMap = map.NormalizedName;
-                SwitchCollectiveAtlasMap(_currentMap);
-                StartLearnedRouteSession(_currentMap);
-                ResetExtractionGuidance(clearObservation: true);
+                var separator = part.IndexOf('=');
+                if (separator <= 0)
+                {
+                    continue;
+                }
+
+                var key = Uri.UnescapeDataString(part[..separator]);
+                if (!string.Equals(
+                        key,
+                        "map",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                token = Uri.UnescapeDataString(
+                    part[(separator + 1)..]);
+                break;
             }
         }
+        else
+        {
+            var segments = source.AbsolutePath.Split(
+                '/',
+                StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 2
+                && string.Equals(
+                    segments[0],
+                    "map",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                token = segments[1];
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(token)
+            || !token.All(character =>
+                char.IsAsciiLetterOrDigit(character)
+                || character is '-' or '_'))
+        {
+            return false;
+        }
+
+        if (EftMapLogParser.TryNormalizeMapToken(
+                token,
+                out var map)
+            && map is not null)
+        {
+            normalizedMap = map.NormalizedName;
+            return true;
+        }
+
+        normalizedMap = token.ToLowerInvariant();
+        return true;
+    }
+
+    private static bool IsCurrentSourceForMap(
+        Uri? source,
+        EftMapRoute map) =>
+        source is not null
+        && TryGetMapNameFromSource(
+            source,
+            out var normalizedMap)
+        && string.Equals(
+            normalizedMap,
+            map.NormalizedName,
+            StringComparison.OrdinalIgnoreCase);
+
+    private static async Task<bool> ShouldPreferOfflineMapAsync(
+        Uri remoteUri,
+        CancellationToken cancellationToken)
+    {
+        if (!string.Equals(
+                remoteUri.Host,
+                "tarkov.dev",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(
+                HttpMethod.Get,
+                remoteUri);
+            request.Headers.UserAgent.ParseAdd(
+                "RaidPilot-MapProbe/0.14.1");
+            using var response =
+                await MapAvailabilityHttpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
+            return !response.IsSuccessStatusCode;
+        }
+        catch (OperationCanceledException)
+            when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private async Task<bool> TryFallbackToOfflineMapAsync(
+        CoreWebView2NavigationCompletedEventArgs args)
+    {
+        var activeUri = _activeNavigationUri;
+        if (activeUri is null
+            || IsOfflineMapUri(activeUri)
+            || !string.Equals(
+                activeUri.Host,
+                "tarkov.dev",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var blocked = !args.IsSuccess;
+        if (!blocked
+            && _webView.CoreWebView2 is { } core)
+        {
+            try
+            {
+                var serialized = await core.ExecuteScriptAsync(
+                    "(() => ((document.title || '') + '\n' "
+                    + "+ (document.body?.innerText || '').slice(0, 1600)))();");
+                var pageText =
+                    JsonSerializer.Deserialize<string>(serialized)
+                    ?? string.Empty;
+                blocked =
+                    pageText.Contains(
+                        "you have been blocked",
+                        StringComparison.OrdinalIgnoreCase)
+                    || pageText.Contains(
+                        "unable to access tarkov.dev",
+                        StringComparison.OrdinalIgnoreCase)
+                    || pageText.Contains(
+                        "access denied",
+                        StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                // A successful remote document that cannot be inspected remains
+                // online; only explicit failure/block evidence triggers fallback.
+            }
+        }
+
+        if (!blocked
+            || _webView.CoreWebView2 is not { } web)
+        {
+            return false;
+        }
+
+        _offlineMapMode = true;
+        var mapName =
+            _pendingDetectedMap?.NormalizedName
+            ?? _currentMap;
+        SetStatus(
+            "tarkov.dev bloqué · bascule carte locale",
+            Color.FromArgb(217, 170, 78));
+        BeginWebNavigation(
+            web,
+            BuildOfflineMapUri(mapName).AbsoluteUri);
+        return true;
+    }
+
+    private void NavigateToOfflineMap(
+        EftMapRoute map,
+        string reason)
+    {
+        if (_webView.CoreWebView2 is not { } core)
+        {
+            return;
+        }
+
+        _offlineMapMode = true;
+        SetStatus(
+            $"Carte locale · {map.NormalizedName} · {reason}",
+            Color.FromArgb(217, 170, 78));
+        BeginWebNavigation(
+            core,
+            BuildOfflineMapUri(
+                map.NormalizedName).AbsoluteUri);
     }
 
     private void EnsureMapLogWatcherStarted()
@@ -5625,9 +5896,9 @@ internal sealed partial class OverlayForm : Form
         }
 
         if (_navigationInProgress
-            && _activeNavigationUri is not null
-            && string.Equals(_activeNavigationUri.Host, map.Url.Host, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(_activeNavigationUri.AbsolutePath, map.Url.AbsolutePath, StringComparison.OrdinalIgnoreCase))
+            && IsCurrentSourceForMap(
+                _activeNavigationUri,
+                map))
         {
             // The correct map is already loading. The pending marker is kept so
             // completion restores the current raid state exactly once.
@@ -5636,24 +5907,38 @@ internal sealed partial class OverlayForm : Form
 
         var source = _webView.Source;
         if (_webReady
-            && source is not null
-            && string.Equals(source.Host, map.Url.Host, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(source.AbsolutePath, map.Url.AbsolutePath, StringComparison.OrdinalIgnoreCase))
+            && IsCurrentSourceForMap(
+                source,
+                map))
         {
             _pendingDetectedMap = null;
             UpdateCurrentMapFromSource();
             return;
         }
 
-        SetStatus($"Carte détectée · {map.NormalizedName}", Color.FromArgb(88, 168, 138));
-        BeginWebNavigation(_webView.CoreWebView2, map.Url.AbsoluteUri);
+        if (_offlineMapMode)
+        {
+            NavigateToOfflineMap(
+                map,
+                "mode offline");
+            return;
+        }
+
+        SetStatus(
+            $"Carte détectée · {map.NormalizedName}",
+            Color.FromArgb(88, 168, 138));
+        BeginWebNavigation(
+            _webView.CoreWebView2,
+            map.Url.AbsoluteUri);
     }
 
     private void BeginWebNavigation(CoreWebView2 core, string url)
     {
         if (!WebNavigationPolicy.TryGetAllowedMapUri(url, out _))
         {
-            throw new ArgumentException("Only tarkov.dev map URLs can be opened.", nameof(url));
+            throw new ArgumentException(
+                "Only RaidPilot map URLs can be opened.",
+                nameof(url));
         }
 
         var previousStartPending = _navigationStartPending;
@@ -5686,9 +5971,9 @@ internal sealed partial class OverlayForm : Form
 
         var source = _webView.Source;
         if (_webReady
-            && source is not null
-            && string.Equals(source.Host, pendingMap.Url.Host, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(source.AbsolutePath, pendingMap.Url.AbsolutePath, StringComparison.OrdinalIgnoreCase))
+            && IsCurrentSourceForMap(
+                source,
+                pendingMap))
         {
             _pendingDetectedMap = null;
             return false;

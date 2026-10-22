@@ -1,7 +1,10 @@
 (() => {
     "use strict";
 
-    if (window.top !== window || location.origin !== "https://tarkov.dev") {
+    const raidPilotAllowedOrigin =
+        location.origin === "https://tarkov.dev"
+        || location.origin === "https://raidpilot.local";
+    if (window.top !== window || !raidPilotAllowedOrigin) {
         return;
     }
 
@@ -234,6 +237,13 @@
             cachedLeafletMapInstance = null;
             cachedLeafletContainer = null;
             return null;
+        }
+
+        const offlineMap = window.__raidPilotOfflineMap;
+        if (isLeafletMapForContainer(offlineMap, container)) {
+            cachedLeafletMapInstance = offlineMap;
+            cachedLeafletContainer = container;
+            return offlineMap;
         }
 
         if (cachedLeafletContainer === container
