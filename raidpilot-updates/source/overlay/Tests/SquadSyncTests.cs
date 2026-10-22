@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class SquadSyncTests
 {
-    internal const int TestCount = 8;
+    internal const int TestCount = 10;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -14,6 +14,8 @@ internal static class SquadSyncTests
         Run("rendu escouade expire les positions anciennes", HasStaleAndExpiryPolicy, failures);
         Run("rendu escouade refuse les poses hors ordre", RejectsOutOfOrderRenderedPoses, failures);
         Run("rendu escouade projette le cap à travers Leaflet", AppliesMapCoordinateRotation, failures);
+        Run("escouade filtre les autres cartes et reconnaît les alias", FiltersForeignMaps, failures);
+        Run("pont local rejette les poses périmées et les retours arrière", HasLocalSquadReplayProtection, failures);
     }
 
     private static void GeneratesShareableCode()
@@ -114,6 +116,27 @@ internal static class SquadSyncTests
             && behavior.Contains("entry.pose.z,", StringComparison.Ordinal)
             && behavior.Contains("Math.atan2(dx, -dy)", StringComparison.Ordinal),
             "les flèches teammates ne projettent pas leur direction par Leaflet");
+    }
+
+    private static void FiltersForeignMaps()
+    {
+        Require(OverlayForm.ShouldRenderSquadPoseForMap("customs", "CUSTOMS"),
+            "carte identique rejetée");
+        Require(OverlayForm.ShouldRenderSquadPoseForMap("labs", "the-lab"),
+            "alias de carte valide rejeté");
+        Require(!OverlayForm.ShouldRenderSquadPoseForMap("woods", "customs"),
+            "pose d’une autre carte acceptée");
+    }
+
+    private static void HasLocalSquadReplayProtection()
+    {
+        var bridge = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "LocalMap", "legacy-bridge.js"));
+        Require(bridge.Contains("latestMemberTimestamp", StringComparison.Ordinal)
+            && bridge.Contains("sequence <= last", StringComparison.Ordinal)
+            && bridge.Contains("sequence < last", StringComparison.Ordinal)
+            && bridge.Contains("canonicalMapKey(payload.map)", StringComparison.Ordinal)
+            && bridge.Contains("__raidPilotRemoveSquadMember = (id, sentAtUnixMs)", StringComparison.Ordinal),
+            "pont escouade local sans protection d’ordre et de changement de carte");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)

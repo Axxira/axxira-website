@@ -862,12 +862,13 @@ function applySnapshot(s) {
 
 function health() {
   return {
-    version:"0.14.2-localfirst-hotfix10",
+    version:"0.14.2-localfirst-hotfix11",
     map: state.mapKey ? "READY" : "WAIT",
     data: state.cacheStatus,
     overlay: "READY",
     position: state.player ? "TRACKING" : "WAIT",
     beacon: state.beaconStatus,
+    teammateCount: state.teammates.length,
     markerCount: state.markers.length,
     floor: state.floor,
     mapKey: state.mapKey,
@@ -883,7 +884,7 @@ function health() {
 function updateHealth() {
   const h = health();
   const cal=h.calibration==="REQUIRED"?" · Caler le pion sur cette vue":h.calibration==="INITIAL_ESTIMATE"?" · Position approximative : calage à affiner":"";
-  refs.health.textContent = state.pendingCalibration ? "Clique sur la carte à l'emplacement choisi. Échap pour annuler." : `HOTFIX10 · ${h.position === "TRACKING" ? "Position reçue" : "En attente de la position EFT"}${cal}${h.data === "MISSING" ? " · Données manquantes" : ""}`;
+  refs.health.textContent = state.pendingCalibration ? "Clique sur la carte à l'emplacement choisi. Échap pour annuler." : `HOTFIX11 · ${h.position === "TRACKING" ? "Position reçue" : "En attente de la position EFT"}${cal}${h.data === "MISSING" ? " · Données manquantes" : ""}`;
   if(h.data==="PARTIAL")refs.health.textContent+=" · Catalogue partiel";
   if(assetInfo().floorCalibrations?.length&&h.calibrationPlane)refs.health.textContent+=` · Plan : ${h.calibrationPlane}`;
   if(state.floor==="AUTO"&&state.automaticFloor)refs.health.textContent+=` · ${state.automaticFloor.name} (${state.automaticFloor.detail})`;
@@ -1108,8 +1109,8 @@ async function init() {
 }
 
 const api = {
-  version:"0.14.2-localfirst-hotfix8",
-  setMap, setPlayer, setPlayerPosition:setPlayer, updatePlayerPosition:setPlayer,
+  version:"0.14.2-localfirst-hotfix11",
+  setMap, canonicalMapKey, setPlayer, setPlayerPosition:setPlayer, updatePlayerPosition:setPlayer,
   setTeam, setTeammates:setTeam, setMarkers:setRuntimeMarkers, setPois:setRuntimeMarkers,
   setFloor, setLevel:setFloor, setCalibration, setBaseAsset, applySnapshot, health, render,
   handleMessage:handleHostMessage

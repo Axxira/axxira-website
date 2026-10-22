@@ -942,6 +942,7 @@
     "the-lab": {
       "aliases": [
         "lab",
+        "labs",
         "the-lab-dark"
       ],
       "rotation": 270,

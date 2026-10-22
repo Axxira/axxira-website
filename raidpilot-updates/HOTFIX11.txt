@@ -1,0 +1,11 @@
+RaidPilot HOTFIX11 — Overlay 0.14.2.11, Launcher 0.2.12, Beacon 0.3.0
+
+Correctif direct sur le canal Stable :
+- Un teammate qui transmet une position depuis une autre carte est retiré immédiatement de la carte courante.
+- Les alias de cartes sont normalisés avant la comparaison C# et locale (dont lab/labs).
+- Une position en retard ou une suppression obsolète ne doit plus remplacer une position récente dans le rendu local.
+- Les changements de carte qui ne rechargent pas la page purgent les anciens marqueurs d'escouade.
+- Le diagnostic de carte inclut teammateCount pour différencier réception et affichage.
+- Tests C# et JavaScript ajoutés pour ces scénarios.
+
+Limites : la localisation individuelle demeure estimée entre recalages F8. Une compilation réussie ne prouve pas la connexion en temps réel entre deux PC. Le bouton Installer la mise à jour reste une action volontaire du joueur.

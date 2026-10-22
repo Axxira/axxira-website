@@ -8,6 +8,8 @@
   let guidanceGeneration = -1;
   let routeGeneration=-1,questConfirmed=false,timerSequence=-1,contextSequence=-1,floorSequence=-1;
   const team = new Map();
+  const latestMemberTimestamp = new Map();
+  let renderedTeamMap = null;
   const pending = new Map();
   const api = () => window.RaidPilotLocalMap;
   const ready = () => api()?.health().initialized === true;
@@ -21,15 +23,16 @@
   }
   function acceptGeneration(next) {
     if (!Number.isInteger(next) || next < generation) return false;
-    if (next > generation) { generation = next; currentMap=null;extractionsConfirmed=false;questConfirmed=false;timerSequence=-1;team.clear();api().resetRaid(); }
+    if (next > generation) { generation = next; currentMap=null;renderedTeamMap=null;extractionsConfirmed=false;questConfirmed=false;timerSequence=-1;team.clear();latestMemberTimestamp.clear();api().resetRaid(); }
     return true;
   }
   window.__raidPilotSetLocalPose = payload => {
     if (!valid(payload)) return false;
     return submit("player", () => {
       if (!acceptGeneration(payload.generation)) return false;
-      if (currentMap && payload.map !== currentMap) { team.clear(); api().setTeam([]); }
-      currentMap = payload.map;
+      const nextMap = api().canonicalMapKey(payload.map);
+      if (currentMap && nextMap !== currentMap) { team.clear(); renderedTeamMap = null; api().setTeam([]); }
+      currentMap = nextMap;
       return api().setPlayer({...payload,position:{x:payload.x,y:payload.y,z:payload.z},rotation:payload.yaw});
     },payload.generation);
   };
@@ -111,19 +114,42 @@
   window.__raidPilotClearFloors=p=>submit("floors",()=>{
     if(!Number.isSafeInteger(p?.sequence)||p.sequence<floorSequence)return false;floorSequence=p.sequence;api().clearFloorPose();return true;
   },p?.sequence);
+  // Keep accepted timestamps as tombstones. A late WebView2 callback
+  // must never resurrect an old teammate after they left this map.
+  const squadSequence = value => Number.isSafeInteger(value) && value > 0 ? value : -1;
   window.__raidPilotSetSquadPose = payload => {
     if (!valid(payload) || !payload.memberId) return false;
+    const sequence = squadSequence(payload.sentAtUnixMs);
     return submit("team:" + payload.memberId, () => {
-      if (payload.map && payload.map !== api().health().mapKey) return false;
+      const activeMap = api().health().mapKey;
+      if (renderedTeamMap !== activeMap) {
+        team.clear();
+        renderedTeamMap = activeMap;
+        api().setTeam([]);
+      }
+      if (payload.map && api().canonicalMapKey(payload.map) !== activeMap) return false;
+      const last = latestMemberTimestamp.get(payload.memberId);
+      if (last !== undefined && (sequence < 0 || sequence <= last)) return false;
+      if (sequence >= 0) latestMemberTimestamp.set(payload.memberId, sequence);
       team.set(payload.memberId, {id:payload.memberId,name:payload.name,position:{x:payload.x,y:payload.y,z:payload.z},rotation:payload.yaw});
       api().setTeam([...team.values()]);
       return true;
-    });
+    }, sequence);
   };
-  window.__raidPilotRemoveSquadMember = id => submit("team:" + id, () => { team.delete(id); api().setTeam([...team.values()]); return true; });
+  window.__raidPilotRemoveSquadMember = (id, sentAtUnixMs) => {
+    const sequence = squadSequence(sentAtUnixMs);
+    return submit("team:" + id, () => {
+      const last = latestMemberTimestamp.get(id);
+      if (sequence >= 0 && last !== undefined && sequence < last) return false;
+      if (sequence >= 0) latestMemberTimestamp.set(id, sequence);
+      team.delete(id);
+      api().setTeam([...team.values()]);
+      return true;
+    }, sequence);
+  };
   window.__raidPilotClearSquad = () => {
     for (const key of pending.keys()) if (key.startsWith("team:")) pending.delete(key);
-    return submit("team-clear", () => { team.clear(); api().setTeam([]); return true; });
+    return submit("team-clear", () => { team.clear(); latestMemberTimestamp.clear(); renderedTeamMap=null; api().setTeam([]); return true; });
   };
   window.addEventListener("raidpilot-local-initialized", () => {
     const queued = [...pending.values()]; pending.clear();

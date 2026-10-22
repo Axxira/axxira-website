@@ -179,7 +179,7 @@ jobs:
               url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
               sha256 = $env:RP_SHA
               sizeBytes = [int64]$env:RP_SIZE
-              releaseNotes = "HOTFIX10 : cartes HD locales, pion centré, plans Usine et Labo, quêtes/objets hors ligne, extractions et dangers. Calage du Labo estimé : nouvel essai en jeu nécessaire."
+              releaseNotes = "HOTFIX11 : marqueurs des coéquipiers filtrés par carte, retrait immédiat après changement de carte, rejet des anciennes positions et contrôles du relais local. La réception réelle sur deux PC reste à confirmer en raid."
             }
             beacon = [ordered]@{
               version = $env:BEACON_VERSION

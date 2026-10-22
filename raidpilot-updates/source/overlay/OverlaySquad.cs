@@ -415,6 +415,12 @@ internal sealed partial class OverlayForm
         });
     }
 
+    internal static bool ShouldRenderSquadPoseForMap(string poseMap, string activeMap) =>
+        string.Equals(
+            RaidPilotLocalMapHost.NormalizeMapKey(poseMap),
+            RaidPilotLocalMapHost.NormalizeMapKey(activeMap),
+            StringComparison.OrdinalIgnoreCase);
+
     private void OnSquadPoseReceived(SquadMemberPose pose)
     {
         WriteSquadDiagnosticSnapshot("pose-received", pose);
@@ -449,9 +455,15 @@ internal sealed partial class OverlayForm
 
         RunOnUiThread(() =>
         {
-            if (string.Equals(pose.Map, _currentMap, StringComparison.OrdinalIgnoreCase))
+            if (ShouldRenderSquadPoseForMap(pose.Map, _currentMap))
             {
                 _ = RenderSquadPoseAsync(pose);
+            }
+            else
+            {
+                // A teammate who moved to another map must not remain a ghost
+                // on this map just because their foreign-map poses keep arriving.
+                _ = RemoveSquadMemberMarkerAsync(pose.MemberId, pose.SentAtUnixMilliseconds);
             }
         });
     }
@@ -522,7 +534,7 @@ internal sealed partial class OverlayForm
     {
         if (!_webReady
             || _webView.CoreWebView2 is null
-            || !string.Equals(pose.Map, _currentMap, StringComparison.OrdinalIgnoreCase))
+            || !ShouldRenderSquadPoseForMap(pose.Map, _currentMap))
         {
             return;
         }
@@ -557,10 +569,7 @@ internal sealed partial class OverlayForm
             var cutoff = DateTimeOffset.UtcNow - SquadMemberRetention;
             poses = _squadMembers.Values
                 .Where(value => value.ReceivedAt >= cutoff
-                    && string.Equals(
-                        value.Pose.Map,
-                        _currentMap,
-                        StringComparison.OrdinalIgnoreCase))
+                    && ShouldRenderSquadPoseForMap(value.Pose.Map, _currentMap))
                 .Select(value => value.Pose)
                 .ToArray();
         }
@@ -587,30 +596,45 @@ internal sealed partial class OverlayForm
         }
     }
 
+    private async Task RemoveSquadMemberMarkerAsync(string memberId, long sentAtUnixMilliseconds)
+    {
+        var core = _webView.CoreWebView2;
+        if (core is null) return;
+        try
+        {
+            var serialized = JsonSerializer.Serialize(memberId);
+            await core.ExecuteScriptAsync(
+                $"window.__raidPilotRemoveSquadMember?.({serialized}, {sentAtUnixMilliseconds}); void 0;");
+        }
+        catch
+        {
+            // A navigation or temporary renderer failure must not interrupt squad tracking.
+        }
+    }
+
     private void PruneSquadMembers()
     {
         var cutoff = DateTimeOffset.UtcNow - SquadMemberRetention;
-        string[] removed;
+        (string MemberId, long SentAtUnixMilliseconds)[] removed;
         lock (_squadGate)
         {
             removed = _squadMembers
                 .Where(pair => pair.Value.ReceivedAt < cutoff)
-                .Select(pair => pair.Key)
+                .Select(pair => (
+                    MemberId: pair.Key,
+                    SentAtUnixMilliseconds: pair.Value.Pose.SentAtUnixMilliseconds))
                 .ToArray();
-            foreach (var memberId in removed)
+            foreach (var member in removed)
             {
-                _squadMembers.Remove(memberId);
+                _squadMembers.Remove(member.MemberId);
             }
         }
 
-        if (_webView.CoreWebView2 is not null)
+        foreach (var member in removed)
         {
-            foreach (var memberId in removed)
-            {
-                var serialized = JsonSerializer.Serialize(memberId);
-                _ = _webView.CoreWebView2.ExecuteScriptAsync(
-                    $"window.__raidPilotRemoveSquadMember?.({serialized}); void 0;");
-            }
+            _ = RemoveSquadMemberMarkerAsync(
+                member.MemberId,
+                member.SentAtUnixMilliseconds);
         }
         RefreshSquadMenu();
     }
