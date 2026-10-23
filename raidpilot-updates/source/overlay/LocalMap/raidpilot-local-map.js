@@ -12,6 +12,7 @@ const state = {
   apiMap: null,
   markers: [],
   player: null,
+  lastPoseReceivedAt: null,
   teammates: [],
   floor: "BASE",
   zoom: 1,
@@ -57,6 +58,8 @@ let viewportSize = null;
 const SVG_NS = "http://www.w3.org/2000/svg";
 const mapZoomMinFactor = 0.20;
 const mapZoomMaxFactor = 32;
+// Map health is observational: never modify measured coordinates or yaw.
+const poseStaleAfterMs = 3000;
 let mapZoomSyncTimer = null;
 const validMapZoomFactor = value => {
   if (value === null || value === undefined || value === "") return null;
@@ -408,7 +411,7 @@ function setHazards(p,kind){state[kind==="mine"?"minePayload":"boundaryPayload"]
 function clearHazards(kind){state[kind==="mine"?"minePayload":"boundaryPayload"]=null;state[kind==="mine"?"mineStatus":"boundaryStatus"]={};render();return true;}
 function setGuidanceTarget(p){state.guidance=p;state.guidanceTarget={map:canonicalMapKey(p.map||state.mapKey),entry:RPRaidTactics.extractionEntries([{id:p.id,labels:[p.name,...(p.aliases||[])]}])[0]||{id:"",labels:[]}};render();return state.markers.filter(isGuidanceTarget).length;}
 function clearGuidanceTarget(){state.guidance=null;state.guidanceTarget=null;render();}
-function resetRaid(){state.raidQuests=null;state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.minePayload=null;state.boundaryStatus={};state.mineStatus={};state.player=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
+function resetRaid(){state.raidQuests=null;state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.mineStatus={};state.boundaryStatus={};state.player=null;state.lastPoseReceivedAt=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
 
 function visibleMarkers() {
   const base = [...state.markers, ...state.runtimeMarkers];
@@ -867,7 +870,7 @@ function setMap(key) {
     refs.mapName.textContent = `Carte inconnue: ${key}`;
     return false;
   }
-  if (state.mapKey !== k) { state.player = null; state.teammates = []; state.runtimeMarkers = []; state.selectedId = null; refs.details.hidden = true; }
+  if (state.mapKey !== k) { state.player = null; state.lastPoseReceivedAt = null; state.teammates = []; state.runtimeMarkers = []; state.selectedId = null; refs.details.hidden = true; }
   if(state.mapKey!==k){
     if(state.raidQuests?.map!==k)state.raidQuests=null;state.learnedRoute=null;state.guidance=null;window.RaidPilotFeatures?.reset();
     if(state.raidExtractions?.map!==k)state.raidExtractions=null;
@@ -893,13 +896,14 @@ function setMap(key) {
 }
 
 function setPlayer(p) {
-  if (!p) { state.player = null; updateTacticalProximity();render(); return; }
+  if (!p) { state.player = null; state.lastPoseReceivedAt = null; updateTacticalProximity();render(); return; }
   const pos = p.position || p;
   if (pos.x == null || pos.z == null || !Number.isFinite(Number(pos.x)) || !Number.isFinite(Number(pos.z))) return false;
   if (p.map && canonicalMapKey(p.map) !== state.mapKey) setMap(p.map);
   const previousCalibrationKey=calibrationKey();
   state.player = { map: state.mapKey, position: {x:Number(pos.x),y:pos.y,z:Number(pos.z)}, rotation:p.rotation ?? p.yaw ?? p.heading,
     uncertainty:p.uncertainty,boundaryWarning:p.boundaryWarning,boundaryCritical:p.boundaryCritical,boundaryDistance:p.boundaryDistance,mineAlert:p.mineAlert,mineDistance:p.mineDistance };
+  state.lastPoseReceivedAt = Date.now();
   if(calibrationKey()!==previousCalibrationKey)loadCalibration();
   updateTacticalProximity();
   if(followingPlayer())centerPlayer();
@@ -924,12 +928,16 @@ function applySnapshot(s) {
 }
 
 function health() {
+  const positionAgeMs = state.player && Number.isFinite(state.lastPoseReceivedAt)
+    ? Math.max(0, Date.now() - state.lastPoseReceivedAt) : null;
+  const positionStale = positionAgeMs !== null && positionAgeMs > poseStaleAfterMs;
   return {
     version:"0.14.2-localfirst-hotfix11",
     map: state.mapKey ? "READY" : "WAIT",
     data: state.cacheStatus,
     overlay: "READY",
-    position: state.player ? "TRACKING" : "WAIT",
+    position: !state.player ? "WAIT" : (positionStale ? "STALE" : "TRACKING"),
+    positionStale, positionAgeMs,
     beacon: state.beaconStatus,
     teammateCount: state.teammates.length,
     markerCount: state.markers.length,
@@ -947,7 +955,13 @@ function health() {
 function updateHealth() {
   const h = health();
   const cal=h.calibration==="REQUIRED"?" · Caler le pion sur cette vue":h.calibration==="INITIAL_ESTIMATE"?" · Position approximative : calage à affiner":"";
-  refs.health.textContent = state.pendingCalibration ? "Clique sur la carte à l'emplacement choisi. Échap pour annuler." : `HOTFIX11 · ${h.position === "TRACKING" ? "Position reçue" : "En attente de la position EFT"}${cal}${h.data === "MISSING" ? " · Données manquantes" : ""}`;
+  const positionLabel = h.position === "STALE"
+    ? `Signal de position interrompu depuis ${Math.ceil(h.positionAgeMs / 1000)} s`
+    : h.position === "TRACKING" ? "Position reçue" : "En attente de la position EFT";
+  refs.overlay.classList.toggle("rp-pose-stale", h.position === "STALE");
+  const staleBanner = $("#position-stale");
+  if (staleBanner) staleBanner.hidden = h.position !== "STALE";
+  refs.health.textContent = state.pendingCalibration ? "Clique sur la carte à l'emplacement choisi. Échap pour annuler." : `HOTFIX11 · ${positionLabel}${cal}${h.data === "MISSING" ? " · Données manquantes" : ""}`;
   if(h.data==="PARTIAL")refs.health.textContent+=" · Catalogue partiel";
   if(assetInfo().floorCalibrations?.length&&h.calibrationPlane)refs.health.textContent+=` · Plan : ${h.calibrationPlane}`;
   if(state.floor==="AUTO"&&state.automaticFloor)refs.health.textContent+=` · ${state.automaticFloor.name} (${state.automaticFloor.detail})`;
@@ -1175,6 +1189,15 @@ async function init() {
   const initial = requested || (state.meta.maps.customs ? "customs" : (Object.keys(state.meta.maps)[0] || "customs"));
   setMap(initial);
   updateHealth();
+  // A pause in 10 Hz host updates must be visible even without a new message.
+  // Update only status and SVG styling; do not redraw coordinates on this timer.
+  if (typeof setInterval === "function") {
+    const poseHealthTimer = setInterval(() => {
+      if (state.initialized && state.player) updateHealth();
+    }, 750);
+    if (typeof addEventListener === "function")
+      addEventListener("pagehide", () => clearInterval(poseHealthTimer), {once:true});
+  }
 
   if (window.chrome?.webview?.addEventListener) {
     window.chrome.webview.addEventListener("message", e => handleHostMessage(e.data));

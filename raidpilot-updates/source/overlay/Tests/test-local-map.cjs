@@ -13,7 +13,7 @@ class Element {
  getBoundingClientRect(){return {width:1200,height:700,left:0,top:0};}
  setPointerCapture(){} get options(){return this.children;}
 }
-const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning'])ids[id]=new Element('div');
+const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale'])ids[id]=new Element('div');
 const listeners={}, messages=[], storage=new Map();
 const context={console,URLSearchParams,Event:class{constructor(type){this.type=type;}},setTimeout,clearTimeout,
  document:{getElementById:id=>ids[id]??null,querySelector:s=>ids[s.slice(1)]??null,createElement:t=>new Element(t),createElementNS:(_,t)=>new Element(t)},
@@ -124,5 +124,25 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  check(messages.some(m=>m.type==='raidpilot-map-zoom-preference'
    && Number.isFinite(m.payload?.factor)),
    'Local map never sent a zoom preference to the native host');
+ // The native pose may stop while the player marker still contains last-known
+ // coordinates. Never report such a marker as a live tracked position.
+ context.__poseTestNow = Date.now() + 4000;
+ vm.runInContext('Date.now = () => __poseTestNow',context);
+ check(api.health().position==='STALE' && api.health().positionStale,
+   'A silent native position stream was incorrectly reported as live');
+ check(api.health().positionAgeMs>3000,'Stale age not preserved in health state');
+ api.render();
+ check(ids['position-stale'].hidden===false,
+   'GPS stale warning is not visible in the non-interactive overlay');
+ check(ids.health.textContent.includes('Signal de position interrompu'),
+   'Health text does not disclose interrupted coordinates');
+ api.setPlayer({position:{x:160,y:2,z:40},rotation:180});
+ check(api.health().position==='TRACKING' && !api.health().positionStale,
+   'First new position did not immediately recover GPS status');
+ check(ids['position-stale'].hidden===true,'Recovered GPS banner was not hidden');
+ api.setPlayer(null);
+ check(api.health().position==='WAIT' && api.health().positionAgeMs===null,
+   'Cleared pose leaked its last freshness timestamp');
+ api.setPlayer({position:{x:160,y:2,z:40},rotation:180});
  console.log(JSON.stringify({status:'PASS',checks,customsPOI:api.health().markerCount,visibleMarkers:ids.overlay.children.filter(e=>e.dataset.markerId).length,playerTransform:marker('__player').getAttribute('transform'),health:ids.health.textContent}));
 })().catch(e=>{console.error(e);process.exitCode=1;});

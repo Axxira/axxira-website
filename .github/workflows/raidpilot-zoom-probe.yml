@@ -6,6 +6,12 @@ on:
     paths:
       - "raidpilot-updates/source/**"
       - ".github/workflows/raidpilot-zoom-probe.yml"
+  pull_request:
+    branches: [raidpilot-updates]
+    paths:
+      - "raidpilot-updates/source/**"
+      - "raidpilot-updates/release-history.json"
+      - ".github/workflows/raidpilot-zoom-probe.yml"
   workflow_dispatch:
 
 permissions:
