@@ -118,6 +118,8 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  image.dispatchEvent(new context.Event('load'));
  check(Math.abs(api.health().zoomFactor-2.25)<1e-9,
    'The restored preference did not survive another map change');
+ api.setPlayer({position:{x:160,y:2,z:40},rotation:180});
+ check(!!marker('__player'),'Player marker did not recover after zoom and map transitions');
  await new Promise(resolve=>setTimeout(resolve,210));
  check(messages.some(m=>m.type==='raidpilot-map-zoom-preference'
    && Number.isFinite(m.payload?.factor)),
