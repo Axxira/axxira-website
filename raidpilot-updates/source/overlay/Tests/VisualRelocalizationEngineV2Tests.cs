@@ -4,11 +4,12 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class VisualRelocalizationEngineV2Tests
 {
-    internal const int TestCount = 8;
+    internal const int TestCount = 9;
 
     internal static void RunAll(ICollection<string> failures)
     {
         Run("relocalisation v2: santé se dégrade avec dérive et âge", HealthDegradesWithDriftAndAge, failures);
+        Run("relocalisation V4: reconnaissance rejetée ne restaure pas la confiance", DeferredVisualCommitIsExplicit, failures);
         Run("relocalisation v2: cadence accélère en rouge", LowResolutionCadenceAcceleratesWhenRed, failures);
         Run("relocalisation v2: haute résolution seulement quand utile", HighResolutionRunsWhenUseful, failures);
         Run("relocalisation v2: keyframe legacy produit micro-correction", LegacyLowResolutionCanSoftCorrect, failures);
@@ -194,6 +195,27 @@ internal static class VisualRelocalizationEngineV2Tests
         var metrics = engine.GetMetrics(now);
         Require(metrics.HardSnaps == 1 && metrics.LoopClosures == 1,
             "métriques de loop closure incorrectes");
+    }
+
+    private static void DeferredVisualCommitIsExplicit()
+    {
+        var engine = ReadyEngine(out var now);
+        var candidate = engine.Evaluate(
+            Pose(10, 0, 10, 45, 6),
+            LowConfirmed(new VisualKeyframePose(10.5, 0, 10.2, 45)),
+            SuperConfirmed(new VisualKeyframePose(10.5, 0, 10.2, 45)),
+            superKeyframesAvailable: true,
+            now,
+            commitImmediately: false);
+        Require(candidate.ShouldCorrect, "La preuve V4 devrait être proposée.");
+        var before = engine.GetMetrics(now);
+        Require(before.AcceptedCorrections == 0 && before.SoftCorrections == 0,
+            "Une proposition non filtrée ne doit pas être comptée comme appliquée.");
+        engine.NoteAppliedCorrection(candidate, now);
+        var after = engine.GetMetrics(now);
+        Require(after.AcceptedCorrections == 1 && after.SoftCorrections == 0
+            && after.MediumCorrections == 1,
+            "La confirmation après application est absente.");
     }
 
     private static VisualRelocalizationEngineV2 ReadyEngine(out long now)

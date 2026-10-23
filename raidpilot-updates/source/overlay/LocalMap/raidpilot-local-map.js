@@ -33,6 +33,8 @@ const state = {
   calibration: null
 };
 state.mapStyle = "forge";
+state.preferredMapStyle = "forge";
+state.uncalibratedFallback = false;
 state.followPlayer = true;
 state.calibrationPoints = [];
 state.pendingCalibration = null;
@@ -117,13 +119,14 @@ function loadPreferences() {
   // the old WebView localStorage preference works if native storage is absent.
   state.zoomFactor = validMapZoomFactor(window.__raidPilotHostZoomFactor)
     ?? storedZoomFactor ?? 1;
+  state.preferredMapStyle = state.mapStyle;
 }
 
 function savePreferences() {
   try {
     localStorage.setItem("raidpilot-forge-map-v6", JSON.stringify({
       enabled: [...state.enabled], labelMode:state.labelMode,
-      mapStyle:state.mapStyle, tacticsVersion:7,
+      mapStyle:state.preferredMapStyle, tacticsVersion:7,
       zoomFactor:state.zoomFactor
     }));
   } catch (_) {}
@@ -864,7 +867,7 @@ function resolveAssetForMap(key) {
   return typeof v === "string" ? v : (state.mapStyle === "tactical" ? v.tacticalPath : v.path) || "";
 }
 
-function setMap(key) {
+function setMap(key, { allowUncalibratedForge = false } = {}) {
   const k = canonicalMapKey(key);
   if (!state.meta?.maps?.[k]) {
     refs.mapName.textContent = `Carte inconnue: ${key}`;
@@ -880,8 +883,19 @@ function setMap(key) {
     state.boundaryStatus={};state.mineStatus={};
   }
   state.mapKey = k; state.mapMeta = state.meta.maps[k]; state.floor = "BASE";
+  state.mapStyle = state.preferredMapStyle;
+  state.uncalibratedFallback = false;
   initializeFloorCatalogue();
   cancelCalibration();state.calibrationPoints=[];refs.calibrationPanel.hidden=true;loadCalibration();
+  // HD illustrations without an affine fit do not support reliable marker
+  // projection. Show the schematic/tactical coordinates instead of hiding
+  // the player. The explicit manual HD option remains available for calage.
+  if (state.mapStyle === "forge" && !allowUncalibratedForge
+      && !activeCalibration(state.player?.position)) {
+    state.mapStyle = "tactical";
+    state.uncalibratedFallback = true;
+  }
+  if (refs.mapStyle) refs.mapStyle.value = state.mapStyle;
   refs.mapName.textContent = k;
   refs.credit.textContent=state.mapStyle==="forge"?`${assetInfo().author || ""} · TarkovForge`:'tarkov.dev · carte locale';
   state.markers = buildMarkersForMap(k);
@@ -963,6 +977,7 @@ function updateHealth() {
   if (staleBanner) staleBanner.hidden = h.position !== "STALE";
   refs.health.textContent = state.pendingCalibration ? "Clique sur la carte à l'emplacement choisi. Échap pour annuler." : `HOTFIX11 · ${positionLabel}${cal}${h.data === "MISSING" ? " · Données manquantes" : ""}`;
   if(h.data==="PARTIAL")refs.health.textContent+=" · Catalogue partiel";
+  if(state.uncalibratedFallback)refs.health.textContent+=" · Fond HD non calibré : vue schématique";
   if(assetInfo().floorCalibrations?.length&&h.calibrationPlane)refs.health.textContent+=` · Plan : ${h.calibrationPlane}`;
   if(state.floor==="AUTO"&&state.automaticFloor)refs.health.textContent+=` · ${state.automaticFloor.name} (${state.automaticFloor.detail})`;
   refs.health.className = h.map === "READY" && h.data !== "MISSING" && h.position === "TRACKING" && !["REQUIRED","INITIAL_ESTIMATE"].includes(h.calibration) ? "health ok" : "health warn";
@@ -1028,7 +1043,10 @@ function saveCalibrationPoints() {
 function changeMapStyle(value) {
   if(!["forge","tactical"].includes(value))return;
   const player=state.player,team=state.teammates;
-  state.mapStyle=value;savePreferences();setMap(state.mapKey);state.player=player;state.teammates=team;render();
+  state.preferredMapStyle=value;
+  state.mapStyle=value;savePreferences();
+  setMap(state.mapKey,{allowUncalibratedForge:value==="forge"});
+  state.player=player;state.teammates=team;render();
 }
 
 function handleHostMessage(raw) {

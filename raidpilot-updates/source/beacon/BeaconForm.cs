@@ -2002,10 +2002,13 @@ internal sealed class BeaconForm : Form
                 pose.YawDegrees,
                 pose.PositionUncertaintyMeters,
                 DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-            await client.SendPoseAsync(message, _lifetime.Token);
+            var transmitted = await client.SendPoseAsync(message, _lifetime.Token);
             if (force)
             {
-                SetStatus("Beacon actif · position F8 envoyée", warning: false);
+                SetStatus(transmitted
+                    ? "Beacon actif · position F8 envoyée"
+                    : "Beacon passif · RaidPilot Overlay transmet déjà la position",
+                    warning: !transmitted);
             }
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested)

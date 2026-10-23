@@ -45,7 +45,7 @@ internal sealed record UpdateManifest
     public List<ReleaseHistoryEntry>? ReleaseHistory { get; init; }
 }
 
-internal sealed record LauncherSettings(string ManifestUrl, string Channel)
+internal sealed record LauncherSettings(string ManifestUrl, string Channel, bool AutoInstallWhenIdle = false)
 {
     internal const string StableManifestUrl =
         "https://raw.githubusercontent.com/Axxira/axxira-website/raidpilot-updates/raidpilot-updates/update-manifest.json";
@@ -67,21 +67,21 @@ internal static class LauncherSettingsStore
 
     internal static string SettingsPath => Path.Combine(SettingsDirectory, "settings.json");
 
-    internal static LauncherSettings Load()
+    internal static LauncherSettings Load() => LoadFromPath(SettingsPath);
+
+    internal static LauncherSettings LoadFromPath(string settingsPath)
     {
         try
         {
-            if (File.Exists(SettingsPath))
+            if (File.Exists(settingsPath))
             {
                 var settings = JsonSerializer.Deserialize<LauncherSettings>(
-                    File.ReadAllText(SettingsPath),
-                    JsonOptions);
+                    File.ReadAllText(settingsPath), JsonOptions);
                 if (settings is not null)
                 {
-                    var sanitized = Sanitize(settings);
-                    return string.IsNullOrWhiteSpace(sanitized.ManifestUrl)
-                        ? LauncherSettings.Default
-                        : sanitized;
+                    // An explicit empty feed is an intentional OFF switch.
+                    // Never silently restore Stable when the user disabled it.
+                    return Sanitize(settings);
                 }
             }
 
@@ -134,7 +134,7 @@ internal static class LauncherSettingsStore
             StringComparison.OrdinalIgnoreCase)
             ? "beta"
             : "stable";
-        return new LauncherSettings(url, channel);
+        return new LauncherSettings(url, channel, settings.AutoInstallWhenIdle);
     }
 }
 

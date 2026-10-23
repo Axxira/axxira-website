@@ -77,6 +77,60 @@ public static class SquadRoomCode
     }
 }
 
+/// <summary>
+/// Per-machine single-writer election. A held file handle is automatically
+/// released by Windows after a process exits or crashes. Passive clients may
+/// receive teammates but cannot duplicate their own outbound coordinates.
+/// </summary>
+internal sealed class SquadBroadcastLease : IDisposable
+{
+    private readonly string _path;
+    private readonly object _gate = new();
+    private FileStream? _handle;
+
+    internal SquadBroadcastLease(string sessionId, string memberId)
+    {
+        var fingerprint = SHA256.HashData(Encoding.UTF8.GetBytes(
+            "raidpilot-broadcast-v1:" + sessionId + ":" + memberId));
+        _path = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "RaidPilot", "squad-writer-" + Convert.ToHexString(fingerprint)[..32] + ".lock");
+    }
+
+    internal bool IsHeld
+    {
+        get { lock (_gate) return _handle is not null; }
+    }
+
+    internal bool TryAcquire()
+    {
+        lock (_gate)
+        {
+            if (_handle is not null) return true;
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
+                _handle = new FileStream(_path, FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite, FileShare.None);
+                return true;
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
+    }
+
+    internal void Release()
+    {
+        lock (_gate)
+        {
+            _handle?.Dispose();
+            _handle = null;
+        }
+    }
+
+    public void Dispose() => Release();
+}
+
 public sealed class SquadRelayClient : IAsyncDisposable
 {
     private const int ProtocolVersion = 1;
@@ -91,6 +145,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
     private readonly SemaphoreSlim _startGate = new(1, 1);
     private readonly SemaphoreSlim _senderGate = new(1, 1);
     private readonly SemaphoreSlim _receiverGate = new(1, 1);
+    private readonly SquadBroadcastLease _broadcastLease;
     private ClientWebSocket? _receiver;
     private Task? _receiverLoop;
     private int _disposed;
@@ -110,6 +165,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
         _sessionId = DeriveRelayTeamKey(normalized);
         _memberId = memberId.Trim();
         _name = NormalizeName(name);
+        _broadcastLease = new SquadBroadcastLease(_sessionId, _memberId);
     }
 
     public string RoomCode => _roomCode;
@@ -117,6 +173,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
     public string Name => _name;
     public bool IsReceiving => _receiverLoop is { IsCompleted: false };
     public bool IsConnected => _receiver?.State == WebSocketState.Open;
+    public bool IsPrimarySender => _broadcastLease.IsHeld;
 
     internal static string DeriveRelayTeamKey(string teamCode)
     {
@@ -147,37 +204,65 @@ public sealed class SquadRelayClient : IAsyncDisposable
         finally { _startGate.Release(); }
     }
 
-    public async Task SendPoseAsync(SquadMemberPose pose, CancellationToken cancellationToken = default)
+    public async Task<bool> SendPoseAsync(
+        SquadMemberPose pose, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(pose);
         if (!string.Equals(pose.MemberId, _memberId, StringComparison.Ordinal)
             || !string.Equals(pose.Name, _name, StringComparison.Ordinal)
             || !IsValidPose(pose))
+        {
             throw new ArgumentException("Pose d'escouade invalide.", nameof(pose));
+        }
 
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken, _lifetime.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(4));
-        // One bidirectional connection per client: the Worker room has six slots.
-        await StartReceivingAsync(timeout.Token).ConfigureAwait(false);
-        await _senderGate.WaitAsync(timeout.Token).ConfigureAwait(false);
-        ClientWebSocket? socket = null;
+        // Beacon and Overlay use the same saved member profile. Only one
+        // sender may hold the lease; a passive Overlay still keeps its
+        // receiver open so teammates remain visible on the map.
+        if (!_broadcastLease.TryAcquire()) return false;
+
         try
         {
-            socket = await EnsureReceiverConnectedAsync(timeout.Token).ConfigureAwait(false);
-            var payload = JsonSerializer.Serialize(new
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken, _lifetime.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(4));
+            await StartReceivingAsync(timeout.Token).ConfigureAwait(false);
+            await _senderGate.WaitAsync(timeout.Token).ConfigureAwait(false);
+            try
             {
-                type = "pose",
-                map = NormalizeMapKey(pose.Map),
-                position = new { x = pose.X, y = pose.Y, z = pose.Z },
-                rotation = Normalize360(pose.YawDegrees),
-                floor = (string?)null,
-            });
-            try { await SendTextAsync(socket, payload, timeout.Token).ConfigureAwait(false); }
-            catch { try { socket.Abort(); } catch { } throw; }
+                var socket = await EnsureReceiverConnectedAsync(
+                    timeout.Token).ConfigureAwait(false);
+                var payload = JsonSerializer.Serialize(new
+                {
+                    type = "pose",
+                    map = NormalizeMapKey(pose.Map),
+                    position = new { x = pose.X, y = pose.Y, z = pose.Z },
+                    rotation = Normalize360(pose.YawDegrees),
+                    floor = (string?)null,
+                });
+                try
+                {
+                    await SendTextAsync(socket, payload, timeout.Token).ConfigureAwait(false);
+                }
+                catch
+                {
+                    try { socket.Abort(); } catch { }
+                    throw;
+                }
+                return true;
+            }
+            finally
+            {
+                _senderGate.Release();
+            }
         }
-        finally { _senderGate.Release(); }
+        catch
+        {
+            // A network failure releases ownership so the other local
+            // component can take over on its next 100 ms send interval.
+            _broadcastLease.Release();
+            throw;
+        }
     }
 
     private async Task ReceiverReconnectLoopAsync(CancellationToken cancellationToken)
@@ -486,6 +571,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
         }
 
         _lifetime.Cancel();
+        _broadcastLease.Release();
         AbortAndDispose(ref _receiver);
         if (_receiverLoop is not null)
         {

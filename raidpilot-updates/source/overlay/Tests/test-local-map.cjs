@@ -83,6 +83,19 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  check(api.health().mapKey==='customs'&&api.health().position==='TRACKING','Map/player not restored');
  check(!context.__raidPilotSetLocalPose({generation:6,map:'customs',x:null,z:null}),'Invalid position accepted');
  check(messages.some(m=>m.type==='raidpilot-local-ready'),'Ready handshake absent');
+ // Maps without a verified affine fit must remain usable without inventing
+ // a projected position on an uncalibrated HD illustration.
+ for (const uncalibrated of ['terminal','icebreaker','the-labyrinth']) {
+   api.setMap(uncalibrated);
+   api.setPlayer({position:{x:0,y:0,z:0},rotation:25});
+   check(api.health().mapStyle==='tactical',
+     'Missing HD calibration did not switch to safe schematic: '+uncalibrated);
+   check(!!marker('__player'),
+     'Schematic fallback did not render native player: '+uncalibrated);
+ }
+ api.setMap('customs');
+ check(api.health().mapStyle==='forge',
+   'Previously selected HD map style did not restore on calibrated maps');
  // A real zoom preference is global across map changes and not reset by
  // loading an image with different natural dimensions.
  const image=ids['base-map'], viewport=ids.viewport;

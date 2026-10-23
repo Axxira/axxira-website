@@ -508,7 +508,31 @@ internal sealed partial class OverlayForm
         _squadSendInProgress = true;
         try
         {
-            await client.SendPoseAsync(pose, _formLifetime.Token);
+            var transmitted = await client.SendPoseAsync(pose, _formLifetime.Token);
+            if (!transmitted)
+            {
+                RunOnUiThread(() =>
+                {
+                    if (ReferenceEquals(client, _squadClient))
+                    {
+                        _squadConnectionState = "Escouade · Beacon transmet ce joueur";
+                        RefreshSquadMenu();
+                    }
+                });
+            }
+            else
+            {
+                RunOnUiThread(() =>
+                {
+                    if (ReferenceEquals(client, _squadClient)
+                        && _squadConnectionState.Contains("Beacon transmet",
+                            StringComparison.Ordinal))
+                    {
+                        _squadConnectionState = "Connectée · émission locale reprise";
+                        RefreshSquadMenu();
+                    }
+                });
+            }
         }
         catch (OperationCanceledException) when (_formLifetime.IsCancellationRequested)
         {

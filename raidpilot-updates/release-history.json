@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "component": "launcher",
+      "version": "0.2.14",
+      "raidPilotVersion": "0.14.2.23",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.14",
+      "date": "2026-10-23",
+      "summary": "RaidPilot 0.14.2.23 / Launcher 0.2.14 — correctifs de fiabilité",
+      "details": "RaidPilot : Precision V4 ne valide et ne compte les repères qu'après application d'une correction acceptée, sans remplacer une ancre F8 par une mesure visuelle partielle; les cartes Terminal, Icebreaker et Labyrinth passent automatiquement en vue schématique tant que leur fond HD n'est pas calibré. Launcher : fenêtre adaptée à l'écran et aux clics haute DPI, préférence de mise à jour désactivée conservée, option d'installation automatique seulement hors EFT/Overlay/Beacon, taille des archives et chemins ZIP contrôlés, reprise après interruption et retour arrière des composants déjà installés si la mise à jour échoue. Les repères HD, droits des images et résultats réels en raid restent à valider. Beacon 0.3.9 : Overlay et Beacon utilisant le même profil ne peuvent plus diffuser deux positions simultanément; élection locale par fichier verrouillé libéré lors de l'arrêt ou d'une coupure de processus. L'affichage indique le mode passif ou la reprise de diffusion. À mesurer avec de vrais joueurs et sous coupures réseau. Menus français de l'Overlay réparés après détection de caractères mal encodés."
+    },
+    {
       "component": "raidpilot",
       "version": "0.14.2.22",
       "raidPilotVersion": "0.14.2.22",

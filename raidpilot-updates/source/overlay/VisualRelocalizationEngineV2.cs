@@ -278,7 +278,8 @@ internal sealed class VisualRelocalizationEngineV2
         VisualKeyframeRecognition lowResolution,
         SuperKeyframeRecognition superKeyframe,
         bool superKeyframesAvailable,
-        long timestamp)
+        long timestamp,
+        bool commitImmediately = true)
     {
         ValidatePose(estimatedPoseAtCapture);
         if (timestamp < 0)
@@ -421,34 +422,7 @@ internal sealed class VisualRelocalizationEngineV2
                 "preuve insuffisante pour la taille du résidu");
         }
 
-        _accepted++;
-        _acceptedResidualTotal += positionResidual;
-        _maximumAcceptedResidual = Math.Max(
-            _maximumAcceptedResidual,
-            positionResidual);
-        switch (mode)
-        {
-            case VisualCorrectionMode.Soft:
-                _soft++;
-                break;
-            case VisualCorrectionMode.Medium:
-                _medium++;
-                break;
-            case VisualCorrectionMode.HardSnap:
-                _hard++;
-                if (globalLoopClosure)
-                {
-                    _loopClosures++;
-                }
-                break;
-        }
-
-        _lastAbsoluteConfirmationAt = Math.Max(
-            _lastAbsoluteConfirmationAt,
-            timestamp);
-        _health = LocalizationHealthState.Green;
-
-        return new VisualRelocalizationDecision(
+        var proposedDecision = new VisualRelocalizationDecision(
             mode,
             source,
             target,
@@ -461,7 +435,7 @@ internal sealed class VisualRelocalizationEngineV2
             maxStep,
             maxYawStep,
             globalLoopClosure,
-            _health,
+            LocalizationHealthState.Green,
             mode switch
             {
                 VisualCorrectionMode.Soft => "micro-correction visuelle",
@@ -469,6 +443,43 @@ internal sealed class VisualRelocalizationEngineV2
                 _ when globalLoopClosure => "loop closure confirmé",
                 _ => "relocalisation absolue forte",
             });
+        if (commitImmediately)
+        {
+            NoteAppliedCorrection(proposedDecision, timestamp);
+        }
+        return proposedDecision;
+    }
+
+    // V4 must not mark visual observations as absolute before its independent
+    // geometry/innovation gate approves them AND the pose is actually corrected.
+    // Legacy V2 keeps commitImmediately=true for backwards compatibility.
+    internal void NoteAppliedCorrection(VisualRelocalizationDecision decision, long timestamp)
+    {
+        if (timestamp < 0 || !decision.ShouldCorrect
+            || !double.IsFinite(decision.PositionResidualMeters)
+            || decision.PositionResidualMeters < 0)
+        {
+            throw new ArgumentException("A confirmed, valid visual correction is required.");
+        }
+        _accepted++;
+        _acceptedResidualTotal += decision.PositionResidualMeters;
+        _maximumAcceptedResidual = Math.Max(
+            _maximumAcceptedResidual, decision.PositionResidualMeters);
+        switch (decision.Mode)
+        {
+            case VisualCorrectionMode.Soft:
+                _soft++;
+                break;
+            case VisualCorrectionMode.Medium:
+                _medium++;
+                break;
+            case VisualCorrectionMode.HardSnap:
+                _hard++;
+                if (decision.GlobalLoopClosure) _loopClosures++;
+                break;
+        }
+        _lastAbsoluteConfirmationAt = Math.Max(_lastAbsoluteConfirmationAt, timestamp);
+        _health = LocalizationHealthState.Green;
     }
 
     internal VisualRelocalizationMetrics GetMetrics(long timestamp)

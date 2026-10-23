@@ -9,6 +9,9 @@ namespace RaidPilot.Launcher;
 internal sealed class UpdateService : IDisposable
 {
     private const int MaximumManifestBytes = 1024 * 1024;
+    private const long MaximumArchiveBytes = 1024L * 1024 * 1024;
+    private const long MaximumExtractedBytes = 4L * 1024 * 1024 * 1024;
+    private const int MaximumZipEntries = 20_000;
     internal const int AutomaticUpdateCheckIntervalMilliseconds = 120_000;
     private readonly HttpClient _httpClient = new()
     {
@@ -267,6 +270,7 @@ internal sealed class UpdateService : IDisposable
                 Directory.Delete(staging, recursive: true);
             }
             Directory.CreateDirectory(staging);
+            ValidateZipArchive(archivePath);
             ZipFile.ExtractToDirectory(archivePath, staging, overwriteFiles: true);
             progress?.Report(82);
 
@@ -360,6 +364,7 @@ internal sealed class UpdateService : IDisposable
                 $"SHA-256 du launcher invalide. Attendu {component.Sha256}, reçu {hash}.");
         }
 
+        ValidateZipArchive(archivePath);
         using (var archive = ZipFile.OpenRead(archivePath))
         {
             var hasLauncher = archive.Entries.Any(entry =>
@@ -619,8 +624,9 @@ finally {
         string targetDirectory,
         string executableName)
     {
-        // Older launchers moved the profile into .previous before updating
-        // themselves. Recover it before the equal-version early return.
+        // Recover after power loss between moving .previous and installing
+        // the candidate. This must precede any bundled-version comparison.
+        RecoverInterruptedComponent(targetDirectory, executableName);
         RecoverPreviousUserData(targetDirectory);
         var bundledExecutable = Path.Combine(bundledDirectory, executableName);
         if (!Directory.Exists(bundledDirectory)
@@ -676,6 +682,42 @@ finally {
         }
     }
 
+    internal static bool RecoverInterruptedComponent(
+        string targetDirectory, string executableName)
+    {
+        if (File.Exists(Path.Combine(targetDirectory, executableName)))
+        {
+            return false;
+        }
+        var previous = targetDirectory + ".previous";
+        if (!File.Exists(Path.Combine(previous, executableName)))
+        {
+            return false;
+        }
+        var incomplete = targetDirectory + ".incomplete-" + Guid.NewGuid().ToString("N");
+        var movedIncomplete = false;
+        if (Directory.Exists(targetDirectory))
+        {
+            Directory.Move(targetDirectory, incomplete);
+            movedIncomplete = true;
+        }
+        try
+        {
+            Directory.Move(previous, targetDirectory);
+            if (movedIncomplete) TryDeleteDirectory(incomplete);
+            return true;
+        }
+        catch
+        {
+            if (movedIncomplete && !Directory.Exists(targetDirectory)
+                && Directory.Exists(incomplete))
+            {
+                Directory.Move(incomplete, targetDirectory);
+            }
+            throw;
+        }
+    }
+
     internal static void RecoverPreviousUserData(string targetDirectory)
     {
         var target = Path.Combine(targetDirectory, "UserData");
@@ -697,6 +739,20 @@ finally {
         {
             TryDeleteDirectory(staging);
         }
+    }
+
+    internal static bool RollbackOrRemove(
+        string targetDirectory, string expectedExecutable, bool existedBefore)
+    {
+        if (existedBefore)
+            return Rollback(targetDirectory, expectedExecutable);
+        try
+        {
+            if (Directory.Exists(targetDirectory))
+                Directory.Delete(targetDirectory, recursive: true);
+            return !Directory.Exists(targetDirectory);
+        }
+        catch { return false; }
     }
 
     internal static bool Rollback(string targetDirectory, string expectedExecutable)
@@ -749,6 +805,10 @@ finally {
             throw new InvalidOperationException("URL de package invalide.");
         }
 
+        if (expectedSize is > MaximumArchiveBytes)
+        {
+            throw new InvalidOperationException("Archive de mise à jour trop volumineuse.");
+        }
         if (uri.IsFile)
         {
             await using var source = new FileStream(
@@ -761,12 +821,14 @@ finally {
                 FileMode.Create,
                 FileAccess.Write,
                 FileShare.None);
-            await CopyWithProgressAsync(
+            var localCopied = await CopyWithProgressAsync(
                 source,
                 target,
                 source.Length,
                 progress,
                 cancellationToken);
+            if (expectedSize is > 0 && localCopied != expectedSize.Value)
+                throw new InvalidOperationException("Taille de package locale inattendue.");
             return;
         }
 
@@ -776,6 +838,8 @@ finally {
             cancellationToken);
         response.EnsureSuccessStatusCode();
         var length = response.Content.Headers.ContentLength ?? expectedSize;
+        if (length is > MaximumArchiveBytes)
+            throw new InvalidOperationException("Archive réseau trop volumineuse.");
         await using var sourceStream = await response.Content.ReadAsStreamAsync(cancellationToken);
         await using var destinationStream = new FileStream(
             destination,
@@ -784,15 +848,17 @@ finally {
             FileShare.None,
             bufferSize: 64 * 1024,
             FileOptions.Asynchronous | FileOptions.SequentialScan);
-        await CopyWithProgressAsync(
+        var copied = await CopyWithProgressAsync(
             sourceStream,
             destinationStream,
             length,
             progress,
             cancellationToken);
+        if (expectedSize is > 0 && copied != expectedSize.Value)
+            throw new InvalidOperationException("Taille téléchargée incompatible avec le manifeste.");
     }
 
-    private static async Task CopyWithProgressAsync(
+    private static async Task<long> CopyWithProgressAsync(
         Stream source,
         Stream destination,
         long? totalLength,
@@ -806,6 +872,8 @@ finally {
         {
             await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
             total += read;
+            if (total > MaximumArchiveBytes)
+                throw new InvalidOperationException("Téléchargement interrompu : taille maximale dépassée.");
             if (totalLength is > 0)
             {
                 var percent = (int)Math.Clamp(total * 70 / totalLength.Value, 0, 70);
@@ -813,6 +881,35 @@ finally {
             }
         }
         await destination.FlushAsync(cancellationToken);
+        return total;
+    }
+
+    internal static void ValidateZipArchive(string archivePath)
+    {
+        using var zip = ZipFile.OpenRead(archivePath);
+        if (zip.Entries.Count > MaximumZipEntries)
+            throw new InvalidOperationException("Archive invalide : trop de fichiers.");
+        long expanded = 0;
+        var unique = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in zip.Entries)
+        {
+            var normalized = entry.FullName.Replace('\\', '/');
+            if (string.IsNullOrEmpty(normalized)
+                || normalized.StartsWith("/", StringComparison.Ordinal)
+                || normalized.Contains(':', StringComparison.Ordinal)
+                || normalized.Split('/').Any(s => s is ".." or ".")
+                || !unique.Add(normalized.TrimEnd('/')))
+            {
+                throw new InvalidOperationException("Archive invalide : chemin dangereux ou en double.");
+            }
+            if (entry.Length < 0
+                || entry.Length > MaximumArchiveBytes
+                || expanded > MaximumExtractedBytes - entry.Length)
+            {
+                throw new InvalidOperationException("Archive invalide : décompression excessive.");
+            }
+            expanded += entry.Length;
+        }
     }
 
     private static async Task<string> ComputeSha256Async(
@@ -865,7 +962,7 @@ finally {
                 && !string.Equals(uri.Scheme, Uri.UriSchemeFile, StringComparison.OrdinalIgnoreCase))
             || component.Sha256.Length != 64
             || component.Sha256.Any(c => !Uri.IsHexDigit(c))
-            || component.SizeBytes is < 1)
+            || component.SizeBytes is < 1 or > MaximumArchiveBytes)
         {
             throw new InvalidOperationException($"Composant de mise à jour invalide : {name}.");
         }

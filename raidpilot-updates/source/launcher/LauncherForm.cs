@@ -35,8 +35,11 @@ internal sealed class LauncherForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         AutoScaleMode = AutoScaleMode.Dpi;
-        ClientSize = new Size(1180, 760);
-        MinimumSize = new Size(1180, 760);
+        // Use the available monitor work area instead of opening a fixed
+        // 1180x760 window that can extend off-screen at 125-200% DPI.
+        var working = Screen.FromPoint(Cursor.Position).WorkingArea;
+        ClientSize = LauncherCanvasLayout.FitWindow(working.Size);
+        MinimumSize = new Size(420, 300);
         MaximumSize = new Size(1180, 760);
         BackColor = Color.FromArgb(5, 9, 12);
         KeyPreview = true;
@@ -47,7 +50,10 @@ internal sealed class LauncherForm : Form
         Controls.Add(_surface);
 
         _automaticUpdateTimer.Tick += async (_, _) =>
+        {
             await CheckUpdatesAsync(showErrors: false, background: true);
+            await TryAutoInstallWhenIdleAsync();
+        };
 
         Shown += OnShown;
         FormClosed += (_, _) =>
@@ -82,10 +88,11 @@ internal sealed class LauncherForm : Form
         if (!string.IsNullOrWhiteSpace(_settings.ManifestUrl))
         {
             await CheckUpdatesAsync(showErrors: false);
+            await TryAutoInstallWhenIdleAsync();
         }
         else
         {
-            SetStatus("Tout est prêt !", LauncherStatus.Success);
+            SetStatus("Source de mises à jour désactivée.", LauncherStatus.Info);
         }
 
         _automaticUpdateTimer.Start();
@@ -325,7 +332,37 @@ internal sealed class LauncherForm : Form
         }
     }
 
-    private async Task InstallUpdatesAsync()
+    // No unattended update may stop live game/Overlay/Beacon processes.
+    private static bool AnyGameOrCompanionRunning()
+    {
+        foreach (var name in new[] { "EscapeFromTarkov", "EscapeFromTarkov_BE",
+            "RaidPilot.Overlay", "RaidPilot.Beacon" })
+        {
+            var processes = Process.GetProcessesByName(name);
+            try { if (processes.Length > 0) return true; }
+            finally { foreach (var process in processes) process.Dispose(); }
+        }
+        return false;
+    }
+
+    private async Task TryAutoInstallWhenIdleAsync()
+    {
+        if (!_settings.AutoInstallWhenIdle || _busy
+            || _backgroundUpdateCheckInProgress || !_surface.UpdateAvailable
+            || _manifest is null || string.IsNullOrWhiteSpace(_settings.ManifestUrl))
+        {
+            return;
+        }
+        if (AnyGameOrCompanionRunning())
+        {
+            SetStatus("Mise à jour prête · installation après la fermeture du jeu.",
+                LauncherStatus.Update);
+            return;
+        }
+        await InstallUpdatesAsync(unattended: true);
+    }
+
+    private async Task InstallUpdatesAsync(bool unattended = false)
     {
         if (_busy || _backgroundUpdateCheckInProgress || _manifest is null)
         {
@@ -347,7 +384,11 @@ internal sealed class LauncherForm : Form
             return;
         }
 
-        if (MessageBox.Show(
+        if (unattended && AnyGameOrCompanionRunning())
+        {
+            return;
+        }
+        if (!unattended && MessageBox.Show(
                 this,
                 "RaidPilot Launcher va fermer les composants actifs, vérifier le SHA-256, installer la nouvelle version et conserver une copie de retour arrière.\n\nContinuer ?",
                 "Installer la mise à jour",
@@ -358,6 +399,10 @@ internal sealed class LauncherForm : Form
             return;
         }
 
+        var installedRaid = File.Exists(LauncherPaths.RaidPilotExe);
+        var installedBeacon = File.Exists(LauncherPaths.BeaconExe);
+        var completedRaid = false;
+        var completedBeacon = false;
         SetBusy(true);
         var progress = new Progress<int>(value =>
         {
@@ -370,6 +415,8 @@ internal sealed class LauncherForm : Form
             if (updateRaid)
             {
                 SetStatus($"Installation de RaidPilot v{_manifest.RaidPilot!.Version}…", LauncherStatus.Info);
+                if (unattended && AnyGameOrCompanionRunning())
+                    throw new InvalidOperationException("Le jeu a démarré pendant la mise à jour.");
                 await StopProcessAsync("RaidPilot.Overlay");
                 await _updates.InstallComponentAsync(
                     _manifest.RaidPilot!,
@@ -377,12 +424,15 @@ internal sealed class LauncherForm : Form
                     "RaidPilot.Overlay.exe",
                     progress,
                     CancellationToken.None);
+                completedRaid = true;
             }
 
             if (updateBeacon)
             {
                 _surface.Progress = 0;
                 SetStatus($"Installation de Beacon v{_manifest.Beacon!.Version}…", LauncherStatus.Info);
+                if (unattended && AnyGameOrCompanionRunning())
+                    throw new InvalidOperationException("Le jeu a démarré pendant la mise à jour.");
                 await StopProcessAsync("RaidPilot.Beacon");
                 await _updates.InstallComponentAsync(
                     _manifest.Beacon!,
@@ -390,10 +440,13 @@ internal sealed class LauncherForm : Form
                     "RaidPilot.Beacon.exe",
                     progress,
                     CancellationToken.None);
+                completedBeacon = true;
             }
 
             if (updateLauncher)
             {
+                if (unattended && AnyGameOrCompanionRunning())
+                    throw new InvalidOperationException("Le jeu a démarré pendant la mise à jour.");
                 _surface.Progress = 0;
                 SetStatus(
                     $"Préparation du Launcher v{_manifest.Launcher!.Version}…",
@@ -418,13 +471,26 @@ internal sealed class LauncherForm : Form
         }
         catch (Exception exception)
         {
-            SetStatus(
-                "Échec de mise à jour · version précédente préservée.",
+            // A failure installing one component must not strand a newer
+            // Overlay beside an old Beacon (or vice versa). Roll back in
+            // reverse order; report incomplete recovery, never fake success.
+            var rollbackErrors = new List<string>();
+            if (completedBeacon && !UpdateService.RollbackOrRemove(
+                    LauncherPaths.Beacon, "RaidPilot.Beacon.exe", installedBeacon))
+                rollbackErrors.Add("Beacon");
+            if (completedRaid && !UpdateService.RollbackOrRemove(
+                    LauncherPaths.RaidPilot, "RaidPilot.Overlay.exe", installedRaid))
+                rollbackErrors.Add("RaidPilot");
+            var restored = rollbackErrors.Count == 0;
+            SetStatus(restored
+                    ? "Échec d'installation · composants précédents restaurés."
+                    : "Échec d'installation · restauration incomplète !",
                 LauncherStatus.Error);
-
             MessageBox.Show(
                 this,
-                exception.Message,
+                exception.Message + (restored
+                    ? "\n\nLes composants installés pendant cette opération ont été restaurés."
+                    : "\n\nRestauration impossible : " + string.Join(", ", rollbackErrors)),
                 "RaidPilot Launcher — mise à jour",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error);
@@ -527,7 +593,8 @@ internal sealed class LauncherForm : Form
 
     private void ConfigureFeed()
     {
-        using var dialog = new UpdateFeedDialog(_settings.ManifestUrl);
+        using var dialog = new UpdateFeedDialog(
+            _settings.ManifestUrl, _settings.AutoInstallWhenIdle);
         if (dialog.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -546,7 +613,7 @@ internal sealed class LauncherForm : Form
             return;
         }
 
-        _settings = new LauncherSettings(location, "stable");
+        _settings = new LauncherSettings(location, "stable", dialog.AutoInstallWhenIdle);
         _ = LauncherSettingsStore.Save(_settings);
         _manifest = null;
         _surface.UpdateAvailable = false;
@@ -892,6 +959,10 @@ internal enum LauncherAction
 
 internal sealed class LauncherSurface : Control
 {
+    private const int CanvasWidth = 1180;
+    private const int CanvasHeight = 760;
+    private Point ScreenToCanvas(Point location) =>
+        LauncherCanvasLayout.Fit(ClientSize).ToCanvas(location);
     private static readonly Color Background = Color.FromArgb(5, 9, 12);
     private static readonly Color Sidebar = Color.FromArgb(8, 14, 18);
     private static readonly Color Panel = Color.FromArgb(12, 20, 25);
@@ -994,6 +1065,9 @@ internal sealed class LauncherSurface : Control
         _hitAreas.Clear();
 
         g.Clear(Background);
+        var view = LauncherCanvasLayout.Fit(ClientSize);
+        g.TranslateTransform(view.OffsetX, view.OffsetY);
+        g.ScaleTransform(view.Scale, view.Scale);
 
         DrawSidebar(g);
         DrawTitleBar(g);
@@ -1014,12 +1088,12 @@ internal sealed class LauncherSurface : Control
 
     private void DrawSidebar(Graphics g)
     {
-        var sidebarRect = new Rectangle(0, 0, 190, Height);
+        var sidebarRect = new Rectangle(0, 0, 190, CanvasHeight);
         using var brush = new SolidBrush(Sidebar);
         g.FillRectangle(brush, sidebarRect);
 
         using var linePen = new Pen(Color.FromArgb(25, 42, 49));
-        g.DrawLine(linePen, 189, 0, 189, Height);
+        g.DrawLine(linePen, 189, 0, 189, CanvasHeight);
 
         if (_appIcon is not null)
         {
@@ -1049,7 +1123,7 @@ internal sealed class LauncherSurface : Control
 
         using var small = FontOf("Segoe UI", 8.5F);
         using var mutedBrush = new SolidBrush(Color.FromArgb(90, 111, 122));
-        g.DrawString($"Launcher v{LauncherVersion}", small, mutedBrush, 24, Height - 34);
+        g.DrawString($"Launcher v{LauncherVersion}", small, mutedBrush, 24, CanvasHeight - 34);
     }
 
     private void DrawNavItem(
@@ -1096,17 +1170,17 @@ internal sealed class LauncherSurface : Control
         var x = 190;
 
         using var titleFill = new SolidBrush(Color.FromArgb(6, 12, 15));
-        g.FillRectangle(titleFill, x, 0, Width - x, 38);
+        g.FillRectangle(titleFill, x, 0, CanvasWidth - x, 38);
 
         using var borderPen = new Pen(Color.FromArgb(22, 39, 47));
-        g.DrawLine(borderPen, x, 37, Width, 37);
+        g.DrawLine(borderPen, x, 37, CanvasWidth, 37);
 
         using var titleFont = FontOf("Segoe UI Semibold", 8.5F, FontStyle.Bold);
         using var titleBrush = new SolidBrush(Color.FromArgb(128, 148, 158));
         g.DrawString("TACTICAL COMPANION  ·  WINDOWS — Développé par Peko", titleFont, titleBrush, x + 22, 12);
 
-        var minimize = new Rectangle(Width - 86, 5, 34, 28);
-        var close = new Rectangle(Width - 46, 5, 34, 28);
+        var minimize = new Rectangle(CanvasWidth - 86, 5, 34, 28);
+        var close = new Rectangle(CanvasWidth - 46, 5, 34, 28);
         _hitAreas[LauncherAction.Minimize] = minimize;
         _hitAreas[LauncherAction.Close] = close;
 
@@ -1129,7 +1203,7 @@ internal sealed class LauncherSurface : Control
 
     private void DrawHero(Graphics g)
     {
-        var rect = new Rectangle(205, 48, Width - 225, 180);
+        var rect = new Rectangle(205, 48, CanvasWidth - 225, 180);
 
         using (var path = RoundedRect(rect, 14))
         using (var gradient = new LinearGradientBrush(
@@ -1187,7 +1261,7 @@ internal sealed class LauncherSurface : Control
 
     private void DrawSquadPage(Graphics g)
     {
-        var rect = new Rectangle(205, 242, Width - 225, 463);
+        var rect = new Rectangle(205, 242, CanvasWidth - 225, 463);
 
         using (var path = RoundedRect(rect, 11))
         using (var fill = new SolidBrush(Color.FromArgb(9, 16, 20)))
@@ -1452,7 +1526,7 @@ internal sealed class LauncherSurface : Control
 
     private void DrawVersionPanel(Graphics g)
     {
-        var rect = new Rectangle(205, 242, Width - 225, 128);
+        var rect = new Rectangle(205, 242, CanvasWidth - 225, 128);
 
         using var path = RoundedRect(rect, 10);
         using var fill = new SolidBrush(Panel);
@@ -1549,7 +1623,7 @@ internal sealed class LauncherSurface : Control
         var y = 387;
         var startX = 205;
         var gap = 10;
-        var totalWidth = Width - 225;
+        var totalWidth = CanvasWidth - 225;
         var cardWidth = (totalWidth - (gap * 3)) / 4;
 
         DrawFeatureCard(
@@ -1616,7 +1690,7 @@ internal sealed class LauncherSurface : Control
 
     private void DrawReleaseHistory(Graphics g)
     {
-        var rect = new Rectangle(205, 510, Width - 225, 195);
+        var rect = new Rectangle(205, 510, CanvasWidth - 225, 195);
 
         using var path = RoundedRect(rect, 10);
         using var fill = new SolidBrush(Panel);
@@ -1701,7 +1775,7 @@ internal sealed class LauncherSurface : Control
 
     private void DrawStatusAndProgress(Graphics g)
     {
-        var statusRect = new Rectangle(205, 715, Width - 225, 30);
+        var statusRect = new Rectangle(205, 715, CanvasWidth - 225, 30);
 
         var statusColor = Status switch
         {
@@ -1858,9 +1932,10 @@ internal sealed class LauncherSurface : Control
         base.OnMouseMove(e);
 
         var next = LauncherAction.None;
+        var virtualPoint = ScreenToCanvas(e.Location);
         foreach (var pair in _hitAreas)
         {
-            if (pair.Value.Contains(e.Location))
+            if (pair.Value.Contains(virtualPoint))
             {
                 next = pair.Key;
                 break;
@@ -1895,9 +1970,10 @@ internal sealed class LauncherSurface : Control
             return;
         }
 
+        var virtualPoint = ScreenToCanvas(e.Location);
         foreach (var pair in _hitAreas)
         {
-            if (pair.Value.Contains(e.Location))
+            if (pair.Value.Contains(virtualPoint))
             {
                 if (pair.Key == LauncherAction.LaunchRaidPilot && !CanLaunchRaidPilot)
                 {
@@ -1916,7 +1992,7 @@ internal sealed class LauncherSurface : Control
             }
         }
 
-        if (e.Y <= 38 && e.X >= 190)
+        if (virtualPoint.Y <= 38 && virtualPoint.X >= 190)
         {
             DragRequested?.Invoke(this, EventArgs.Empty);
         }
@@ -2171,8 +2247,9 @@ internal sealed class ReleaseNotesDialog : Form
 internal sealed class UpdateFeedDialog : Form
 {
     private readonly TextBox _location = new();
+    private readonly CheckBox _autoInstall = new();
 
-    internal UpdateFeedDialog(string current)
+    internal UpdateFeedDialog(string current, bool autoInstallWhenIdle)
     {
         Text = "RaidPilot — source des mises à jour";
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
@@ -2180,7 +2257,7 @@ internal sealed class UpdateFeedDialog : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
-        ClientSize = new Size(590, 210);
+        ClientSize = new Size(590, 260);
         BackColor = Color.FromArgb(10, 16, 20);
         ForeColor = Color.WhiteSmoke;
         Font = new Font("Segoe UI", 9F);
@@ -2218,11 +2295,18 @@ internal sealed class UpdateFeedDialog : Form
         _location.BorderStyle = BorderStyle.FixedSingle;
         Controls.Add(_location);
 
+        _autoInstall.Location = new Point(22, 156);
+        _autoInstall.Size = new Size(545, 37);
+        _autoInstall.Checked = autoInstallWhenIdle;
+        _autoInstall.Text = "Installer automatiquement lorsque EFT, Overlay et Beacon sont fermés";
+        _autoInstall.ForeColor = Color.Gainsboro;
+        Controls.Add(_autoInstall);
+
         var ok = new Button
         {
             Text = "Enregistrer",
             DialogResult = DialogResult.OK,
-            Location = new Point(374, 160),
+            Location = new Point(374, 210),
             Size = new Size(92, 31),
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.FromArgb(0, 107, 176),
@@ -2234,7 +2318,7 @@ internal sealed class UpdateFeedDialog : Form
         {
             Text = "Annuler",
             DialogResult = DialogResult.Cancel,
-            Location = new Point(475, 160),
+            Location = new Point(475, 210),
             Size = new Size(92, 31),
             FlatStyle = FlatStyle.Flat,
             BackColor = Color.FromArgb(34, 43, 48),
@@ -2249,4 +2333,5 @@ internal sealed class UpdateFeedDialog : Form
     }
 
     internal string ManifestLocation => _location.Text.Trim();
+    internal bool AutoInstallWhenIdle => _autoInstall.Checked;
 }
