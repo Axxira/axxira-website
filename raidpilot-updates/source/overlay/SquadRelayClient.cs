@@ -81,18 +81,17 @@ public sealed class SquadRelayClient : IAsyncDisposable
 {
     private const int ProtocolVersion = 1;
     private const int MaximumInboundBytes = 32 * 1024;
-    private static readonly Uri SocketBaseUri = new("wss://socket.tarkov.dev");
+    private static readonly Uri SocketBaseUri = new("wss://raidpilot-team-relay.tyronixstudio.workers.dev/ws");
 
     private readonly string _roomCode;
     private readonly string _sessionId;
     private readonly string _memberId;
     private readonly string _name;
     private readonly CancellationTokenSource _lifetime = new();
+    private readonly SemaphoreSlim _startGate = new(1, 1);
     private readonly SemaphoreSlim _senderGate = new(1, 1);
     private readonly SemaphoreSlim _receiverGate = new(1, 1);
-    private ClientWebSocket? _sender;
     private ClientWebSocket? _receiver;
-    private Task? _senderHeartbeatTask;
     private Task? _receiverLoop;
     private int _disposed;
 
@@ -108,7 +107,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
         }
 
         _roomCode = SquadRoomCode.Format(normalized);
-        _sessionId = SquadRoomCode.ToSessionId(normalized);
+        _sessionId = DeriveRelayTeamKey(normalized);
         _memberId = memberId.Trim();
         _name = NormalizeName(name);
     }
@@ -117,6 +116,18 @@ public sealed class SquadRelayClient : IAsyncDisposable
     public string MemberId => _memberId;
     public string Name => _name;
     public bool IsReceiving => _receiverLoop is { IsCompleted: false };
+    public bool IsConnected => _receiver?.State == WebSocketState.Open;
+
+    internal static string DeriveRelayTeamKey(string teamCode)
+    {
+        if (!SquadRoomCode.TryNormalize(teamCode, out var normalized))
+            throw new ArgumentException("Code d'escouade invalide.", nameof(teamCode));
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes("raidpilot-cloudflare-relay-v1:" + normalized));
+        return Convert.ToBase64String(hash).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    internal static Uri BuildRelayEndpoint(string teamCode, string name) =>
+        new($"{SocketBaseUri}?team={Uri.EscapeDataString(DeriveRelayTeamKey(teamCode))}&name={Uri.EscapeDataString(NormalizeName(name))}");
 
     public event Action<SquadMemberPose>? PoseReceived;
     public event Action<bool>? ReceiverConnectionChanged;
@@ -124,76 +135,49 @@ public sealed class SquadRelayClient : IAsyncDisposable
     public async Task StartReceivingAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
-        if (_receiverLoop is { IsCompleted: false })
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _lifetime.Token);
+        await _startGate.WaitAsync(linked.Token).ConfigureAwait(false);
+        try
         {
-            return;
+            if (_receiverLoop is { IsCompleted: false }) return;
+            await EnsureReceiverConnectedAsync(linked.Token).ConfigureAwait(false);
+            _receiverLoop = Task.Run(
+                () => ReceiverReconnectLoopAsync(_lifetime.Token), CancellationToken.None);
         }
-
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _lifetime.Token);
-        await EnsureReceiverConnectedAsync(linked.Token).ConfigureAwait(false);
-        _receiverLoop = Task.Run(
-            () => ReceiverReconnectLoopAsync(_lifetime.Token),
-            CancellationToken.None);
+        finally { _startGate.Release(); }
     }
 
-    public async Task SendPoseAsync(
-        SquadMemberPose pose,
-        CancellationToken cancellationToken = default)
+    public async Task SendPoseAsync(SquadMemberPose pose, CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(pose);
-
         if (!string.Equals(pose.MemberId, _memberId, StringComparison.Ordinal)
             || !string.Equals(pose.Name, _name, StringComparison.Ordinal)
             || !IsValidPose(pose))
-        {
             throw new ArgumentException("Pose d'escouade invalide.", nameof(pose));
-        }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            _lifetime.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(2));
-
+            cancellationToken, _lifetime.Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(4));
+        // One bidirectional connection per client: the Worker room has six slots.
+        await StartReceivingAsync(timeout.Token).ConfigureAwait(false);
         await _senderGate.WaitAsync(timeout.Token).ConfigureAwait(false);
+        ClientWebSocket? socket = null;
         try
         {
-            var socket = await EnsureSenderConnectedLockedAsync(timeout.Token).ConfigureAwait(false);
+            socket = await EnsureReceiverConnectedAsync(timeout.Token).ConfigureAwait(false);
             var payload = JsonSerializer.Serialize(new
             {
-                type = "command",
-                sessionID = _sessionId,
-                data = new
-                {
-                    type = "raidpilotSquadPose",
-                    protocol = ProtocolVersion,
-                    memberId = pose.MemberId,
-                    name = pose.Name,
-                    map = pose.Map,
-                    x = pose.X,
-                    y = pose.Y,
-                    z = pose.Z,
-                    yaw = pose.YawDegrees,
-                    uncertainty = pose.UncertaintyMeters,
-                    sentAtUnixMs = pose.SentAtUnixMilliseconds,
-                },
+                type = "pose",
+                map = RaidPilotLocalMapHost.NormalizeMapKey(pose.Map),
+                position = new { x = pose.X, y = pose.Y, z = pose.Z },
+                rotation = Normalize360(pose.YawDegrees),
+                floor = (string?)null,
             });
-            try
-            {
-                await SendTextAsync(socket, payload, timeout.Token).ConfigureAwait(false);
-            }
-            catch
-            {
-                AbortAndDispose(ref _sender);
-                throw;
-            }
+            try { await SendTextAsync(socket, payload, timeout.Token).ConfigureAwait(false); }
+            catch { try { socket.Abort(); } catch { } throw; }
         }
-        finally
-        {
-            _senderGate.Release();
-        }
+        finally { _senderGate.Release(); }
     }
 
     private async Task ReceiverReconnectLoopAsync(CancellationToken cancellationToken)
@@ -258,7 +242,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
             try
             {
                 await socket.ConnectAsync(
-                    BuildEndpoint(_sessionId),
+                    BuildEndpoint(_sessionId, _name),
                     cancellationToken).ConfigureAwait(false);
             }
             catch
@@ -272,120 +256,6 @@ public sealed class SquadRelayClient : IAsyncDisposable
         finally
         {
             _receiverGate.Release();
-        }
-    }
-
-    private async Task<ClientWebSocket> EnsureSenderConnectedLockedAsync(
-        CancellationToken cancellationToken)
-    {
-        if (_sender?.State == WebSocketState.Open)
-        {
-            return _sender;
-        }
-
-        AbortAndDispose(ref _sender);
-        var socket = CreateSocket();
-        var senderSession = _sessionId + "-" + StableSenderSuffix(_memberId);
-        try
-        {
-            await socket.ConnectAsync(
-                BuildEndpoint(senderSession),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch
-        {
-            socket.Dispose();
-            throw;
-        }
-        _sender = socket;
-        _senderHeartbeatTask = Task.Run(
-            () => SenderHeartbeatLoopAsync(socket, _lifetime.Token),
-            CancellationToken.None);
-        return socket;
-    }
-
-    private async Task SenderHeartbeatLoopAsync(
-        ClientWebSocket socket,
-        CancellationToken cancellationToken)
-    {
-        var buffer = new byte[4096];
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested
-                && socket.State == WebSocketState.Open)
-            {
-                using var message = new MemoryStream();
-                WebSocketReceiveResult result;
-                do
-                {
-                    result = await socket.ReceiveAsync(
-                        new ArraySegment<byte>(buffer),
-                        cancellationToken).ConfigureAwait(false);
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        return;
-                    }
-                    if (message.Length + result.Count > MaximumInboundBytes)
-                    {
-                        socket.Abort();
-                        return;
-                    }
-                    message.Write(buffer, 0, result.Count);
-                }
-                while (!result.EndOfMessage);
-
-                if (result.MessageType != WebSocketMessageType.Text)
-                {
-                    continue;
-                }
-
-                JsonDocument document;
-                try
-                {
-                    document = JsonDocument.Parse(message.ToArray());
-                }
-                catch (JsonException)
-                {
-                    continue;
-                }
-
-                using (document)
-                {
-                    var root = document.RootElement;
-                    if (!root.TryGetProperty("type", out var type)
-                        || type.ValueKind != JsonValueKind.String
-                        || !string.Equals(type.GetString(), "ping", StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
-                }
-
-                await _senderGate.WaitAsync(cancellationToken).ConfigureAwait(false);
-                try
-                {
-                    if (ReferenceEquals(socket, _sender)
-                        && socket.State == WebSocketState.Open)
-                    {
-                        await SendTextAsync(
-                            socket,
-                            "{\"type\":\"pong\"}",
-                            cancellationToken).ConfigureAwait(false);
-                    }
-                }
-                finally
-                {
-                    _senderGate.Release();
-                }
-            }
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-        }
-        catch (WebSocketException)
-        {
-        }
-        catch (ObjectDisposedException)
-        {
         }
     }
 
@@ -435,70 +305,50 @@ public sealed class SquadRelayClient : IAsyncDisposable
             using (document)
             {
                 var root = document.RootElement;
-                if (root.TryGetProperty("type", out var type)
-                    && type.ValueKind == JsonValueKind.String
-                    && string.Equals(type.GetString(), "ping", StringComparison.Ordinal))
+                if (!ReadString(root, "type", out var type)) continue;
+                if (type == "pose") PublishIncoming(root);
+                else if (type == "welcome"
+                    && root.TryGetProperty("peers", out var peers)
+                    && peers.ValueKind == JsonValueKind.Array)
                 {
-                    await SendTextAsync(
-                        socket,
-                        "{\"type\":\"pong\"}",
-                        cancellationToken).ConfigureAwait(false);
-                    continue;
-                }
-
-                if (TryReadPose(root, out var pose)
-                    && pose is not null
-                    && !string.Equals(pose.MemberId, _memberId, StringComparison.Ordinal))
-                {
-                    PoseReceived?.Invoke(pose);
+                    foreach (var peer in peers.EnumerateArray()) PublishIncoming(peer);
                 }
             }
         }
     }
 
-    private static bool TryReadPose(JsonElement root, out SquadMemberPose? pose)
+    private void PublishIncoming(JsonElement data)
+    {
+        if (TryReadPose(data, out var pose) && pose is not null
+            && !string.Equals(pose.MemberId, _memberId, StringComparison.Ordinal))
+        {
+            try { PoseReceived?.Invoke(pose); }
+            catch { /* UI callbacks cannot disrupt the receiver. */ }
+        }
+    }
+
+    internal static bool TryReadPose(JsonElement root, out SquadMemberPose? pose)
     {
         pose = null;
         if (root.ValueKind != JsonValueKind.Object
-            || !root.TryGetProperty("type", out var envelopeType)
-            || envelopeType.ValueKind != JsonValueKind.String
-            || !string.Equals(envelopeType.GetString(), "command", StringComparison.Ordinal)
-            || !root.TryGetProperty("data", out var data)
-            || data.ValueKind != JsonValueKind.Object
-            || !ReadString(data, "type", out var dataType)
-            || !string.Equals(dataType, "raidpilotSquadPose", StringComparison.Ordinal)
-            || !ReadInt32(data, "protocol", out var protocol)
-            || protocol != ProtocolVersion
-            || !ReadString(data, "memberId", out var memberId)
-            || !ReadString(data, "name", out var name)
-            || !ReadString(data, "map", out var map)
-            || !ReadDouble(data, "x", out var x)
-            || !ReadDouble(data, "y", out var y)
-            || !ReadDouble(data, "z", out var z)
-            || !ReadDouble(data, "yaw", out var yaw)
-            || !ReadDouble(data, "uncertainty", out var uncertainty)
-            || !ReadInt64(data, "sentAtUnixMs", out var sentAt))
-        {
-            return false;
-        }
+            || !ReadString(root, "id", out var id)
+            || !ReadString(root, "name", out var name)
+            || !ReadString(root, "map", out var map)
+            || !root.TryGetProperty("position", out var position)
+            || position.ValueKind != JsonValueKind.Object
+            || !ReadDouble(position, "x", out var x)
+            || !ReadDouble(position, "y", out var y)
+            || !ReadDouble(position, "z", out var z)
+            || !ReadDouble(root, "rotation", out var rotation)
+            || !ReadInt64(root, "at", out var timestamp)) return false;
 
+        // The deployed Worker does not forward uncertainty. 1000 means unknown,
+        // NOT a measured 1000-metre error.
         var candidate = new SquadMemberPose(
-            memberId,
-            NormalizeName(name),
-            map,
-            x,
-            y,
-            z,
-            Normalize360(yaw),
-            uncertainty,
-            sentAt);
-        if (!IsValidPose(candidate)
-            || candidate.MemberId.Length > 64
-            || candidate.Map.Length > 64)
-        {
-            return false;
-        }
-
+            id, NormalizeName(name), RaidPilotLocalMapHost.NormalizeMapKey(map),
+            x, y, z, Normalize360(rotation), 1000, timestamp);
+        if (!IsValidPose(candidate) || candidate.MemberId.Length > 64
+            || candidate.Map.Length > 64) return false;
         pose = candidate;
         return true;
     }
@@ -521,29 +371,22 @@ public sealed class SquadRelayClient : IAsyncDisposable
     public static string NormalizeName(string? value)
     {
         var cleaned = new string((value ?? string.Empty)
-            .Where(c => !char.IsControl(c))
-            .Take(24)
-            .ToArray())
-            .Trim();
-        return string.IsNullOrWhiteSpace(cleaned) ? "Teammate" : cleaned;
+            .Where(c => char.IsLetterOrDigit(c)
+                || c is ' ' or '_' or '.' or '-' or '\'')
+            .Take(24).ToArray()).Trim();
+        return string.IsNullOrEmpty(cleaned) ? "Joueur" : cleaned;
     }
 
     private static ClientWebSocket CreateSocket()
     {
         var socket = new ClientWebSocket();
-        socket.Options.SetRequestHeader("Origin", "https://tarkov.dev");
-        socket.Options.SetRequestHeader("User-Agent", "RaidPilot-Squad/1.0");
+        socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+        socket.Options.SetRequestHeader("User-Agent", "RaidPilot-Squad/2.0");
         return socket;
     }
 
-    private static Uri BuildEndpoint(string sessionId) =>
-        new($"{SocketBaseUri}?sessionid={Uri.EscapeDataString(sessionId)}");
-
-    private static string StableSenderSuffix(string memberId)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(memberId));
-        return Convert.ToHexString(bytes.AsSpan(0, 6));
-    }
+    private static Uri BuildEndpoint(string key, string name) =>
+        new($"{SocketBaseUri}?team={Uri.EscapeDataString(key)}&name={Uri.EscapeDataString(name)}");
 
     private static async Task SendTextAsync(
         ClientWebSocket socket,
@@ -628,23 +471,12 @@ public sealed class SquadRelayClient : IAsyncDisposable
         }
 
         _lifetime.Cancel();
-        AbortAndDispose(ref _sender);
         AbortAndDispose(ref _receiver);
         if (_receiverLoop is not null)
         {
             try
             {
                 await _receiverLoop.ConfigureAwait(false);
-            }
-            catch
-            {
-            }
-        }
-        if (_senderHeartbeatTask is not null)
-        {
-            try
-            {
-                await _senderHeartbeatTask.ConfigureAwait(false);
             }
             catch
             {
