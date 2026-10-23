@@ -36,6 +36,12 @@ internal sealed class BeaconForm : Form
     private readonly PrecisionV2MotionFusion _precisionV2Fusion = new();
     private readonly PrecisionDriftAudit _precisionV2DriftAudit = new();
     private readonly ToolStripMenuItem _precisionV2Toggle = new("Precision V2 — flux optique 160×90 (expérimental)") { Checked = true, CheckOnClick = true };
+    private readonly ToolStripMenuItem _precisionV3GpuToggle =
+        new("Capteur GPU WGC/Direct3D11 (expérimental, capture visible)")
+        {
+            Checked = false,
+            CheckOnClick = true,
+        };
     private long _precisionV2LastTurnAt;
     private bool _precisionV2TrackingActive;
     private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
@@ -328,13 +334,25 @@ internal sealed class BeaconForm : Form
         menu.Items.Add("Arrêter le partage", null, async (_, _) =>
             await StopBeaconAsync(clearAutoJoin: true));
         menu.Items.Add(_precisionV2Toggle);
+        menu.Items.Add(_precisionV3GpuToggle);
+        _precisionV3GpuToggle.Click += (_, _) =>
+        {
+            _precisionV2DriftAudit.MarkInterrupted();
+            _precisionV2Vision.SelectGpuCapture(_precisionV3GpuToggle.Checked);
+            _precisionV2Fusion.Reset();
+        };
         _precisionV2Toggle.Click += (_, _) =>
         {
             _precisionV2DriftAudit.MarkInterrupted();
             ResetPrecisionV2();
         };
         menu.Items.Add("Diagnostic F8 — dérive V1 / V2", null, (_, _) =>
-            MessageBox.Show(this, _precisionV2DriftAudit.Describe(),
+            MessageBox.Show(this,
+                $"Capteur visuel : {_precisionV2Vision.Backend}\n"
+                + $"Statut WGC : {_precisionV2Vision.GpuStatus}\n"
+                + $"Images WGC : {_precisionV2Vision.GpuFrames}, "
+                + $"replis GDI : {_precisionV2Vision.GpuFallbacks}\n\n"
+                + _precisionV2DriftAudit.Describe(),
                 "RaidPilot Beacon — précision mesurée",
                 MessageBoxButtons.OK, MessageBoxIcon.Information));
         menu.Items.Add(new ToolStripSeparator());
