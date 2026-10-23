@@ -1,26 +1,148 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T13:42:18.7858984+00:00",
+  "publishedAt": "2026-10-23T14:08:21.9871978+00:00",
   "raidPilot": {
     "version": "0.14.2.18",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.12-3a609b034844/RaidPilot-Overlay-v0.14.2.18-Windows-x64.zip",
-    "sha256": "29CAD83001659EAEE18219D76A2A584196A8806209A4428E6D7A6A57BAB5637E",
-    "sizeBytes": 234437190,
-    "releaseNotes": "ZOOM PRÉFÉRENCES : zoom manuel enregistré entre raids et sur toutes les cartes locales/en ligne; AppData indépendant du Launcher, restauration automatique et bouton Ajuster. Capteur WGC optionnel conservé."
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.13-7d83cee30c02/RaidPilot-Overlay-v0.14.2.18-Windows-x64.zip",
+    "sha256": "3D6D2FB5A791EFCBE2860404C8692757434DBC48DD4AA80E55A3E6EB28194444",
+    "sizeBytes": 234436552,
+    "releaseNotes": "RaidPilot 0.14.2.18 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.6",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.12-3a609b034844/RaidPilot-Beacon-v0.3.6-Windows-x64.zip",
-    "sha256": "3E0434BA3A57E23D3B32B04440B2D9DCD0F00059E3CA421043F5A775AE1D7DC7",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.13-7d83cee30c02/RaidPilot-Beacon-v0.3.6-Windows-x64.zip",
+    "sha256": "8520431C01791CE3D2D909824EB420890112B7ECCFE151AF0F6864DD37C48DB2",
     "sizeBytes": 58323643,
-    "releaseNotes": "Beacon 0.3.6 : capteur Windows WGC facultatif avec retour GDI et diagnostic GPU. Les codes d’équipe et le relais Cloudflare sont inchangés."
+    "releaseNotes": "Beacon 0.3.6 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.12",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.12-3a609b034844/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
-    "sha256": "DE5AFB470E9701358469E9891091405DAB30540BDD4E967B9086C70AC0586130",
-    "sizeBytes": 350988165,
-    "releaseNotes": "Launcher 0.2.12 : canal Stable actualisé sans cache intermédiaire ; vérification SHA-256 et sauvegarde de retour arrière conservées. Développé par Peko."
-  }
+    "version": "0.2.13",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.13-7d83cee30c02/RaidPilot-Launcher-v0.2.13-Windows-x64.zip",
+    "sha256": "14BB402388965E81825A7532193F5A42EC8932337E367ACCCA809A62473C2A35",
+    "sizeBytes": 350993176,
+    "releaseNotes": "Le panneau « Dernières mises à jour » affiche les vraies versions publiées au lieu de trois anciennes lignes fixes.\nLe bouton « Voir les notes » ouvre les descriptions détaillées des versions précédentes.\nLe Launcher conserve un exemplaire de l'historique même hors connexion et rafraîchit les notes lors de la vérification du canal Stable.\nLa publication GitHub exige désormais une fiche de version correspondante, pour éviter d'oublier les prochaines notes."
+  },
+  "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.13",
+      "raidPilotVersion": "0.14.2.18",
+      "beaconVersion": "0.3.6",
+      "launcherVersion": "0.2.13",
+      "date": "2026-10-23",
+      "summary": "Historique des mises à jour visible et automatique",
+      "details": "Le panneau « Dernières mises à jour » affiche les vraies versions publiées au lieu de trois anciennes lignes fixes.\nLe bouton « Voir les notes » ouvre les descriptions détaillées des versions précédentes.\nLe Launcher conserve un exemplaire de l'historique même hors connexion et rafraîchit les notes lors de la vérification du canal Stable.\nLa publication GitHub exige désormais une fiche de version correspondante, pour éviter d'oublier les prochaines notes."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.18",
+      "raidPilotVersion": "0.14.2.18",
+      "beaconVersion": "0.3.6",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-23",
+      "summary": "Zoom personnel conservé entre les cartes et les raids",
+      "details": "Le zoom réglé à la molette ou avec les boutons est mémorisé entre les parties et les changements de carte.\nLe facteur de zoom est adapté aux dimensions des différentes cartes locales et en ligne; le bouton Ajuster revient à 100 %.\nLes préférences de taille, de position et de filtres restent intactes; aucune modification de la localisation ou du relais d'équipe."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.17",
+      "raidPilotVersion": "0.14.2.17",
+      "beaconVersion": "0.3.6",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-23",
+      "summary": "Precision V3 : capture GPU WGC optionnelle",
+      "details": "Ajout du capteur Windows.Graphics.Capture/Direct3D11 dans RaidPilot et Beacon.\nLe GPU est désactivé par défaut et peut être activé depuis l'icône de notification; le capteur GDI reprend automatiquement en cas d'échec.\nLa capture de luminance reste locale, sans accès à la mémoire du jeu. Compatibilité et précision réelle à vérifier en raid."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.16",
+      "raidPilotVersion": "0.14.2.16",
+      "beaconVersion": "0.3.5",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-23",
+      "summary": "Precision V2.2 : meilleure détection du mouvement",
+      "details": "La voie optique 160×90 suit un déplacement d'image plus étendu, avec une grille de points plus dense.\nDes statistiques distinguent les observations visuelles fiables des observations incertaines; la capture s'adapte aux ralentissements.\nLe capteur historique 64×36 et le relais Cloudflare sont conservés."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.15",
+      "raidPilotVersion": "0.14.2.15",
+      "beaconVersion": "0.3.4",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-23",
+      "summary": "Precision V2.1 : mesure de la dérive avant F8",
+      "details": "Comparaison des écarts en mètres et en degrés avant chaque nouveau recalage F8, avec statistiques médianes et P90 pour les modes V1 et V2.\nLes séquences interrompues ou incertaines sont exclues et les statistiques restent uniquement en mémoire.\nProtection supplémentaire contre les faux arrêts après une rotation ou un changement d'état."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.14",
+      "raidPilotVersion": "0.14.2.14",
+      "beaconVersion": "0.3.3",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-22",
+      "summary": "Precision V2 : capteur visuel 160×90 et fusion",
+      "details": "Ajout d'une deuxième analyse visuelle en 160×90 hors du fil d'interface, en parallèle de la voie historique 64×36.\nLa fusion peut corriger certains faux déplacements si un arrêt est visuellement confirmé.\nMode expérimental désactivable; F8 conserve le rôle d'ancrage absolu et l'estimation de distance réelle demande encore des tests en jeu."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.13",
+      "raidPilotVersion": "0.14.2.13",
+      "beaconVersion": "0.3.2",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-22",
+      "summary": "HOTFIX13 : déplacements et postures Beacon fiabilisés",
+      "details": "Correction du sprint en bascule et des ralentissements du suivi, et meilleure gestion de la marche lente.\nBeacon tient compte des postures accroupie/couchée, des sauts et des interruptions temporaires.\nRéduction des faux arrêts visuels, sans modifier la connexion d'équipe Cloudflare."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.12",
+      "raidPilotVersion": "0.14.2.12",
+      "beaconVersion": "0.3.1",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-22",
+      "summary": "HOTFIX12 : relais d'équipe Cloudflare bidirectionnel",
+      "details": "L'échange des positions entre joueurs utilise désormais un Worker Cloudflare dédié à RaidPilot au lieu du WebSocket tarkov.dev.\nLe code d'escouade reste inchangé; une seule connexion bidirectionnelle par client, reconnexion et séparation des salles.\nLa précision individuelle reste estimée entre les F8."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.11",
+      "raidPilotVersion": "0.14.2.11",
+      "beaconVersion": "0.3.0",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-22",
+      "summary": "HOTFIX11 : coéquipiers et changements de carte",
+      "details": "Les positions de coéquipiers appartenant à une autre carte sont retirées immédiatement.\nLes alias de carte et les paquets reçus dans le désordre sont mieux gérés.\nLes changements de carte purgent les marqueurs obsolètes et le diagnostic indique le nombre de coéquipiers."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.10",
+      "raidPilotVersion": "0.14.2.10",
+      "beaconVersion": "0.3.0",
+      "launcherVersion": "0.2.12",
+      "date": "2026-10-22",
+      "summary": "HOTFIX10 : cartes HD locales et profils préservés",
+      "details": "Intégration des cartes HD, des catalogues de quêtes et d'objets et des filtres de dangers.\nCorrection des changements de raid sur la même carte; prise en charge de plusieurs étages sur Factory et The Lab.\nLe Launcher conserve les préférences cartographiques et une version précédente pour retour arrière."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.1",
+      "raidPilotVersion": "0.14.1",
+      "beaconVersion": "0.3.0",
+      "launcherVersion": "0.2.8",
+      "date": "2026-10-21",
+      "summary": "Cartes et localisation : série d'améliorations intermédiaires",
+      "details": "Mise à jour intermédiaire de RaidPilot et Beacon dans la série 0.14.\nLes anciens correctifs sont conservés dans les archives GitHub; les informations détaillées de cette publication ne sont pas disponibles dans le registre actuel."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.11.0",
+      "raidPilotVersion": "0.11.0",
+      "beaconVersion": "0.1.0",
+      "launcherVersion": "0.2.3",
+      "date": "2026-10-19",
+      "summary": "Escouade temps réel, Beacon et interface actualisée",
+      "details": "Premières fonctionnalités de groupe, Beacon pour partager sa position et nouvelle présentation du Launcher.\nCette entrée correspond aux anciennes notes déjà affichées par le programme."
+    }
+  ]
 }
