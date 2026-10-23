@@ -2,7 +2,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class OverlayPreferencesStoreTests
 {
-    internal const int TestCount = 13;
+    internal const int TestCount = 16;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -19,6 +19,9 @@ internal static class OverlayPreferencesStoreTests
         Run("position absente utilise haut droite", MissingCornerDefaultsToTopRight, failures);
         Run("coin de carte persiste", SavesMapCorner, failures);
         Run("position libre persiste sans perdre les autres préférences", SavesFreeLayout, failures);
+        Run("zoom global absent reste automatique", MissingMapZoomUsesDefault, failures);
+        Run("zoom global conservé entre raids et les autres réglages", SavesMapZoomFactor, failures);
+        Run("zoom global invalide refusé sans altérer les autres préférences", RejectsInvalidMapZoomFactor, failures);
     }
 
     private static void MissingPreferenceDefaultsToVisible()
@@ -247,6 +250,58 @@ internal static class OverlayPreferencesStoreTests
         {
             Directory.Delete(path, recursive: true);
         }
+    }
+
+    private static void MissingMapZoomUsesDefault()
+    {
+        InTemporaryDirectory(path =>
+        {
+            var settingsPath = Path.Combine(path, "missing-zoom.json");
+            Require(OverlayPreferencesStore.LoadMapZoomFactor(settingsPath) is null,
+                "aucun zoom ne doit être imposé au premier lancement");
+        });
+    }
+
+    private static void SavesMapZoomFactor()
+    {
+        InTemporaryDirectory(path =>
+        {
+            var settingsPath = Path.Combine(path, "zoom.json");
+            Require(OverlayPreferencesStore.TrySaveMapZoomFactor(2.75, settingsPath),
+                "enregistrement de zoom refusé");
+            Require(OverlayPreferencesStore.LoadMapZoomFactor(settingsPath) is { } saved
+                && Math.Abs(saved - 2.75) < 1e-12, "zoom incorrect après relecture");
+            Require(OverlayPreferencesStore.TrySaveMapScalePercent(75, settingsPath)
+                && OverlayPreferencesStore.TrySaveVisibleInCaptures(false, settingsPath),
+                "modification des autres réglages échouée");
+            Require(OverlayPreferencesStore.LoadMapZoomFactor(settingsPath) == 2.75
+                && OverlayPreferencesStore.LoadMapScalePercent(settingsPath) == 75
+                && !OverlayPreferencesStore.LoadVisibleInCaptures(settingsPath),
+                "une autre préférence a écrasé la valeur zoom");
+        });
+    }
+
+    private static void RejectsInvalidMapZoomFactor()
+    {
+        InTemporaryDirectory(path =>
+        {
+            var settingsPath = Path.Combine(path, "validation.json");
+            Require(OverlayPreferencesStore.TrySaveMapZoomFactor(1.5, settingsPath),
+                "valeur de base refusée");
+            foreach (var invalid in new[] {
+                double.NaN, double.PositiveInfinity, double.NegativeInfinity,
+                -1.0, 0, .19, 32.1, 10000
+            })
+                Require(!OverlayPreferencesStore.TrySaveMapZoomFactor(invalid, settingsPath),
+                    "valeur hors bornes acceptée");
+            Require(OverlayPreferencesStore.LoadMapZoomFactor(settingsPath) == 1.5,
+                "la valeur invalide a écrasé la préférence existante");
+            File.WriteAllText(settingsPath,
+                "{\"mapZoomFactor\":99999,\"mapScalePercent\":70}");
+            Require(OverlayPreferencesStore.LoadMapZoomFactor(settingsPath) is null
+                && OverlayPreferencesStore.LoadMapScalePercent(settingsPath) == 70,
+                "préférence invalide non ignorée ou réglage valide perdu");
+        });
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)

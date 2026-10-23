@@ -2555,6 +2555,7 @@ internal sealed partial class OverlayForm : Form
             core.Settings.AreDevToolsEnabled = false;
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.AreBrowserAcceleratorKeysEnabled = false;
+            core.WebMessageReceived += OnMapZoomPreferenceMessage;
             core.NavigationStarting += OnNavigationStarting;
             core.NavigationCompleted += OnNavigationCompleted;
             core.SourceChanged += OnSourceChanged;
@@ -2596,6 +2597,13 @@ internal sealed partial class OverlayForm : Form
                     document.addEventListener('DOMContentLoaded', install, { once: true });
                 })();
                 """;
+            // User-selected zoom survives WebView profile and Launcher replacement.
+            // The local renderer reads this before its initial image load.
+            await core.AddScriptToExecuteOnDocumentCreatedAsync(
+                "if (location.protocol === 'https:' && "
+                + "['raidpilot-map.local','raidpilot.local','tarkov.dev'].includes(location.hostname)) { "
+                + "window.__raidPilotHostZoomFactor = "
+                + JsonSerializer.Serialize(_preferredMapZoomFactor) + "; }");
             await core.AddScriptToExecuteOnDocumentCreatedAsync("if (location.hostname !== 'raidpilot-map.local') {\n" + (injectionScript) + "\n}");
             // Map detection starts before WebView2 initialization. If EFT has
             // already announced the raid, skip the default Customs navigation
@@ -2739,6 +2747,15 @@ internal sealed partial class OverlayForm : Form
             {
                 return;
             }
+
+            // Refresh the preference from AppData: the first document-created
+            // injection is immutable, while players can change zoom mid-session.
+            await core.ExecuteScriptAsync(
+                "window.__raidPilotHostZoomFactor = "
+                + JsonSerializer.Serialize(_preferredMapZoomFactor)
+                + "; window.dispatchEvent(new Event('raidpilot-zoom-sync')); void 0;");
+            if (!IsNavigationContinuationCurrent(completedNavigationSequence))
+                return;
 
             await ApplyWebInteractionStateAsync();
             if (!IsNavigationContinuationCurrent(completedNavigationSequence))
@@ -6371,6 +6388,8 @@ internal sealed partial class OverlayForm : Form
             _ = _squadClient.DisposeAsync();
             _squadClient = null;
         }
+        if (_webView.CoreWebView2 is { } zoomCore)
+            zoomCore.WebMessageReceived -= OnMapZoomPreferenceMessage;
         DisposeCollectiveAtlas();
         DisposePrecision();
         DisposeRaidClockUi();

@@ -7,6 +7,9 @@ internal static class OverlayPreferencesStore
 {
     private const string VisibleInCapturesProperty = "visibleInCaptures";
     private const string MapScalePercentProperty = "mapScalePercent";
+    private const string MapZoomFactorProperty = "mapZoomFactor";
+    internal const double MinimumMapZoomFactor = 0.20;
+    internal const double MaximumMapZoomFactor = 32.0;
     private const string MapCornerProperty = "mapCorner";
     private const string FreeLayoutProperty = "freeLayout";
 
@@ -14,7 +17,8 @@ internal static class OverlayPreferencesStore
         bool VisibleInCaptures,
         int? MapScalePercent,
         OverlayCorner MapCorner,
-        OverlayFreeLayout? FreeLayout);
+        OverlayFreeLayout? FreeLayout,
+        double? MapZoomFactor);
 
     internal static string DefaultPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -27,6 +31,9 @@ internal static class OverlayPreferencesStore
     internal static int? LoadMapScalePercent(string? path = null) =>
         ReadSnapshot(path).MapScalePercent;
 
+    internal static double? LoadMapZoomFactor(string? path = null) =>
+        ReadSnapshot(path).MapZoomFactor;
+
     internal static OverlayCorner LoadMapCorner(string? path = null) =>
         ReadSnapshot(path).MapCorner;
 
@@ -38,13 +45,7 @@ internal static class OverlayPreferencesStore
         string? path = null)
     {
         var current = ReadSnapshot(path);
-        return TrySaveSnapshot(
-            new Snapshot(
-                visibleInCaptures,
-                current.MapScalePercent,
-                current.MapCorner,
-                current.FreeLayout),
-            path);
+        return TrySaveSnapshot(current with { VisibleInCaptures = visibleInCaptures }, path);
     }
 
     internal static bool TrySaveMapScalePercent(
@@ -59,13 +60,17 @@ internal static class OverlayPreferencesStore
         }
 
         var current = ReadSnapshot(path);
-        return TrySaveSnapshot(
-            new Snapshot(
-                current.VisibleInCaptures,
-                mapScalePercent,
-                current.MapCorner,
-                current.FreeLayout),
-            path);
+        return TrySaveSnapshot(current with { MapScalePercent = mapScalePercent }, path);
+    }
+
+    internal static bool TrySaveMapZoomFactor(double factor, string? path = null)
+    {
+        if (!double.IsFinite(factor)
+            || factor is < MinimumMapZoomFactor or > MaximumMapZoomFactor)
+            return false;
+
+        var current = ReadSnapshot(path);
+        return TrySaveSnapshot(current with { MapZoomFactor = factor }, path);
     }
 
     internal static bool TrySaveMapCorner(
@@ -78,13 +83,11 @@ internal static class OverlayPreferencesStore
         }
 
         var current = ReadSnapshot(path);
-        return TrySaveSnapshot(
-            new Snapshot(
-                current.VisibleInCaptures,
-                current.MapScalePercent,
-                mapCorner,
-                null),
-            path);
+        return TrySaveSnapshot(current with
+        {
+            MapCorner = mapCorner,
+            FreeLayout = null
+        }, path);
     }
 
     internal static bool TrySaveFreeLayout(
@@ -97,13 +100,7 @@ internal static class OverlayPreferencesStore
         }
 
         var current = ReadSnapshot(path);
-        return TrySaveSnapshot(
-            new Snapshot(
-                current.VisibleInCaptures,
-                current.MapScalePercent,
-                current.MapCorner,
-                freeLayout),
-            path);
+        return TrySaveSnapshot(current with { FreeLayout = freeLayout }, path);
     }
 
     private static Snapshot ReadSnapshot(string? path)
@@ -113,7 +110,7 @@ internal static class OverlayPreferencesStore
             var settingsPath = Path.GetFullPath(path ?? DefaultPath);
             if (!File.Exists(settingsPath))
             {
-                return new Snapshot(true, null, OverlayCorner.TopRight, null);
+                return new Snapshot(true, null, OverlayCorner.TopRight, null, null);
             }
 
             using var stream = new FileStream(
@@ -124,7 +121,7 @@ internal static class OverlayPreferencesStore
             using var document = JsonDocument.Parse(stream);
             if (document.RootElement.ValueKind != JsonValueKind.Object)
             {
-                return new Snapshot(true, null, OverlayCorner.TopRight, null);
+                return new Snapshot(true, null, OverlayCorner.TopRight, null, null);
             }
 
             var visible = true;
@@ -187,13 +184,24 @@ internal static class OverlayPreferencesStore
                 }
             }
 
-            return new Snapshot(visible, mapScalePercent, mapCorner, freeLayout);
+            double? mapZoomFactor = null;
+            if (document.RootElement.TryGetProperty(
+                    MapZoomFactorProperty, out var zoomProperty)
+                && zoomProperty.ValueKind == JsonValueKind.Number
+                && zoomProperty.TryGetDouble(out var zoomValue)
+                && double.IsFinite(zoomValue)
+                && zoomValue is >= MinimumMapZoomFactor and <= MaximumMapZoomFactor)
+            {
+                mapZoomFactor = zoomValue;
+            }
+
+            return new Snapshot(visible, mapScalePercent, mapCorner, freeLayout, mapZoomFactor);
         }
         catch (Exception exception) when (IsExpectedFileError(exception))
         {
             // A missing, corrupt, or inaccessible preference must never stop
             // the overlay from starting.
-            return new Snapshot(true, null, OverlayCorner.TopRight, null);
+            return new Snapshot(true, null, OverlayCorner.TopRight, null, null);
         }
     }
 
@@ -230,6 +238,10 @@ internal static class OverlayPreferencesStore
                 if (snapshot.MapScalePercent is { } scale)
                 {
                     writer.WriteNumber(MapScalePercentProperty, scale);
+                }
+                if (snapshot.MapZoomFactor is { } zoom)
+                {
+                    writer.WriteNumber(MapZoomFactorProperty, zoom);
                 }
                 writer.WriteString(MapCornerProperty, snapshot.MapCorner.ToString());
                 if (snapshot.FreeLayout is { } freeLayout)

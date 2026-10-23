@@ -2598,11 +2598,27 @@
         }
     };
 
+    // One preference for every map: zoom relative to the map's default level.
     const mapZoomStoragePrefix = "raidpilot.mapZoom.";
+    const mapZoomGlobalStorageKey = "raidpilot.mapZoomFactor.global.v1";
+    const zoomFactorMin = 0.20;
+    const zoomFactorMax = 32;
     let mapZoomBoundInstance = null;
     let mapZoomBoundHandlers = null;
+    let mapZoomGestureDeadline = 0;
+    let mapZoomHostTimer = null;
+    let mapZoomLastStoredFactor = null;
+    const mapZoomGestureContainers = new WeakSet();
 
-    const mapZoomStorageKey = () => `${mapZoomStoragePrefix}${location.pathname.toLowerCase()}`;
+    const mapZoomStorageKey = () =>
+        mapZoomStoragePrefix + location.pathname.toLowerCase();
+
+    const validZoomFactor = raw => {
+        if (raw === null || raw === undefined || raw === "") return null;
+        const value = Number(raw);
+        return Number.isFinite(value) && value >= zoomFactorMin && value <= zoomFactorMax
+            ? value : null;
+    };
 
     const clampMapZoom = (mapInstance, zoom) => {
         if (zoom === null || zoom === undefined || zoom === "") return null;
@@ -2615,6 +2631,58 @@
         return value;
     };
 
+    const globalZoomFactor = () => {
+        const fromHost = validZoomFactor(window.__raidPilotHostZoomFactor);
+        if (fromHost !== null) return fromHost;
+        try {
+            return validZoomFactor(localStorage.getItem(mapZoomGlobalStorageKey));
+        } catch {
+            return null;
+        }
+    };
+
+    const zoomForSavedFactor = (mapInstance, factor) => {
+        const base = Number(mapInstance?.__raidPilotBaseZoom);
+        if (!Number.isFinite(base) || factor === null) return null;
+        return clampMapZoom(mapInstance, base + Math.log2(factor));
+    };
+
+    const markMapZoomGesture = () => {
+        mapZoomGestureDeadline = Date.now() + 1600;
+    };
+
+    const saveMapZoomFromGesture = (mapInstance) => {
+        if (Date.now() > mapZoomGestureDeadline) return;
+        const zoom = Number(mapInstance?.getZoom?.());
+        const base = Number(mapInstance?.__raidPilotBaseZoom);
+        if (!Number.isFinite(zoom) || !Number.isFinite(base)) return;
+
+        const rawFactor = 2 ** (zoom - base);
+        if (!Number.isFinite(rawFactor)) return;
+        const factor = Math.max(zoomFactorMin, Math.min(zoomFactorMax, rawFactor));
+        if (mapZoomLastStoredFactor !== null
+            && Math.abs(mapZoomLastStoredFactor - factor) < 1e-6) return;
+        mapZoomLastStoredFactor = factor;
+
+        try {
+            localStorage.setItem(mapZoomGlobalStorageKey, String(factor));
+            localStorage.setItem(mapZoomStorageKey(), String(zoom));
+        } catch {
+        }
+
+        if (mapZoomHostTimer !== null) clearTimeout(mapZoomHostTimer);
+        mapZoomHostTimer = setTimeout(() => {
+            mapZoomHostTimer = null;
+            try {
+                window.chrome?.webview?.postMessage?.({
+                    type: "raidpilot-map-zoom-preference",
+                    payload: { factor }
+                });
+            } catch {
+            }
+        }, 160);
+    };
+
     const updateMapZoomControls = (mapInstance = mapZoomBoundInstance) => {
         const controls = document.getElementById("raidpilot-zoom-controls");
         if (!controls || !mapInstance) return;
@@ -2625,7 +2693,7 @@
             const percent = Number.isFinite(baseZoom)
                 ? Math.round(100 * (2 ** (zoom - baseZoom)))
                 : 100;
-            output.textContent = `${Math.max(1, percent)}%`;
+            output.textContent = String(Math.max(1, percent)) + "%";
         }
         const min = Number(mapInstance.getMinZoom?.());
         const max = Number(mapInstance.getMaxZoom?.());
@@ -2635,14 +2703,44 @@
         if (plus) plus.disabled = Number.isFinite(max) && Number.isFinite(zoom) && zoom >= max;
     };
 
-    const persistMapZoom = (mapInstance) => {
-        const zoom = Number(mapInstance?.getZoom?.());
-        if (!Number.isFinite(zoom)) return;
+    const applySavedMapZoom = (mapInstance) => {
+        let factor = globalZoomFactor();
+        if (factor === null) {
+            // Upgrade the old per-map zoom without losing existing preferences.
+            try {
+                const legacyZoom = clampMapZoom(
+                    mapInstance, localStorage.getItem(mapZoomStorageKey()));
+                const baseZoom = Number(mapInstance.__raidPilotBaseZoom);
+                if (legacyZoom !== null && Number.isFinite(baseZoom)) {
+                    factor = validZoomFactor(2 ** (legacyZoom - baseZoom));
+                }
+            } catch {
+            }
+        }
+        const target = zoomForSavedFactor(mapInstance, factor);
+        if (target !== null && Math.abs(Number(mapInstance.getZoom?.()) - target) > 1e-7) {
+            mapInstance.setZoom?.(target, { animate: false });
+        }
+        mapZoomLastStoredFactor = factor;
+    };
+
+    window.addEventListener("raidpilot-zoom-sync", () => {
+        const factor = validZoomFactor(window.__raidPilotHostZoomFactor);
+        if (factor === null) return;
         try {
-            localStorage.setItem(mapZoomStorageKey(), String(zoom));
+            localStorage.setItem(mapZoomGlobalStorageKey, String(factor));
         } catch {
         }
-    };
+        mapZoomLastStoredFactor = factor;
+        mapZoomGestureDeadline = 0;
+        if (mapZoomBoundInstance) {
+            const target = zoomForSavedFactor(mapZoomBoundInstance, factor);
+            if (target !== null) {
+                mapZoomBoundInstance.setZoom?.(target, { animate: false });
+                updateMapZoomControls(mapZoomBoundInstance);
+            }
+        }
+    });
 
     const ensureMapZoomControls = () => {
         const container = document.getElementById("leaflet-map");
@@ -2652,29 +2750,39 @@
         mapInstance.scrollWheelZoom?.enable?.();
         mapInstance.dragging?.enable?.();
 
+        if (!mapZoomGestureContainers.has(container)) {
+            mapZoomGestureContainers.add(container);
+            for (const eventName of ["wheel", "dblclick", "touchstart"]) {
+                container.addEventListener(eventName, markMapZoomGesture, { capture: true, passive: true });
+            }
+        }
+
         if (mapZoomBoundInstance !== mapInstance) {
             if (mapZoomBoundInstance && mapZoomBoundHandlers) {
                 mapZoomBoundInstance.off?.("zoomend", mapZoomBoundHandlers.zoomend);
+                mapZoomBoundInstance.off?.("zoom", mapZoomBoundHandlers.zoom);
                 mapZoomBoundInstance.off?.("viewreset", mapZoomBoundHandlers.viewreset);
             }
             mapZoomBoundInstance = mapInstance;
+            mapZoomGestureDeadline = 0;
             mapInstance.__raidPilotBaseZoom = Number(mapInstance.getZoom?.());
             if (mapInstance.__raidPilotZoomRestored !== true) {
                 mapInstance.__raidPilotZoomRestored = true;
-                try {
-                    const stored = clampMapZoom(mapInstance, localStorage.getItem(mapZoomStorageKey()));
-                    if (stored !== null) mapInstance.setZoom?.(stored, { animate: false });
-                } catch {
-                }
+                applySavedMapZoom(mapInstance);
             }
             mapZoomBoundHandlers = {
                 zoomend: () => {
-                    persistMapZoom(mapInstance);
+                    saveMapZoomFromGesture(mapInstance);
+                    updateMapZoomControls(mapInstance);
+                },
+                zoom: () => {
+                    saveMapZoomFromGesture(mapInstance);
                     updateMapZoomControls(mapInstance);
                 },
                 viewreset: () => updateMapZoomControls(mapInstance),
             };
             mapInstance.on?.("zoomend", mapZoomBoundHandlers.zoomend);
+            mapInstance.on?.("zoom", mapZoomBoundHandlers.zoom);
             mapInstance.on?.("viewreset", mapZoomBoundHandlers.viewreset);
         }
 
@@ -2702,8 +2810,10 @@
                 if (!liveMap) return;
                 const action = button.dataset.raidpilotZoom;
                 if (action === "in") {
+                    markMapZoomGesture();
                     liveMap.zoomIn?.(1, { animate: false });
                 } else if (action === "out") {
+                    markMapZoomGesture();
                     liveMap.zoomOut?.(1, { animate: false });
                 } else if (action === "center"
                     && localPlayerPoseState
