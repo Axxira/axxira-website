@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>RaidPilot.Launcher</AssemblyName>
     <RootNamespace>RaidPilot.Launcher</RootNamespace>
-    <Version>0.2.12</Version>
+    <Version>0.2.13</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
@@ -19,6 +19,7 @@
   <ItemGroup>
     <Content Include="LISEZ-MOI.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="update-feed.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\release-history.json" Link="release-history.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="update-manifest.example.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Compile Include="..\overlay\SquadRelayClient.cs" Link="Shared\SquadRelayClient.cs" />
     <Compile Include="..\overlay\SquadProfileStore.cs" Link="Shared\SquadProfileStore.cs" />
