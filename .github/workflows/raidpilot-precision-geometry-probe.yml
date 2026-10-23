@@ -1,0 +1,101 @@
+name: RaidPilot Precision Geometry Validation
+
+on:
+  push:
+    branches: [raidpilot-precision-geometry]
+    paths:
+      - "raidpilot-updates/source/**"
+      - "raidpilot-updates/native-capture/**"
+      - "raidpilot-updates/release-history.json"
+      - ".github/workflows/raidpilot-precision-geometry-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 23
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Validate changelog and source versions
+        shell: pwsh
+        run: |
+          node raidpilot-updates/source/launcher/Tests/test-release-history.cjs
+          if ($LASTEXITCODE -ne 0) { throw "Release note version mismatch" }
+
+      - name: Restore original HD map assets from SHA-256 verified catalogue
+        shell: pwsh
+        run: |
+          & ./raidpilot-updates/Restore-LocalMapAssets.ps1
+
+      - name: Compile and verify WGC ABI 2 and geometry export
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $msbuild = @(& $vswhere -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'MSBuild\Current\Bin\MSBuild.exe' | Select-Object -First 1)
+          if (-not $msbuild -or -not $msbuild[0]) { throw "MSVC x64 not found" }
+          & $msbuild[0] 'raidpilot-updates\native-capture\RaidPilot.Capture.Native.vcxproj' /m:1 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { throw "WGC C++ bridge compilation failed" }
+          $native = Join-Path $env:GITHUB_WORKSPACE 'raidpilot-updates/native-capture/build/x64/Release/RaidPilot.Capture.Native.dll'
+          if (!(Test-Path -LiteralPath $native)) { throw "Missing native WGC DLL" }
+          Add-Type -TypeDefinition '[System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)] public delegate int RaidPilotWgcVersion();'
+          $dll = [System.Runtime.InteropServices.NativeLibrary]::Load($native)
+          try {
+            $callback = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer(
+              [System.Runtime.InteropServices.NativeLibrary]::GetExport($dll,'rp_wgc_version'),[RaidPilotWgcVersion])
+            if ($callback.Invoke() -ne 2) { throw "Expected native capture ABI 2" }
+            foreach ($symbol in 'rp_wgc_start','rp_wgc_poll','rp_wgc_poll_geometry','rp_wgc_stop') {
+              [void][System.Runtime.InteropServices.NativeLibrary]::GetExport($dll,$symbol)
+            }
+          } finally {
+            [System.Runtime.InteropServices.NativeLibrary]::Free($dll)
+          }
+          "RP_NATIVE_DLL=$native" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "PASS: Native WGC ABI 2 and capture geometry export"
+
+      - name: Generate RaidPilot application icon
+        shell: pwsh
+        run: |
+          dotnet run --project raidpilot-updates/source/brand/icon-builder/IconBuilder.csproj -c Release -- raidpilot-updates/source/brand
+          if ($LASTEXITCODE -ne 0) { throw "Icon generation failed" }
+
+      - name: Run visual geometry, FOV and full overlay regression tests
+        shell: pwsh
+        run: |
+          dotnet run --project raidpilot-updates/source/overlay/Tests/RaidPilot.Overlay.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Visual localization tests failed" }
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Launcher regression tests failed" }
+
+      - name: Publish Overlay and Beacon x64 with matched native capture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = Join-Path $env:RUNNER_TEMP 'precision-geometry'
+          foreach ($pair in @(
+              @{ name='overlay'; project='RaidPilot.Overlay.csproj'; exe='RaidPilot.Overlay.exe' },
+              @{ name='beacon'; project='RaidPilot.Beacon.csproj'; exe='RaidPilot.Beacon.exe' }
+          )) {
+            $project = Join-Path 'raidpilot-updates/source' ($pair.name + '/' + $pair.project)
+            $dest = Join-Path $out $pair.name
+            dotnet restore $project -r win-x64
+            if ($LASTEXITCODE -ne 0) { throw "Restore failed: $($pair.name)" }
+            dotnet publish $project -c Release -r win-x64 --self-contained true --no-restore -o $dest
+            if ($LASTEXITCODE -ne 0) { throw "Publish failed: $($pair.name)" }
+            Copy-Item -LiteralPath $env:RP_NATIVE_DLL -Destination (Join-Path $dest 'RaidPilot.Capture.Native.dll') -Force
+            if (!(Test-Path -LiteralPath (Join-Path $dest $pair.exe))) {
+              throw "Executable missing: $($pair.name)"
+            }
+            $original = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:RP_NATIVE_DLL).Hash
+            $copy = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $dest 'RaidPilot.Capture.Native.dll')).Hash
+            if ($original -ne $copy) { throw "Native WGC SHA-256 mismatch" }
+            Write-Host "PASS: $($pair.name) x64 with validated WGC ABI 2"
+          }
