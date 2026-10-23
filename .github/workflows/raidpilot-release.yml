@@ -58,8 +58,8 @@ jobs:
           try {
             $export = [System.Runtime.InteropServices.NativeLibrary]::GetExport($loaded,'rp_wgc_version')
             $callback = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($export,[RaidPilotWgcVersion])
-            if ($callback.Invoke() -ne 1) { throw "Incompatible WGC native ABI" }
-            foreach ($symbol in 'rp_wgc_start','rp_wgc_poll','rp_wgc_stop') {
+            if ($callback.Invoke() -ne 2) { throw "Incompatible WGC native ABI" }
+            foreach ($symbol in 'rp_wgc_start','rp_wgc_poll','rp_wgc_poll_geometry','rp_wgc_stop') {
               [void][System.Runtime.InteropServices.NativeLibrary]::GetExport($loaded,$symbol)
             }
           } finally {

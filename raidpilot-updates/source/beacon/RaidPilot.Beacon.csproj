@@ -31,6 +31,7 @@
     <Compile Include="..\overlay\SuperKeyframeStore.cs" Link="Shared\SuperKeyframeStore.cs" />
     <Compile Include="..\overlay\VisualEgomotionEstimator.cs" Link="Shared\VisualEgomotionEstimator.cs" />
     <Compile Include="..\overlay\VisualMotionGate.cs" Link="Shared\VisualMotionGate.cs" />
+    <Compile Include="..\overlay\VisualCaptureGeometryPolicy.cs" Link="Shared\VisualCaptureGeometryPolicy.cs" />
     <Compile Include="..\overlay\PrecisionV2Vision.cs" Link="Shared\PrecisionV2Vision.cs" />
     <Compile Include="..\overlay\PrecisionV3WindowsCapture.cs" Link="Shared\PrecisionV3WindowsCapture.cs" />
     <Compile Include="..\overlay\PrecisionDriftAudit.cs" Link="Shared\PrecisionDriftAudit.cs" />

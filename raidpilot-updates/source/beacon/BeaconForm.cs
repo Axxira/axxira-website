@@ -351,7 +351,10 @@ internal sealed class BeaconForm : Form
                 $"Capteur visuel : {_precisionV2Vision.Backend}\n"
                 + $"Statut WGC : {_precisionV2Vision.GpuStatus}\n"
                 + $"Images WGC : {_precisionV2Vision.GpuFrames}, "
-                + $"replis GDI : {_precisionV2Vision.GpuFallbacks}\n\n"
+                + $"replis GDI : {_precisionV2Vision.GpuFallbacks}\n"
+                + $"Géométrie : {_precisionV2Vision.CameraGeometryDiagnostic}\n"
+                + $"Formats incompatibles : {_precisionV2Vision.GeometryRejected}\n"
+                + $"Contrôle : {_precisionV2Vision.GeometryWarning}\n\n"
                 + _precisionV2DriftAudit.Describe(),
                 "RaidPilot Beacon — précision mesurée",
                 MessageBoxButtons.OK, MessageBoxIcon.Information));
