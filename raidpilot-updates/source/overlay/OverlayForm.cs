@@ -1136,6 +1136,7 @@ internal sealed partial class OverlayForm : Form
 
         VisualRelocalizationDecision? visualRelocalizationDecision = null;
         RealtimePose? visualRelocalizationPoseAtCapture = null;
+        var visualDecisionFromCollectiveAtlas = false;
         // Visual motion cannot produce an absolute position before the first
         // exact anchor. Delay GDI capture/feature work until it can actually
         // protect or correct a live estimate.
@@ -1329,7 +1330,8 @@ internal sealed partial class OverlayForm : Form
                                         lowRecognition,
                                         superRecognition,
                                         superAvailable,
-                                        now);
+                                        now,
+                                        commitImmediately: !_precisionV4Menu.Checked);
                                 if (evaluatedRelocalization.ShouldCorrect)
                                 {
                                     visualRelocalizationDecision =
@@ -1346,7 +1348,8 @@ internal sealed partial class OverlayForm : Form
                                             collectiveLowRecognition,
                                             collectiveSuperRecognition,
                                             collectiveSuperAvailable,
-                                            now);
+                                            now,
+                                            commitImmediately: !_precisionV4Menu.Checked);
                                     if (ShouldAcceptCollectiveCorrection(
                                             collectiveDecision,
                                             true))
@@ -1355,6 +1358,7 @@ internal sealed partial class OverlayForm : Form
                                             collectiveDecision;
                                         visualRelocalizationPoseAtCapture =
                                             estimatedVisualPose;
+                                        visualDecisionFromCollectiveAtlas = true;
                                     }
                                 }
                             }
@@ -1529,6 +1533,13 @@ internal sealed partial class OverlayForm : Form
                 decision.MaximumTranslationStepMeters,
                 decision.MaximumYawStepDegrees);
 
+            if (_precisionV4Menu.Checked)
+            {
+                // Only an APPLIED correction may reset health/acceptance metrics.
+                (visualDecisionFromCollectiveAtlas
+                    ? _collectiveAtlasRelocalization
+                    : _visualRelocalization).NoteAppliedCorrection(decision, now);
+            }
             visualCorrectionApplied = true;
             visualCorrectionSnap =
                 decision.Mode == VisualCorrectionMode.HardSnap;
@@ -1549,14 +1560,19 @@ internal sealed partial class OverlayForm : Form
                 InvalidateLearnedRoutePlan();
             }
 
-            _lastExactObservation = anchorObservation;
-            RecordAutomaticFloorAnchor(
-                anchorObservation,
-                now,
-                decision.GlobalLoopClosure
-                    ? "visual-v2-loop"
-                    : "visual-v2");
-            _lastExactAnchorAt = now;
+            if (!_precisionV4Menu.Checked)
+            {
+                // A bounded, partially fused visual observation is not a
+                // native F8 anchor and must not replace the last exact one.
+                _lastExactObservation = anchorObservation;
+                RecordAutomaticFloorAnchor(
+                    anchorObservation,
+                    now,
+                    decision.GlobalLoopClosure
+                        ? "visual-v2-loop"
+                        : "visual-v2");
+                _lastExactAnchorAt = now;
+            }
             _idleSeconds = 0.0;
             // Une correction visuelle crÃƒÂ©e une discontinuitÃƒÂ© par rapport au
             // segment utilisÃƒÂ© pour apprendre les vitesses. Le prochain F8 ne
