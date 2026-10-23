@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionV2Tests
 {
-    internal const int TestCount = 27;
+    internal const int TestCount = 31;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -171,6 +171,44 @@ internal static class PrecisionV2Tests
             Require(gate.SampleWidth==64 && gate.SampleHeight==36
                 && new VisualEgomotionSettings().HorizontalSearchRadius==6,
                 "ancienne voie de secours altérée par Precision V3");
+        }, failures);
+        Run("V3.2: attente d'une trame ne brise pas le suivi WGC", () => {
+            for (var pending = 1; pending < PrecisionV3ContinuityPolicy.MaximumPendingPolls; pending++)
+                Require(PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(1, pending),
+                    "interruption GPU brève force une nouvelle calibration de scène");
+            Require(!PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(
+                1, PrecisionV3ContinuityPolicy.MaximumPendingPolls),
+                "capture GPU bloquée conservée trop longtemps");
+        }, failures);
+        Run("V3.2: GDI reste actif au démarrage du capteur WGC", () => {
+            Require(!PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(0,1)
+                && !PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(-1,1)
+                && !PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(1,0),
+                "le capteur GPU inconnu désactive le repli GDI");
+        }, failures);
+        Run("V3.2: après une longue pause la scène repart du premier repère", () => {
+            var start = Stopwatch.Frequency * 100L;
+            Require(!PrecisionV3ContinuityPolicy.MustReprimeAfterGap(
+                start, start + Stopwatch.Frequency / 4),
+                "flux normal réinitialisé trop tôt");
+            Require(PrecisionV3ContinuityPolicy.MustReprimeAfterGap(
+                start, start + Stopwatch.Frequency),
+                "ancien flux WGC utilisé après une interruption de 1 seconde");
+            Require(PrecisionV3ContinuityPolicy.MustReprimeAfterGap(0,start),
+                "première image WGC non initialisée");
+        }, failures);
+        Run("V3.2: ancienne image stationnaire ne bloque pas le clavier", () => {
+            var f=Prepared();
+            var at=Stopwatch.Frequency * 10L + Stopwatch.Frequency * 3 / 5;
+            var oldStop=Frame(at,VisualEgomotionState.Stationary);
+            var tooLate=at + Stopwatch.Frequency * 2 / 5; // 400ms < 480ms stale limit
+            Require(f.Fuse(oldStop, tooLate, (nint)1, true, true,
+                RealtimeMotionEvidence.Unknown) == RealtimeMotionEvidence.Unknown,
+                "ancienne capture stationnaire bloque le mouvement commandé");
+            Require(f.Fuse(oldStop, at + Stopwatch.Frequency/5, (nint)1,
+                true, true, RealtimeMotionEvidence.Unknown)
+                == RealtimeMotionEvidence.Stationary,
+                "la preuve stationnaire récente est incorrectement rejetée");
         }, failures);
         Run("V2: premier flux fiable ne suffit pas à arrêter", () => {
             var f = new PrecisionV2MotionFusion();
