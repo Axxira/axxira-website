@@ -453,7 +453,9 @@ internal sealed class VisualRelocalizationEngineV2
     // V4 must not mark visual observations as absolute before its independent
     // geometry/innovation gate approves them AND the pose is actually corrected.
     // Legacy V2 keeps commitImmediately=true for backwards compatibility.
-    internal void NoteAppliedCorrection(VisualRelocalizationDecision decision, long timestamp)
+    internal void NoteAppliedCorrection(
+        VisualRelocalizationDecision decision, long timestamp,
+        bool countAsAbsoluteConfirmation = true)
     {
         if (timestamp < 0 || !decision.ShouldCorrect
             || !double.IsFinite(decision.PositionResidualMeters)
@@ -478,8 +480,14 @@ internal sealed class VisualRelocalizationEngineV2
                 if (decision.GlobalLoopClosure) _loopClosures++;
                 break;
         }
-        _lastAbsoluteConfirmationAt = Math.Max(_lastAbsoluteConfirmationAt, timestamp);
-        _health = LocalizationHealthState.Green;
+        // A partial visual correction is useful, but it is NOT an independent
+        // native F8 ground truth. Do not reset the age/health of the last
+        // authoritative anchor on the V4 path.
+        if (countAsAbsoluteConfirmation)
+        {
+            _lastAbsoluteConfirmationAt = Math.Max(_lastAbsoluteConfirmationAt, timestamp);
+            _health = LocalizationHealthState.Green;
+        }
     }
 
     internal VisualRelocalizationMetrics GetMetrics(long timestamp)

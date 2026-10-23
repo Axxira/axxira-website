@@ -77,3 +77,6 @@ POUR ENVOYER DES MISES À JOUR
 
 IMPORTANT
 Les binaires restent non signés Authenticode. Une signature de code Windows reste recommandée pour limiter les avertissements SmartScreen.
+
+
+Sécurité et récupération (Launcher 0.2.15) : le ZIP doit venir de la même publication Stable officielle que les autres composants, avoir un SHA-256 exact et contenir les versions attendues. Après une interruption, un journal conservé dans le dossier local du Launcher restaure les composants non cohérents à partir de leurs copies précédentes vérifiées. En cas de source personnalisée, la vérification cryptographique du manifeste nécessite un mécanisme de confiance externe. Une vraie signature Authenticode exige le certificat de l'éditeur.

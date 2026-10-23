@@ -377,3 +377,15 @@ Les reconnaissances incompatibles avec l'étage sont rejetées. Un filtre de pol
 
 
 Le menu **Exporter rapport comparatif F8 (.json)** produit uniquement les écarts, durées, incertitudes du modèle et compteurs de correction (32 intervalles maximum). Il n'exporte ni captures, ni coordonnées, ni identifiants. L'export est déclenché explicitement par le joueur, sans collecte en réseau. Le diagnostic V4 conserve ses compteurs pendant le raid, y compris après un nouvel F8.
+
+
+## RaidPilot 0.14.2.24 / Launcher 0.2.15 — fiabilité
+
+- Les mesures d'écart F8 sont classées strictement par mode (V1/V2/V4) : un F8 après un changement de mode ne peut pas compter comme preuve comparative du mode précédent.
+- Un repère visuel V4 partiellement pondéré n'efface pas l'âge de la dernière ancre F8. Un waypoint issu d'une relocalisation visuelle V4 reste une estimation; il ne devient pas un point « exact » dans les routes apprises.
+- Le Launcher écrit un journal local atomique avant une transaction Overlay/Beacon; en cas d'arrêt Windows, il vérifie les empreintes de l'ancienne version et restaure la paire au prochain démarrage plutôt que mélanger les binaires.
+- Le Launcher reprend une interruption HTTP par requête Range quand le serveur le permet, vérifie la plage de reprise et repart de zéro si le serveur renvoie une réponse complète; une SHA-256 sur l'archive entière reste obligatoire.
+- Le canal Stable officiel refuse les packages hors du dépôt officiel ou issus de publications différentes. Ce contrôle ne remplace **pas** une signature du manifeste ou du code par l'éditeur.
+- Le pipeline Windows vérifie les composants distribués et lance réellement le Launcher en mode `--verify-bundle` avant de créer les archives.
+
+**À valider en raid :** erreur de position réelle face aux F8 successifs sur plusieurs cartes/résolutions/postures, performance GPU selon PC et compatibilité de l'escouade avec plusieurs personnes en PvE. **À fournir avant distribution commerciale :** autorisations des auteurs des cartes non commerciales / à droits incertains, et certificat de signature des exécutables si l'on veut un package authentifié côté Windows. Ces éléments ne peuvent pas être réputés complets à partir des tests automatisés.

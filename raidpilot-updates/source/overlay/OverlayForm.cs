@@ -1538,7 +1538,8 @@ internal sealed partial class OverlayForm : Form
                 // Only an APPLIED correction may reset health/acceptance metrics.
                 (visualDecisionFromCollectiveAtlas
                     ? _collectiveAtlasRelocalization
-                    : _visualRelocalization).NoteAppliedCorrection(decision, now);
+                    : _visualRelocalization).NoteAppliedCorrection(
+                        decision, now, countAsAbsoluteConfirmation: false);
             }
             visualCorrectionApplied = true;
             visualCorrectionSnap =
@@ -1593,7 +1594,7 @@ internal sealed partial class OverlayForm : Form
         _realtimePoseHistory.Add(now, pose);
         ObserveLearnedRoutePose(
             pose,
-            visualCorrectionAuthoritative
+            visualCorrectionAuthoritative && !_precisionV4Menu.Checked
                 ? LearnedPoseSource.ExactAnchor
                 : LearnedPoseSource.LiveEstimate,
             pose.PositionUncertaintyMeters,
