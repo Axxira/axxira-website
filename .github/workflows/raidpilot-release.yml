@@ -41,6 +41,32 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Build optional WGC capture bridge
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $msbuild = @(& $vswhere -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'MSBuild\Current\Bin\MSBuild.exe' | Select-Object -First 1)
+          if (-not $msbuild -or -not $msbuild[0]) { throw "Visual C++ x64 toolchain unavailable" }
+          & $msbuild[0] 'raidpilot-updates\native-capture\RaidPilot.Capture.Native.vcxproj' /m:1 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { throw "Optional WGC module failed to compile" }
+          $native = Join-Path $env:GITHUB_WORKSPACE 'raidpilot-updates/native-capture/build/x64/Release/RaidPilot.Capture.Native.dll'
+          if (!(Test-Path -LiteralPath $native)) { throw "WGC module is missing" }
+          Add-Type -TypeDefinition '[System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)] public delegate int RaidPilotWgcVersion();'
+          $loaded = [System.Runtime.InteropServices.NativeLibrary]::Load($native)
+          try {
+            $export = [System.Runtime.InteropServices.NativeLibrary]::GetExport($loaded,'rp_wgc_version')
+            $callback = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($export,[RaidPilotWgcVersion])
+            if ($callback.Invoke() -ne 1) { throw "Incompatible WGC native ABI" }
+            foreach ($symbol in 'rp_wgc_start','rp_wgc_poll','rp_wgc_stop') {
+              [void][System.Runtime.InteropServices.NativeLibrary]::GetExport($loaded,$symbol)
+            }
+          } finally {
+            [System.Runtime.InteropServices.NativeLibrary]::Free($loaded)
+          }
+          "RP_WGC_NATIVE_DLL=$native" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "WGC native ABI validated; capture remains opt-in."
+
       - name: Read versions
         shell: pwsh
         run: |
@@ -97,6 +123,19 @@ jobs:
 
           dotnet restore (Join-Path $src "beacon\RaidPilot.Beacon.csproj") -r win-x64
           dotnet publish (Join-Path $src "beacon\RaidPilot.Beacon.csproj") -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out "beacon")
+
+          # The opt-in GPU DLL is shipped with each executable but never
+          # loaded until a player enables GPU capture from the tray menu.
+          $nativeHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:RP_WGC_NATIVE_DLL).Hash
+          foreach ($part in 'overlay','beacon') {
+            $dest = Join-Path $out ($part + '\RaidPilot.Capture.Native.dll')
+            Copy-Item -LiteralPath $env:RP_WGC_NATIVE_DLL -Destination $dest -Force
+            if ((Get-FileHash -Algorithm SHA256 -LiteralPath $dest).Hash -ne $nativeHash) {
+              throw "Optional WGC DLL checksum failed in $part"
+            }
+          }
+          Write-Host "WGC native DLL packaged with Overlay and Beacon, SHA-256 verified."
+
 
           dotnet restore (Join-Path $src "launcher\RaidPilot.Launcher.csproj") -r win-x64
           dotnet publish (Join-Path $src "launcher\RaidPilot.Launcher.csproj") -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out "launcher")
