@@ -209,6 +209,26 @@ await RunAsync("manifeste local validé", async () =>
     }
     finally { SafeDelete(root); }
 });
+Run("repli transactionnel des composants vérifié", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var target = Path.Combine(root, "component");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "Dummy.exe"), "v2");
+        var old = target + ".previous";
+        Directory.CreateDirectory(old);
+        File.WriteAllText(Path.Combine(old, "Dummy.exe"), "v1");
+        Require(UpdateService.RollbackOrRemove(target, "Dummy.exe", true)
+                && File.ReadAllText(Path.Combine(target, "Dummy.exe")) == "v1",
+            "composant précédent non restauré");
+        Require(UpdateService.RollbackOrRemove(target, "Dummy.exe", false)
+                && !Directory.Exists(target),
+            "nouveau composant sans ancienne version non supprimé");
+    }
+    finally { SafeDelete(root); }
+});
 Run("reprise après interruption de remplacement", () =>
 {
     var root = CreateTemp();
@@ -505,10 +525,10 @@ Run("notes: grand historique borné et trois lignes dynamiques disponibles", () 
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("28/28 tests launcher réussis.");
+    Console.WriteLine("29/29 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/28 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/29 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
