@@ -2732,6 +2732,7 @@
         } catch {
         }
         mapZoomLastStoredFactor = factor;
+        mapZoomGestureDeadline = 0;
         if (mapZoomBoundInstance) {
             const target = zoomForSavedFactor(mapZoomBoundInstance, factor);
             if (target !== null) {
@@ -2763,6 +2764,7 @@
                 mapZoomBoundInstance.off?.("viewreset", mapZoomBoundHandlers.viewreset);
             }
             mapZoomBoundInstance = mapInstance;
+            mapZoomGestureDeadline = 0;
             mapInstance.__raidPilotBaseZoom = Number(mapInstance.getZoom?.());
             if (mapInstance.__raidPilotZoomRestored !== true) {
                 mapInstance.__raidPilotZoomRestored = true;
