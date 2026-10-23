@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T12:51:47.4403386+00:00",
+  "publishedAt": "2026-10-23T13:42:18.7858984+00:00",
   "raidPilot": {
-    "version": "0.14.2.17",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.17-b0.3.6-l0.2.12-b09b35c70603/RaidPilot-Overlay-v0.14.2.17-Windows-x64.zip",
-    "sha256": "7289B08311CBEF914FFF6E4E2C8D7A60DDFD07D7AFCC69E5A55970F8F65D8E27",
-    "sizeBytes": 234421124,
-    "releaseNotes": "PRECISION V3 : capteur Windows.Graphics.Capture/Direct3D11 facultatif, activable dans le menu RaidPilot, capture GDI par défaut et repli automatique. F8 et relais Cloudflare conservés. Compatibilité en raid encore à confirmer."
+    "version": "0.14.2.18",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.12-3a609b034844/RaidPilot-Overlay-v0.14.2.18-Windows-x64.zip",
+    "sha256": "29CAD83001659EAEE18219D76A2A584196A8806209A4428E6D7A6A57BAB5637E",
+    "sizeBytes": 234437190,
+    "releaseNotes": "ZOOM PRÉFÉRENCES : zoom manuel enregistré entre raids et sur toutes les cartes locales/en ligne; AppData indépendant du Launcher, restauration automatique et bouton Ajuster. Capteur WGC optionnel conservé."
   },
   "beacon": {
     "version": "0.3.6",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.17-b0.3.6-l0.2.12-b09b35c70603/RaidPilot-Beacon-v0.3.6-Windows-x64.zip",
-    "sha256": "DF76F35FDF93258E12FA70D73BB5171B0BCCFA2ED2531F02EE5ABA4D315B3918",
-    "sizeBytes": 58323644,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.12-3a609b034844/RaidPilot-Beacon-v0.3.6-Windows-x64.zip",
+    "sha256": "3E0434BA3A57E23D3B32B04440B2D9DCD0F00059E3CA421043F5A775AE1D7DC7",
+    "sizeBytes": 58323643,
     "releaseNotes": "Beacon 0.3.6 : capteur Windows WGC facultatif avec retour GDI et diagnostic GPU. Les codes d’équipe et le relais Cloudflare sont inchangés."
   },
   "launcher": {
     "version": "0.2.12",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.17-b0.3.6-l0.2.12-b09b35c70603/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
-    "sha256": "60D0EB861B184ADA3FEC460D00D7B6722CBE3B22DB7F30B45A7685E93DAC1151",
-    "sizeBytes": 350972100,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.12-3a609b034844/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
+    "sha256": "DE5AFB470E9701358469E9891091405DAB30540BDD4E967B9086C70AC0586130",
+    "sizeBytes": 350988165,
     "releaseNotes": "Launcher 0.2.12 : canal Stable actualisé sans cache intermédiaire ; vérification SHA-256 et sauvegarde de retour arrière conservées. Développé par Peko."
   }
 }
