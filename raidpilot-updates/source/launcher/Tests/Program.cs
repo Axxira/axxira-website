@@ -31,6 +31,17 @@ Run("source désactivée reste désactivée au démarrage", () =>
     }
     finally { SafeDelete(root); }
 });
+Run("mise en page du launcher adaptée aux petits écrans", () =>
+{
+    var small = LauncherCanvasLayout.FitWindow(new System.Drawing.Size(900, 600));
+    Require(small.Width < 1180 && small.Height < 760,
+        "la taille initiale du launcher dépasse le moniteur");
+    var transform = LauncherCanvasLayout.Fit(small);
+    var virtualOrigin = transform.ToCanvas(new System.Drawing.Point(
+        (int)Math.Floor(transform.OffsetX), (int)Math.Floor(transform.OffsetY)));
+    Require(virtualOrigin.X is -1 or 0 && virtualOrigin.Y is -1 or 0,
+        "les clics ne suivent pas la même échelle que l'interface");
+});
 Run("source HTTP refusée", () =>
 {
     Require(!UpdateService.IsAllowedManifestLocation("http://example.com/manifest.json"),
@@ -494,10 +505,10 @@ Run("notes: grand historique borné et trois lignes dynamiques disponibles", () 
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("27/27 tests launcher réussis.");
+    Console.WriteLine("28/28 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/27 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/28 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
