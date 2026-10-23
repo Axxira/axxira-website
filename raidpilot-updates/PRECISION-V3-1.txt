@@ -1,0 +1,8 @@
+PRECISION V3.1 - Overlay 0.14.2.19 / Beacon 0.3.7
+
+WGC Direct3D11 capture ABI 2: géométrie ContentSize de chaque trame, reconstruction des buffers après changement de taille.
+Validation croisée du format client vs capture : tolérance 4 %, puis retour au capteur GDI sur incompatibilité.
+FOV horizontal effectif recalculé depuis le FOV vertical EFT et le cadrage réel; remise à zéro des observations après changement de résolution ou de FOV.
+Diagnostic format client, FOV et captures rejetées dans les deux programmes.
+Aucun accès à la mémoire du jeu. Position absolue toujours F8 et vision métrique non garantie.
+Tests synthétiques 16:9, 21:9, 32:9, 1080p, 1440p, 4K, fausse capture et changement d'écran.

@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "component": "raidpilot",
+      "version": "0.14.2.19",
+      "raidPilotVersion": "0.14.2.19",
+      "beaconVersion": "0.3.7",
+      "launcherVersion": "0.2.13",
+      "date": "2026-10-23",
+      "summary": "Precision V3.1 : résolution, écrans ultralarges et FOV synchronisés",
+      "details": "La voie Windows.Graphics.Capture transmet maintenant les vraies dimensions de la capture et reconstruit son frame pool après un redimensionnement de la fenêtre. Le suivi visuel ajuste automatiquement la projection et le champ de vision horizontal au client Tarkov de chaque joueur, notamment en 16:9, 21:9 et 32:9. Les changements de résolution ou de FOV invalident immédiatement les anciennes preuves de mouvement; une capture étirée/incompatible retourne au capteur GDI. Diagnostics du format et du FOV disponibles dans Overlay et Beacon. F8, mode GPU facultatif, relais Cloudflare et zoom sauvegardé inchangés. La réduction de dérive réelle devra être validée par les mesures F8 en jeu."
+    },
+    {
       "component": "launcher",
       "version": "0.2.13",
       "raidPilotVersion": "0.14.2.18",
