@@ -1,0 +1,33 @@
+name: RaidPilot relay connectivity check
+
+on:
+  push:
+    branches: [raidpilot-updates]
+    paths:
+      - "raidpilot-updates/relay/**"
+      - ".github/workflows/raidpilot-relay-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify authorized RaidPilot Cloudflare Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          address="https://raidpilot-team-relay.tyronixstudio.workers.dev/health"
+          code="$(curl --silent --show-error --max-time 12 --output /tmp/raidpilot-health.json --write-out "%{http_code}" "$address")"
+          echo "Worker HTTP status: $code"
+          echo "Worker response:"
+          head -c 600 /tmp/raidpilot-health.json
+          echo
+          if [[ "$code" != "200" ]]; then
+            echo "::error::RaidPilot Worker is not responding with HTTP 200."
+            exit 1
+          fi
+          node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/raidpilot-health.json','utf8'));if(j.service!=='RaidPilot Team Relay'||j.ok!==true)throw Error('Cloudflare Worker is not running RaidPilot relay protocol');console.log('RaidPilot relay health confirmed')"
