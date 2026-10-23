@@ -39,10 +39,10 @@ internal sealed partial class OverlayForm : Form
     private static readonly TimeSpan RaidStartMapDetectionGracePeriod = TimeSpan.FromMilliseconds(1750);
 
     private readonly WebView2 _webView = new();
-    private readonly ToolStripMenuItem _gpsMenuItem = new("Afficher mon point sur tarkov.dev (Ctrl+Alt+G)Ã¢â‚¬Â¦");
-    private readonly ToolStripMenuItem _positionKeyMenuItem = new("Touche de positionÃ¢â‚¬Â¦");
-    private readonly ToolStripMenuItem _extractionMenuItem = new("Extraction auto : OÃƒâ€”2 puis F8 (Ctrl+Alt+E secours)");
-    private readonly ToolStripMenuItem _questMenuItem = new("QuÃƒÂªtes : ouvre TÃƒâ€šCHES puis F8");
+    private readonly ToolStripMenuItem _gpsMenuItem = new("Afficher mon point sur tarkov.dev (Ctrl+Alt+G)…");
+    private readonly ToolStripMenuItem _positionKeyMenuItem = new("Touche de position…");
+    private readonly ToolStripMenuItem _extractionMenuItem = new("Extraction auto : O×2 puis F8 (Ctrl+Alt+E secours)");
+    private readonly ToolStripMenuItem _questMenuItem = new("Quêtes : ouvre TÂCHES puis F8");
     private readonly ToolStripMenuItem _streamVisibilityMenuItem = new("Visible dans le stream Discord")
     {
         Checked = true,
@@ -366,7 +366,7 @@ internal sealed partial class OverlayForm : Form
             BeginInvoke(() => _trayIcon.ShowBalloonTip(
                 5000,
                 "RaidPilot",
-                "Un raccourci global RaidPilot est dÃƒÂ©jÃƒÂ  utilisÃƒÂ©. Le menu de la zone de notification reste disponible.",
+                "Un raccourci global RaidPilot est déjà utilisé. Le menu de la zone de notification reste disponible.",
                 ToolTipIcon.Warning));
         }
     }
@@ -546,10 +546,10 @@ internal sealed partial class OverlayForm : Form
             Interlocked.Exchange(ref _autoReanchorRequestedAt, 0);
             _trayIcon.ShowBalloonTip(
                 3000,
-                "RaidPilot Ã¢â‚¬â€ recalage",
+                "RaidPilot — recalage",
                 _autoReanchorEnabled
-                    ? "Recalage discret activÃƒÂ© : RaidPilot corrige le point seulement quand tu es au repos."
-                    : "Recalage automatique dÃƒÂ©sactivÃƒÂ© : F8 reste disponible manuellement.",
+                    ? "Recalage discret activé : RaidPilot corrige le point seulement quand tu es au repos."
+                    : "Recalage automatique désactivé : F8 reste disponible manuellement.",
                 ToolTipIcon.Info);
         };
         menu.Items.Add(_autoReanchorMenuItem);
@@ -606,10 +606,10 @@ internal sealed partial class OverlayForm : Form
             _effectiveMapScale * 100.0,
             MidpointRounding.AwayFromZero);
         _mapSizeMenuItem.Text = _mapScalePercent is { } requested
-            ? $"Taille de la carte ({requested}% Ã¢â€ â€™ {effectivePercent}%)"
-            : $"Taille de la carte (Auto Ã‚Â· {effectivePercent}%)";
+            ? $"Taille de la carte ({requested}% → {effectivePercent}%)"
+            : $"Taille de la carte (Auto · {effectivePercent}%)";
 
-        var autoItem = new ToolStripMenuItem("Auto Ã¢â‚¬â€ recommandÃƒÂ©")
+        var autoItem = new ToolStripMenuItem("Auto — recommandé")
         {
             Checked = !_mapScalePercent.HasValue,
             CheckOnClick = false,
@@ -634,7 +634,7 @@ internal sealed partial class OverlayForm : Form
 
         _mapSizeMenuItem.DropDownItems.Add(new ToolStripSeparator());
 
-        var reduceItem = new ToolStripMenuItem("Ã¢Ë†â€™ RÃƒÂ©duire de 5%");
+        var reduceItem = new ToolStripMenuItem("− Réduire de 5%");
         reduceItem.Click += (_, _) => AdjustMapScalePercent(-5);
         _mapSizeMenuItem.DropDownItems.Add(reduceItem);
 
@@ -644,7 +644,7 @@ internal sealed partial class OverlayForm : Form
 
         _mapSizeMenuItem.DropDownItems.Add(new ToolStripSeparator());
 
-        var resetItem = new ToolStripMenuItem("RÃƒÂ©initialiser en Auto");
+        var resetItem = new ToolStripMenuItem("Réinitialiser en Auto");
         resetItem.Click += (_, _) => SetMapScalePercent(null, showSuccess: true);
         _mapSizeMenuItem.DropDownItems.Add(resetItem);
     }
@@ -689,8 +689,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 4500,
-                "RaidPilot Ã¢â‚¬â€ taille de carte",
-                "La taille a changÃƒÂ© pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
+                "RaidPilot — taille de carte",
+                "La taille a changé pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
                 ToolTipIcon.Warning);
             return;
         }
@@ -701,14 +701,14 @@ internal sealed partial class OverlayForm : Form
                 _effectiveMapScale * 100.0,
                 MidpointRounding.AwayFromZero);
             var message = percent is null
-                ? $"Mode Auto activÃƒÂ© Ã‚Â· taille actuelle {effectivePercent}%."
+                ? $"Mode Auto activé · taille actuelle {effectivePercent}%."
                 : effectivePercent == percent.Value
-                    ? $"Taille de carte rÃƒÂ©glÃƒÂ©e ÃƒÂ  {percent.Value}%."
-                    : $"Taille demandÃƒÂ©e {percent.Value}% Ã‚Â· limitÃƒÂ©e ÃƒÂ  {effectivePercent}% pour rester dans l'ÃƒÂ©cran.";
+                    ? $"Taille de carte réglée à {percent.Value}%."
+                    : $"Taille demandée {percent.Value}% · limitée à {effectivePercent}% pour rester dans l'écran.";
 
             _trayIcon.ShowBalloonTip(
                 3000,
-                "RaidPilot Ã¢â‚¬â€ taille de carte",
+                "RaidPilot — taille de carte",
                 message,
                 ToolTipIcon.Info);
         }
@@ -747,7 +747,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         _mapCornerMenuItem.DropDownItems.Add(new ToolStripSeparator());
-        var freeItem = new ToolStripMenuItem("Libre Ã¢â‚¬â€ dÃƒÂ©placer et redimensionner")
+        var freeItem = new ToolStripMenuItem("Libre — déplacer et redimensionner")
         {
             Checked = _freeLayout.HasValue,
             CheckOnClick = false,
@@ -773,8 +773,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 4500,
-                "RaidPilot Ã¢â‚¬â€ position de carte",
-                "La position a changÃƒÂ© pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
+                "RaidPilot — position de carte",
+                "La position a changé pour cette session, mais RaidPilot n'a pas pu l'enregistrer.",
                 ToolTipIcon.Warning);
             return;
         }
@@ -783,8 +783,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 2500,
-                "RaidPilot Ã¢â‚¬â€ position de carte",
-                $"Carte placÃƒÂ©e : {MapCornerLabel(corner)}.",
+                "RaidPilot — position de carte",
+                $"Carte placée : {MapCornerLabel(corner)}.",
                 ToolTipIcon.Info);
         }
     }
@@ -798,8 +798,8 @@ internal sealed partial class OverlayForm : Form
         SetClickThrough(false, activateWhenInteractive: true);
         _trayIcon.ShowBalloonTip(
             4000,
-            "RaidPilot Ã¢â‚¬â€ position libre",
-            "DÃƒÂ©place ou redimensionne la fenÃƒÂªtre, puis refais Ctrl+Alt+I pour verrouiller la carte.",
+            "RaidPilot — position libre",
+            "Déplace ou redimensionne la fenêtre, puis refais Ctrl+Alt+I pour verrouiller la carte.",
             ToolTipIcon.Info);
     }
 
@@ -2129,10 +2129,10 @@ internal sealed partial class OverlayForm : Form
 
         _trayIcon.ShowBalloonTip(
             3500,
-            "RaidPilot Ã¢â‚¬â€ suivi",
+            "RaidPilot — suivi",
             enabled
-                ? "Suivi fluide activÃƒÂ© : la position bouge entre les recalibrages F8."
-                : "Suivi fluide dÃƒÂ©sactivÃƒÂ© : la position change seulement avec F8.",
+                ? "Suivi fluide activé : la position bouge entre les recalibrages F8."
+                : "Suivi fluide désactivé : la position change seulement avec F8.",
             ToolTipIcon.Info);
     }
 
@@ -2645,7 +2645,7 @@ internal sealed partial class OverlayForm : Form
             if (_offlineMapMode)
             {
                 SetStatus(
-                    "tarkov.dev bloquÃƒÂ© Ã‚Â· carte locale activÃƒÂ©e",
+                    "tarkov.dev bloqué · carte locale activée",
                     Color.FromArgb(217, 170, 78));
             }
             await _localMapHost.AttachAsync(_webView);
@@ -2729,7 +2729,7 @@ internal sealed partial class OverlayForm : Form
         {
             if (_pendingDetectedMap is not null)
             {
-                SetStatus("Nouvelle tentative de carteÃ¢â‚¬Â¦", Color.FromArgb(217, 170, 78));
+                SetStatus("Nouvelle tentative de carte…", Color.FromArgb(217, 170, 78));
                 _ = RetryPendingDetectedMapAsync(_pendingDetectedMap);
             }
             else
@@ -2745,7 +2745,7 @@ internal sealed partial class OverlayForm : Form
         {
             return;
         }
-        SetStatus(_gpsEnabled ? "GPS actif" : "Carte prÃƒÂªte");
+        SetStatus(_gpsEnabled ? "GPS actif" : "Carte prête");
         try
         {
             if (_raidQuestGameMode is { } gameMode)
@@ -2853,7 +2853,7 @@ internal sealed partial class OverlayForm : Form
             if (!_formLifetime.IsCancellationRequested
                 && IsNavigationContinuationCurrent(completedNavigationSequence))
             {
-                SetStatus(_gpsEnabled ? "GPS actif" : "Carte prÃƒÂªte");
+                SetStatus(_gpsEnabled ? "GPS actif" : "Carte prête");
             }
         }
     }
@@ -2975,7 +2975,7 @@ internal sealed partial class OverlayForm : Form
         if (!_webReady || _webView.CoreWebView2 is null)
         {
             MessageBox.Show(
-                "Attendez que la carte tarkov.dev soit chargÃƒÂ©e.",
+                "Attendez que la carte tarkov.dev soit chargée.",
                 "RaidPilot",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
@@ -2984,11 +2984,11 @@ internal sealed partial class OverlayForm : Form
 
         var consent = MessageBox.Show(
             "Afficher aussi ton point sur la carte tarkov.dev ?\n\n"
-            + "La lecture locale des captures, la flÃƒÂ¨che et le clignotement des sorties fonctionnent dÃƒÂ©jÃƒÂ  sans cette option. "
-            + "Si tu acceptes, seuls la carte, x/y/z et la rotation mesurÃƒÂ©s ou estimÃƒÂ©s seront envoyÃƒÂ©s ÃƒÂ  wss://socket.tarkov.dev afin d'afficher ton point. "
+            + "La lecture locale des captures, la flèche et le clignotement des sorties fonctionnent déjà sans cette option. "
+            + "Si tu acceptes, seuls la carte, x/y/z et la rotation mesurés ou estimés seront envoyés à wss://socket.tarkov.dev afin d'afficher ton point. "
             + "Les captures, les lignes OCR, les touches, la souris et les lignes du journal restent sur ce PC. "
-            + "RaidPilot ne lit pas la mÃƒÂ©moire ou le trafic rÃƒÂ©seau du jeu et ne simule aucune touche.",
-            "Point tarkov.dev Ã¢â‚¬â€ RaidPilot",
+            + "RaidPilot ne lit pas la mémoire ou le trafic réseau du jeu et ne simule aucune touche.",
+            "Point tarkov.dev — RaidPilot",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question,
             MessageBoxDefaultButton.Button2);
@@ -2999,7 +2999,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         _gpsMenuItem.Enabled = false;
-        SetStatus("Connexion GPSÃ¢â‚¬Â¦", Color.FromArgb(217, 170, 78));
+        SetStatus("Connexion GPS…", Color.FromArgb(217, 170, 78));
 
         try
         {
@@ -3018,7 +3018,7 @@ internal sealed partial class OverlayForm : Form
                 }
                 catch (OperationCanceledException) when (!_formLifetime.IsCancellationRequested)
                 {
-                    throw new TimeoutException("Le service GPS tarkov.dev n'a pas rÃƒÂ©pondu sous 12 secondes.");
+                    throw new TimeoutException("Le service GPS tarkov.dev n'a pas répondu sous 12 secondes.");
                 }
 
                 _gpsClient = client;
@@ -3027,8 +3027,8 @@ internal sealed partial class OverlayForm : Form
                 RefreshPositionKeyMenu();
                 SetStatus(
                     _screenshotBinding.IsReady
-                        ? $"Point actif Ã‚Â· suivi local Ã‚Â· {_screenshotBinding.UserLabel}"
-                        : "Point actif Ã‚Â· touche ÃƒÂ  configurer",
+                        ? $"Point actif · suivi local · {_screenshotBinding.UserLabel}"
+                        : "Point actif · touche à configurer",
                     Color.FromArgb(88, 168, 138));
                 if (_lastObservation is { } observation)
                 {
@@ -3048,9 +3048,9 @@ internal sealed partial class OverlayForm : Form
         catch (Exception exception)
         {
             await ClearMapReceiverAsync(reload: true);
-            SetStatus("GPS non connectÃƒÂ©", Color.FromArgb(214, 93, 84));
+            SetStatus("GPS non connecté", Color.FromArgb(214, 93, 84));
             MessageBox.Show(
-                $"La connexion GPS n'a pas pu ÃƒÂªtre activÃƒÂ©e.\n\n{exception.Message}",
+                $"La connexion GPS n'a pas pu être activée.\n\n{exception.Message}",
                 "RaidPilot",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
@@ -3111,7 +3111,7 @@ internal sealed partial class OverlayForm : Form
             }
         }
 
-        throw new InvalidOperationException("tarkov.dev n'a pas confirmÃƒÂ© la session distante.");
+        throw new InvalidOperationException("tarkov.dev n'a pas confirmé la session distante.");
     }
 
     private string GetCurrentMapUrl()
@@ -3221,10 +3221,10 @@ internal sealed partial class OverlayForm : Form
             await client.DisposeAsync();
         }
 
-        _gpsMenuItem.Text = "Afficher mon point sur tarkov.dev (Ctrl+Alt+G)Ã¢â‚¬Â¦";
+        _gpsMenuItem.Text = "Afficher mon point sur tarkov.dev (Ctrl+Alt+G)…";
         _gpsMenuItem.Enabled = true;
         await ClearMapReceiverAsync(reload: !_formLifetime.IsCancellationRequested);
-        SetStatus("Point distant masquÃƒÂ© Ã‚Â· guidage local actif");
+        SetStatus("Point distant masqué · guidage local actif");
     }
 
     private async Task ClearMapReceiverAsync(bool reload)
@@ -3715,7 +3715,7 @@ internal sealed partial class OverlayForm : Form
             var panel = ExtractionAdvisor.ResolveOcrExtractionPanel(compatible, lines);
             if (panel.SlotCount < 2)
             {
-                SetStatus("Sorties non lues Ã‚Â· O deux fois puis F8", Color.FromArgb(217, 170, 78));
+                SetStatus("Sorties non lues · O deux fois puis F8", Color.FromArgb(217, 170, 78));
                 return;
             }
             // ResolveOcrExtractionPanel ne conserve que les rangs EXFIL valides;
@@ -3729,8 +3729,8 @@ internal sealed partial class OverlayForm : Form
             {
                 SetStatus(
                     panel.IsComplete
-                        ? "Aucune sortie EXFIL reconnue Ã‚Â· O deux fois puis F8"
-                        : $"Lecture incomplÃƒÂ¨te {panel.ConfirmedIds.Count}/{panel.SlotCount} Ã‚Â· laisse O ouvert puis refais F8",
+                        ? "Aucune sortie EXFIL reconnue · O deux fois puis F8"
+                        : $"Lecture incomplète {panel.ConfirmedIds.Count}/{panel.SlotCount} · laisse O ouvert puis refais F8",
                     Color.FromArgb(217, 170, 78));
                 return;
             }
@@ -3755,7 +3755,7 @@ internal sealed partial class OverlayForm : Form
             if (!panel.IsComplete)
             {
                 SetStatus(
-                    $"Guidage actif Ã‚Â· lecture {panel.ConfirmedIds.Count}/{panel.SlotCount} Ã‚Â· F8 pour complÃƒÂ©ter",
+                    $"Guidage actif · lecture {panel.ConfirmedIds.Count}/{panel.SlotCount} · F8 pour compléter",
                     Color.FromArgb(88, 168, 138));
             }
         }
@@ -3767,7 +3767,7 @@ internal sealed partial class OverlayForm : Form
         }
         catch (Exception)
         {
-            SetStatus("Lecture des sorties ÃƒÂ  reprendre Ã‚Â· O deux fois puis F8", Color.FromArgb(217, 170, 78));
+            SetStatus("Lecture des sorties à reprendre · O deux fois puis F8", Color.FromArgb(217, 170, 78));
         }
         finally
         {
@@ -4019,8 +4019,8 @@ internal sealed partial class OverlayForm : Form
                 .ToArray();
 
             _questMenuItem.Text = confirmed.Count == 1
-                ? "QuÃƒÂªtes : 1 repÃƒÂ©rÃƒÂ©e sur cette carte"
-                : $"QuÃƒÂªtes : {confirmed.Count} repÃƒÂ©rÃƒÂ©es sur cette carte";
+                ? "Quêtes : 1 repérée sur cette carte"
+                : $"Quêtes : {confirmed.Count} repérées sur cette carte";
 
             // Les identifiants de certaines quÃƒÂªtes diffÃƒÂ¨rent entre PvE et PvP.
             // tarkov.dev construit ses couches depuis le mode Redux lu au
@@ -4036,8 +4036,8 @@ internal sealed partial class OverlayForm : Form
             {
                 SetStatus(
                     confirmed.Count == 1
-                        ? "1 quÃƒÂªte placÃƒÂ©e sur la carte"
-                        : $"{confirmed.Count} quÃƒÂªtes placÃƒÂ©es sur la carte",
+                        ? "1 quête placée sur la carte"
+                        : $"{confirmed.Count} quêtes placées sur la carte",
                     Color.FromArgb(196, 113, 237));
             }
         }
@@ -4362,7 +4362,7 @@ internal sealed partial class OverlayForm : Form
                 if (_selectedExtraction is null)
                 {
                     SetStatus(
-                        $"Position mise ÃƒÂ  jour Ã‚Â· {DateTime.Now:HH:mm:ss}",
+                        $"Position mise à jour · {DateTime.Now:HH:mm:ss}",
                         Color.FromArgb(88, 168, 138));
                 }
             });
@@ -4386,7 +4386,7 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot Ã¢â‚¬â€ extraction",
+                "RaidPilot — extraction",
                 "Appuie sur F8 en raid avant de choisir une extraction.",
                 ToolTipIcon.Info);
             return;
@@ -4435,8 +4435,8 @@ internal sealed partial class OverlayForm : Form
             {
                 _trayIcon.ShowBalloonTip(
                     5000,
-                    "RaidPilot Ã¢â‚¬â€ extraction",
-                    $"Aucune extraction {_raidSide} nÃ¢â‚¬â„¢a ÃƒÂ©tÃƒÂ© trouvÃƒÂ©e pour {_currentMap}.",
+                    "RaidPilot — extraction",
+                    $"Aucune extraction {_raidSide} n’a été trouvée pour {_currentMap}.",
                     ToolTipIcon.Warning);
                 return;
             }
@@ -4461,8 +4461,8 @@ internal sealed partial class OverlayForm : Form
             SetStatus("Extractions indisponibles", Color.FromArgb(217, 170, 78));
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot Ã¢â‚¬â€ extraction",
-                "Les donnÃƒÂ©es dÃ¢â‚¬â„¢extraction tarkov.dev sont momentanÃƒÂ©ment indisponibles.",
+                "RaidPilot — extraction",
+                "Les données d’extraction tarkov.dev sont momentanément indisponibles.",
                 ToolTipIcon.Warning);
         }
         finally
@@ -5367,8 +5367,8 @@ internal sealed partial class OverlayForm : Form
                 : $"Extraction auto : {target.Name}";
             SetStatus(
                 destinationGuidance.HasArrived
-                    ? $"ArrivÃƒÂ© Ã‚Â· {target.Name}"
-                    : $"{target.Name} Ã‚Â· {displayedDistance:F0} m",
+                    ? $"Arrivé · {target.Name}"
+                    : $"{target.Name} · {displayedDistance:F0} m",
                 Color.FromArgb(88, 168, 138));
             ShowNoActivate();
         }
@@ -5380,7 +5380,7 @@ internal sealed partial class OverlayForm : Form
         InvalidateLearnedRoutePlan();
         var clearGeneration = _guidanceGeneration;
         _selectedExtraction = null;
-        _extractionMenuItem.Text = "Extraction auto : OÃƒâ€”2 puis F8 (Ctrl+Alt+E secours)";
+        _extractionMenuItem.Text = "Extraction auto : O×2 puis F8 (Ctrl+Alt+E secours)";
         await ClearLearnedRouteOverlayAsync(clearGeneration);
         await ClearGuidanceOverlayAsync(clearGeneration);
     }
@@ -5477,8 +5477,8 @@ internal sealed partial class OverlayForm : Form
             ResetDistanceCalibrationCounters();
             ResetControlTrackingState();
         }
-        _extractionMenuItem.Text = "Extraction auto : OÃƒâ€”2 puis F8 (Ctrl+Alt+E secours)";
-        _questMenuItem.Text = "QuÃƒÂªtes : ouvre TÃƒâ€šCHES puis F8";
+        _extractionMenuItem.Text = "Extraction auto : O×2 puis F8 (Ctrl+Alt+E secours)";
+        _questMenuItem.Text = "Quêtes : ouvre TÂCHES puis F8";
         _ = ClearExtractionGuidanceAsync();
         _ = ClearRaidExtractionMarkersAsync(_raidGeneration);
         _ = ClearRaidQuestMarkersAsync(_raidGeneration);
@@ -5495,8 +5495,8 @@ internal sealed partial class OverlayForm : Form
         ResetExtractionGuidance(clearObservation: false);
         _trayIcon.ShowBalloonTip(
             3500,
-            "RaidPilot Ã¢â‚¬â€ extraction",
-            side == RaidSide.Pmc ? "Guidage rÃƒÂ©glÃƒÂ© sur PMC." : "Guidage rÃƒÂ©glÃƒÂ© sur Scav.",
+            "RaidPilot — extraction",
+            side == RaidSide.Pmc ? "Guidage réglé sur PMC." : "Guidage réglé sur Scav.",
             ToolTipIcon.Info);
     }
 
@@ -5667,7 +5667,7 @@ internal sealed partial class OverlayForm : Form
                 preserveRealtimePoseForImmediateReplay: carryFirstObservation);
             RefreshPositionKeyMenu();
             EnsureLocalScreenshotWatcherStarted();
-            SetStatus($"Raid dÃƒÂ©tectÃƒÂ© Ã‚Â· {_currentMap} Ã‚Â· position prÃƒÂªte", Color.FromArgb(88, 168, 138));
+            SetStatus($"Raid détecté · {_currentMap} · position prête", Color.FromArgb(88, 168, 138));
             NavigateToDetectedMap(args.Map);
 
             if (carryFirstObservation && _screenshotWatcher is { } screenshotWatcher)
@@ -5702,7 +5702,7 @@ internal sealed partial class OverlayForm : Form
             _learnedRouteGraph.BreakContinuity();
             _lastLearnedRouteObservationAt = 0;
             SetStatus(
-                "Hors raid Ã‚Â· overlay masquÃƒÂ© automatiquement",
+                "Hors raid · overlay masqué automatiquement",
                 Color.FromArgb(145, 153, 160));
         });
     }
@@ -5747,7 +5747,7 @@ internal sealed partial class OverlayForm : Form
             return;
         }
 
-        SetStatus($"Carte dÃƒÂ©tectÃƒÂ©e Ã‚Â· {map.NormalizedName}", Color.FromArgb(88, 168, 138));
+        SetStatus($"Carte détectée · {map.NormalizedName}", Color.FromArgb(88, 168, 138));
         BeginWebNavigation(_webView.CoreWebView2, map.Url.AbsoluteUri);
     }
 
@@ -5853,8 +5853,8 @@ internal sealed partial class OverlayForm : Form
             _streamVisibilityMenuItem.Checked = _visibleInScreenCaptures;
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot Ã¢â‚¬â€ partage Discord",
-                $"Windows n'a pas pu changer la visibilitÃƒÂ© de la carte (erreur {error.NativeErrorCode}). Le rÃƒÂ©glage prÃƒÂ©cÃƒÂ©dent est conservÃƒÂ©.",
+                "RaidPilot — partage Discord",
+                $"Windows n'a pas pu changer la visibilité de la carte (erreur {error.NativeErrorCode}). Le réglage précédent est conservé.",
                 ToolTipIcon.Warning);
             return false;
         }
@@ -5875,8 +5875,8 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 5000,
-                "RaidPilot Ã¢â‚¬â€ partage Discord",
-                "Le changement fonctionne pour cette session, mais RaidPilot n'a pas pu l'enregistrer pour le prochain dÃƒÂ©marrage.",
+                "RaidPilot — partage Discord",
+                "Le changement fonctionne pour cette session, mais RaidPilot n'a pas pu l'enregistrer pour le prochain démarrage.",
                 ToolTipIcon.Warning);
             return true;
         }
@@ -5885,10 +5885,10 @@ internal sealed partial class OverlayForm : Form
         {
             _trayIcon.ShowBalloonTip(
                 3500,
-                "RaidPilot Ã¢â‚¬â€ partage Discord",
+                "RaidPilot — partage Discord",
                 visibleInScreenCaptures
-                    ? "La carte est maintenant visible dans ton partage d'ÃƒÂ©cran Discord."
-                    : "La carte est maintenant masquÃƒÂ©e dans ton partage d'ÃƒÂ©cran Discord.",
+                    ? "La carte est maintenant visible dans ton partage d'écran Discord."
+                    : "La carte est maintenant masquée dans ton partage d'écran Discord.",
                 ToolTipIcon.Info);
         }
 
@@ -6302,7 +6302,7 @@ internal sealed partial class OverlayForm : Form
     private void SetStatus(string text, Color? color = null)
     {
         const int notifyIconTextLimit = 63;
-        var tooltip = $"RaidPilot Ã¢â‚¬â€ {text}";
+        var tooltip = $"RaidPilot — {text}";
         _trayIcon.Text = tooltip.Length <= notifyIconTextLimit
             ? tooltip
             : tooltip[..notifyIconTextLimit];
@@ -6314,9 +6314,9 @@ internal sealed partial class OverlayForm : Form
         _positionKeyMenuItem.Text = _screenshotBinding.Status switch
         {
             EftScreenshotBindingStatus.Ready => $"Touche de position : {_screenshotBinding.UserLabel}",
-            EftScreenshotBindingStatus.NeedsRebind => "Configurer la touche de position (F8 conseillÃƒÂ©)Ã¢â‚¬Â¦",
-            EftScreenshotBindingStatus.Unbound => "Configurer la touche de positionÃ¢â‚¬Â¦",
-            _ => "Touche de position : rÃƒÂ©glage introuvableÃ¢â‚¬Â¦",
+            EftScreenshotBindingStatus.NeedsRebind => "Configurer la touche de position (F8 conseillé)…",
+            EftScreenshotBindingStatus.Unbound => "Configurer la touche de position…",
+            _ => "Touche de position : réglage introuvable…",
         };
     }
 
@@ -6326,10 +6326,10 @@ internal sealed partial class OverlayForm : Form
 
         var message = _screenshotBinding.IsReady
             ? $"Ta touche de position est {_screenshotBinding.UserLabel}.\n\n"
-                + $"Au dÃƒÂ©but du raid, appuie deux fois sur O puis une fois sur {_screenshotBinding.UserLabel} pendant que la liste reste visible. RaidPilot recalera la position et lira localement les sorties normales."
-            : "RÃƒÂ©glage unique dans Tarkov :\n\n"
-                + "ParamÃƒÂ¨tres Ã¢â€ â€™ Commandes Ã¢â€ â€™ Capture dÃ¢â‚¬â„¢ÃƒÂ©cran Ã¢â€ â€™ attribue F8.\n\n"
-                + "Au dÃƒÂ©but du raid : O deux fois, puis F8 pendant que la liste est visible. RaidPilot ne simule aucune touche; le panneau est lu localement et jamais envoyÃƒÂ©.";
+                + $"Au début du raid, appuie deux fois sur O puis une fois sur {_screenshotBinding.UserLabel} pendant que la liste reste visible. RaidPilot recalera la position et lira localement les sorties normales."
+            : "Réglage unique dans Tarkov :\n\n"
+                + "Paramètres → Commandes → Capture d’écran → attribue F8.\n\n"
+                + "Au début du raid : O deux fois, puis F8 pendant que la liste est visible. RaidPilot ne simule aucune touche; le panneau est lu localement et jamais envoyé.";
 
         MessageBox.Show(
             message,
@@ -6343,10 +6343,10 @@ internal sealed partial class OverlayForm : Form
         RefreshPositionKeyMenu();
         var key = _screenshotBinding.IsReady ? _screenshotBinding.UserLabel : "F8";
         MessageBox.Show(
-            $"Dans le raid, ouvre l'onglet TÃƒâ€šCHES afin que les noms de quÃƒÂªtes soient visibles, puis appuie sur {key}.\n\n"
-            + "RaidPilot lit les noms localement et ajoute seulement leurs objectifs gÃƒÂ©olocalisÃƒÂ©s sur la carte. "
-            + "Si la liste dÃƒÂ©file, prends une deuxiÃƒÂ¨me capture aprÃƒÂ¨s l'avoir descendue. Les quÃƒÂªtes reconnues s'additionnent pour ce raid.",
-            "QuÃƒÂªtes sur la carte Ã¢â‚¬â€ RaidPilot",
+            $"Dans le raid, ouvre l'onglet TÂCHES afin que les noms de quêtes soient visibles, puis appuie sur {key}.\n\n"
+            + "RaidPilot lit les noms localement et ajoute seulement leurs objectifs géolocalisés sur la carte. "
+            + "Si la liste défile, prends une deuxième capture après l'avoir descendue. Les quêtes reconnues s'additionnent pour ce raid.",
+            "Quêtes sur la carte — RaidPilot",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
     }
@@ -6354,12 +6354,12 @@ internal sealed partial class OverlayForm : Form
     private void AnnouncePositionKey()
     {
         var message = _screenshotBinding.IsReady
-            ? $"Suivi fluide prÃƒÂªt : {_screenshotBinding.UserLabel} donne une ancre exacte et corrige la dÃƒÂ©rive."
-            : "Dans Tarkov, rÃƒÂ¨gle Commandes Ã¢â€ â€™ Capture dÃ¢â‚¬â„¢ÃƒÂ©cran sur F8. Ensuite F8 recalera ta position.";
+            ? $"Suivi fluide prêt : {_screenshotBinding.UserLabel} donne une ancre exacte et corrige la dérive."
+            : "Dans Tarkov, règle Commandes → Capture d’écran sur F8. Ensuite F8 recalera ta position.";
 
         _trayIcon.ShowBalloonTip(
             7000,
-            "RaidPilot Ã¢â‚¬â€ localisation",
+            "RaidPilot — localisation",
             message,
             _screenshotBinding.IsReady ? ToolTipIcon.Info : ToolTipIcon.Warning);
     }

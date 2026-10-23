@@ -37,10 +37,13 @@ Run("mise en page du launcher adaptée aux petits écrans", () =>
     Require(small.Width < 1180 && small.Height < 760,
         "la taille initiale du launcher dépasse le moniteur");
     var transform = LauncherCanvasLayout.Fit(small);
-    var virtualOrigin = transform.ToCanvas(new System.Drawing.Point(
-        (int)Math.Floor(transform.OffsetX), (int)Math.Floor(transform.OffsetY)));
-    Require(virtualOrigin.X is -1 or 0 && virtualOrigin.Y is -1 or 0,
-        "les clics ne suivent pas la même échelle que l'interface");
+    var screenCenter = new System.Drawing.Point(
+        (int)Math.Round(transform.OffsetX + transform.Scale * 590),
+        (int)Math.Round(transform.OffsetY + transform.Scale * 380));
+    var virtualCenter = transform.ToCanvas(screenCenter);
+    Require(Math.Abs(virtualCenter.X - 590) <= 2
+            && Math.Abs(virtualCenter.Y - 380) <= 2,
+        "les clics au centre ne suivent pas l'échelle de l'interface");
 });
 Run("source HTTP refusée", () =>
 {
