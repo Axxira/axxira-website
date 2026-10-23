@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T17:42:09.7561021+00:00",
+  "publishedAt": "2026-10-23T19:06:42.9607632+00:00",
   "raidPilot": {
-    "version": "0.14.2.21",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.21-b0.3.8-l0.2.13-0c930fde3b0e/RaidPilot-Overlay-v0.14.2.21-Windows-x64.zip",
-    "sha256": "3A5FD3261CFBC9AC82B8311877E5542D90EB4A2A09AA58731F4E5A1CE0B177EB",
-    "sizeBytes": 234438953,
-    "releaseNotes": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
+    "version": "0.14.2.22",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.22-b0.3.8-l0.2.13-557a434f824e/RaidPilot-Overlay-v0.14.2.22-Windows-x64.zip",
+    "sha256": "E1AB1791222B77CEC7D363DA384863490D718891E04211A389E7E6738FCBA492",
+    "sizeBytes": 234447877,
+    "releaseNotes": "Nouveau mode Precision V4 facultatif dans l'icône de notification (désactivé par défaut avant validation en raid). Fusion des reconnaissances visuelles avec l'incertitude estimée, seuil d'innovation statistique, vérification de cohérence entre étages et limitation des grands snaps. Les recadrages forts nécessitent un consensus de reconnaisseurs ou une loop closure temporellement confirmée; un écart invraisemblable est refusé. Le moteur prévoit des zones navigables polygonales vérifiées, mais aucune paroi n'est inventée lorsque les données de géométrie sont absentes. Calibration F8 plus prudente après un écart anormal; audit V4 par intervalles environ 5-10, 10-20 et 20-30+ secondes et diagnostic enrichi. Le moteur visuel V2/V3, les keyframes, le suivi GPU facultatif, le relais d'équipe et le zoom sauvegardé sont conservés. Aucune promesse de GPS absolu ni de réduction de dérive n'est faite sans mesures EFT réelles. Export manuel d'un rapport JSON F8 ne contenant ni coordonnées ni captures; 32 échantillons maximum, aucune transmission réseau."
   },
   "beacon": {
     "version": "0.3.8",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.21-b0.3.8-l0.2.13-0c930fde3b0e/RaidPilot-Beacon-v0.3.8-Windows-x64.zip",
-    "sha256": "DAB3F71576CE9703F887F9FFE90FE9434FA14DCD8DE89B63378B497A4F06E96C",
-    "sizeBytes": 58327382,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.22-b0.3.8-l0.2.13-557a434f824e/RaidPilot-Beacon-v0.3.8-Windows-x64.zip",
+    "sha256": "FE15C2EE39C69CC3B2E6362F8F8251054F7B5701EE072DCC668C7362C314B166",
+    "sizeBytes": 58327805,
     "releaseNotes": "Beacon 0.3.8 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.13",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.21-b0.3.8-l0.2.13-0c930fde3b0e/RaidPilot-Launcher-v0.2.13-Windows-x64.zip",
-    "sha256": "750B0EBA638C0EC265A296BFD8D8EA5AE02C281D314D2F14B73249295BBE22E4",
-    "sizeBytes": 351000054,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.22-b0.3.8-l0.2.13-557a434f824e/RaidPilot-Launcher-v0.2.13-Windows-x64.zip",
+    "sha256": "A4478730063E91D6CE80B5E96B7F82F7F170E26A0A12EC870D6294AD4B5D39B8",
+    "sizeBytes": 351009891,
     "releaseNotes": "Launcher 0.2.13 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.22",
+      "raidPilotVersion": "0.14.2.22",
+      "beaconVersion": "0.3.8",
+      "launcherVersion": "0.2.13",
+      "date": "2026-10-23",
+      "summary": "Precision V4 expérimental : fusion visuelle prudente et audit F8",
+      "details": "Nouveau mode Precision V4 facultatif dans l'icône de notification (désactivé par défaut avant validation en raid). Fusion des reconnaissances visuelles avec l'incertitude estimée, seuil d'innovation statistique, vérification de cohérence entre étages et limitation des grands snaps. Les recadrages forts nécessitent un consensus de reconnaisseurs ou une loop closure temporellement confirmée; un écart invraisemblable est refusé. Le moteur prévoit des zones navigables polygonales vérifiées, mais aucune paroi n'est inventée lorsque les données de géométrie sont absentes. Calibration F8 plus prudente après un écart anormal; audit V4 par intervalles environ 5-10, 10-20 et 20-30+ secondes et diagnostic enrichi. Le moteur visuel V2/V3, les keyframes, le suivi GPU facultatif, le relais d'équipe et le zoom sauvegardé sont conservés. Aucune promesse de GPS absolu ni de réduction de dérive n'est faite sans mesures EFT réelles. Export manuel d'un rapport JSON F8 ne contenant ni coordonnées ni captures; 32 échantillons maximum, aucune transmission réseau."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.21",
