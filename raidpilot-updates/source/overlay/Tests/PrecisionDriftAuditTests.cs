@@ -123,8 +123,9 @@ internal static class PrecisionDriftAuditTests
         catch (Exception error) { failures.Add(name + " : " + error.Message); }
     }
 
-    private static void Require(bool value)
+    private static void Require(bool value, string? detail = null)
     {
-        if (!value) throw new InvalidOperationException("Assertion audit F8 échouée");
+        if (!value) throw new InvalidOperationException(
+            detail ?? "Assertion audit F8 échouée");
     }
 }
