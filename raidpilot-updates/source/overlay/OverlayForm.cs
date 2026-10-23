@@ -1442,6 +1442,8 @@ internal sealed partial class OverlayForm : Form
             motionEvidence,
             movementInputActive,
             sprint);
+        motionEvidence = FusePrecisionV2(
+            now, movementInputActive, rotationOccurred, aiming, motionEvidence);
 
         var gaitSpeedScale = _slowWalkEnabled || sprint
             ? 1.0
@@ -2062,6 +2064,7 @@ internal sealed partial class OverlayForm : Form
         _skipNextRealtimeCalibration = false;
         _idleSeconds = 0.0;
         _visualMotionGate.Reset();
+        ResetPrecisionV2();
         _visualKeyframeRecognizer.CancelPendingMatch();
         _superKeyframeRecognizer.CancelPendingMatch();
         _pendingVisualKeyframeLearning = null;
@@ -3330,6 +3333,7 @@ internal sealed partial class OverlayForm : Form
             _lastExactObservation = observation;
             _lastExactAnchorAt = now;
             _visualRelocalization.NoteAbsoluteAnchor(now);
+            ResetPrecisionV2();
             MarkCollectiveAtlasLocallyValidated(
                 _currentMap,
                 new VisualKeyframePose(
@@ -4100,6 +4104,7 @@ internal sealed partial class OverlayForm : Form
         _learnedRouteClockOriginTimestamp = Stopwatch.GetTimestamp();
         _lastLearnedRouteObservationAt = 0;
         _learnedRouteGraph.BeginSession(mapId);
+        ResetPrecisionV2();
         _visualKeyframeRecognizer.ResetSession();
         _superKeyframeRecognizer.ResetSession();
         _lastSuperKeyframeSample = 0;

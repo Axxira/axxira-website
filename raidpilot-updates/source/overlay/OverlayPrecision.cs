@@ -48,7 +48,8 @@ internal sealed partial class OverlayForm
                 + $"Interruptions : {_precisionGaps} ; dernier repli : {_precisionLastFallback}\n"
                 + $"Calibration F8 : {_precisionCalibration.LastDecision}\n"
                 + $"Calibration yaw vision : {_visualYawCalibration.LastDecision}\n"
-                + $"FOV visuel effectif : {_visualMotionGate.EgomotionHorizontalFieldOfViewDegrees:F1}°\n\n"
+                + $"FOV visuel effectif : {_visualMotionGate.EgomotionHorizontalFieldOfViewDegrees:F1}°\n"
+                + $"Precision V2 : {PrecisionV2Diagnostic()}\n\n"
                 + "Les écarts sont mesurés aux positions de référence reçues, pas en continu. "
                 + "Les sous-pas de 1 à 5 ms sont des calculs en mémoire, pas des captures. "
                 + "Le suivi ne connaît pas automatiquement chaque collision, épuisement ou changement d'étage.",
@@ -62,6 +63,7 @@ internal sealed partial class OverlayForm
                 : $"RaidPilot {Application.ProductVersion} — GPS en attente de position";
         };
         _precisionUiTimer.Start();
+        InitializePrecisionV2();
     }
 
     private bool TryAdvancePrecision(long start, long end, bool sprint, bool slow, double scale,
@@ -142,8 +144,9 @@ internal sealed partial class OverlayForm
         _precisionCalibration.Reset();
         _precisionResiduals.Reset();
         _visualYawCalibration.Reset();
+        ResetPrecisionV2();
         _precisionSegmentClean = true; _precisionTicks = _precisionFallbacks = _precisionGaps = 0;
         _precisionLastFallback = "aucun";
     }
-    private void DisposePrecision() { _precisionUiTimer.Stop(); _precisionUiTimer.Dispose(); }
+    private void DisposePrecision() { _precisionUiTimer.Stop(); _precisionUiTimer.Dispose(); DisposePrecisionV2(); }
 }
