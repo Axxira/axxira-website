@@ -34,6 +34,7 @@ internal sealed class BeaconForm : Form
     private readonly VisualMotionGate _visualMotionGate = new();
     private readonly PrecisionV2VisualSampler _precisionV2Vision = new();
     private readonly PrecisionV2MotionFusion _precisionV2Fusion = new();
+    private readonly PrecisionDriftAudit _precisionV2DriftAudit = new();
     private readonly ToolStripMenuItem _precisionV2Toggle = new("Precision V2 — flux optique 160×90 (expérimental)") { Checked = true, CheckOnClick = true };
     private long _precisionV2LastTurnAt;
     private bool _precisionV2TrackingActive;
@@ -189,6 +190,7 @@ internal sealed class BeaconForm : Form
             SuperKeyframeStore.GetPath(memberId));
         _lastSuperKeyframeSample = 0;
         _visualYawCalibration.Reset();
+        _precisionV2DriftAudit.Reset();
         _pendingSuperKeyframeLearning = null;
         _pendingCapture = null;
         _screenshotBindingWasDown = false;
@@ -326,7 +328,15 @@ internal sealed class BeaconForm : Form
         menu.Items.Add("Arrêter le partage", null, async (_, _) =>
             await StopBeaconAsync(clearAutoJoin: true));
         menu.Items.Add(_precisionV2Toggle);
-        _precisionV2Toggle.Click += (_, _) => ResetPrecisionV2();
+        _precisionV2Toggle.Click += (_, _) =>
+        {
+            _precisionV2DriftAudit.MarkInterrupted();
+            ResetPrecisionV2();
+        };
+        menu.Items.Add("Diagnostic F8 — dérive V1 / V2", null, (_, _) =>
+            MessageBox.Show(this, _precisionV2DriftAudit.Describe(),
+                "RaidPilot Beacon — précision mesurée",
+                MessageBoxButtons.OK, MessageBoxIcon.Information));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Quitter", null, async (_, _) =>
         {
@@ -701,6 +711,7 @@ internal sealed class BeaconForm : Form
     {
         var now = Stopwatch.GetTimestamp();
         var hasHistoricalCapture = false;
+        var historicalCaptureAt = 0L;
         RealtimePose? poseAtCapture = null;
         BeaconCalibrationSegment calibrationSegment;
 
@@ -715,6 +726,7 @@ internal sealed class BeaconForm : Form
                     StringComparison.OrdinalIgnoreCase)))
         {
             hasHistoricalCapture = true;
+            historicalCaptureAt = pending.Timestamp;
             poseAtCapture = pending.Pose;
             calibrationSegment = pending.Calibration;
         }
@@ -729,6 +741,9 @@ internal sealed class BeaconForm : Form
         }
 
         _pendingCapture = null;
+        _precisionV2DriftAudit.ObserveExactAnchor(
+            observation, poseAtCapture, historicalCaptureAt,
+            _precisionV2Toggle.Checked);
         ResetPrecisionV2();
 
         var learned = _adaptiveCalibration.ObserveExact(
@@ -872,6 +887,7 @@ internal sealed class BeaconForm : Form
                 // raid on the same location, so an old pose can never leak into it.
                 _estimator.Reset();
                 _adaptiveCalibration.ResetRaid();
+                _precisionV2DriftAudit.Reset();
                 _visualMotionGate.Reset();
                 _visualKeyframeRecognizer.ResetSession();
                 _superKeyframeRecognizer.ResetSession();
@@ -1047,6 +1063,7 @@ internal sealed class BeaconForm : Form
 
         if (_controlTrackingActive)
         {
+            _precisionV2DriftAudit.MarkInterrupted();
             _adaptiveCalibration.MarkTrackingGap();
             _visualMotionGate.Reset();
             ResetPrecisionV2();
@@ -1196,6 +1213,7 @@ internal sealed class BeaconForm : Form
         // unobserved time as uncertainty, reset velocity and relock raw input.
         if (RealtimeTrackingPolicy.HasUnreliableGap(elapsedSinceTick))
         {
+            _precisionV2DriftAudit.MarkInterrupted();
             _estimator.SuspendMotion(elapsedSinceTick);
             _adaptiveCalibration.MarkTrackingGap();
             _rawKeyboardTimeline.Reset();

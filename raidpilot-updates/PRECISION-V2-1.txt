@@ -1,0 +1,14 @@
+RaidPilot PRECISION V2.1 — Overlay 0.14.2.15 / Beacon 0.3.4
+
+Objectif : mesurer l'écart réel avant chaque nouvel F8, sans le confondre avec l'incertitude modélisée ou le lissage de l'affichage.
+
+- Audit en mémoire (maximum 32 segments) : erreur horizontale et erreur d'orientation avant correction F8, durée depuis l'ancre précédente, mode V1/V2 en vigueur et incertitude annoncée. Seules ces statistiques sont conservées en RAM : aucune capture, coordonnées absolues, frappe ou chemin de joueur n'est enregistré.
+- Deux F8 au minimum sont nécessaires pour une mesure. Le temps de capture doit être corrélé, l'estimation historique disponible, la durée comprise entre 8 s et 15 min, et le même mode doit être resté activé du début à la fin.
+- Les segments interrompus par changement V1/V2, perte de suivi, longue pause de boucle, nouveau raid ou horodatage manquant sont exclus de la comparaison. Une médiane et un P90 sont calculés séparément; ne pas les lire comme une garantie d'erreur.
+- Overlay : icône de notification -> Précision GPS : section Comparaison F8 V1/V2 et coût du capteur.
+- Beacon : menu -> Diagnostic F8 — dérive V1/V2.
+- Correction du filtre V2 : une observation stationnaire ancienne ne peut plus survivre à une rotation, une phase de visée ou l'absence de mouvement demandé.
+- Le capteur 160x90 garde sa voie hors fil UI; s'il consomme plus de 65 ms par capture ou échoue plusieurs fois, il réduit sa cadence de 5 Hz à ~2,6 Hz. Toute observation périmée est ignorée automatiquement.
+- Tous les contrôles F8 demeurent les sources de référence absolue. Le backend est encore GDI, pas Windows.Graphics.Capture.
+
+Reste à faire : intégration WGC/Direct3D avec autorisation Windows, test sur un vrai PC et confirmation mesurée que V2 améliore au moins les écarts P90 avant de retirer le label expérimental.

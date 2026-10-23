@@ -39,10 +39,13 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     private int _disposed;
     private long _captured;
     private long _failed;
+    private double _lastProcessingMilliseconds;
+    private int _consecutiveFailures;
 
     internal long Captured => Interlocked.Read(ref _captured);
     internal long Failed => Interlocked.Read(ref _failed);
     internal bool IsBusy => Volatile.Read(ref _workerBusy) == 1;
+    internal double LastProcessingMilliseconds => Volatile.Read(ref _lastProcessingMilliseconds);
     internal string Backend => "GDI 160×90 (GPU non activé)";
 
     internal void ConfigureVerticalFieldOfView(double verticalFov) =>
@@ -57,9 +60,15 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
             return;
 
         var previous = Volatile.Read(ref _lastRequestedAt);
+        // When GDI is costly or repeatedly unavailable, reduce the capture
+        // cadence rather than stealing a core from Tarkov. Freshness guards
+        // automatically return to the original model if results arrive late.
+        var interval = Volatile.Read(ref _consecutiveFailures) >= 3
+            || Volatile.Read(ref _lastProcessingMilliseconds) > 65.0
+            ? 0.38 : CaptureIntervalSeconds;
         if (previous > 0
             && now >= previous
-            && (now - previous) / (double)Stopwatch.Frequency < CaptureIntervalSeconds)
+            && (now - previous) / (double)Stopwatch.Frequency < interval)
             return;
         if (Interlocked.CompareExchange(ref _workerBusy, 1, 0) != 0) return;
 
@@ -81,8 +90,12 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                 if (!succeeded)
                 {
                     Interlocked.Increment(ref _failed);
+                    Interlocked.Increment(ref _consecutiveFailures);
                     return;
                 }
+                Volatile.Write(ref _lastProcessingMilliseconds,
+                    (finished - started) * 1000.0 / Stopwatch.Frequency);
+                Volatile.Write(ref _consecutiveFailures, 0);
 
                 var result = new PrecisionV2Frame(
                     finished,
@@ -102,6 +115,7 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                 or ExternalException or ArgumentException or System.ComponentModel.Win32Exception)
             {
                 Interlocked.Increment(ref _failed);
+                Interlocked.Increment(ref _consecutiveFailures);
             }
             finally
             {
@@ -196,6 +210,16 @@ internal sealed class PrecisionV2MotionFusion
             return baseline;
         }
 
+        // During rotation, aiming or idle, visual stationarity is not
+        // evidence of a blocked locomotion command. Discard the accumulated
+        // stop counter so it cannot be reused on the next forward press.
+        if (!movementCommanded || !directionStable)
+        {
+            _stationaryCount = 0;
+            LastDecision = "Rotation, visée ou repos : suivi classique";
+            return baseline;
+        }
+
         var v = observed.Visual;
         var flow = v.Egomotion;
         var reliable = v.CaptureSucceeded
@@ -231,8 +255,6 @@ internal sealed class PrecisionV2MotionFusion
             }
         }
 
-        // Pure yaw, optical blur and free-look are not evidence of translation.
-        if (!movementCommanded || !directionStable) return baseline;
 
         var recentMotion = _lastReliableMotionAt != 0
             && observed.CapturedAt >= _lastReliableMotionAt

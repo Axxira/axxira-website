@@ -58,6 +58,7 @@ internal static class ScreenshotNameParserTests
         RealtimeTrackingPolicyTests.RunAll(failures);
         VisualMotionGateTests.RunAll(failures);
         PrecisionV2Tests.RunAll(failures);
+        PrecisionDriftAuditTests.RunAll(failures);
         VisualEgomotionEstimatorTests.RunAll(failures);
         VisualYawCalibrationTests.RunAll(failures);
         VisualKeyframeRecognizerTests.RunAll(failures);
@@ -106,6 +107,7 @@ internal static class ScreenshotNameParserTests
             + RealtimeTrackingPolicyTests.TestCount
             + VisualMotionGateTests.TestCount
             + PrecisionV2Tests.TestCount
+            + PrecisionDriftAuditTests.TestCount
             + VisualEgomotionEstimatorTests.TestCount
             + VisualYawCalibrationTests.TestCount
             + VisualKeyframeRecognizerTests.TestCount

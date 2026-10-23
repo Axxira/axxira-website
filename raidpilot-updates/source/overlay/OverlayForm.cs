@@ -898,6 +898,7 @@ internal sealed partial class OverlayForm : Form
         {
             if (_controlTrackingActive)
             {
+                _precisionV2DriftAudit.MarkInterrupted();
                 _realtimeEstimator.SuspendMotion();
                 _precisionSegmentClean = false;
                 _precisionGaps++;
@@ -1119,6 +1120,7 @@ internal sealed partial class OverlayForm : Form
         // ne sera pas appliquÃƒÂ©.
         if (_realtimeEstimator.IsAnchored && elapsedSeconds > 2.0)
         {
+            _precisionV2DriftAudit.MarkInterrupted();
             _realtimeEstimator.SuspendMotion(elapsedSeconds);
             _precisionSegmentClean = false;
             _precisionGaps++;
@@ -3328,6 +3330,10 @@ internal sealed partial class OverlayForm : Form
                 && !_raidStartReplayCrossedTransition;
             if (estimatedPoseAtCapture is { } beforeCorrection)
                 _precisionResiduals.Observe(beforeCorrection, observation);
+            _precisionV2DriftAudit.ObserveExactAnchor(
+                observation, estimatedPoseAtCapture,
+                hasCaptureTimestamp ? captureTimestamp : 0,
+                _precisionV2ToggleMenuItem.Checked);
             CalibrateRealtimeEstimator(observation, estimatedPoseAtCapture, allowCalibration);
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;
@@ -4104,6 +4110,7 @@ internal sealed partial class OverlayForm : Form
         _learnedRouteClockOriginTimestamp = Stopwatch.GetTimestamp();
         _lastLearnedRouteObservationAt = 0;
         _learnedRouteGraph.BeginSession(mapId);
+        _precisionV2DriftAudit.Reset();
         ResetPrecisionV2();
         _visualKeyframeRecognizer.ResetSession();
         _superKeyframeRecognizer.ResetSession();

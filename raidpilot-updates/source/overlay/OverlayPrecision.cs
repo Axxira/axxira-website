@@ -143,6 +143,7 @@ internal sealed partial class OverlayForm
         _precisionYaw.Reset();
         _precisionCalibration.Reset();
         _precisionResiduals.Reset();
+        _precisionV2DriftAudit.Reset();
         _visualYawCalibration.Reset();
         ResetPrecisionV2();
         _precisionSegmentClean = true; _precisionTicks = _precisionFallbacks = _precisionGaps = 0;

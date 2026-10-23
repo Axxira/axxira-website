@@ -6,6 +6,7 @@ internal sealed partial class OverlayForm
 {
     private readonly PrecisionV2VisualSampler _precisionV2Vision = new();
     private readonly PrecisionV2MotionFusion _precisionV2Fusion = new();
+    private readonly PrecisionDriftAudit _precisionV2DriftAudit = new();
     private readonly ToolStripMenuItem _precisionV2ToggleMenuItem = new(
         "Precision V2 — flux optique 160×90 (expérimental)")
     {
@@ -21,7 +22,11 @@ internal sealed partial class OverlayForm
             EftGameViewSettings.Read().VerticalFieldOfViewDegrees);
         if (_trayIcon.ContextMenuStrip is { } menu)
             menu.Items.Insert(2, _precisionV2ToggleMenuItem);
-        _precisionV2ToggleMenuItem.Click += (_, _) => ResetPrecisionV2();
+        _precisionV2ToggleMenuItem.Click += (_, _) =>
+        {
+            _precisionV2DriftAudit.MarkInterrupted();
+            ResetPrecisionV2();
+        };
     }
 
     private void ResetPrecisionV2()
@@ -68,12 +73,14 @@ internal sealed partial class OverlayForm
 
     private string PrecisionV2Diagnostic()
     {
-        if (!_precisionV2ToggleMenuItem.Checked)
-            return "désactivé (suivi classique)";
-        return $"{_precisionV2Vision.Backend}, "
-            + $"captures {_precisionV2Vision.Captured}, erreurs {_precisionV2Vision.Failed}, "
-            + $"arrêts fiables {_precisionV2Fusion.AcceptedStops}\n"
-            + $"Arbitrage : {_precisionV2Fusion.LastDecision}";
+        var status = !_precisionV2ToggleMenuItem.Checked
+            ? "désactivé (suivi classique)"
+            : $"{_precisionV2Vision.Backend}, "
+                + $"captures {_precisionV2Vision.Captured}, erreurs {_precisionV2Vision.Failed}, "
+                + $"arrêts fiables {_precisionV2Fusion.AcceptedStops}, "
+                + $"dernier calcul {_precisionV2Vision.LastProcessingMilliseconds:F0} ms\n"
+                + $"Arbitrage : {_precisionV2Fusion.LastDecision}";
+        return status + "\n\n" + _precisionV2DriftAudit.Describe();
     }
 
     private void DisposePrecisionV2() => _precisionV2Vision.Dispose();
