@@ -14,10 +14,14 @@ class Element {
  setPointerCapture(){} get options(){return this.children;}
 }
 const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning'])ids[id]=new Element('div');
-const listeners={}, messages=[];
+const listeners={}, messages=[], storage=new Map();
 const context={console,URLSearchParams,Event:class{constructor(type){this.type=type;}},setTimeout,clearTimeout,
  document:{getElementById:id=>ids[id]??null,querySelector:s=>ids[s.slice(1)]??null,createElement:t=>new Element(t),createElementNS:(_,t)=>new Element(t)},
- location:{search:'?map=customs'},localStorage:{getItem:()=>null,setItem:()=>{},removeItem:()=>{}},
+ location:{search:'?map=customs'},localStorage:{
+   getItem:key=>storage.has(key)?storage.get(key):null,
+   setItem:(key,value)=>storage.set(key,String(value)),
+   removeItem:key=>storage.delete(key)
+ },
  fetch:async url=>{try {const text=fs.readFileSync(path.join(root,url),'utf8');return {ok:true,json:async()=>JSON.parse(text.replace(/^\uFEFF/,''))};}catch{return {ok:false,status:404};}},
  addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn),
  dispatchEvent:e=>{for(const fn of listeners[e.type]??[])fn(e);},
@@ -79,5 +83,44 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  check(api.health().mapKey==='customs'&&api.health().position==='TRACKING','Map/player not restored');
  check(!context.__raidPilotSetLocalPose({generation:6,map:'customs',x:null,z:null}),'Invalid position accepted');
  check(messages.some(m=>m.type==='raidpilot-local-ready'),'Ready handshake absent');
+ // A real zoom preference is global across map changes and not reset by
+ // loading an image with different natural dimensions.
+ const image=ids['base-map'], viewport=ids.viewport;
+ image.naturalWidth=12500;image.naturalHeight=8000;
+ image.dispatchEvent(new context.Event('load'));
+ const initialFactor=api.health().zoomFactor;
+ check(Math.abs(initialFactor-1)<1e-9,'No custom zoom should start at fit');
+ const wheel={type:'wheel',deltaY:-100,clientX:600,clientY:350,preventDefault(){}};
+ viewport.dispatchEvent(wheel);
+ const preferred=api.health().zoomFactor;
+ check(preferred>1.05&&preferred<2,'Mouse wheel did not change global zoom factor');
+ const stored=JSON.parse(storage.get('raidpilot-forge-map-v6'));
+ check(Math.abs(stored.zoomFactor-preferred)<1e-7,'Zoom setting was not saved in map preferences');
+ check(Array.isArray(stored.enabled)&&stored.mapStyle==='forge',
+   'Saving zoom erased the layer/style preferences');
+ api.setMap('woods');image.naturalWidth=9200;image.naturalHeight=6900;
+ image.dispatchEvent(new context.Event('load'));
+ check(Math.abs(api.health().zoomFactor-preferred)<1e-7,
+   'Changing map discarded user zoom');
+ const zoomAtWoods=api.health().zoom;
+ ids.fit.dispatchEvent(new context.Event('click'));
+ const fitAtWoods=api.health().zoom;
+ check(Math.abs(zoomAtWoods/fitAtWoods-preferred)<0.02,
+   'Relative zoom on Woods differs from the user-selected level');
+ check(Math.abs(api.health().zoomFactor-1)<1e-9,
+   'Fit-to-map button did not reset the saved zoom preference');
+ // A native preference can be re-synchronized after navigation/Launcher update.
+ context.__raidPilotHostZoomFactor=2.25;
+ context.dispatchEvent(new context.Event('raidpilot-zoom-sync'));
+ check(Math.abs(api.health().zoomFactor-2.25)<1e-9,
+   'Native durable zoom preference was not applied to the local map');
+ api.setMap('customs');image.naturalWidth=12500;image.naturalHeight=8000;
+ image.dispatchEvent(new context.Event('load'));
+ check(Math.abs(api.health().zoomFactor-2.25)<1e-9,
+   'The restored preference did not survive another map change');
+ await new Promise(resolve=>setTimeout(resolve,210));
+ check(messages.some(m=>m.type==='raidpilot-map-zoom-preference'
+   && Number.isFinite(m.payload?.factor)),
+   'Local map never sent a zoom preference to the native host');
  console.log(JSON.stringify({status:'PASS',checks,customsPOI:api.health().markerCount,visibleMarkers:ids.overlay.children.filter(e=>e.dataset.markerId).length,playerTransform:marker('__player').getAttribute('transform'),health:ids.health.textContent}));
 })().catch(e=>{console.error(e);process.exitCode=1;});
