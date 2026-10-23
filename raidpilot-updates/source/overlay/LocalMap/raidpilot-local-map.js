@@ -15,6 +15,7 @@ const state = {
   teammates: [],
   floor: "BASE",
   zoom: 1,
+  zoomFactor: 1,
   panX: 0,
   panY: 0,
   stageW: 1600,
@@ -54,6 +55,18 @@ const floorTracker = new RaidPilotFloors.Tracker();
 const refs = {};
 let viewportSize = null;
 const SVG_NS = "http://www.w3.org/2000/svg";
+const mapZoomMinFactor = 0.20;
+const mapZoomMaxFactor = 32;
+let mapZoomSyncTimer = null;
+const validMapZoomFactor = value => {
+  if (value === null || value === undefined || value === "") return null;
+  const factor = Number(value);
+  return Number.isFinite(factor) && factor >= mapZoomMinFactor && factor <= mapZoomMaxFactor
+    ? factor : null;
+};
+const clampMapZoomFactor = factor =>
+  Math.max(mapZoomMinFactor, Math.min(mapZoomMaxFactor, factor));
+
 const normalize = s => String(s ?? "").trim().toLowerCase().replace(/[\s_]+/g, "-");
 const finite = (v, f = 0) => Number.isFinite(Number(v)) ? Number(v) : f;
 const interactive = () => document.documentElement?.classList?.contains("raidpilot-interactive") === true;
@@ -85,21 +98,47 @@ function postHost(message) {
 }
 
 function loadPreferences() {
+  let storedZoomFactor = null;
   try {
     const raw = localStorage.getItem("raidpilot-forge-map-v6");
-    if (!raw) return;
-    const p = JSON.parse(raw);
-    if (Array.isArray(p.enabled)) state.enabled = new Set(p.enabled);
-    if (["auto","hover"].includes(p.labelMode)) state.labelMode = p.labelMode;
-    if (["forge","tactical"].includes(p.mapStyle)) state.mapStyle = p.mapStyle;
-    if(p.tacticsVersion!==7){state.enabled.add("boundary");state.enabled.add("hazard_minefield");}
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (Array.isArray(p.enabled)) state.enabled = new Set(p.enabled);
+      if (["auto","hover"].includes(p.labelMode)) state.labelMode = p.labelMode;
+      if (["forge","tactical"].includes(p.mapStyle)) state.mapStyle = p.mapStyle;
+      storedZoomFactor = validMapZoomFactor(p.zoomFactor);
+      if(p.tacticsVersion!==7){state.enabled.add("boundary");state.enabled.add("hazard_minefield");}
+    }
   } catch (_) {}
+  // Native %LocalAppData%\RaidPilot preference survives launcher replacements;
+  // the old WebView localStorage preference works if native storage is absent.
+  state.zoomFactor = validMapZoomFactor(window.__raidPilotHostZoomFactor)
+    ?? storedZoomFactor ?? 1;
 }
 
 function savePreferences() {
   try {
-    localStorage.setItem("raidpilot-forge-map-v6", JSON.stringify({ enabled: [...state.enabled], labelMode:state.labelMode, mapStyle:state.mapStyle, tacticsVersion:7 }));
+    localStorage.setItem("raidpilot-forge-map-v6", JSON.stringify({
+      enabled: [...state.enabled], labelMode:state.labelMode,
+      mapStyle:state.mapStyle, tacticsVersion:7,
+      zoomFactor:state.zoomFactor
+    }));
   } catch (_) {}
+}
+
+function saveZoomPreferenceFromGesture() {
+  const fit = calculateFitZoom();
+  if (!Number.isFinite(fit) || fit <= 0) return;
+  const next = clampMapZoomFactor(state.zoom / fit);
+  state.zoomFactor = next;
+  savePreferences();
+  // Do not write an AppData JSON file on each high-frequency wheel event.
+  // The per-page localStorage save above is immediate.
+  if (mapZoomSyncTimer !== null) clearTimeout(mapZoomSyncTimer);
+  mapZoomSyncTimer = setTimeout(() => {
+    mapZoomSyncTimer = null;
+    postHost({type:"raidpilot-map-zoom-preference",payload:{factor:state.zoomFactor}});
+  }, 160);
 }
 
 function defaultEnabled() {
@@ -449,14 +488,36 @@ function applyTransform() {
   render();
 }
 
-function fitStage() {
+function calculateFitZoom() {
+  const r = refs.viewport.getBoundingClientRect();
+  if (!r.width || !r.height) return null;
+  const f = state.mapStyle === "forge"
+    ? (assetInfo().focus || [0,0,1,1]) : [0,0,1,1];
+  const sx = r.width / Math.max(1, state.stageW * (f[2] - f[0]));
+  const sy = r.height / Math.max(1, state.stageH * (f[3] - f[1]));
+  return Math.max(0.005, Math.min(8, Math.min(sx,sy) * 0.96));
+}
+
+function fitStage({ resetPreference = false } = {}) {
   const r = refs.viewport.getBoundingClientRect();
   if (!r.width || !r.height) return;
+  const fit = calculateFitZoom();
+  if (fit === null) return;
   viewportSize = {width:r.width,height:r.height};
-  const f=state.mapStyle==="forge"?(assetInfo().focus || [0,0,1,1]):[0,0,1,1];
-  const sx = r.width / Math.max(1, state.stageW*(f[2]-f[0]));
-  const sy = r.height / Math.max(1, state.stageH*(f[3]-f[1]));
-  state.zoom = Math.max(0.005, Math.min(sx, sy)) * 0.96;
+  if (resetPreference) {
+    state.zoomFactor = 1;
+    savePreferences();
+    if (mapZoomSyncTimer !== null) clearTimeout(mapZoomSyncTimer);
+    mapZoomSyncTimer = setTimeout(() => {
+      mapZoomSyncTimer = null;
+      postHost({type:"raidpilot-map-zoom-preference",payload:{factor:1}});
+    }, 160);
+  }
+  // The same relative user zoom works on different image resolutions/maps.
+  // Loading a map must NEVER overwrite the player's selected factor.
+  state.zoom = Math.max(0.005, Math.min(8, fit * state.zoomFactor));
+  const f = state.mapStyle === "forge"
+    ? (assetInfo().focus || [0,0,1,1]) : [0,0,1,1];
   state.panX = r.width/2 - state.stageW*(f[0]+f[2])/2*state.zoom;
   state.panY = r.height/2 - state.stageH*(f[1]+f[3])/2*state.zoom;
   applyTransform();
@@ -875,7 +936,7 @@ function health() {
     visibleCount: visibleMarkers().length,
     initialized: state.initialized
     ,gameMode:state.gameMode,questCount:state.markers.filter(m=>m.meta.questId).length,confirmedQuestCount:applyRaidQuests(),catalogues:catalogueStatus(),floorStatus:state.automaticFloor?.status||"waiting_anchor"
-    ,mapStyle:state.mapStyle,calibration:state.mapStyle!=="forge"?"TACTICAL":state.calibration&&activeCalibration(state.player?.position)===state.calibration?"PERSONAL":activeCalibration(state.player?.position)?"INITIAL_ESTIMATE":"REQUIRED"
+    ,mapStyle:state.mapStyle,zoom:state.zoom,zoomFactor:state.zoomFactor,calibration:state.mapStyle!=="forge"?"TACTICAL":state.calibration&&activeCalibration(state.player?.position)===state.calibration?"PERSONAL":activeCalibration(state.player?.position)?"INITIAL_ESTIMATE":"REQUIRED"
     ,calibrationPlane:activeCalibration(state.player?.position)?.scope||null
     ,raidExtractionCount:applyRaidExtractions(),boundaryWarning:state.boundaryStatus.warning===true,boundaryCritical:state.boundaryStatus.critical===true,camera:followingPlayer()?"FOLLOW":"EXPLORE"
   };
@@ -1007,6 +1068,7 @@ function wireUI() {
     state.zoom = Math.max(0.005, Math.min(8, state.zoom * factor));
     state.panX = mx - beforeX * state.zoom; state.panY = my - beforeY * state.zoom;
     applyTransform();
+    saveZoomPreferenceFromGesture();
   }, {passive:false});
   refs.viewport.addEventListener("pointerdown", e => {
     if (e.button !== 0) return;
@@ -1032,10 +1094,11 @@ function wireUI() {
     state.panX=r.width/2-(r.width/2-state.panX)*state.zoom/old;
     state.panY=r.height/2-(r.height/2-state.panY)*state.zoom/old;
     applyTransform();
+    saveZoomPreferenceFromGesture();
   }
   refs.zoomIn.addEventListener("click",()=>zoomAtCenter(1.2));
   refs.zoomOut.addEventListener("click",()=>zoomAtCenter(1/1.2));
-  refs.fit.addEventListener("click",()=>{state.followPlayer=false;refs.center.classList.remove("following");fitStage();if(followingPlayer())centerPlayer();});
+  refs.fit.addEventListener("click",()=>{state.followPlayer=false;refs.center.classList.remove("following");fitStage({resetPreference:true});if(followingPlayer())centerPlayer();});
   refs.center.classList.add("following");
   refs.center.addEventListener("click",()=>{state.followPlayer=true;refs.center.classList.add("following");centerPlayer();});
   refs.mapStyle.value=state.mapStyle;
@@ -1087,6 +1150,16 @@ async function init() {
     return;
   }
   defaultEnabled(); loadPreferences();
+  window.addEventListener("raidpilot-zoom-sync", () => {
+    const fromHost = validMapZoomFactor(window.__raidPilotHostZoomFactor);
+    if (fromHost === null || Math.abs(fromHost - state.zoomFactor) < 1e-9) return;
+    state.zoomFactor = fromHost;
+    savePreferences();
+    if (state.mapKey && refs.baseMap?.naturalWidth > 0) {
+      fitStage();
+      if (followingPlayer()) centerPlayer();
+    }
+  });
   for (const [id,p] of Object.entries(state.catalog.profiles)) {
     const o=document.createElement("option");o.value=id;o.textContent=p.name;refs.profile.appendChild(o);
   }
