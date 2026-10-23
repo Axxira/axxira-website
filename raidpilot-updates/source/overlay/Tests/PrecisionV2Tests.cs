@@ -177,8 +177,9 @@ internal static class PrecisionV2Tests
         catch (Exception e) { failures.Add(label + ": " + e.Message); }
     }
 
-    private static void Require(bool condition)
+    private static void Require(bool condition, string? explanation = null)
     {
-        if (!condition) throw new InvalidOperationException("Assertion Precision V2 échouée");
+        if (!condition) throw new InvalidOperationException(
+            explanation ?? "Assertion Precision V2 échouée");
     }
 }
