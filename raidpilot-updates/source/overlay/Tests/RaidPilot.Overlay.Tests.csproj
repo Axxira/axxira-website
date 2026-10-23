@@ -10,6 +10,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RaidPilot.Overlay.csproj" />
+    <!-- Separate executable: do not compile its top-level smoke harness into unit tests. -->
+    <Compile Remove="RelaySmoke\**\*.cs" />
+    <None Include="RelaySmoke\**\*.cs" />
   </ItemGroup>
 
   <Target Name="RemoveUnusedWebView2WpfReference" BeforeTargets="ResolveAssemblyReferences">
