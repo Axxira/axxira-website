@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T01:21:59.9538119+00:00",
+  "publishedAt": "2026-10-23T01:58:53.4975208+00:00",
   "raidPilot": {
     "version": "0.14.2.13",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.13-b0.3.2-l0.2.12-a607535503e7/RaidPilot-Overlay-v0.14.2.13-Windows-x64.zip",
-    "sha256": "8C619F83469F1913A15FAB64BB8435378836CC7FBD1512E632F42715BB85930C",
-    "sizeBytes": 234395895,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.13-b0.3.2-l0.2.12-5eedcadf8169/RaidPilot-Overlay-v0.14.2.13-Windows-x64.zip",
+    "sha256": "689590A94CB7E282C53F0852A8EB8533C10F0266FACD0CCF7183DE106181FD1B",
+    "sizeBytes": 234398243,
     "releaseNotes": "HOTFIX13 : fiabilisation du suivi Beacon entre F8 : sprint toggle, marche lente et preuve visuelle, posture accroupie/couchée, pauses de calcul. Position exacte toujours recalée par F8."
   },
   "beacon": {
     "version": "0.3.2",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.13-b0.3.2-l0.2.12-a607535503e7/RaidPilot-Beacon-v0.3.2-Windows-x64.zip",
-    "sha256": "CD6553BC93108578542E4D1E2F378DF2504427F0B55494AE5BCB94EA7B60B7A3",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.13-b0.3.2-l0.2.12-5eedcadf8169/RaidPilot-Beacon-v0.3.2-Windows-x64.zip",
+    "sha256": "8490E13226770C593C73EE1841070EA84128F4F7327D3D9D0F2162DC18DA0BDE",
     "sizeBytes": 58295951,
     "releaseNotes": "Beacon 0.3.2 : amélioration du suivi entre F8 (sprint, posture, capture visuelle et longues pauses de boucle) ; connexion Cloudflare conservée."
   },
   "launcher": {
     "version": "0.2.12",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.13-b0.3.2-l0.2.12-a607535503e7/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
-    "sha256": "B71CD8C15196CC12B403929C26CBD9E5DBEA6F6249410AD2613EEDA1DF88A0DF",
-    "sizeBytes": 350919112,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.13-b0.3.2-l0.2.12-5eedcadf8169/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
+    "sha256": "86EAE6496EF832C52FCA48397D7299F68BCE87AB0AA173A5CF73BD5D4E60360D",
+    "sizeBytes": 350921460,
     "releaseNotes": "Launcher 0.2.12 : canal Stable actualisé sans cache intermédiaire ; vérification SHA-256 et sauvegarde de retour arrière conservées. Développé par Peko."
   }
 }
