@@ -24,6 +24,9 @@ internal sealed class LauncherForm : Form
         _settings = LauncherSettingsStore.Load();
         _squadProfile = SquadProfileStore.LoadOrCreate();
         PushSquadProfileToSurface();
+        _surface.RecentUpdates = ReleaseHistoryCatalog.ReadBundled();
+        _surface.ReleaseNotes = ReleaseHistoryCatalog.FormatDetailed(
+            null, _surface.RecentUpdates);
 
         Text = "RaidPilot Launcher";
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
@@ -269,8 +272,12 @@ internal sealed class LauncherForm : Form
                 _surface.Progress = 100;
             }
 
+            _surface.RecentUpdates = ReleaseHistoryCatalog.FromManifest(
+                latestManifest, _surface.RecentUpdates);
+            _surface.ReleaseNotes = ReleaseHistoryCatalog.FormatDetailed(
+                latestManifest, _surface.RecentUpdates);
             RefreshInstalledVersions();
-            _surface.ReleaseNotes = BuildReleaseNotes(latestManifest);
+            _surface.Invalidate();
 
             if (_surface.UpdateAvailable)
             {
@@ -403,7 +410,10 @@ internal sealed class LauncherForm : Form
             }
 
             _surface.UpdateAvailable = false;
-            _surface.ReleaseNotes = BuildReleaseNotes(_manifest);
+            _surface.RecentUpdates = ReleaseHistoryCatalog.FromManifest(
+                _manifest, _surface.RecentUpdates);
+            _surface.ReleaseNotes = ReleaseHistoryCatalog.FormatDetailed(
+                _manifest, _surface.RecentUpdates);
             SetStatus("Mise à jour installée et vérifiée ✓", LauncherStatus.Success);
         }
         catch (Exception exception)
@@ -733,7 +743,7 @@ internal sealed class LauncherForm : Form
     private void ShowReleaseNotes()
     {
         var text = string.IsNullOrWhiteSpace(_surface.ReleaseNotes)
-            ? "RaidPilot v0.11.0\n\n• Escouade temps réel et pions teammates\n• Position locale autonome\n• Beacon léger pour les équipiers\n• Nouveau launcher et système de mise à jour"
+            ? ReleaseHistoryCatalog.FormatDetailed(_manifest, _surface.RecentUpdates)
             : _surface.ReleaseNotes;
 
         using var dialog = new ReleaseNotesDialog(text);
@@ -827,35 +837,6 @@ internal sealed class LauncherForm : Form
         }
 
         return version;
-    }
-
-    private static string BuildReleaseNotes(UpdateManifest manifest)
-    {
-        var sections = new List<string>();
-        if (manifest.RaidPilot is { } raid)
-        {
-            sections.Add(
-                $"RaidPilot v{raid.Version}\r\n"
-                + (raid.ReleaseNotes ?? "Mise à jour RaidPilot."));
-        }
-
-        if (manifest.Beacon is { } beacon)
-        {
-            sections.Add(
-                $"Beacon v{beacon.Version}\r\n"
-                + (beacon.ReleaseNotes ?? "Mise à jour Beacon."));
-        }
-
-        if (manifest.Launcher is { } launcher)
-        {
-            sections.Add(
-                $"Launcher v{launcher.Version}\r\n"
-                + (launcher.ReleaseNotes ?? "Mise à jour du launcher."));
-        }
-
-        return sections.Count == 0
-            ? "Aucune note de version disponible."
-            : string.Join("\r\n\r\n", sections);
     }
 
     [DllImport("user32.dll")]
@@ -978,6 +959,7 @@ internal sealed class LauncherSurface : Control
     internal string StatusText = "Initialisation…";
     internal LauncherStatus Status = LauncherStatus.Info;
     internal string ReleaseNotes = string.Empty;
+    internal IReadOnlyList<ReleaseHistoryEntry> RecentUpdates = [];
     internal string SquadCode = "AUCUNE ESCOUADE";
     internal string SquadName = "Joueur";
     internal bool SquadConfigured;
@@ -1646,32 +1628,29 @@ internal sealed class LauncherSurface : Control
         using var titleBrush = new SolidBrush(Color.FromArgb(219, 229, 234));
         g.DrawString("Dernières mises à jour", titleFont, titleBrush, rect.Left + 17, rect.Top + 12);
 
-        DrawReleaseRow(
-            g,
-            rect.Left + 17,
-            rect.Top + 42,
-            rect.Width - 34,
-            "v0.11.0",
-            "Escouade temps réel · Beacon · nouvelle identité visuelle",
-            "2026-10-19");
-
-        DrawReleaseRow(
-            g,
-            rect.Left + 17,
-            rect.Top + 85,
-            rect.Width - 34,
-            "v0.10.2",
-            "Point local autonome · localisation indépendante de tarkov.dev",
-            "2026-10-19");
-
-        DrawReleaseRow(
-            g,
-            rect.Left + 17,
-            rect.Top + 128,
-            rect.Width - 34,
-            "v0.10.1",
-            "Chrono OCR fiabilisé · corrections et optimisations",
-            "2026-10-19");
+        if (RecentUpdates.Count == 0)
+        {
+            using var mutedFont = FontOf("Segoe UI", 8.6F);
+            using var mutedBrush = new SolidBrush(Muted);
+            g.DrawString(
+                "Historique non disponible · vérification du canal Stable…",
+                mutedFont, mutedBrush, rect.Left + 17, rect.Top + 62);
+        }
+        else
+        {
+            for (var i = 0; i < Math.Min(3, RecentUpdates.Count); i++)
+            {
+                var note = RecentUpdates[i];
+                DrawReleaseRow(
+                    g,
+                    rect.Left + 17,
+                    rect.Top + 42 + (i * 43),
+                    rect.Width - 34,
+                    "v" + note.Version,
+                    note.Summary,
+                    note.Date);
+            }
+        }
 
         var notesRect = new Rectangle(rect.Right - 152, rect.Top + 8, 128, 25);
         _hitAreas[LauncherAction.ReleaseNotes] = notesRect;
@@ -1705,7 +1684,17 @@ internal sealed class LauncherSurface : Control
         using var dateBrush = new SolidBrush(Color.FromArgb(112, 132, 143));
 
         g.DrawString(version, versionFont, white, x, y + 2);
-        g.DrawString(summary, summaryFont, summaryBrush, x + 90, y + 3);
+        // The date has its own reserved column. Long patch titles are
+        // ellipsized, never painted on top of the date or outside the panel.
+        using var clipFormat = new StringFormat
+        {
+            Trimming = StringTrimming.EllipsisCharacter,
+            FormatFlags = StringFormatFlags.NoWrap
+        };
+        g.DrawString(
+            summary, summaryFont, summaryBrush,
+            new RectangleF(x + 100, y + 2, Math.Max(1, width - 100 - 97), 28),
+            clipFormat);
         var dateSize = g.MeasureString(date, dateFont);
         g.DrawString(date, dateFont, dateBrush, x + width - dateSize.Width, y + 4);
     }
