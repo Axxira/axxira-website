@@ -131,6 +131,7 @@ function saveZoomPreferenceFromGesture() {
   if (!Number.isFinite(fit) || fit <= 0) return;
   const next = clampMapZoomFactor(state.zoom / fit);
   state.zoomFactor = next;
+  if (refs.zoomValue) refs.zoomValue.textContent = `${Math.round(next * 100)}%`;
   savePreferences();
   // Do not write an AppData JSON file on each high-frequency wheel event.
   // The per-page localStorage save above is immediate.
@@ -484,7 +485,8 @@ function applyTransform() {
   refs.stage.style.width = `${state.stageW*state.zoom}px`;
   refs.stage.style.height = `${state.stageH*state.zoom}px`;
   refs.stage.style.transform = `translate(${state.panX}px, ${state.panY}px)`;
-  refs.zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
+  // Display the user's relative zoom, consistent on large and small maps.
+  refs.zoomValue.textContent = `${Math.round(state.zoomFactor * 100)}%`;
   render();
 }
 
