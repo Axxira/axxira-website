@@ -23,6 +23,7 @@ internal static class PrecisionV3ContinuityPolicy
 {
     internal const int MaximumPendingPolls = 10;
     internal const double MaximumFlowGapSeconds = 0.58;
+    internal const double MaximumStationaryVetoAgeSeconds = 0.30;
 
     // A short gap after valid WGC frames must not switch to GDI and destroy
     // optical-flow tracks. Before the first GPU frame GDI keeps operating.
@@ -449,11 +450,19 @@ internal sealed class PrecisionV2MotionFusion
             && observed.CapturedAt >= _lastReliableMotionAt
             && (observed.CapturedAt - _lastReliableMotionAt)
                 / (double)Stopwatch.Frequency <= MaximumRecentMotionAgeSeconds;
+        // A last valid still-image cannot indefinitely veto the keyboard
+        // while GPU frames are delayed. The display may retain a slightly
+        // older observation, but stopping the player's pose requires a much
+        // fresher stationary measurement.
+        var recentStationaryImage =
+            (now - observed.CapturedAt) / (double)Stopwatch.Frequency
+                <= PrecisionV3ContinuityPolicy.MaximumStationaryVetoAgeSeconds;
         if (reliable
             && flow.State == VisualEgomotionState.Stationary
             && v.State == VisualMotionState.Stationary
             && _stationaryCount >= ConsecutiveStationaryFrames
-            && recentMotion)
+            && recentMotion
+            && recentStationaryImage)
         {
             // Stop only within a short window of previously confirmed motion.
             // A frozen/textureless render or a permanently static capture will
@@ -466,6 +475,10 @@ internal sealed class PrecisionV2MotionFusion
             LastDecision = "Collision/arrêt visuel probable : vitesse annulée";
             return RealtimeMotionEvidence.Stationary;
         }
+
+        if (reliable && flow.State == VisualEgomotionState.Stationary
+            && !recentStationaryImage)
+            LastDecision = "arrêt trop ancien : suivi clavier conservé";
 
         // If the old 64x36 guard called Stationary while the higher resolution
         // flow actually tracks, the safest result is Unknown (never fabricate
