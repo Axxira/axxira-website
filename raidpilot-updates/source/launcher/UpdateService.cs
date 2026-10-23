@@ -821,13 +821,13 @@ finally {
                 FileMode.Create,
                 FileAccess.Write,
                 FileShare.None);
-            var copied = await CopyWithProgressAsync(
+            var localCopied = await CopyWithProgressAsync(
                 source,
                 target,
                 source.Length,
                 progress,
                 cancellationToken);
-            if (expectedSize is > 0 && copied != expectedSize.Value)
+            if (expectedSize is > 0 && localCopied != expectedSize.Value)
                 throw new InvalidOperationException("Taille de package locale inattendue.");
             return;
         }
@@ -895,7 +895,7 @@ finally {
         {
             var normalized = entry.FullName.Replace('\\', '/');
             if (string.IsNullOrEmpty(normalized)
-                || normalized.StartsWith('/', StringComparison.Ordinal)
+                || normalized.StartsWith("/", StringComparison.Ordinal)
                 || normalized.Contains(':', StringComparison.Ordinal)
                 || normalized.Split('/').Any(s => s is ".." or ".")
                 || !unique.Add(normalized.TrimEnd('/')))

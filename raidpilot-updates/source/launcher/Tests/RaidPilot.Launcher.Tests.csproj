@@ -8,6 +8,7 @@
   <ItemGroup>
 
     <Compile Include="..\UpdateService.cs" Link="UpdateService.cs" />
+    <Compile Include="..\LauncherCanvasLayout.cs" Link="LauncherCanvasLayout.cs" />
     <Compile Include="..\ReleaseHistoryCatalog.cs" Link="ReleaseHistoryCatalog.cs" />
     <Compile Include="..\..\overlay\SquadRelayClient.cs" Link="Shared\SquadRelayClient.cs" />
     <Compile Include="..\..\overlay\SquadProfileStore.cs" Link="Shared\SquadProfileStore.cs" />
