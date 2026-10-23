@@ -18,6 +18,19 @@ Run("comparaison de versions", () =>
     Require(UpdateService.IsNewer("0.11.4+65c0b97cd781", "0.11.5"),
         "vraie mise à niveau masquée par le suffixe Git");
 });
+Run("source désactivée reste désactivée au démarrage", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var configPath = Path.Combine(root, "disabled-feed.json");
+        File.WriteAllText(configPath, JsonSerializer.Serialize(
+            new LauncherSettings("", "stable", AutoInstallWhenIdle: false)));
+        var loaded = LauncherSettingsStore.LoadFromPath(configPath);
+        Require(loaded.ManifestUrl == "", "la source désactivée a été remplacée par Stable");
+    }
+    finally { SafeDelete(root); }
+});
 Run("source HTTP refusée", () =>
 {
     Require(!UpdateService.IsAllowedManifestLocation("http://example.com/manifest.json"),
@@ -182,6 +195,43 @@ await RunAsync("manifeste local validé", async () =>
         using var service = new UpdateService();
         var manifest = await service.LoadManifestAsync(new Uri(manifestPath).AbsoluteUri, CancellationToken.None);
         Require(manifest.RaidPilot?.Version == "2.0.0", "version manifeste perdue");
+    }
+    finally { SafeDelete(root); }
+});
+Run("reprise après interruption de remplacement", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var live = Path.Combine(root, "live");
+        Directory.CreateDirectory(live);
+        File.WriteAllText(Path.Combine(live, "incomplete.txt"), "staged");
+        Directory.CreateDirectory(live + ".previous");
+        File.WriteAllText(Path.Combine(live + ".previous", "Dummy.exe"), "healthy-v1");
+        Require(UpdateService.RecoverInterruptedComponent(live, "Dummy.exe"),
+            "ancien exécutable non récupéré après coupure");
+        Require(File.ReadAllText(Path.Combine(live, "Dummy.exe")) == "healthy-v1",
+            "retour arrière incomplet");
+        Require(!UpdateService.RecoverInterruptedComponent(live, "Dummy.exe"),
+            "version restaurée remplacée à tort");
+    }
+    finally { SafeDelete(root); }
+});
+Run("archive refuse le zip-slip et les chemins dupliqués", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var path = Path.Combine(root, "danger.zip");
+        using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            using var content = new StreamWriter(archive.CreateEntry("../outside.exe").Open());
+            content.Write("not executable");
+        }
+        var refused = false;
+        try { UpdateService.ValidateZipArchive(path); }
+        catch (InvalidOperationException) { refused = true; }
+        Require(refused, "zip-slip accepté");
     }
     finally { SafeDelete(root); }
 });
@@ -444,10 +494,10 @@ Run("notes: grand historique borné et trois lignes dynamiques disponibles", () 
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("24/24 tests launcher réussis.");
+    Console.WriteLine("27/27 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/24 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/27 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
