@@ -179,14 +179,14 @@ jobs:
               url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
               sha256 = $env:RP_SHA
               sizeBytes = [int64]$env:RP_SIZE
-              releaseNotes = "HOTFIX11 : marqueurs des coéquipiers filtrés par carte, retrait immédiat après changement de carte, rejet des anciennes positions et contrôles du relais local. La réception réelle sur deux PC reste à confirmer en raid."
+              releaseNotes = "HOTFIX12 : RaidPilot et Beacon utilisent le relais Cloudflare RaidPilot vérifié, un seul WebSocket bidirectionnel par client, code RP conservé. Test en jeu sur deux PC encore nécessaire."
             }
             beacon = [ordered]@{
               version = $env:BEACON_VERSION
               url = "$base/RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
               sha256 = $env:BEACON_SHA
               sizeBytes = [int64]$env:BEACON_SIZE
-              releaseNotes = "Beacon 0.3 : fusion visuelle, blocage anti-dérive, repères F8, recalage automatique prudent et calibration propre au joueur."
+              releaseNotes = "Beacon 0.3.1 : envoi des positions au relais Cloudflare RaidPilot indépendant. Les repères F8 et la calibration propre à chaque joueur sont conservés."
             }
             launcher = [ordered]@{
               version = $env:LAUNCHER_VERSION

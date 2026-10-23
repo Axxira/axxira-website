@@ -1,0 +1,13 @@
+RaidPilot HOTFIX12 — Overlay 0.14.2.12 / Beacon 0.3.1 / Launcher 0.2.12
+
+La connexion entre coéquipiers a été déplacée du WebSocket de tarkov.dev vers le Worker Cloudflare RaidPilot indépendant et déjà déployé.
+Un test réseau GitHub Actions a confirmé sur notre Cloudflare 0.1.0 :
+- deux connexions de clients fictifs ;
+- transmission bidirectionnelle des positions synthétiques ;
+- isolation des salles avec des codes différents.
+
+Le code partageable RP-XXXX-XXXX-XXXX-XXXX reste le même. Une clé de session dérivée SHA-256 (43 caractères) satisfait le protocole du Worker, sans exposer le code de groupe lisible dans l'URL.
+Une seule socket bidirectionnelle par processus et une reconnexion automatique.
+La position reste estimée par chaque PC, après l'ancrage F8. Le relais ne géolocalise pas le jeu.
+
+IMPORTANT : Installer les mises à jour d'Overlay et de Beacon sur tous les PC par le launcher. Tester deux joueurs avec le même code, F8 sur les deux, puis observer Escouade / teammate count. Le fonctionnement réel pendant un raid reste à confirmer. Uniquement RaidPilot OU Beacon avec le même profil sur chaque PC, pas les deux en parallèle.

@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>RaidPilot.Beacon</AssemblyName>
     <RootNamespace>RaidPilot.Beacon</RootNamespace>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>

@@ -223,7 +223,7 @@ internal sealed partial class OverlayForm
         var consent = MessageBox.Show(
             this,
             "Activer RaidPilot Squad Sync ?\n\n"
-            + "Ton nom choisi, la carte, X/Y/Z, le cap et l’incertitude seront relayés via wss://socket.tarkov.dev aux membres qui possèdent le même code d’escouade. "
+            + "Ton nom choisi, la carte, X/Y/Z et le cap seront relayés via notre serveur Cloudflare RaidPilot aux membres qui possèdent le même code d’escouade. "
             + "Les captures, touches et mouvements de souris restent sur ce PC.\n\n"
             + "Garde le code d’escouade privé.",
             "RaidPilot — escouade",
@@ -550,7 +550,7 @@ internal sealed partial class OverlayForm
                 y = pose.Y,
                 z = pose.Z,
                 yaw = pose.YawDegrees,
-                uncertainty = pose.UncertaintyMeters,
+                uncertainty = pose.UncertaintyMeters >= 1000 ? (double?)null : pose.UncertaintyMeters,
                 sentAtUnixMs = pose.SentAtUnixMilliseconds,
             });
             await _webView.CoreWebView2.ExecuteScriptAsync(

@@ -1,8 +1,10 @@
+using System.Text.Json;
+
 namespace RaidPilot.Overlay.Tests;
 
 internal static class SquadSyncTests
 {
-    internal const int TestCount = 10;
+    internal const int TestCount = 12;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -16,6 +18,8 @@ internal static class SquadSyncTests
         Run("rendu escouade projette le cap à travers Leaflet", AppliesMapCoordinateRotation, failures);
         Run("escouade filtre les autres cartes et reconnaît les alias", FiltersForeignMaps, failures);
         Run("pont local rejette les poses périmées et les retours arrière", HasLocalSquadReplayProtection, failures);
+        Run("relais Cloudflare utilise notre Worker avec un code sécurisé stable", UsesOwnedRelayEndpoint, failures);
+        Run("relais Cloudflare décode les positions retournées", ReadsCloudflarePose, failures);
     }
 
     private static void GeneratesShareableCode()
@@ -137,6 +141,38 @@ internal static class SquadSyncTests
             && bridge.Contains("canonicalSquadMap(payload.map)", StringComparison.Ordinal)
             && bridge.Contains("__raidPilotRemoveSquadMember = (id, sentAtUnixMs)", StringComparison.Ordinal),
             "pont escouade local sans protection d’ordre et de changement de carte");
+    }
+
+    private static void UsesOwnedRelayEndpoint()
+    {
+        const string code = "RP-ABCD-EFGH-JKLM-NPQR";
+        var endpoint = SquadRelayClient.BuildRelayEndpoint(code, "Émilie Peko");
+        Require(endpoint.Scheme == "wss"
+            && endpoint.Host == "raidpilot-team-relay.tyronixstudio.workers.dev",
+            "le client n'utilise pas le relais Cloudflare RaidPilot");
+        Require(endpoint.AbsolutePath == "/ws", "le chemin de connexion est incorrect");
+        var key = SquadRelayClient.DeriveRelayTeamKey(code);
+        Require(key.Length >= 24 && key.Length <= 64, "la clé dérivée est refusée par Cloudflare");
+        Require(key == SquadRelayClient.DeriveRelayTeamKey("ABCDEFGHJKLMNPQR"),
+            "le code affiché et le code compact pointent vers deux salles");
+        Require(endpoint.Query.Contains("team=" + key, StringComparison.Ordinal),
+            "identifiant de salle absent");
+        Require(!endpoint.Query.Contains("RP-", StringComparison.Ordinal),
+            "code original exposé dans l'URL WebSocket");
+    }
+
+    private static void ReadsCloudflarePose()
+    {
+        using var json = JsonDocument.Parse(
+            """{"type":"pose","id":"fake-peer","name":"Amie","map":"customs","position":{"x":102.5,"y":1,"z":-12},"rotation":270,"at":1761170000000}""");
+        Require(SquadRelayClient.TryReadPose(json.RootElement, out var pose)
+            && pose is not null && pose.X == 102.5 && pose.YawDegrees == 270
+            && pose.SentAtUnixMilliseconds == 1761170000000,
+            "pose Cloudflare valide rejetée");
+        using var malformed = JsonDocument.Parse(
+            """{"type":"pose","id":"fake-peer","name":"X","map":"customs","position":{"x":"102","y":1,"z":0},"rotation":270,"at":1761170000000}""");
+        Require(!SquadRelayClient.TryReadPose(malformed.RootElement, out _),
+            "une coordonnée non numérique a été acceptée");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)
