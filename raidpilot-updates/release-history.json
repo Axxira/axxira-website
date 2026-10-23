@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "component": "raidpilot",
+      "version": "0.14.2.20",
+      "raidPilotVersion": "0.14.2.20",
+      "beaconVersion": "0.3.8",
+      "launcherVersion": "0.2.13",
+      "date": "2026-10-23",
+      "summary": "Precision V3.2 : écrans ultralarges et suivi GPU plus stable",
+      "details": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
+    },
+    {
       "component": "launcher",
       "version": "0.2.13",
       "raidPilotVersion": "0.14.2.18",

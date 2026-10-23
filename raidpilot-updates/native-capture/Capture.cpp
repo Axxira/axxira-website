@@ -43,6 +43,11 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
     std::mutex mutex;
     winrt::com_ptr<ID3D11Device> d3dDevice;
     winrt::com_ptr<ID3D11DeviceContext> d3dContext;
+    dx11::IDirect3DDevice graphicsDevice{nullptr};
+    unsigned framePoolWidth = 0;
+    unsigned framePoolHeight = 0;
+    unsigned sampledWidth = 0;
+    unsigned sampledHeight = 0;
     winrt::com_ptr<ID3D11Texture2D> staging;
     unsigned stagingWidth = 0;
     unsigned stagingHeight = 0;
@@ -71,7 +76,7 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
         winrt::com_ptr<::IInspectable> inspectable;
         winrt::check_hresult(CreateDirect3D11DeviceFromDXGIDevice(
             dxgi.get(), inspectable.put()));
-        auto winrtDevice = inspectable.as<dx11::IDirect3DDevice>();
+        graphicsDevice = inspectable.as<dx11::IDirect3DDevice>();
 
         auto factory = winrt::get_activation_factory<
             wgc::GraphicsCaptureItem, IGraphicsCaptureItemInterop>();
@@ -86,9 +91,12 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
             return false;
 
         framePool = wgc::Direct3D11CaptureFramePool::CreateFreeThreaded(
-            winrtDevice,
+            graphicsDevice,
             winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized,
             2, size);
+
+        framePoolWidth = static_cast<unsigned>(size.Width);
+        framePoolHeight = static_cast<unsigned>(size.Height);
 
         std::weak_ptr<CaptureState> weak = weak_from_this();
         frameToken = framePool.FrameArrived([weak](
@@ -110,8 +118,30 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
         {
             auto frame = sender.TryGetNextFrame();
             if (!frame) return;
+            const auto content = frame.ContentSize();
             std::lock_guard guard(mutex);
             if (stopped) return;
+            if (content.Width < kWidth || content.Height < kHeight
+                || content.Width > 16384 || content.Height > 16384)
+                return;
+            if (static_cast<unsigned>(content.Width) != framePoolWidth
+                || static_cast<unsigned>(content.Height) != framePoolHeight)
+            {
+                // WGC surfaces keep the old pool size until Recreate. Retire
+                // the old frame first; never rescale stale/cropped pixels.
+                frame.Close();
+                sender.Recreate(
+                    graphicsDevice,
+                    winrt::Windows::Graphics::DirectX::DirectXPixelFormat::B8G8R8A8UIntNormalized,
+                    2, content);
+                framePoolWidth = static_cast<unsigned>(content.Width);
+                framePoolHeight = static_cast<unsigned>(content.Height);
+                staging = nullptr;
+                stagingWidth = stagingHeight = 0;
+                lastSample = {};
+                lastCompleteFrame = {};
+                return;
+            }
             auto now = std::chrono::steady_clock::now();
             if (lastSample.time_since_epoch().count() != 0
                 && (now - lastSample) < kFrameInterval) return;
@@ -123,7 +153,9 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
             if (description.Format != DXGI_FORMAT_B8G8R8A8_UNORM
                 || description.SampleDesc.Count != 1
                 || description.Width < kWidth || description.Height < kHeight
-                || description.Width > 16384 || description.Height > 16384) return;
+                || description.Width > 16384 || description.Height > 16384
+                || description.Width < static_cast<unsigned>(content.Width)
+                || description.Height < static_cast<unsigned>(content.Height)) return;
 
             if (!staging || stagingWidth != description.Width
                 || stagingHeight != description.Height)
@@ -148,8 +180,8 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
                 staging.get(), 0, D3D11_MAP_READ, 0, &mapped));
             try
             {
-                const unsigned w = description.Width;
-                const unsigned h = description.Height;
+                const unsigned w = static_cast<unsigned>(content.Width);
+                const unsigned h = static_cast<unsigned>(content.Height);
                 const unsigned left = static_cast<unsigned>(w * .08);
                 const unsigned top = static_cast<unsigned>(h * .12);
                 const unsigned cropW = std::max(1u, static_cast<unsigned>(w * .84));
@@ -172,6 +204,8 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
                                 + static_cast<unsigned>(pixel[0]) * 19 + 128) >> 8);
                     }
                 }
+                sampledWidth = w;
+                sampledHeight = h;
                 lastCompleteFrame = std::chrono::steady_clock::now();
                 ++sequence;
             }
@@ -218,7 +252,7 @@ struct NativeCapture
 
 extern "C" __declspec(dllexport) int __cdecl rp_wgc_version() noexcept
 {
-    return 1;
+    return 2;
 }
 
 extern "C" __declspec(dllexport) void* __cdecl rp_wgc_start(HWND window) noexcept
@@ -235,10 +269,12 @@ extern "C" __declspec(dllexport) void* __cdecl rp_wgc_start(HWND window) noexcep
     catch (...) { return nullptr; }
 }
 
-// 1=fresh luminance (160x90), 0=no new frame, -1=bad call.
-extern "C" __declspec(dllexport) int __cdecl rp_wgc_poll(
+// 1 = new downsampled frame; 0 = no new/valid image; -1 = invalid call.
+// This implementation retains the original poll export for old clients.
+static int PollShared(
     void* nativeHandle, std::uint8_t* dst, int capacity,
-    std::uint64_t* sequence) noexcept
+    std::uint64_t* sequence, std::uint32_t* sourceWidth,
+    std::uint32_t* sourceHeight) noexcept
 {
     if (!nativeHandle || !dst || capacity < kPixels || !sequence) return -1;
     auto* handle = static_cast<NativeCapture*>(nativeHandle);
@@ -248,16 +284,38 @@ extern "C" __declspec(dllexport) int __cdecl rp_wgc_poll(
     if (state->stopped) return -1;
     if (state->sequence == 0 || state->sequence == handle->lastRead)
         return 0;
-    // Never label a frozen or paused frame as a fresh measurement.
-    // The managed sampler falls back to GDI after repeated pending polls.
     if (state->lastCompleteFrame.time_since_epoch().count() == 0
         || (std::chrono::steady_clock::now() - state->lastCompleteFrame)
             > std::chrono::milliseconds(650))
         return 0;
+    if (state->sampledWidth < kWidth || state->sampledHeight < kHeight)
+        return 0;
+
     std::memcpy(dst, state->luminance.data(), kPixels);
     handle->lastRead = state->sequence;
     *sequence = state->sequence;
+    if (sourceWidth) *sourceWidth = state->sampledWidth;
+    if (sourceHeight) *sourceHeight = state->sampledHeight;
     return 1;
+}
+
+extern "C" __declspec(dllexport) int __cdecl rp_wgc_poll(
+    void* nativeHandle, std::uint8_t* dst, int capacity,
+    std::uint64_t* sequence) noexcept
+{
+    return PollShared(nativeHandle, dst, capacity, sequence, nullptr, nullptr);
+}
+
+// ABI v2 carries the actual WGC ContentSize. The managed client validates
+// this against EFT's client rect before applying visual yaw calibration.
+extern "C" __declspec(dllexport) int __cdecl rp_wgc_poll_geometry(
+    void* nativeHandle, std::uint8_t* dst, int capacity,
+    std::uint64_t* sequence,
+    std::uint32_t* sourceWidth, std::uint32_t* sourceHeight) noexcept
+{
+    if (!sourceWidth || !sourceHeight) return -1;
+    return PollShared(
+        nativeHandle, dst, capacity, sequence, sourceWidth, sourceHeight);
 }
 
 extern "C" __declspec(dllexport) void __cdecl rp_wgc_stop(void* nativeHandle) noexcept

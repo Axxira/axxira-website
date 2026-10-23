@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionV2Tests
 {
-    internal const int TestCount = 18;
+    internal const int TestCount = 31;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -88,6 +88,127 @@ internal static class PrecisionV2Tests
                 && sensor.GpuFrames == 0
                 && sensor.GpuFallbacks == 0,
                 "un nouveau suivi a conservé une statistique GPU fictive");
+        }, failures);
+        Run("V3.1: WGC 16:9 rapproche la géométrie client réelle", () => {
+            Require(VisualCaptureGeometryPolicy.TryMatchViewport(
+                1920,1080,1920,1080,out var v)
+                && Math.Abs(v.AspectRatio-16.0/9.0) < 1e-9);
+        }, failures);
+        Run("V3.1: WGC accepte les résolutions 1440p et 4K", () => {
+            Require(VisualCaptureGeometryPolicy.TryMatchViewport(
+                2560,1440,2560,1440,out _)
+                && VisualCaptureGeometryPolicy.TryMatchViewport(
+                    3840,2160,3840,2160,out _));
+        }, failures);
+        Run("V3.1: ultralarge 21:9 et 32:9 calibrables", () => {
+            Require(VisualCaptureGeometryPolicy.TryMatchViewport(
+                3440,1440,3440,1440,out _)
+                && VisualCaptureGeometryPolicy.TryMatchViewport(
+                    5120,1440,5120,1440,out _));
+        }, failures);
+        Run("V3.1: petites bordures WGC ne modifient pas l'aspect", () => {
+            Require(VisualCaptureGeometryPolicy.TryMatchViewport(
+                1920,1080,1936,1090,out var v)
+                && v.ClientWidth==1920 && v.ClientHeight==1080);
+        }, failures);
+        Run("V3.1: capture étirée ou décorée rejetée", () => {
+            Require(!VisualCaptureGeometryPolicy.TryMatchViewport(
+                1920,1080,1024,768,out _)
+                && !VisualCaptureGeometryPolicy.TryMatchViewport(
+                3440,1440,1920,1080,out _)
+                && !VisualCaptureGeometryPolicy.TryMatchViewport(
+                2560,1440,0,0,out _));
+        }, failures);
+        Run("V3.1: FOV recadré 21:9 supérieur à celui du 16:9", () => {
+            var narrow=VisualCaptureGeometryPolicy.CalculateEffectiveHorizontalFov(
+                1920,1080,50);
+            var wide=VisualCaptureGeometryPolicy.CalculateEffectiveHorizontalFov(
+                3440,1440,50);
+            var full=EftGameViewSettings.CalculateHorizontalFieldOfViewDegrees(
+                50,1920.0/1080);
+            Require(wide>narrow+8 && narrow<full && narrow>50,
+                "FOV horizontal non adapté au format de la fenêtre");
+        }, failures);
+        Run("V3.1: un changement de résolution invalide l'ancienne trame", () => {
+            using var gate=new VisualMotionGate(new VisualMotionGateSettings {
+                SampleWidth=160,SampleHeight=90,
+                EgomotionSettings=PrecisionV2VisualSampler.EnhancedFlowSettings
+            });
+            gate.ConfigureVerticalFieldOfView(50);
+            var priming=gate.ObserveLuminanceFrame(SampleScene(0),160,90,1920,1080);
+            var moved=gate.ObserveLuminanceFrame(SampleScene(-3),160,90,1920,1080);
+            var at21By9=gate.ObserveLuminanceFrame(SampleScene(-6),160,90,3440,1440);
+            Require(priming.Egomotion.State==VisualEgomotionState.Priming
+                && moved.Egomotion.IsReliable
+                && at21By9.Egomotion.State==VisualEgomotionState.Priming
+                && !at21By9.CaptureProvenLive,
+                "ancienne odométrie réutilisée après un changement de format");
+            var wanted=VisualCaptureGeometryPolicy.CalculateEffectiveHorizontalFov(
+                3440,1440,50,new VisualMotionGateSettings{
+                    SampleWidth=160,SampleHeight=90,
+                    EgomotionSettings=PrecisionV2VisualSampler.EnhancedFlowSettings
+                });
+            Require(Math.Abs(gate.EgomotionHorizontalFieldOfViewDegrees-wanted)<0.01,
+                "le suivi 160×90 n'a pas pris le nouveau FOV");
+        }, failures);
+        Run("V3.1: un changement de FOV invalide le suivi visuel", () => {
+            using var gate=new VisualMotionGate(new VisualMotionGateSettings{
+                SampleWidth=160,SampleHeight=90
+            });
+            gate.ConfigureVerticalFieldOfView(50);
+            gate.ObserveLuminanceFrame(SampleScene(0),160,90,1920,1080);
+            gate.ObserveLuminanceFrame(SampleScene(-3),160,90,1920,1080);
+            var before=gate.EgomotionHorizontalFieldOfViewDegrees;
+            gate.ConfigureVerticalFieldOfView(70);
+            var prime=gate.ObserveLuminanceFrame(SampleScene(-6),160,90,1920,1080);
+            Require(prime.Egomotion.State==VisualEgomotionState.Priming
+                && gate.EgomotionHorizontalFieldOfViewDegrees>before+10,
+                "nouveau FOV traité avec la géométrie précédente");
+        }, failures);
+        Run("V3.1: le garde GDI 64×36 reste indépendant de V3", () => {
+            using var gate=new VisualMotionGate();
+            gate.ConfigureVerticalFieldOfView(50);
+            Require(gate.SampleWidth==64 && gate.SampleHeight==36
+                && new VisualEgomotionSettings().HorizontalSearchRadius==6,
+                "ancienne voie de secours altérée par Precision V3");
+        }, failures);
+        Run("V3.2: attente d'une trame ne brise pas le suivi WGC", () => {
+            for (var pending = 1; pending < PrecisionV3ContinuityPolicy.MaximumPendingPolls; pending++)
+                Require(PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(1, pending),
+                    "interruption GPU brève force une nouvelle calibration de scène");
+            Require(!PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(
+                1, PrecisionV3ContinuityPolicy.MaximumPendingPolls),
+                "capture GPU bloquée conservée trop longtemps");
+        }, failures);
+        Run("V3.2: GDI reste actif au démarrage du capteur WGC", () => {
+            Require(!PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(0,1)
+                && !PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(-1,1)
+                && !PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(1,0),
+                "le capteur GPU inconnu désactive le repli GDI");
+        }, failures);
+        Run("V3.2: après une longue pause la scène repart du premier repère", () => {
+            var start = Stopwatch.Frequency * 100L;
+            Require(!PrecisionV3ContinuityPolicy.MustReprimeAfterGap(
+                start, start + Stopwatch.Frequency / 4),
+                "flux normal réinitialisé trop tôt");
+            Require(PrecisionV3ContinuityPolicy.MustReprimeAfterGap(
+                start, start + Stopwatch.Frequency),
+                "ancien flux WGC utilisé après une interruption de 1 seconde");
+            Require(PrecisionV3ContinuityPolicy.MustReprimeAfterGap(0,start),
+                "première image WGC non initialisée");
+        }, failures);
+        Run("V3.2: ancienne image stationnaire ne bloque pas le clavier", () => {
+            var f=Prepared();
+            var at=Stopwatch.Frequency * 10L + Stopwatch.Frequency * 3 / 5;
+            var oldStop=Frame(at,VisualEgomotionState.Stationary);
+            var tooLate=at + Stopwatch.Frequency * 2 / 5; // 400ms < 480ms stale limit
+            Require(f.Fuse(oldStop, tooLate, (nint)1, true, true,
+                RealtimeMotionEvidence.Unknown) == RealtimeMotionEvidence.Unknown,
+                "ancienne capture stationnaire bloque le mouvement commandé");
+            Require(f.Fuse(oldStop, at + Stopwatch.Frequency/5, (nint)1,
+                true, true, RealtimeMotionEvidence.Unknown)
+                == RealtimeMotionEvidence.Stationary,
+                "la preuve stationnaire récente est incorrectement rejetée");
         }, failures);
         Run("V2: premier flux fiable ne suffit pas à arrêter", () => {
             var f = new PrecisionV2MotionFusion();
