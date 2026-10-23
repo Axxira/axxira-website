@@ -1,0 +1,9 @@
+PRECISION V2.2 — Overlay 0.14.2.16 / Beacon 0.3.5
+- La voie V2 160×90 recherche désormais les points à ±12 pixels horizontalement et ±7 verticalement, contre 6×3 par défaut; elle utilise une grille 10×6 plutôt que la grille 8×5 de V1.
+- Cette extension est isolée dans VisualMotionGateSettings.EgomotionSettings pour ne pas modifier les seuils de l'ancien capteur GDI 64×36.
+- L'Overlay présente les nombres de flux visuels fiables et incertains ainsi que le coût du dernier calcul.
+- La cadence ralentit automatiquement en cas de calcul >65 ms ou d'échecs répétés; les images trop anciennes n'influencent jamais la localisation.
+- Audits F8 V1/V2 et partage Cloudflare conservés; aucune capture ni coordonnée absolue ne quitte la machine.
+- Tests déterministes ajoutés sur un décalage de scène synthétique de neuf pixels et sur l'indépendance de V1.
+
+Cette version demeure expérimentale : sans données de capture du vrai jeu et comparaison de résidus F8 sur plusieurs parcours, l'amélioration de précision n'est pas prouvée. Le backend reste GDI; Windows.Graphics.Capture n'est pas encore actif.

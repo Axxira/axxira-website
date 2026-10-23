@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionV2Tests
 {
-    internal const int TestCount = 12;
+    internal const int TestCount = 14;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -37,6 +37,24 @@ internal static class PrecisionV2Tests
                 && moved.Egomotion.IsReliable
                 && moved.Egomotion.SceneShiftX < -1,
                 "flux 160×90 non mesuré ou décalage inversé");
+        }, failures);
+        Run("V2.2: grand décalage horizontal suivi en 160×90", () => {
+            var flow = new VisualEgomotionEstimator(
+                PrecisionV2VisualSampler.EnhancedFlowSettings);
+            flow.Observe(SampleScene(0), 160, 90);
+            var move = flow.Observe(SampleScene(-9), 160, 90);
+            Require(move.IsReliable && Math.Abs(move.SceneShiftX + 9) <= 1,
+                $"recherche longue portée insuffisante: {move.State}, dx={move.SceneShiftX}");
+        }, failures);
+        Run("V2.2: profil de flux spécialisé sans modifier V1", () => {
+            var profile = PrecisionV2VisualSampler.EnhancedFlowSettings;
+            var legacy = new VisualEgomotionSettings();
+            Require(profile.HorizontalSearchRadius > legacy.HorizontalSearchRadius
+                && profile.VerticalSearchRadius > legacy.VerticalSearchRadius
+                && profile.GridColumns > legacy.GridColumns
+                && legacy.HorizontalSearchRadius == 6
+                && legacy.GridColumns == 8,
+                "la configuration basse résolution a été modifiée par erreur");
         }, failures);
         Run("V2: premier flux fiable ne suffit pas à arrêter", () => {
             var f = new PrecisionV2MotionFusion();

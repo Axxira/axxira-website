@@ -16,6 +16,10 @@ internal sealed record VisualMotionGateSettings
 
     internal int SampleHeight { get; init; } = 36;
 
+    // Optional tuning for the independent 160×90 V2 track. When absent the
+    // existing 64×36 optical-flow engine and all its thresholds remain intact.
+    internal VisualEgomotionSettings? EgomotionSettings { get; init; }
+
     internal double CropLeftFraction { get; init; } = 0.08;
 
     internal double CropTopFraction { get; init; } = 0.12;
@@ -105,7 +109,7 @@ internal sealed class VisualMotionGate : IDisposable
         _currentLuminance = new byte[pixelCount];
         _previousLuminance = new byte[pixelCount];
         _bgraPixels = new byte[checked(pixelCount * 4)];
-        _egomotionEstimator = new VisualEgomotionEstimator();
+        _egomotionEstimator = new VisualEgomotionEstimator(_settings.EgomotionSettings);
     }
 
     internal void ConfigureVerticalFieldOfView(double verticalFieldOfViewDegrees)

@@ -25,10 +25,26 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     internal const double CaptureIntervalSeconds = 0.20;
     internal const double MaximumFreshAgeSeconds = 0.48;
 
+    // Larger search window and denser spatial consensus are isolated to V2.
+    // Slow/ambiguous frames still fall back to V1 rather than making up motion.
+    internal static VisualEgomotionSettings EnhancedFlowSettings { get; } = new()
+    {
+        HorizontalSearchRadius = 12,
+        VerticalSearchRadius = 7,
+        GridColumns = 10,
+        GridRows = 6,
+        MinimumTexturedFeatures = 12,
+        MinimumMatchedFeatures = 8,
+        MinimumInlierColumnSpan = 3,
+        MinimumInlierRowSpan = 2,
+        MinimumReliableConfidence = 0.60,
+    };
+
     private readonly VisualMotionGate _gate = new(new VisualMotionGateSettings
     {
         SampleWidth = Width,
         SampleHeight = Height,
+        EgomotionSettings = EnhancedFlowSettings,
     });
     private readonly object _sync = new();
     private PrecisionV2Frame? _latest;
@@ -39,11 +55,15 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     private int _disposed;
     private long _captured;
     private long _failed;
+    private long _reliableFrames;
+    private long _unreliableFrames;
     private double _lastProcessingMilliseconds;
     private int _consecutiveFailures;
 
     internal long Captured => Interlocked.Read(ref _captured);
     internal long Failed => Interlocked.Read(ref _failed);
+    internal long ReliableFrames => Interlocked.Read(ref _reliableFrames);
+    internal long UnreliableFrames => Interlocked.Read(ref _unreliableFrames);
     internal bool IsBusy => Volatile.Read(ref _workerBusy) == 1;
     internal double LastProcessingMilliseconds => Volatile.Read(ref _lastProcessingMilliseconds);
     internal string Backend => "GDI 160×90 (GPU non activé)";
@@ -96,6 +116,10 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                 Volatile.Write(ref _lastProcessingMilliseconds,
                     (finished - started) * 1000.0 / Stopwatch.Frequency);
                 Volatile.Write(ref _consecutiveFailures, 0);
+                if (observation.Egomotion.IsReliable && observation.CaptureProvenLive)
+                    Interlocked.Increment(ref _reliableFrames);
+                else
+                    Interlocked.Increment(ref _unreliableFrames);
 
                 var result = new PrecisionV2Frame(
                     finished,

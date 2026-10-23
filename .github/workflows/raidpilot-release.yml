@@ -181,14 +181,14 @@ jobs:
               url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
               sha256 = $env:RP_SHA
               sizeBytes = [int64]$env:RP_SIZE
-              releaseNotes = "PRECISION V2.1 : statistiques locales de dérive réellement mesurée avant F8 (V1/V2), rejet des intervalles interrompus, garde anti-faux-arrêt après rotations et cadence de capture adaptée au coût GPU/GDI. Le gain en raid reste à quantifier."
+              releaseNotes = "PRECISION V2.2 : meilleur suivi des mouvements d’image à 160×90 (recherche 12×7 et grille 10×6), statistiques de fiabilité du flux et comparaison d’erreurs F8 V1/V2. Capture GDI et F8 conservés."
             }
             beacon = [ordered]@{
               version = $env:BEACON_VERSION
               url = "$base/RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
               sha256 = $env:BEACON_SHA
               sizeBytes = [int64]$env:BEACON_SIZE
-              releaseNotes = "Beacon 0.3.4 : diagnostic de dérive F8 par mode V1/V2, protection contre faux arrêt visuel et limitation de surcharge des captures. Cloudflare inchangé."
+              releaseNotes = "Beacon 0.3.5 : suivi visuel V2 étendu et diagnostic de dérive F8 en mémoire. Relais Cloudflare inchangé."
             }
             launcher = [ordered]@{
               version = $env:LAUNCHER_VERSION

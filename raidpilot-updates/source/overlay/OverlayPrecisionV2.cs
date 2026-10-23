@@ -78,6 +78,8 @@ internal sealed partial class OverlayForm
             : $"{_precisionV2Vision.Backend}, "
                 + $"captures {_precisionV2Vision.Captured}, erreurs {_precisionV2Vision.Failed}, "
                 + $"arrêts fiables {_precisionV2Fusion.AcceptedStops}, "
+                + $"flux fiables {_precisionV2Vision.ReliableFrames}, "
+                + $"flux incertains {_precisionV2Vision.UnreliableFrames}, "
                 + $"dernier calcul {_precisionV2Vision.LastProcessingMilliseconds:F0} ms\n"
                 + $"Arbitrage : {_precisionV2Fusion.LastDecision}";
         return status + "\n\n" + _precisionV2DriftAudit.Describe();
