@@ -74,6 +74,7 @@ internal static class ScreenshotNameParserTests
         LearnedRoutePolicyTests.RunAll(failures);
         OverlayLayoutCalculatorTests.RunAll(failures);
         OverlayPreferencesStoreTests.RunAll(failures);
+        MapZoomPreferenceTests.RunAll(failures);
         ScreenshotFolderCleanerTests.RunAll(failures);
         RaidStartObservationBufferTests.RunAll(failures);
         WebNavigationPolicyTests.RunAll(failures);
@@ -123,6 +124,7 @@ internal static class ScreenshotNameParserTests
             + LearnedRoutePolicyTests.TestCount
             + OverlayLayoutCalculatorTests.TestCount
             + OverlayPreferencesStoreTests.TestCount
+            + MapZoomPreferenceTests.TestCount
             + ScreenshotFolderCleanerTests.TestCount
             + RaidStartObservationBufferTests.TestCount
             + WebNavigationPolicyTests.TestCount
