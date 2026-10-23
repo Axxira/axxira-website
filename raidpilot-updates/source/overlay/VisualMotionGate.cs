@@ -84,6 +84,8 @@ internal sealed class VisualMotionGate : IDisposable
     private readonly byte[] _bgraPixels;
     private readonly VisualEgomotionEstimator _egomotionEstimator;
     private double? _verticalFieldOfViewDegrees;
+    private int _sourceViewportWidth;
+    private int _sourceViewportHeight;
 
     private bool _hasPreviousFrame;
     private bool _captureProvenLive;
@@ -122,12 +124,32 @@ internal sealed class VisualMotionGate : IDisposable
         lock (_sync)
         {
             ThrowIfDisposed();
+            if (_verticalFieldOfViewDegrees is { } previous
+                && Math.Abs(previous - verticalFieldOfViewDegrees) > 0.001)
+                ResetObservationStateCore(clearCaptureIdentity: false);
             _verticalFieldOfViewDegrees = verticalFieldOfViewDegrees;
+            if (_sourceViewportWidth > 0 && _sourceViewportHeight > 0)
+                ApplySourceGeometryCore(_sourceViewportWidth, _sourceViewportHeight);
         }
     }
 
     internal double EgomotionHorizontalFieldOfViewDegrees =>
         _egomotionEstimator.HorizontalFieldOfViewDegrees;
+
+    internal string CameraGeometryDiagnostic
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return _sourceViewportWidth > 0 && _sourceViewportHeight > 0
+                    ? _sourceViewportWidth + "x" + _sourceViewportHeight
+                        + " · FOV horizontal recadré "
+                        + _egomotionEstimator.HorizontalFieldOfViewDegrees.ToString("F1") + "°"
+                    : "géométrie caméra en attente";
+            }
+        }
+    }
 
     internal VisualMotionState State
     {
@@ -318,7 +340,9 @@ internal sealed class VisualMotionGate : IDisposable
     internal VisualMotionObservation ObserveLuminanceFrame(
         ReadOnlySpan<byte> luminance,
         int width,
-        int height)
+        int height,
+        int viewportWidth = 0,
+        int viewportHeight = 0)
     {
         lock (_sync)
         {
@@ -333,6 +357,19 @@ internal sealed class VisualMotionGate : IDisposable
             if (luminance.Length != _currentLuminance.Length)
             {
                 throw new ArgumentException("La taille de la trame de luminance est invalide.", nameof(luminance));
+            }
+
+            if (viewportWidth != 0 || viewportHeight != 0)
+            {
+                if (viewportWidth < _settings.SampleWidth
+                    || viewportHeight < _settings.SampleHeight
+                    || viewportWidth > 16384 || viewportHeight > 16384)
+                    throw new ArgumentOutOfRangeException(nameof(viewportWidth),
+                        "La géométrie de la fenêtre EFT est invalide.");
+                if (_sourceViewportWidth != viewportWidth
+                    || _sourceViewportHeight != viewportHeight)
+                    ResetObservationStateCore(clearCaptureIdentity: false);
+                ApplySourceGeometryCore(viewportWidth, viewportHeight);
             }
 
             luminance.CopyTo(_currentLuminance);
@@ -377,6 +414,21 @@ internal sealed class VisualMotionGate : IDisposable
         {
             ThrowIfDisposed();
             ResetObservationStateCore(clearCaptureIdentity: false);
+        }
+    }
+
+    // Caller holds _sync. A resolution/FOV change resets visual evidence so
+    // old pixels cannot be interpreted under the new projection.
+    private void ApplySourceGeometryCore(int width, int height)
+    {
+        _sourceViewportWidth = width;
+        _sourceViewportHeight = height;
+        if (_verticalFieldOfViewDegrees is { } verticalFov)
+        {
+            var horizontalFov =
+                VisualCaptureGeometryPolicy.CalculateEffectiveHorizontalFov(
+                    width, height, verticalFov, _settings);
+            _egomotionEstimator.SetHorizontalFieldOfViewDegrees(horizontalFov);
         }
     }
 
@@ -800,17 +852,7 @@ internal sealed class VisualMotionGate : IDisposable
         try
         {
             var region = CalculateCaptureRegion(clientWidth, clientHeight, _settings);
-            if (_verticalFieldOfViewDegrees is { } verticalFov)
-            {
-                var aspectRatio = clientWidth / (double)clientHeight;
-                var horizontalCropFraction = region.Width / (double)clientWidth;
-                var effectiveHorizontalFov =
-                    EftGameViewSettings.CalculateEffectiveHorizontalFieldOfViewDegrees(
-                        verticalFov,
-                        aspectRatio,
-                        horizontalCropFraction);
-                _egomotionEstimator.SetHorizontalFieldOfViewDegrees(effectiveHorizontalFov);
-            }
+            ApplySourceGeometryCore(clientWidth, clientHeight);
 
             if (!GdiCaptureMethods.StretchBlt(
                     _memoryDc,
@@ -911,6 +953,8 @@ internal sealed class VisualMotionGate : IDisposable
             _captureWindow = nint.Zero;
             _captureClientWidth = 0;
             _captureClientHeight = 0;
+            _sourceViewportWidth = 0;
+            _sourceViewportHeight = 0;
         }
     }
 
