@@ -105,6 +105,7 @@ jobs:
           # Real C# WebSocket clients exchange fictitious positions via our own Cloudflare Worker.
           dotnet run --project (Join-Path $src "Tests/RelaySmoke/RaidPilot.RelaySmoke.csproj") -c Release
           node (Join-Path $src "Tests/test-local-map.cjs")
+          node (Join-Path $src "Tests/test-map-zoom-persistence.cjs")
           node (Join-Path $src "Tests/test-map-quality.cjs")
           node (Join-Path $src "Tests/test-raid-tactics.cjs")
           node (Join-Path $src "Tests/test-projection.js")
@@ -220,7 +221,7 @@ jobs:
               url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
               sha256 = $env:RP_SHA
               sizeBytes = [int64]$env:RP_SIZE
-              releaseNotes = "PRECISION V3 : capteur Windows.Graphics.Capture/Direct3D11 facultatif, activable dans le menu RaidPilot, capture GDI par défaut et repli automatique. F8 et relais Cloudflare conservés. Compatibilité en raid encore à confirmer."
+              releaseNotes = "ZOOM PRÉFÉRENCES : zoom manuel enregistré entre raids et sur toutes les cartes locales/en ligne; AppData indépendant du Launcher, restauration automatique et bouton Ajuster. Capteur WGC optionnel conservé."
             }
             beacon = [ordered]@{
               version = $env:BEACON_VERSION

@@ -97,6 +97,13 @@ Si Windows refuse la capture, si le composant natif manque ou si aucune image va
 
 **Limites :** cette capture n'est ni un GPS direct ni un SLAM métrique complet. Les tests de compilation et le test réseau ne peuvent pas confirmer que Tarkov autorise WGC sur une configuration particulière. Il faudra mesurer l'erreur réellement observée avant F8 et l'impact sur les FPS, tout en vérifiant les conditions applicables au jeu.
 
+
+## Zoom mémorisé sur toutes les cartes
+
+Le zoom choisi à la molette ou avec les boutons +/− est enregistré comme **facteur relatif à la vue de base**. Il se réapplique sur la carte suivante et après la fermeture ou la mise à jour de RaidPilot, quelle que soit la résolution des illustrations. Les cartes locales et la vue tarkov.dev en ligne partagent la préférence. La valeur est conservée dans `%LocalAppData%\RaidPilot\overlay-preferences.json`, indépendamment du Launcher.
+
+Le bouton **Ajuster / Vue entière** remet le zoom à 100 % et enregistre ce choix. Les changements de carte, de raid, d'étage, le suivi du joueur et les recadrages automatiques ne doivent jamais écraser le zoom manuel. Les préférences existantes de taille de fenêtre, position, filtres, style et calibrations sont conservées.
+
 ## Suivi hybride en temps réel
 
 Après la première ancre exacte, RaidPilot extrapole la pose en continu à 20 Hz à partir des touches avant/arrière/gauche/droite, du sprint, de la marche lente et des deltas horizontaux de la souris. Chaque transition clavier reçoit un horodatage monotone dans un tampon RAM borné : même un tap complet entre deux ticks contribue selon sa durée et les actions bascule ne le perdent plus. Le tampon est remis à zéro à chaque perte de premier plan; aucune frappe d'une autre application ne peut être rejouée dans RaidPilot. La lecture est aussi suspendue quand le curseur Tarkov est visible dans un menu. Les entrées restent en mémoire, ne sont jamais journalisées et ne sont jamais envoyées; seul le résultat `x/y/z/yaw` alimente la carte et la flèche.

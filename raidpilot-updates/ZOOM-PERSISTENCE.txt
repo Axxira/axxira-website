@@ -1,0 +1,7 @@
+RaidPilot 0.14.2.18 — Zoom enregistré automatiquement
+
+Zoom choisi à la molette ou avec +/− mémorisé pour toutes les cartes et au prochain raid.
+Niveau relatif à la taille de la carte et sauvegarde dans %LocalAppData%\RaidPilot\overlay-preferences.json.
+Cartes locales, tarkov.dev et affichage offline historique compatibles.
+Bouton Ajuster/Vue générale remet à 100 % et garde ce nouveau choix.
+Calibrations, taille/position de la fenêtre, couches, F8 et relais Cloudflare inchangés.

@@ -1,0 +1,71 @@
+name: RaidPilot Zoom Persistence Tests
+
+on:
+  push:
+    branches: [raidpilot-zoom-persistence]
+    paths:
+      - "raidpilot-updates/source/**"
+      - ".github/workflows/raidpilot-zoom-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 24
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+      - name: Restore SHA-256 verified map catalogues and images
+        shell: pwsh
+        run: |
+          & ./raidpilot-updates/Restore-LocalMapAssets.ps1
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Generate RaidPilot application icon
+        shell: pwsh
+        run: |
+          dotnet run --project raidpilot-updates/source/brand/icon-builder/IconBuilder.csproj -c Release -- raidpilot-updates/source/brand
+          if ($LASTEXITCODE -ne 0) { throw "Icon generation failed" }
+      - name: Validate JavaScript syntax and behavior
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $root = "raidpilot-updates/source/overlay"
+          foreach ($file in @("LocalMap/raidpilot-local-map.js", "InjectedBehavior.js", "OfflineMap.js")) {
+            node --check (Join-Path $root $file)
+            if ($LASTEXITCODE -ne 0) { throw "Syntax error: $file" }
+          }
+          foreach ($name in @("test-local-map.cjs", "test-map-zoom-persistence.cjs",
+              "test-map-quality.cjs", "test-raid-tactics.cjs", "test-projection.js")) {
+            node (Join-Path $root ("Tests/" + $name))
+            if ($LASTEXITCODE -ne 0) { throw "JS regression failure: $name" }
+          }
+      - name: Test native zoom storage and full RaidPilot suite
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          dotnet run --project raidpilot-updates/source/overlay/Tests/RaidPilot.Overlay.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Overlay tests failed" }
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Launcher tests failed" }
+      - name: Build Overlay and Beacon Windows executables
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $out = Join-Path $env:RUNNER_TEMP "raidpilot-zoom-smoke"
+          foreach ($item in @(
+              @{ name="overlay"; project="RaidPilot.Overlay.csproj" },
+              @{ name="beacon"; project="RaidPilot.Beacon.csproj" }
+          )) {
+            $proj = Join-Path "raidpilot-updates/source" ($item.name + "/" + $item.project)
+            dotnet restore $proj -r win-x64
+            if ($LASTEXITCODE -ne 0) { throw "Restore failed: $($item.name)" }
+            dotnet publish $proj -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out $item.name)
+            if ($LASTEXITCODE -ne 0) { throw "Publish failed: $($item.name)" }
+            Write-Host "PASS: $($item.name) compiled with zoom persistence"
+          }
