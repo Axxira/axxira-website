@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.21",
+      "raidPilotVersion": "0.14.2.21",
+      "beaconVersion": "0.3.8",
+      "launcherVersion": "0.2.13",
+      "date": "2026-10-23",
+      "summary": "Carte locale : avertissement quand le GPS cesse de recevoir des positions",
+      "details": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.20",
       "raidPilotVersion": "0.14.2.20",
       "beaconVersion": "0.3.8",

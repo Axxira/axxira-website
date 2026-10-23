@@ -73,6 +73,13 @@ html:not(.raidpilot-interactive) #calibration-panel{display:none}
 #viewport.calibrating #overlay{pointer-events:none}
 .rp-calibration-point{fill:#fff;stroke:#ff9d36;stroke-width:2}
 .rp-marker{cursor:pointer;vector-effect:non-scaling-stroke}
+/* Preserve the last known coordinates, but make an interrupted position visibly uncertain. */
+#overlay.rp-pose-stale .rp-marker.player{opacity:.32;filter:grayscale(.8)}
+#overlay.rp-pose-stale .rp-marker.player .rp-arrow{stroke:#ffd27c;stroke-dasharray:3 2}
+#position-stale{position:absolute;z-index:7;right:8px;top:8px;max-width:60%;
+  padding:5px 9px;border:1px solid #dc9b4e;border-radius:5px;background:#291c10ee;
+  color:#ffdfac;font-size:11px;font-weight:600;pointer-events:none}
+#position-stale[hidden]{display:none}
 .rp-dot{stroke:#08151c;stroke-width:1.5;vector-effect:non-scaling-stroke}
 .rp-marker.extract .rp-dot{fill:var(--extract)}
 .rp-marker.hazard .rp-dot{fill:var(--danger)}
