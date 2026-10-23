@@ -16,7 +16,8 @@ internal readonly record struct PrecisionV2Frame(
 /// <summary>
 /// Precision V2: independent 160x90 sparse optical-flow capture on a worker.
 /// The original 64x36 visual guard stays intact as a safe fallback.
-/// This is a high-resolution GDI backend; it is not Windows.Graphics.Capture.
+/// GDI is the default; user-opted WGC is accepted only with verified
+/// game-client geometry, otherwise it falls back to GDI.
 /// </summary>
 internal sealed class PrecisionV2VisualSampler : IDisposable
 {
@@ -54,6 +55,10 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     private int _activeCaptureBackend = -1; // -1 unprimed, 0 GDI, 1 WGC
     private long _gpuFrames;
     private long _gpuFallbacks;
+    private long _geometryChanges;
+    private long _geometryRejected;
+    private nint _activeCaptureWindow;
+    private string _gpuGeometryWarning = "aucun écart";
     private PrecisionV2Frame? _latest;
     private long _lastRequestedAt;
     private int _generation;
@@ -76,6 +81,10 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     internal bool GpuCaptureSelected => Volatile.Read(ref _gpuSelected) != 0;
     internal long GpuFrames => Interlocked.Read(ref _gpuFrames);
     internal long GpuFallbacks => Interlocked.Read(ref _gpuFallbacks);
+    internal long GeometryChanges => Interlocked.Read(ref _geometryChanges);
+    internal long GeometryRejected => Interlocked.Read(ref _geometryRejected);
+    internal string CameraGeometryDiagnostic => _gate.CameraGeometryDiagnostic;
+    internal string GeometryWarning => Volatile.Read(ref _gpuGeometryWarning);
     internal string Backend =>
         !GpuCaptureSelected ? "GDI 160×90"
         : Volatile.Read(ref _gpuUnavailable) != 0 ? "WGC indisponible — retour GDI"
@@ -129,9 +138,11 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                 if (Volatile.Read(ref _disposed) != 0
                     || generation != Volatile.Read(ref _generation)) return;
 
-                if (Interlocked.Exchange(ref _resetOnNextCapture, 0) != 0)
+                if (Interlocked.Exchange(ref _resetOnNextCapture, 0) != 0
+                    || _activeCaptureWindow != gameWindow)
                 {
                     _gate.Reset();
+                    _activeCaptureWindow = gameWindow;
                     Volatile.Write(ref _activeCaptureBackend, -1);
                 }
 
@@ -141,18 +152,46 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                 if (Volatile.Read(ref _gpuSelected) != 0
                     && Volatile.Read(ref _gpuUnavailable) == 0)
                 {
-                    var status = _windowsCapture.Read(gameWindow, out var gray);
+                    var status = _windowsCapture.ReadWithGeometry(
+                        gameWindow, out var frame);
                     if (status == WgcFrameStatus.Ready)
                     {
-                        if (Volatile.Read(ref _activeCaptureBackend) != 1)
+                        // Validate WGC ContentSize against the actual EFT client
+                        // viewport. Window borders and DPI-scaled crops otherwise
+                        // turn one player's mouse counts into a different yaw.
+                        var hasClient = VisualMotionGate.GdiCaptureMethods.GetClientRect(
+                            gameWindow, out var rect);
+                        var clientWidth = rect.Right - rect.Left;
+                        var clientHeight = rect.Bottom - rect.Top;
+                        if (!hasClient
+                            || !VisualCaptureGeometryPolicy.TryMatchViewport(
+                                clientWidth, clientHeight,
+                                frame.ContentWidth, frame.ContentHeight,
+                                out var validated))
                         {
-                            _gate.Reset(); // Never match GDI and WGC pixels.
-                            Volatile.Write(ref _activeCaptureBackend, 1);
+                            Volatile.Write(ref _gpuGeometryWarning,
+                                "proportions du client et de WGC incompatibles — GDI");
+                            Interlocked.Increment(ref _geometryRejected);
+                            DisableGpuForSession();
                         }
-                        observation = _gate.ObserveLuminanceFrame(gray, Width, Height);
-                        Interlocked.Increment(ref _gpuFrames);
-                        Volatile.Write(ref _gpuPendingFrames, 0);
-                        succeeded = true;
+                        else
+                        {
+                            if (Volatile.Read(ref _activeCaptureBackend) != 1)
+                            {
+                                _gate.Reset(); // Never compare GDI against WGC.
+                                Volatile.Write(ref _activeCaptureBackend, 1);
+                            }
+                            var previousGeometry = _gate.CameraGeometryDiagnostic;
+                            observation = _gate.ObserveLuminanceFrame(
+                                frame.Luminance, Width, Height,
+                                validated.ClientWidth, validated.ClientHeight);
+                            if (previousGeometry != _gate.CameraGeometryDiagnostic)
+                                Interlocked.Increment(ref _geometryChanges);
+                            Volatile.Write(ref _gpuGeometryWarning, "capture validée");
+                            Interlocked.Increment(ref _gpuFrames);
+                            Volatile.Write(ref _gpuPendingFrames, 0);
+                            succeeded = true;
+                        }
                     }
                     else if (status == WgcFrameStatus.Pending)
                     {
@@ -247,6 +286,7 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
         Interlocked.Increment(ref _generation);
         Interlocked.Exchange(ref _resetOnNextCapture, 1);
         Volatile.Write(ref _lastRequestedAt, 0);
+        Volatile.Write(ref _gpuPendingFrames, 0);
         lock (_sync) _latest = null;
         _windowsCapture.Reset();
     }
