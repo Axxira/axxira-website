@@ -1498,7 +1498,14 @@ internal sealed partial class OverlayForm : Form
         var visualCorrectionApplied = false;
         var visualCorrectionSnap = false;
         var visualCorrectionAuthoritative = false;
-        if (visualRelocalizationDecision is { } decision
+        // V4 uses the V2 recognizer consensus and the existing odometry;
+        // only the measured correction gain and rejection policy change.
+        var fusedVisualDecision =
+            visualRelocalizationDecision is { } proposed
+            && visualRelocalizationPoseAtCapture is { } visualEstimate
+                ? FilterPrecisionV4(proposed, visualEstimate, now)
+                : null;
+        if (fusedVisualDecision is { } decision
             && decision.ShouldCorrect
             && decision.TargetPose is { } visualAnchor
             && visualRelocalizationPoseAtCapture is { } visualPoseAtCapture)
@@ -3350,7 +3357,8 @@ internal sealed partial class OverlayForm : Form
             _precisionV2DriftAudit.ObserveExactAnchor(
                 observation, estimatedPoseAtCapture,
                 hasCaptureTimestamp ? captureTimestamp : 0,
-                _precisionV2ToggleMenuItem.Checked);
+                _precisionV2ToggleMenuItem.Checked,
+                _precisionV4Menu.Checked);
             CalibrateRealtimeEstimator(observation, estimatedPoseAtCapture, allowCalibration);
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;
@@ -4067,7 +4075,8 @@ internal sealed partial class OverlayForm : Form
         ResetDistanceCalibrationCounters();
         var previousExact = _lastExactObservation;
         if (!_liveTrackingEnabled || previousExact is null || !allowCalibration
-            || previousExact.FileName.StartsWith("raidpilot-", StringComparison.Ordinal))
+            || previousExact.FileName.StartsWith("raidpilot-", StringComparison.Ordinal)
+            || !CanLearnPrecisionV4())
         {
             return;
         }
@@ -4128,6 +4137,7 @@ internal sealed partial class OverlayForm : Form
         _lastLearnedRouteObservationAt = 0;
         _learnedRouteGraph.BeginSession(mapId);
         _precisionV2DriftAudit.Reset();
+        _precisionV4Fusion.Reset();
         ResetPrecisionV2();
         _visualKeyframeRecognizer.ResetSession();
         _superKeyframeRecognizer.ResetSession();
@@ -5445,6 +5455,7 @@ internal sealed partial class OverlayForm : Form
             _visualKeyframeRecognizer.ResetSession();
             _superKeyframeRecognizer.ResetSession();
             _visualRelocalization.BeginSession(Stopwatch.GetTimestamp());
+            _precisionV4Fusion.Reset();
             _lastSuperKeyframeSample = 0;
             _pendingVisualKeyframeLearning = null;
             ResetDistanceCalibrationCounters();

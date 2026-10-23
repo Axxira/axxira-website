@@ -367,3 +367,13 @@ réelle peut différer avec stamina, charge, blessure, terrain et collisions non
 observées. Les images monoculaires et les commandes ne fournissent pas à elles
 seules une position absolue continue. Les résultats des bancs de simulation ne
 sont pas des mesures de précision en raid ni des garanties de fluidité du jeu.
+
+
+## Precision V4 (expérimental) — 0.14.2.22
+
+Le menu de notification propose désormais **Precision V4 — fusion prudente + atlas** (désactivé par défaut en attente d'un benchmark F8 réel). Il combine les reconnaisseurs de keyframes, la validation temporelle déjà présente dans V2, un filtre d'innovation et une fusion pondérée par incertitude pour empêcher des sauts erronés; l'odométrie V2/V3 et les estimations F8 continuent à fonctionner.
+
+Les reconnaissances incompatibles avec l'étage sont rejetées. Un filtre de polygones navigables **vérifiés** est implémenté et testé, mais aucun polygone de murs n'est chargé par défaut : les limites de carte et les plans ne constituent pas un navmesh autoritatif. Ne pas confondre cette garde avec une collision réelle du jeu. Le diagnostic affiche V4, les refus, la calibration protégée, et les médianes des écarts F8 de plusieurs durées. La précision réelle doit être vérifiée dans EFT sur des trajets comparables avec mode V4 activé/désactivé. Ne jamais capturer de données secrètes ni lire la mémoire du jeu.
+
+
+Le menu **Exporter rapport comparatif F8 (.json)** produit uniquement les écarts, durées, incertitudes du modèle et compteurs de correction (32 intervalles maximum). Il n'exporte ni captures, ni coordonnées, ni identifiants. L'export est déclenché explicitement par le joueur, sans collecte en réseau. Le diagnostic V4 conserve ses compteurs pendant le raid, y compris après un nouvel F8.
