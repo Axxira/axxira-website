@@ -47,6 +47,13 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
         EgomotionSettings = EnhancedFlowSettings,
     });
     private readonly object _sync = new();
+    private readonly PrecisionV3WindowsCapture _windowsCapture = new();
+    private int _gpuSelected;
+    private int _gpuUnavailable;
+    private int _gpuPendingFrames;
+    private int _activeCaptureBackend = -1; // -1 unprimed, 0 GDI, 1 WGC
+    private long _gpuFrames;
+    private long _gpuFallbacks;
     private PrecisionV2Frame? _latest;
     private long _lastRequestedAt;
     private int _generation;
@@ -66,7 +73,28 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     internal long UnreliableFrames => Interlocked.Read(ref _unreliableFrames);
     internal bool IsBusy => Volatile.Read(ref _workerBusy) == 1;
     internal double LastProcessingMilliseconds => Volatile.Read(ref _lastProcessingMilliseconds);
-    internal string Backend => "GDI 160×90 (GPU non activé)";
+    internal bool GpuCaptureSelected => Volatile.Read(ref _gpuSelected) != 0;
+    internal long GpuFrames => Interlocked.Read(ref _gpuFrames);
+    internal long GpuFallbacks => Interlocked.Read(ref _gpuFallbacks);
+    internal string Backend =>
+        !GpuCaptureSelected ? "GDI 160×90"
+        : Volatile.Read(ref _gpuUnavailable) != 0 ? "WGC indisponible — retour GDI"
+        : Volatile.Read(ref _activeCaptureBackend) == 1 ? "WGC + Direct3D11 160×90"
+        : "WGC initialisation — GDI provisoire";
+    internal string GpuStatus => _windowsCapture.Status;
+
+    /// <summary>
+    /// The only entry point for opting into window capture. Default is GDI.
+    /// Switching either way clears old observations and stops the old session.
+    /// </summary>
+    internal void SelectGpuCapture(bool enabled)
+    {
+        Volatile.Write(ref _gpuSelected, enabled ? 1 : 0);
+        Volatile.Write(ref _gpuUnavailable, 0);
+        Volatile.Write(ref _gpuPendingFrames, 0);
+        Reset();
+        _windowsCapture.Reset(allowRetry: enabled);
+    }
 
     internal void ConfigureVerticalFieldOfView(double verticalFov) =>
         _gate.ConfigureVerticalFieldOfView(verticalFov);
@@ -102,10 +130,53 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                     || generation != Volatile.Read(ref _generation)) return;
 
                 if (Interlocked.Exchange(ref _resetOnNextCapture, 0) != 0)
+                {
                     _gate.Reset();
+                    Volatile.Write(ref _activeCaptureBackend, -1);
+                }
 
                 var started = Stopwatch.GetTimestamp();
-                var succeeded = _gate.TryObserveWindow(gameWindow, out var observation);
+                var succeeded = false;
+                VisualMotionObservation observation = default;
+                if (Volatile.Read(ref _gpuSelected) != 0
+                    && Volatile.Read(ref _gpuUnavailable) == 0)
+                {
+                    var status = _windowsCapture.Read(gameWindow, out var gray);
+                    if (status == WgcFrameStatus.Ready)
+                    {
+                        if (Volatile.Read(ref _activeCaptureBackend) != 1)
+                        {
+                            _gate.Reset(); // Never match GDI and WGC pixels.
+                            Volatile.Write(ref _activeCaptureBackend, 1);
+                        }
+                        observation = _gate.ObserveLuminanceFrame(gray, Width, Height);
+                        Interlocked.Increment(ref _gpuFrames);
+                        Volatile.Write(ref _gpuPendingFrames, 0);
+                        succeeded = true;
+                    }
+                    else if (status == WgcFrameStatus.Pending)
+                    {
+                        // Do not disable the reliable GDI backup while WGC
+                        // is starting. Ten consecutive empty polls (~2 seconds)
+                        // means this system cannot currently deliver frames.
+                        if (Interlocked.Increment(ref _gpuPendingFrames) >= 10)
+                            DisableGpuForSession();
+                    }
+                    else
+                    {
+                        DisableGpuForSession();
+                    }
+                }
+
+                if (!succeeded)
+                {
+                    if (Volatile.Read(ref _activeCaptureBackend) != 0)
+                    {
+                        _gate.Reset();
+                        Volatile.Write(ref _activeCaptureBackend, 0);
+                    }
+                    succeeded = _gate.TryObserveWindow(gameWindow, out observation);
+                }
                 var finished = Stopwatch.GetTimestamp();
                 if (!succeeded)
                 {
@@ -148,6 +219,13 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
         });
     }
 
+    private void DisableGpuForSession()
+    {
+        if (Interlocked.Exchange(ref _gpuUnavailable, 1) == 0)
+            Interlocked.Increment(ref _gpuFallbacks);
+        _windowsCapture.Reset();
+    }
+
     internal PrecisionV2Frame? GetFresh(long now, nint window)
     {
         if (window == nint.Zero || now <= 0 || Volatile.Read(ref _disposed) != 0)
@@ -170,6 +248,7 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
         Interlocked.Exchange(ref _resetOnNextCapture, 1);
         Volatile.Write(ref _lastRequestedAt, 0);
         lock (_sync) _latest = null;
+        _windowsCapture.Reset();
     }
 
     public void Dispose()
@@ -177,6 +256,7 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
         Interlocked.Increment(ref _generation);
         lock (_sync) _latest = null;
+        _windowsCapture.Dispose();
         _gate.Dispose();
     }
 }
