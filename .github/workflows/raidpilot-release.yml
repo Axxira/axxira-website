@@ -76,6 +76,8 @@ jobs:
           $src = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates/source/overlay"
           dotnet run --project (Join-Path $src "Tests/RaidPilot.Overlay.Tests.csproj") -c Release
           dotnet run --project (Join-Path $src "../launcher/Tests/RaidPilot.Launcher.Tests.csproj") -c Release
+          # Real C# WebSocket clients exchange fictitious positions via our own Cloudflare Worker.
+          dotnet run --project (Join-Path $src "Tests/RelaySmoke/RaidPilot.RelaySmoke.csproj") -c Release
           node (Join-Path $src "Tests/test-local-map.cjs")
           node (Join-Path $src "Tests/test-map-quality.cjs")
           node (Join-Path $src "Tests/test-raid-tactics.cjs")
