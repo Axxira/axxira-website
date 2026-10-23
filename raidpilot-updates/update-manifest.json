@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T14:08:21.9871978+00:00",
+  "publishedAt": "2026-10-23T16:49:20.9612421+00:00",
   "raidPilot": {
-    "version": "0.14.2.18",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.13-7d83cee30c02/RaidPilot-Overlay-v0.14.2.18-Windows-x64.zip",
-    "sha256": "3D6D2FB5A791EFCBE2860404C8692757434DBC48DD4AA80E55A3E6EB28194444",
-    "sizeBytes": 234436552,
-    "releaseNotes": "RaidPilot 0.14.2.18 reste inchangé dans cette publication."
+    "version": "0.14.2.20",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.20-b0.3.8-l0.2.13-cf894d53b3e4/RaidPilot-Overlay-v0.14.2.20-Windows-x64.zip",
+    "sha256": "669EF3F06EB4C8508043DD71FA8AA85F912C21E42FEA223747D6F493D54CFE8A",
+    "sizeBytes": 234438210,
+    "releaseNotes": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
   },
   "beacon": {
-    "version": "0.3.6",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.13-7d83cee30c02/RaidPilot-Beacon-v0.3.6-Windows-x64.zip",
-    "sha256": "8520431C01791CE3D2D909824EB420890112B7ECCFE151AF0F6864DD37C48DB2",
-    "sizeBytes": 58323643,
-    "releaseNotes": "Beacon 0.3.6 reste inchangé dans cette publication."
+    "version": "0.3.8",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.20-b0.3.8-l0.2.13-cf894d53b3e4/RaidPilot-Beacon-v0.3.8-Windows-x64.zip",
+    "sha256": "3B8D2036A02879915326321C1D400E926F82B7C8A51A488BC190733B8D69EC03",
+    "sizeBytes": 58327383,
+    "releaseNotes": "Beacon 0.3.8 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.13",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.18-b0.3.6-l0.2.13-7d83cee30c02/RaidPilot-Launcher-v0.2.13-Windows-x64.zip",
-    "sha256": "14BB402388965E81825A7532193F5A42EC8932337E367ACCCA809A62473C2A35",
-    "sizeBytes": 350993176,
-    "releaseNotes": "Le panneau « Dernières mises à jour » affiche les vraies versions publiées au lieu de trois anciennes lignes fixes.\nLe bouton « Voir les notes » ouvre les descriptions détaillées des versions précédentes.\nLe Launcher conserve un exemplaire de l'historique même hors connexion et rafraîchit les notes lors de la vérification du canal Stable.\nLa publication GitHub exige désormais une fiche de version correspondante, pour éviter d'oublier les prochaines notes."
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.20-b0.3.8-l0.2.13-cf894d53b3e4/RaidPilot-Launcher-v0.2.13-Windows-x64.zip",
+    "sha256": "D6BD17E442E9F1E03E12EB8F5034FC8CA02636F237D00FFB799C20167A6B7EC6",
+    "sizeBytes": 350998998,
+    "releaseNotes": "Launcher 0.2.13 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.20",
+      "raidPilotVersion": "0.14.2.20",
+      "beaconVersion": "0.3.8",
+      "launcherVersion": "0.2.13",
+      "date": "2026-10-23",
+      "summary": "Precision V3.2 : écrans ultralarges et suivi GPU plus stable",
+      "details": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
+    },
     {
       "component": "launcher",
       "version": "0.2.13",
