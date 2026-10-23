@@ -55,6 +55,7 @@ internal static class ScreenshotNameParserTests
         RawMouseInputTests.RunAll(failures);
         RawKeyboardTimelineTests.RunAll(failures);
         RealtimeControlStateTests.RunAll(failures);
+        RealtimeTrackingPolicyTests.RunAll(failures);
         VisualMotionGateTests.RunAll(failures);
         VisualEgomotionEstimatorTests.RunAll(failures);
         VisualYawCalibrationTests.RunAll(failures);
@@ -101,6 +102,7 @@ internal static class ScreenshotNameParserTests
             + RawMouseInputTests.TestCount
             + RawKeyboardTimelineTests.TestCount
             + RealtimeControlStateTests.TestCount
+            + RealtimeTrackingPolicyTests.TestCount
             + VisualMotionGateTests.TestCount
             + VisualEgomotionEstimatorTests.TestCount
             + VisualYawCalibrationTests.TestCount

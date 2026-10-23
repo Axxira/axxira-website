@@ -40,6 +40,11 @@ internal sealed class BeaconForm : Form
     private readonly PrecisionMotionIntegrator _precisionMotionIntegrator = new();
     private readonly HashSet<Keys> _rawKeysDown = new();
     private readonly HashSet<Keys> _trackedMovementKeys;
+    private RealtimeTrackingPosture _posture;
+    private bool _previousDuckKey;
+    private bool _previousProneKey;
+    private bool _previousJumpKey;
+    private bool _duckChordUsed;
 
     private SquadProfile _profile;
     private SquadRelayClient? _client;
@@ -874,6 +879,11 @@ internal sealed class BeaconForm : Form
                 _controlTrackingActive = false;
                 _middleMouseDown = false;
                 _movementSpeedScale = 1.0;
+                _posture = default;
+                _previousDuckKey = _previousProneKey = _previousJumpKey = false;
+                _duckChordUsed = false;
+                _sprintToggle = _walkToggle = _aimToggle = false;
+                _previousSprintKey = _previousWalkKey = _previousAimKey = false;
                 _commandedStationarySeconds = 0.0;
                 _reanchorIdleSeconds = 0.0;
                 _rawKeyboardTimeline.Reset();
@@ -978,6 +988,9 @@ internal sealed class BeaconForm : Form
             controls.MoveBackward,
             controls.MoveLeft,
             controls.MoveRight,
+            controls.Duck,
+            controls.Prone,
+            controls.Jump,
         })
         {
             var key = candidate & Keys.KeyCode;
@@ -1122,9 +1135,10 @@ internal sealed class BeaconForm : Form
         var now = Stopwatch.GetTimestamp();
         var previous = _lastTick;
         _lastTick = now;
-        var elapsed = previous == 0
+        var elapsedSinceTick = previous == 0
             ? 0.0
-            : Math.Clamp((now - previous) / (double)Stopwatch.Frequency, 0.0, 0.15);
+            : Math.Max(0.0, (now - previous) / (double)Stopwatch.Frequency);
+        var elapsed = RealtimeTrackingPolicy.IntegratedSeconds(elapsedSinceTick);
 
         _tarkovForeground = IsTarkovForeground();
         var canTrack = CanTrackGameInput();
@@ -1136,6 +1150,28 @@ internal sealed class BeaconForm : Form
         if (!_estimator.IsAnchored || elapsed <= 0)
         {
             return;
+        }
+
+        // A stalled UI timer cannot invent a seamless 2-second route. Record
+        // unobserved time as uncertainty, reset velocity and relock raw input.
+        if (RealtimeTrackingPolicy.HasUnreliableGap(elapsedSinceTick))
+        {
+            _estimator.SuspendMotion(elapsedSinceTick);
+            _adaptiveCalibration.MarkTrackingGap();
+            _rawKeyboardTimeline.Reset();
+            _precisionYaw.Reset();
+            _visualMotionGate.Reset();
+            _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
+            _lastVisualObservation = null;
+            _controlTrackingActive = false;
+            return;
+        }
+        if (elapsedSinceTick > elapsed)
+        {
+            _estimator.SuspendMotion(
+                RealtimeTrackingPolicy.UnobservedSeconds(elapsedSinceTick));
+            _adaptiveCalibration.MarkTrackingGap();
+            _visualMotionGate.Reset();
         }
 
         var forward = canTrack
@@ -1156,10 +1192,14 @@ internal sealed class BeaconForm : Form
         var sprint = _controls.SprintIsToggle ? _sprintToggle : sprintKey;
         var slow = _controls.WalkIsToggle ? _walkToggle : walkKey;
         var aiming = _controls.AimIsToggle ? _aimToggle : aimKey;
-        if (forward <= 0)
-        {
-            sprint = false;
-        }
+        var modes = RealtimeTrackingPolicy.ResolveModes(
+            forward, sprint, slow, aiming, _sprintToggle, _walkToggle, _aimToggle);
+        sprint = modes.Sprint;
+        slow = modes.Slow;
+        aiming = modes.Aiming;
+        _sprintToggle = modes.SprintLatched;
+        _walkToggle = modes.WalkLatched;
+        _aimToggle = modes.AimLatched;
 
         var wheelDelta = canTrack
             ? Interlocked.Exchange(ref _pendingRawMouseWheel, 0)
@@ -1169,6 +1209,41 @@ internal sealed class BeaconForm : Form
         {
             UpdateMovementSpeedScale(wheelDelta, duckWheelChord);
         }
+
+        var duckDown = canTrack && IsKeyDown(_controls.Duck);
+        var proneDown = canTrack && IsKeyDown(_controls.Prone);
+        var jumpDown = canTrack && IsKeyDown(_controls.Jump);
+        var duckPressed = duckDown && !_previousDuckKey;
+        var duckReleased = !duckDown && _previousDuckKey;
+        var pronePressed = proneDown && !_previousProneKey;
+        var jumpPressed = jumpDown && !_previousJumpKey;
+        if (precisionIntervalReady && RawMouseInput.KeyboardRegistered)
+        {
+            // Recognize a full key tap even when pressed and released between
+            // two 25-ms ticks (also used by the Overlay's raw input path).
+            if (_rawKeyboardTimeline.TrySample(_controls.Duck, previous, now, out var duckSample))
+            {
+                duckPressed |= duckSample.WasPressed;
+                duckReleased |= duckSample.WasReleased;
+            }
+            if (_rawKeyboardTimeline.TrySample(_controls.Prone, previous, now, out var proneSample))
+                pronePressed |= proneSample.WasPressed;
+            if (_rawKeyboardTimeline.TrySample(_controls.Jump, previous, now, out var jumpSample))
+                jumpPressed |= jumpSample.WasPressed;
+        }
+        if (duckPressed) _duckChordUsed = false;
+        if (duckWheelChord) _duckChordUsed = true;
+        _posture = RealtimeTrackingPolicy.UpdatePosture(
+            _posture,
+            duckReleased: canTrack && precisionIntervalReady && duckReleased,
+            duckWheelChord: _duckChordUsed,
+            pronePressed: canTrack && precisionIntervalReady && pronePressed,
+            jumpPressed: canTrack && precisionIntervalReady && jumpPressed,
+            sprinting: sprint);
+        if (duckReleased) _duckChordUsed = false;
+        _previousDuckKey = duckDown;
+        _previousProneKey = proneDown;
+        _previousJumpKey = jumpDown;
 
         var mouseX = canTrack ? Interlocked.Exchange(ref _pendingMouseX, 0) : 0;
         var rotationOccurred = Interlocked.Exchange(ref _rawRotationActivity, 0) != 0;
@@ -1228,6 +1303,9 @@ internal sealed class BeaconForm : Form
             _commandedStationarySeconds = 0.0;
         }
 
+        visualEvidence = RealtimeTrackingPolicy.FilterAmbiguousStationaryEvidence(
+            visualEvidence, movementCommanded, sprint);
+
         if (!movementCommanded
             && !rotationOccurred
             && visualEvidence == RealtimeMotionEvidence.Stationary)
@@ -1239,9 +1317,8 @@ internal sealed class BeaconForm : Form
             _reanchorIdleSeconds = 0.0;
         }
 
-        var movementSpeedScale = slow || sprint
-            ? 1.0
-            : _movementSpeedScale;
+        var movementSpeedScale = (slow || sprint ? 1.0 : _movementSpeedScale)
+            * RealtimeTrackingPolicy.PostureSpeedScale(_posture);
         if (movementSpeedScale < 0.35)
         {
             // À très basse vitesse, 64×36 peut ressembler à une scène fixe.
@@ -1251,6 +1328,8 @@ internal sealed class BeaconForm : Form
 
         var beforePose = _estimator.CurrentPose!.Value;
         _adaptiveCalibration.RecordMouse(mouseX, aiming, canTrack);
+        if (_posture.Crouched || _posture.Prone)
+            _adaptiveCalibration.MarkTrackingGap();
         if (movementCommanded
             && !sprint
             && !slow

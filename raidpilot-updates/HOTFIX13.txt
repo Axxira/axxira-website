@@ -1,0 +1,12 @@
+RaidPilot HOTFIX13 — Overlay 0.14.2.13 / Beacon 0.3.2 / Launcher 0.2.12
+
+Corrections ciblées de dérive dans Beacon entre les ancrages F8 :
+- Une vitesse sprint activée en bascule ne reste plus armée après relâchement de W.
+- Un sprint annule la visée ADS et la marche lente pour l'estimation de vitesse.
+- Une image GDI 64x36 faussement stationnaire ne fige plus le pion pendant la marche lente.
+- Les transitions C (accroupissement), X (couché), saut et remontée en sprint sont prises en compte, y compris les taps très brefs captés par Raw Keyboard.
+- Les pauses de boucle 150 à 750 ms sont intégrées plutôt que tronquées à 150 ms. Un temps au-delà du budget augmente l'incertitude au lieu d'être présenté comme observé.
+- Les séquences accroupies/couchées sont exclues de la calibration de vitesse de marche.
+- Nouveaux tests de non-régression ; lancement/connexion Cloudflare conservés.
+
+Ces corrections visent Beacon. L'Overlay modélisait déjà les postures et les bascules de sprint. Le moteur n'a pas accès à la vitesse/position absolue du jeu entre les captures; collisions, terrain, charge et stamina peuvent encore provoquer une dérive. Comparer le résidu réel à chaque F8 sur un parcours de référence avant toute promesse de précision.
