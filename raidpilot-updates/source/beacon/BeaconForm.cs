@@ -32,6 +32,11 @@ internal sealed class BeaconForm : Form
     private readonly HashSet<string> _knownScreenshots = new(StringComparer.OrdinalIgnoreCase);
     private readonly CancellationTokenSource _lifetime = new();
     private readonly VisualMotionGate _visualMotionGate = new();
+    private readonly PrecisionV2VisualSampler _precisionV2Vision = new();
+    private readonly PrecisionV2MotionFusion _precisionV2Fusion = new();
+    private readonly ToolStripMenuItem _precisionV2Toggle = new("Precision V2 — flux optique 160×90 (expérimental)") { Checked = true, CheckOnClick = true };
+    private long _precisionV2LastTurnAt;
+    private bool _precisionV2TrackingActive;
     private readonly VisualKeyframeRecognizer _visualKeyframeRecognizer = new();
     private readonly SuperKeyframeRecognizer _superKeyframeRecognizer = new();
     private readonly VisualYawCalibration _visualYawCalibration = new();
@@ -97,8 +102,9 @@ internal sealed class BeaconForm : Form
         _settingsPath = SquadProfileStore.DefaultPath;
         _profile = SquadProfileStore.LoadOrCreate(_settingsPath);
         _controls = EftControlSettings.Read();
-        _visualMotionGate.ConfigureVerticalFieldOfView(
-            EftGameViewSettings.Read().VerticalFieldOfViewDegrees);
+        var gameFieldOfView = EftGameViewSettings.Read().VerticalFieldOfViewDegrees;
+        _visualMotionGate.ConfigureVerticalFieldOfView(gameFieldOfView);
+        _precisionV2Vision.ConfigureVerticalFieldOfView(gameFieldOfView);
         _trackedMovementKeys = BuildTrackedMovementKeys(_controls);
         _calibrationSource = new RealtimeCalibrationSource(
             _controls.MouseSensitivity,
@@ -319,6 +325,8 @@ internal sealed class BeaconForm : Form
         });
         menu.Items.Add("Arrêter le partage", null, async (_, _) =>
             await StopBeaconAsync(clearAutoJoin: true));
+        menu.Items.Add(_precisionV2Toggle);
+        _precisionV2Toggle.Click += (_, _) => ResetPrecisionV2();
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Quitter", null, async (_, _) =>
         {
@@ -721,6 +729,7 @@ internal sealed class BeaconForm : Form
         }
 
         _pendingCapture = null;
+        ResetPrecisionV2();
 
         var learned = _adaptiveCalibration.ObserveExact(
             observation,
@@ -872,6 +881,7 @@ internal sealed class BeaconForm : Form
                 _lastVisualSample = 0;
                 _lastSuperKeyframeSample = 0;
                 _lastAutomaticReanchor = 0;
+                ResetPrecisionV2();
                 _pendingSuperKeyframeLearning = null;
                 _previousMovementCommanded = false;
                 _pendingCapture = null;
@@ -1039,6 +1049,7 @@ internal sealed class BeaconForm : Form
         {
             _adaptiveCalibration.MarkTrackingGap();
             _visualMotionGate.Reset();
+            ResetPrecisionV2();
             _visualKeyframeRecognizer.CancelPendingMatch();
             _visualMotionEvidence = RealtimeMotionEvidence.Unknown;
             _lastVisualObservation = null;
@@ -1128,6 +1139,35 @@ internal sealed class BeaconForm : Form
             _movementSpeedScale + (wheelSteps * 0.07),
             0.25,
             1.0);
+    }
+
+    private void ResetPrecisionV2()
+    {
+        _precisionV2Vision.Reset();
+        _precisionV2Fusion.Reset();
+        _precisionV2LastTurnAt = 0;
+        _precisionV2TrackingActive = false;
+    }
+
+    private RealtimeMotionEvidence FusePrecisionV2(
+        long now, bool canTrack, bool movementCommanded,
+        bool aiming, RealtimeMotionEvidence baseline)
+    {
+        if (!_precisionV2Toggle.Checked || !canTrack || !_estimator.IsAnchored
+            || _lastForegroundWindow == nint.Zero)
+        {
+            if (_precisionV2TrackingActive) ResetPrecisionV2();
+            return baseline;
+        }
+        _precisionV2TrackingActive = true;
+        var directionStable = !_middleMouseDown && !aiming
+            && (_precisionV2LastTurnAt == 0
+                || (now - _precisionV2LastTurnAt) / (double)Stopwatch.Frequency >= 0.45);
+        var frame = _precisionV2Vision.GetFresh(now, _lastForegroundWindow);
+        var merged = _precisionV2Fusion.Fuse(
+            frame, now, _lastForegroundWindow, movementCommanded, directionStable, baseline);
+        _precisionV2Vision.Request(_lastForegroundWindow, now);
+        return merged;
     }
 
     private void OnTick(object? sender, EventArgs e)
@@ -1247,6 +1287,8 @@ internal sealed class BeaconForm : Form
 
         var mouseX = canTrack ? Interlocked.Exchange(ref _pendingMouseX, 0) : 0;
         var rotationOccurred = Interlocked.Exchange(ref _rawRotationActivity, 0) != 0;
+        if (rotationOccurred || Math.Abs(mouseX) > 1 || _middleMouseDown)
+            _precisionV2LastTurnAt = now;
         if (!canTrack)
         {
             Interlocked.Exchange(ref _pendingMouseX, 0);
@@ -1305,6 +1347,8 @@ internal sealed class BeaconForm : Form
 
         visualEvidence = RealtimeTrackingPolicy.FilterAmbiguousStationaryEvidence(
             visualEvidence, movementCommanded, sprint);
+        visualEvidence = FusePrecisionV2(
+            now, canTrack, movementCommanded, aiming, visualEvidence);
 
         if (!movementCommanded
             && !rotationOccurred
@@ -2024,6 +2068,7 @@ internal sealed class BeaconForm : Form
         _trayIcon.Visible = false;
         _trayIcon.Dispose();
         _visualMotionGate.Dispose();
+        _precisionV2Vision.Dispose();
         _tickTimer.Dispose();
         _folderProbeTimer.Dispose();
         _lifetime.Dispose();

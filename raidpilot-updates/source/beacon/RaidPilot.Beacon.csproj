@@ -31,6 +31,7 @@
     <Compile Include="..\overlay\SuperKeyframeStore.cs" Link="Shared\SuperKeyframeStore.cs" />
     <Compile Include="..\overlay\VisualEgomotionEstimator.cs" Link="Shared\VisualEgomotionEstimator.cs" />
     <Compile Include="..\overlay\VisualMotionGate.cs" Link="Shared\VisualMotionGate.cs" />
+    <Compile Include="..\overlay\PrecisionV2Vision.cs" Link="Shared\PrecisionV2Vision.cs" />
     <Compile Include="..\overlay\VisualKeyframeRecognizer.cs" Link="Shared\VisualKeyframeRecognizer.cs" />
     <Compile Include="..\overlay\VisualKeyframeStore.cs" Link="Shared\VisualKeyframeStore.cs" />
     <Compile Include="..\overlay\ScreenshotHotkeySender.cs" Link="Shared\ScreenshotHotkeySender.cs" />

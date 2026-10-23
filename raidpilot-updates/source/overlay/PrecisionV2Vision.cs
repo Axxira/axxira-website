@@ -160,6 +160,7 @@ internal sealed class PrecisionV2MotionFusion
     private long _lastReliableMotionAt;
     private int _stationaryCount;
     private long _acceptedStops;
+    private long _lastAcceptedStopAt;
     private long _rejectedFrames;
     internal string LastDecision { get; private set; } = "En attente de scènes fiables";
     internal long AcceptedStops => _acceptedStops;
@@ -170,6 +171,7 @@ internal sealed class PrecisionV2MotionFusion
     {
         _lastProcessedAt = 0;
         _lastReliableMotionAt = 0;
+        _lastAcceptedStopAt = 0;
         _stationaryCount = 0;
         LastDecision = "Nouvelle session";
     }
@@ -245,7 +247,11 @@ internal sealed class PrecisionV2MotionFusion
             // Stop only within a short window of previously confirmed motion.
             // A frozen/textureless render or a permanently static capture will
             // never silently block movement for the whole raid.
-            _acceptedStops++;
+            if (_lastAcceptedStopAt != observed.CapturedAt)
+            {
+                _acceptedStops++;
+                _lastAcceptedStopAt = observed.CapturedAt;
+            }
             LastDecision = "Collision/arrêt visuel probable : vitesse annulée";
             return RealtimeMotionEvidence.Stationary;
         }
