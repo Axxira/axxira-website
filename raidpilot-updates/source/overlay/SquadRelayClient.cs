@@ -169,7 +169,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
             var payload = JsonSerializer.Serialize(new
             {
                 type = "pose",
-                map = RaidPilotLocalMapHost.NormalizeMapKey(pose.Map),
+                map = NormalizeMapKey(pose.Map),
                 position = new { x = pose.X, y = pose.Y, z = pose.Z },
                 rotation = Normalize360(pose.YawDegrees),
                 floor = (string?)null,
@@ -345,12 +345,27 @@ public sealed class SquadRelayClient : IAsyncDisposable
         // The deployed Worker does not forward uncertainty. 1000 means unknown,
         // NOT a measured 1000-metre error.
         var candidate = new SquadMemberPose(
-            id, NormalizeName(name), RaidPilotLocalMapHost.NormalizeMapKey(map),
+            id, NormalizeName(name), NormalizeMapKey(map),
             x, y, z, Normalize360(rotation), 1000, timestamp);
         if (!IsValidPose(candidate) || candidate.MemberId.Length > 64
             || candidate.Map.Length > 64) return false;
         pose = candidate;
         return true;
+    }
+
+    // Portable normalization. This client is also linked into Beacon and
+    // Launcher, which do not reference the WinForms LocalMapHost class.
+    internal static string NormalizeMapKey(string? map)
+    {
+        var key = (map ?? string.Empty).Trim().ToLowerInvariant().Replace('_', '-');
+        return key switch
+        {
+            "labs" or "lab" or "the-lab-dark" => "the-lab",
+            "streets" or "streetsoftarkov" => "streets-of-tarkov",
+            "groundzero" => "ground-zero",
+            "night-factory" => "factory",
+            _ => key
+        };
     }
 
     private static bool IsValidPose(SquadMemberPose pose) =>
