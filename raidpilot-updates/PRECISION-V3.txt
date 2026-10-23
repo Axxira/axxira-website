@@ -1,0 +1,12 @@
+RaidPilot PRECISION V3 — Overlay 0.14.2.17 / Beacon 0.3.6 / Launcher 0.2.12
+
+Le moteur V2 160x90 accepte un capteur graphique Windows.Graphics.Capture/Direct3D11 optionnel avec une DLL native x64 :
+- Désactivé par défaut; case à cocher dans le menu de notification de RaidPilot et Beacon.
+- Capture de la fenêtre EFT au premier plan choisie par le joueur; indicateur Windows respecté.
+- Traitement local du flux de luminance, sans export d'image, injection dans Tarkov ou accès à sa mémoire.
+- Si capture indisponible, DLL manquante ou absence prolongée de trames : repli GDI 160x90.
+- L'ancien capteur 64x36, les F8 et la synchronisation d'équipe Cloudflare restent indépendants.
+- ZIP Overlay et ZIP Beacon contiennent la même DLL native vérifiée par SHA-256.
+- Tests Windows du pont natif, de l'Overlay et de Beacon requis pour publier.
+
+Important : un build réussi ne garantit pas que la capture Windows fonctionne avec chaque mode d'affichage ou chaque version de Tarkov. Il faut tester le capteur GPU sur chaque PC, comparer les résidus F8 et mesurer la consommation GPU/CPU. Si le GPS recule ou le rendu ralentit, décocher la capture GPU pour revenir immédiatement à GDI.
