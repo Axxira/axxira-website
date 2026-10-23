@@ -65,6 +65,7 @@ internal static class ScreenshotNameParserTests
         VisualKeyframeStoreTests.RunAll(failures);
         SuperKeyframeRecognizerTests.RunAll(failures);
         VisualRelocalizationEngineV2Tests.RunAll(failures);
+        PrecisionV4Tests.RunAll(failures);
         LocalizationRecoveryPolicyTests.RunAll(failures);
         ScreenshotHotkeySenderTests.RunAll(failures);
         AutomaticReanchorRequestTests.RunAll(failures);
@@ -115,6 +116,7 @@ internal static class ScreenshotNameParserTests
             + VisualKeyframeStoreTests.TestCount
             + SuperKeyframeRecognizerTests.TestCount
             + VisualRelocalizationEngineV2Tests.TestCount
+            + PrecisionV4Tests.TestCount
             + LocalizationRecoveryPolicyTests.TestCount
             + ScreenshotHotkeySenderTests.TestCount
             + AutomaticReanchorRequestTests.TestCount

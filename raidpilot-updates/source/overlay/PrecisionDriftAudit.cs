@@ -12,12 +12,13 @@ internal readonly record struct PrecisionDriftSample(
     double ErrorMeters,
     double HeadingErrorDegrees,
     double Seconds,
-    double ModelUncertaintyMeters);
+    double ModelUncertaintyMeters,
+    bool PrecisionV4Enabled = false);
 
 internal sealed class PrecisionDriftAudit
 {
     private const int Capacity = 32;
-    private const double MinimumSeconds = 8.0;
+    private const double MinimumSeconds = 4.0;
     private const double MaximumSeconds = 900.0;
     private readonly Queue<PrecisionDriftSample> _samples = new(Capacity);
     private long _lastAnchorAt;
@@ -45,7 +46,8 @@ internal sealed class PrecisionDriftAudit
         ScreenshotObservation observation,
         RealtimePose? predictedAtCapture,
         long captureAt,
-        bool precisionV2Enabled)
+        bool precisionV2Enabled,
+        bool precisionV4Enabled = false)
     {
         ArgumentNullException.ThrowIfNull(observation);
         var previous = _lastAnchorAt;
@@ -91,18 +93,24 @@ internal sealed class PrecisionDriftAudit
             meters,
             heading,
             seconds,
-            predicted.PositionUncertaintyMeters));
+            predicted.PositionUncertaintyMeters,
+            precisionV4Enabled));
         return true;
     }
 
     internal string Describe()
     {
-        var v1 = _samples.Where(x => !x.PrecisionV2Enabled).ToArray();
-        var v2 = _samples.Where(x => x.PrecisionV2Enabled).ToArray();
+        var v1 = _samples.Where(x => !x.PrecisionV2Enabled && !x.PrecisionV4Enabled).ToArray();
+        var v2 = _samples.Where(x => x.PrecisionV2Enabled && !x.PrecisionV4Enabled).ToArray();
+        var v4 = _samples.Where(x => x.PrecisionV4Enabled).ToArray();
         return $"F8 réels comparables (mémoire seulement) : {_samples.Count}, "
             + $"intervalles écartés : {_ignored}\n"
             + DescribeMode("V1", v1) + "\n" + DescribeMode("V2", v2)
-            + "\nComparaison indicative : trajets et conditions peuvent différer.";
+            + "\n" + DescribeMode("V4", v4)
+            + "\nV4 par durée : " + DescribeWindow(v4, 4, 12, "5-10 s")
+            + " · " + DescribeWindow(v4, 12, 25, "10-20 s")
+            + " · " + DescribeWindow(v4, 25, 60, "20-30+ s")
+            + "\nComparaison indicative : durées observées et conditions peuvent différer.";
     }
 
     private static string DescribeMode(string name, PrecisionDriftSample[] samples)
@@ -114,6 +122,15 @@ internal sealed class PrecisionDriftAudit
         return $"{name} ({samples.Length}) : médiane {Median(errors):F1} m, "
             + $"P90 {Percentile90(errors):F1} m, cap médian {Median(yaw):F1}°, "
             + $"intervalle médian {Median(minutes):F0} s";
+    }
+
+    private static string DescribeWindow(
+        PrecisionDriftSample[] samples, double minimum, double maximum, string label)
+    {
+        var errors = samples.Where(s => s.Seconds >= minimum && s.Seconds < maximum)
+            .Select(s => s.ErrorMeters).Order().ToArray();
+        return errors.Length == 0 ? label + ": aucune"
+            : $"{label} ({errors.Length}) médiane {Median(errors):F1} m";
     }
 
     internal static double Median(IReadOnlyList<double> sorted) =>
