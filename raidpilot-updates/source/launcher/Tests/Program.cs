@@ -1,4 +1,6 @@
 using System.IO.Compression;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -88,6 +90,112 @@ Run("canal Stable officiel intégré", () =>
         "URL Stable intégrée invalide");
     Require(LauncherSettings.StableManifestUrl.Contains("raidpilot-updates", StringComparison.Ordinal),
         "URL Stable ne vise pas le canal RaidPilot");
+});
+Run("Stable: trois archives officielles de la même publication", () =>
+{
+    const string tag = "raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-abcdefabcdef";
+    const string root = "https://github.com/Axxira/axxira-website/releases/download/";
+    var m = new UpdateManifest
+    {
+        SchemaVersion = 1,
+        RaidPilot = new UpdateComponent
+        {
+            Version = "0.14.2.24", Url = root + tag
+                + "/RaidPilot-Overlay-v0.14.2.24-Windows-x64.zip",
+            Sha256 = new string('A', 64), SizeBytes = 50000,
+        },
+        Beacon = new UpdateComponent
+        {
+            Version = "0.3.9", Url = root + tag
+                + "/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+            Sha256 = new string('B', 64), SizeBytes = 50000,
+        },
+        Launcher = new UpdateComponent
+        {
+            Version = "0.2.15", Url = root + tag
+                + "/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+            Sha256 = new string('C', 64), SizeBytes = 50000,
+        },
+    };
+    UpdateService.ValidateOfficialStableManifestSources(
+        LauncherSettings.StableManifestUrl, m);
+});
+Run("Stable: une archive extérieure ou version mixte est rejetée", () =>
+{
+    var m = new UpdateManifest { SchemaVersion = 1, RaidPilot = new UpdateComponent
+    {
+        Version = "0.14.2.24",
+        Url = "https://untrusted.example.org/malicious-overlay.zip",
+        Sha256 = new string('A', 64), SizeBytes = 50,
+    }};
+    var denied = false;
+    try { UpdateService.ValidateOfficialStableManifestSources(
+        LauncherSettings.StableManifestUrl, m); }
+    catch (InvalidOperationException) { denied = true; }
+    Require(denied, "Une source extérieure pourrait remplacer la version Stable.");
+    // Custom local/private feed is an explicit user-controlled opt-in.
+    UpdateService.ValidateOfficialStableManifestSources("file:///C:/custom.json", m);
+});
+Run("Stable: versions provenant de deux publications différentes refusées", () =>
+{
+    const string root = "https://github.com/Axxira/axxira-website/releases/download/";
+    var manifest = new UpdateManifest
+    {
+        SchemaVersion = 1,
+        RaidPilot = new UpdateComponent
+        {
+            Version = "0.14.2.24",
+            Url = root + "raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-aabbccddeeff/"
+                + "RaidPilot-Overlay-v0.14.2.24-Windows-x64.zip",
+            Sha256 = new string('A', 64), SizeBytes = 25,
+        },
+        Beacon = new UpdateComponent
+        {
+            Version = "0.3.9",
+            Url = root + "raidpilot-stable-rp0.14.2.23-b0.3.9-l0.2.14-112233445566/"
+                + "RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+            Sha256 = new string('B', 64), SizeBytes = 25,
+        },
+    };
+    var failed = false;
+    try { UpdateService.ValidateOfficialStableManifestSources(
+        LauncherSettings.StableManifestUrl, manifest); }
+    catch (InvalidOperationException) { failed = true; }
+    Require(failed, "Le manifeste mélange deux publications officielles.");
+});
+Run("Launcher self-update: empreinte revalidée après fermeture", () =>
+{
+    var script = UpdateService.BuildLauncherSelfUpdateScript();
+    Require(script.Contains("Get-FileHash -LiteralPath $Archive -Algorithm SHA256",
+        StringComparison.Ordinal) && script.Contains("$ExpectedSha256",
+        StringComparison.Ordinal), "Le script de remplacement ne vérifie pas la SHA après la fermeture.");
+});
+Run("Package: le lanceur détecte les éléments absents au démarrage", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var ok = LauncherPackageVerifier.Verify(root, out var problem);
+        Require(!ok && problem.Contains("RaidPilot.Launcher.exe", StringComparison.Ordinal),
+            "Un lanceur sans binaire ne doit pas passer le smoke test.");
+    }
+    finally { SafeDelete(root); }
+});
+Run("Payload: un exécutable sans version publiée est refusé", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var exe = Path.Combine(root, "RaidPilot.Overlay.exe");
+        File.WriteAllText(exe, "not a real release");
+        var denied = false;
+        try { UpdateService.VerifyNativePayloadVersion(
+            exe, "RaidPilot.Overlay.exe", "0.14.2.24"); }
+        catch (InvalidOperationException) { denied = true; }
+        Require(denied, "Un faux exécutable Overlay n'a pas été rejeté.");
+        UpdateService.VerifyNativePayloadVersion(exe, "Dummy.exe", "test");
+    }
+    finally { SafeDelete(root); }
 });
 Run("état à jour ignore les suffixes Git", () =>
 {
@@ -299,6 +407,110 @@ await RunAsync("installation atomique et rollback", async () =>
         Require(UpdateService.Rollback(target, "Dummy.exe"), "rollback refusé");
         Require(await File.ReadAllTextAsync(Path.Combine(target, "Dummy.exe")) == "v1",
             "ancienne version non restaurée");
+    }
+    finally { SafeDelete(root); }
+});
+await RunAsync("HTTP: interruption suivie d'une reprise Range valide", async () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var zip = CreatePackage(root, "Dummy.exe", "v2-with-ranged-network-resume");
+        var handler = new SimulatedPartialDownloadHandler(File.ReadAllBytes(zip), ignoreRange: false);
+        using var http = new HttpClient(handler);
+        using var updater = new UpdateService(http);
+        var installed = Path.Combine(root, "installed");
+        var component = BuildComponent(zip, "2.0.0") with { Url = "https://download.example.org/package.zip" };
+        await updater.InstallComponentAsync(component, installed, "Dummy.exe", null,
+            CancellationToken.None);
+        Require(handler.RequestCount == 2 && handler.ObservedRange,
+            "La reprise HTTP n'a pas demandé la suite de l'archive.");
+        Require(File.ReadAllText(Path.Combine(installed, "Dummy.exe"))
+            == "v2-with-ranged-network-resume", "L'archive reprise est corrompue.");
+    }
+    finally { SafeDelete(root); }
+});
+await RunAsync("HTTP: serveur ignorait Range, fichier reconstruit sans duplication", async () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var zip = CreatePackage(root, "Dummy.exe", "version-2-full-response-after-range");
+        var handler = new SimulatedPartialDownloadHandler(File.ReadAllBytes(zip), ignoreRange: true);
+        using var http = new HttpClient(handler);
+        using var updater = new UpdateService(http);
+        var installed = Path.Combine(root, "installed");
+        var component = BuildComponent(zip, "2.0.0") with { Url = "https://download.example.org/ignored-range.zip" };
+        await updater.InstallComponentAsync(component, installed, "Dummy.exe", null,
+            CancellationToken.None);
+        Require(handler.RequestCount == 2 && handler.ObservedRange,
+            "La reprise HTTP ne s'est pas présentée.");
+        Require(File.ReadAllText(Path.Combine(installed, "Dummy.exe"))
+            == "version-2-full-response-after-range", "La réponse HTTP complète n'a pas remplacé l'archive partielle.");
+    }
+    finally { SafeDelete(root); }
+});
+Run("Journal: crash entre mise à jour Overlay et Beacon restaure les deux", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var raid = Path.Combine(root, "raid");
+        var beacon = Path.Combine(root, "beacon");
+        Directory.CreateDirectory(raid); Directory.CreateDirectory(beacon);
+        File.WriteAllText(Path.Combine(raid, "RaidPilot.Overlay.exe"), "old-raid");
+        File.WriteAllText(Path.Combine(beacon, "RaidPilot.Beacon.exe"), "old-beacon");
+        var journal = Path.Combine(root, "journal.json");
+        var snapshot = LauncherUpdateRecovery.Capture(true, true,
+            Path.Combine(raid, "RaidPilot.Overlay.exe"),
+            Path.Combine(beacon, "RaidPilot.Beacon.exe"));
+        LauncherUpdateRecovery.Begin(journal, snapshot);
+        Directory.Move(raid, raid + ".previous");
+        Directory.CreateDirectory(raid);
+        File.WriteAllText(Path.Combine(raid, "RaidPilot.Overlay.exe"), "new-raid");
+        Require(LauncherUpdateRecovery.Recover(journal, raid, beacon, out _),
+            "La récupération journalisée a échoué.");
+        Require(File.ReadAllText(Path.Combine(raid, "RaidPilot.Overlay.exe")) == "old-raid"
+            && File.ReadAllText(Path.Combine(beacon, "RaidPilot.Beacon.exe")) == "old-beacon"
+            && !File.Exists(journal), "Composants mélangés ou journal persistant.");
+    }
+    finally { SafeDelete(root); }
+});
+Run("Journal: sauvegarde périmée jamais utilisée si binaire intact", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var raid = Path.Combine(root, "raid");
+        Directory.CreateDirectory(raid);
+        Directory.CreateDirectory(raid + ".previous");
+        File.WriteAllText(Path.Combine(raid, "RaidPilot.Overlay.exe"), "current");
+        File.WriteAllText(Path.Combine(raid + ".previous", "RaidPilot.Overlay.exe"), "stale-backup");
+        var journal = Path.Combine(root, "journal.json");
+        LauncherUpdateRecovery.Begin(journal,
+            LauncherUpdateRecovery.Capture(true, false,
+                Path.Combine(raid, "RaidPilot.Overlay.exe"), Path.Combine(root, "missing")));
+        Require(LauncherUpdateRecovery.Recover(journal, raid, Path.Combine(root, "beacon"), out _),
+            "Récupération devrait reconnaître l'installation inchangée.");
+        Require(File.ReadAllText(Path.Combine(raid, "RaidPilot.Overlay.exe")) == "current",
+            "La sauvegarde périmée a remplacé le binaire intact.");
+    }
+    finally { SafeDelete(root); }
+});
+Run("Journal: installation interrompue d'un composant neuf est supprimée", () =>
+{
+    var root = CreateTemp();
+    try
+    {
+        var raid = Path.Combine(root, "raid");
+        var journal = Path.Combine(root, "journal.json");
+        LauncherUpdateRecovery.Begin(journal,
+            LauncherUpdateRecovery.Capture(true, false,
+                Path.Combine(raid, "RaidPilot.Overlay.exe"), Path.Combine(root, "missing")));
+        Directory.CreateDirectory(raid);
+        File.WriteAllText(Path.Combine(raid, "RaidPilot.Overlay.exe"), "incomplete-new");
+        Require(LauncherUpdateRecovery.Recover(journal, raid, Path.Combine(root, "beacon"), out _)
+            && !Directory.Exists(raid), "Le composant neuf partiellement installé subsiste.");
     }
     finally { SafeDelete(root); }
 });
@@ -528,10 +740,10 @@ Run("notes: grand historique borné et trois lignes dynamiques disponibles", () 
 
 if (failures.Count == 0)
 {
-    Console.WriteLine("29/29 tests launcher réussis.");
+    Console.WriteLine("40/40 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/29 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/40 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
@@ -596,3 +808,54 @@ static ReleaseHistoryEntry SampleReleaseNote(
     Summary = summary,
     Details = "Modification détaillée et compatible avec les versions précédentes."
 };
+
+internal sealed class SimulatedPartialDownloadHandler : HttpMessageHandler
+{
+    private readonly byte[] _bytes;
+    private readonly bool _ignoreRange;
+    private readonly int _firstBytes;
+    internal int RequestCount { get; private set; }
+    internal bool ObservedRange { get; private set; }
+
+    internal SimulatedPartialDownloadHandler(byte[] bytes, bool ignoreRange)
+    {
+        _bytes = bytes;
+        _ignoreRange = ignoreRange;
+        _firstBytes = Math.Max(1, bytes.Length / 3);
+    }
+
+    protected override Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        RequestCount++;
+        if (RequestCount == 1)
+        {
+            if (request.Headers.Range is not null)
+                throw new IOException("Initial download must not use Range.");
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(_bytes[.._firstBytes]),
+            });
+        }
+
+        var start = request.Headers.Range?.Ranges.SingleOrDefault()?.From;
+        ObservedRange = start == _firstBytes;
+        if (!ObservedRange)
+            throw new IOException("The resume must begin after the initial bytes.");
+        if (_ignoreRange)
+        {
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(_bytes),
+            });
+        }
+
+        var response = new HttpResponseMessage(HttpStatusCode.PartialContent)
+        {
+            Content = new ByteArrayContent(_bytes[_firstBytes..]),
+        };
+        response.Content.Headers.ContentRange =
+            new ContentRangeHeaderValue(_firstBytes, _bytes.Length - 1, _bytes.Length);
+        return Task.FromResult(response);
+    }
+}

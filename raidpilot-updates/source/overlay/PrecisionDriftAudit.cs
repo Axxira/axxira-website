@@ -23,6 +23,7 @@ internal sealed class PrecisionDriftAudit
     private readonly Queue<PrecisionDriftSample> _samples = new(Capacity);
     private long _lastAnchorAt;
     private bool _lastMode;
+    private bool _lastV4Mode;
     private bool _interrupted;
     private int _ignored;
 
@@ -36,6 +37,7 @@ internal sealed class PrecisionDriftAudit
         _samples.Clear();
         _lastAnchorAt = 0;
         _lastMode = false;
+        _lastV4Mode = false;
         _interrupted = false;
         _ignored = 0;
     }
@@ -52,13 +54,16 @@ internal sealed class PrecisionDriftAudit
         ArgumentNullException.ThrowIfNull(observation);
         var previous = _lastAnchorAt;
         var previousMode = _lastMode;
+        var previousV4Mode = _lastV4Mode;
         var wasInterrupted = _interrupted;
         _lastAnchorAt = captureAt > 0 ? captureAt : 0;
         _lastMode = precisionV2Enabled;
+        _lastV4Mode = precisionV4Enabled;
         _interrupted = false;
 
         if (captureAt <= 0 || previous <= 0 || captureAt <= previous
             || wasInterrupted || previousMode != precisionV2Enabled
+            || previousV4Mode != precisionV4Enabled
             || predictedAtCapture is not { } predicted)
         {
             if (previous > 0) _ignored++;

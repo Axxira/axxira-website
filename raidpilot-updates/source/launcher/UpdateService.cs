@@ -13,14 +13,15 @@ internal sealed class UpdateService : IDisposable
     private const long MaximumExtractedBytes = 4L * 1024 * 1024 * 1024;
     private const int MaximumZipEntries = 20_000;
     internal const int AutomaticUpdateCheckIntervalMilliseconds = 120_000;
-    private readonly HttpClient _httpClient = new()
-    {
-        Timeout = TimeSpan.FromSeconds(30),
-    };
+    private readonly HttpClient _httpClient;
+    private readonly bool _ownsHttpClient;
 
-    internal UpdateService()
+    internal UpdateService(HttpClient? client = null)
     {
-        var currentVersion = typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "0.2.13";
+        _ownsHttpClient = client is null;
+        _httpClient = client ?? new HttpClient();
+        _httpClient.Timeout = TimeSpan.FromSeconds(30);
+        var currentVersion = typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "0.2.15";
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
             new ProductInfoHeaderValue("RaidPilot-Launcher", currentVersion));
     }
@@ -225,6 +226,7 @@ internal sealed class UpdateService : IDisposable
         ValidateComponent(manifest.RaidPilot, "RaidPilot");
         ValidateComponent(manifest.Beacon, "Beacon");
         ValidateComponent(manifest.Launcher, "Launcher");
+        ValidateOfficialStableManifestSources(manifestLocation, manifest);
         return manifest;
     }
 
@@ -281,6 +283,8 @@ internal sealed class UpdateService : IDisposable
                 throw new InvalidOperationException(
                     $"L’archive ne contient pas {expectedExecutable}.");
             }
+            VerifyNativePayloadVersion(
+                executable, expectedExecutable, component.Version);
 
             PreservePortableUserData(targetDirectory, payloadRoot);
 
@@ -414,6 +418,8 @@ internal sealed class UpdateService : IDisposable
         startInfo.ArgumentList.Add("RaidPilot.Launcher.exe");
         startInfo.ArgumentList.Add("-ExpectedVersion");
         startInfo.ArgumentList.Add(component.Version);
+        startInfo.ArgumentList.Add("-ExpectedSha256");
+        startInfo.ArgumentList.Add(component.Sha256);
         startInfo.ArgumentList.Add("-UpdaterWork");
         startInfo.ArgumentList.Add(updaterWorkingDirectory);
 
@@ -435,6 +441,7 @@ param(
     [Parameter(Mandatory=$true)][string]$Target,
     [Parameter(Mandatory=$true)][string]$Executable,
     [Parameter(Mandatory=$true)][string]$ExpectedVersion,
+    [Parameter(Mandatory=$true)][string]$ExpectedSha256,
     [Parameter(Mandatory=$true)][string]$UpdaterWork
 )
 $ErrorActionPreference = 'Stop'
@@ -466,6 +473,13 @@ try {
         Remove-Item -LiteralPath $staging -Recurse -Force
     }
     New-Item -ItemType Directory -Force -Path $staging | Out-Null
+    # Verify the archive again AFTER the original launcher has exited.
+    # This closes the check-to-use window after the C# hash verification.
+    $archiveHash = (Get-FileHash -LiteralPath $Archive -Algorithm SHA256).Hash
+    if (-not [string]::Equals($archiveHash, $ExpectedSha256,
+        [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Archive launcher modifiée après téléchargement (SHA-256)."
+    }
     Expand-Archive -LiteralPath $Archive -DestinationPath $staging -Force
 
     $payload = $staging
@@ -791,6 +805,11 @@ finally {
         }
     }
 
+    /// <summary>
+    /// Retry a network interruption using HTTP Range where supported.
+    /// A server that ignores Range triggers a safe full-file restart instead
+    /// of appending inconsistent bytes. The SHA-256 is verified by the caller.
+    /// </summary>
     private async Task DownloadFileAsync(
         string location,
         string destination,
@@ -804,58 +823,102 @@ finally {
         {
             throw new InvalidOperationException("URL de package invalide.");
         }
-
         if (expectedSize is > MaximumArchiveBytes)
-        {
             throw new InvalidOperationException("Archive de mise à jour trop volumineuse.");
-        }
+
         if (uri.IsFile)
         {
             await using var source = new FileStream(
-                uri.LocalPath,
-                FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read);
+                uri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             await using var target = new FileStream(
-                destination,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None);
-            var localCopied = await CopyWithProgressAsync(
-                source,
-                target,
-                source.Length,
-                progress,
-                cancellationToken);
-            if (expectedSize is > 0 && localCopied != expectedSize.Value)
+                destination, FileMode.Create, FileAccess.Write, FileShare.None);
+            var copied = await CopyWithProgressAsync(source, target,
+                source.Length, progress, cancellationToken);
+            if (expectedSize is > 0 && copied != expectedSize.Value)
                 throw new InvalidOperationException("Taille de package locale inattendue.");
             return;
         }
 
-        using var response = await _httpClient.GetAsync(
-            uri,
-            HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
-        response.EnsureSuccessStatusCode();
-        var length = response.Content.Headers.ContentLength ?? expectedSize;
-        if (length is > MaximumArchiveBytes)
-            throw new InvalidOperationException("Archive réseau trop volumineuse.");
-        await using var sourceStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        await using var destinationStream = new FileStream(
-            destination,
-            FileMode.Create,
-            FileAccess.Write,
-            FileShare.None,
-            bufferSize: 64 * 1024,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
-        var copied = await CopyWithProgressAsync(
-            sourceStream,
-            destinationStream,
-            length,
-            progress,
-            cancellationToken);
-        if (expectedSize is > 0 && copied != expectedSize.Value)
-            throw new InvalidOperationException("Taille téléchargée incompatible avec le manifeste.");
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var offset = File.Exists(destination) ? new FileInfo(destination).Length : 0;
+            if (offset > MaximumArchiveBytes
+                || (expectedSize is > 0 && offset > expectedSize.Value))
+            {
+                File.Delete(destination);
+                offset = 0;
+            }
+            if (offset > 0 && expectedSize is > 0 && offset == expectedSize.Value)
+                return; // Caller must still validate the entire SHA-256.
+
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                if (offset > 0)
+                    request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(offset, null);
+                using var response = await _httpClient.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (offset > 0
+                    && response.StatusCode == System.Net.HttpStatusCode.RequestedRangeNotSatisfiable)
+                {
+                    File.Delete(destination);
+                    continue;
+                }
+                response.EnsureSuccessStatusCode();
+                var isRange = response.StatusCode == System.Net.HttpStatusCode.PartialContent;
+                if (isRange)
+                {
+                    var range = response.Content.Headers.ContentRange;
+                    if (offset <= 0 || range?.From != offset
+                        || (expectedSize is > 0 && range.Length.HasValue
+                            && range.Length.Value != expectedSize.Value))
+                    {
+                        throw new InvalidOperationException(
+                            "Réponse de reprise HTTP incohérente : archive refusée.");
+                    }
+                }
+                else if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    throw new InvalidOperationException(
+                        "Réponse HTTP inattendue pour le téléchargement.");
+                }
+
+                // A 200 response to a Range request means the server ignored
+                // the range. Recreate the file; never append duplicate bytes.
+                var baseLength = isRange ? offset : 0L;
+                var length = expectedSize
+                    ?? response.Content.Headers.ContentRange?.Length
+                    ?? (response.Content.Headers.ContentLength + baseLength);
+                if (length is > MaximumArchiveBytes
+                    || response.Content.Headers.ContentLength is > MaximumArchiveBytes)
+                    throw new InvalidOperationException("Archive réseau trop volumineuse.");
+
+                await using var sourceStream = await response.Content.ReadAsStreamAsync(
+                    cancellationToken);
+                await using var destinationStream = new FileStream(
+                    destination,
+                    isRange ? FileMode.Append : FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 64 * 1024,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan);
+                var total = await CopyWithProgressAsync(
+                    sourceStream, destinationStream, length,
+                    progress, cancellationToken, baseLength);
+                if (expectedSize is > 0 && total != expectedSize.Value)
+                    throw new IOException("Réponse incomplète : reprise de la même archive.");
+                return;
+            }
+            catch (Exception error) when (attempt < 3
+                && !cancellationToken.IsCancellationRequested
+                && (error is IOException or HttpRequestException or OperationCanceledException))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(attempt * 400),
+                    cancellationToken);
+            }
+        }
+        throw new IOException("Téléchargement interrompu malgré les tentatives de reprise.");
     }
 
     private static async Task<long> CopyWithProgressAsync(
@@ -863,14 +926,20 @@ finally {
         Stream destination,
         long? totalLength,
         IProgress<int>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        long initialBytes = 0)
     {
         var buffer = new byte[64 * 1024];
-        long total = 0;
-        int read;
-        while ((read = await source.ReadAsync(buffer, cancellationToken)) > 0)
+        long total = initialBytes;
+        // Unlike HttpClient's header timeout, this timer protects streamed
+        // data against a stalled connection that never closes.
+        using var idleTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        while (true)
         {
-            await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+            idleTimeout.CancelAfter(TimeSpan.FromSeconds(60));
+            var read = await source.ReadAsync(buffer, idleTimeout.Token);
+            if (read == 0) break;
+            await destination.WriteAsync(buffer.AsMemory(0, read), idleTimeout.Token);
             total += read;
             if (total > MaximumArchiveBytes)
                 throw new InvalidOperationException("Téléchargement interrompu : taille maximale dépassée.");
@@ -950,6 +1019,76 @@ finally {
         return staging;
     }
 
+    /// <summary>
+    /// Restrict the built-in Stable feed to the exact repository's immutable
+    /// GitHub release assets. Custom feeds remain explicitly opt-in for
+    /// development / local tests; this is not a digital signature.
+    /// </summary>
+    internal static void ValidateOfficialStableManifestSources(
+        string manifestLocation, UpdateManifest manifest)
+    {
+        if (!string.Equals(manifestLocation, LauncherSettings.StableManifestUrl,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+        string? sharedTag = null;
+        var components = new[]
+        {
+            (Name: "Overlay", Component: manifest.RaidPilot,
+                Executable: "RaidPilot-Overlay"),
+            (Name: "Beacon", Component: manifest.Beacon,
+                Executable: "RaidPilot-Beacon"),
+            (Name: "Launcher", Component: manifest.Launcher,
+                Executable: "RaidPilot-Launcher"),
+        };
+        foreach (var item in components)
+        {
+            if (item.Component is not { } component)
+                continue;
+            if (!Uri.TryCreate(component.Url, UriKind.Absolute, out var uri))
+                throw new InvalidOperationException("URL Stable invalide.");
+            var parts = uri.AbsolutePath.Split('/');
+            var expectedFile = item.Executable + "-v" + component.Version + "-Windows-x64.zip";
+            if (uri.Scheme != Uri.UriSchemeHttps || uri.Port != 443
+                || !string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase)
+                || uri.UserInfo.Length != 0 || uri.Query.Length != 0
+                || uri.Fragment.Length != 0 || parts.Length != 7
+                || !string.Equals(parts[1], "Axxira", StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(parts[2], "axxira-website", StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(parts[3], "releases", StringComparison.Ordinal)
+                || !string.Equals(parts[4], "download", StringComparison.Ordinal)
+                || !parts[5].StartsWith("raidpilot-stable-rp", StringComparison.Ordinal)
+                || !string.Equals(parts[6], expectedFile, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Publication Stable non autorisée pour " + item.Name + ".");
+            }
+            if (sharedTag is null) sharedTag = parts[5];
+            else if (!string.Equals(sharedTag, parts[5], StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Les trois composants Stable doivent provenir de la même publication.");
+            }
+        }
+    }
+
+    internal static void VerifyNativePayloadVersion(
+        string extractedExecutable, string expectedExecutable, string expectedVersion)
+    {
+        if (expectedExecutable is not ("RaidPilot.Overlay.exe" or "RaidPilot.Beacon.exe"))
+            return; // Synthetic tests can still use Dummy.exe payloads.
+        var actual = NormalizeVersionCore(GetInstalledVersion(extractedExecutable));
+        if (!Version.TryParse(actual, out var parsedActual)
+            || !Version.TryParse(NormalizeVersionCore(expectedVersion), out var parsedExpected)
+            || parsedActual != parsedExpected)
+        {
+            throw new InvalidOperationException(
+                $"Version binaire incorrecte dans l’archive {expectedExecutable}: "
+                + $"{actual ?? "inconnue"} (attendu {expectedVersion}).");
+        }
+    }
+
     private static void ValidateComponent(UpdateComponent? component, string name)
     {
         if (component is null)
@@ -1026,5 +1165,5 @@ finally {
         }
     }
 
-    public void Dispose() => _httpClient.Dispose();
+    public void Dispose() { if (_ownsHttpClient) _httpClient.Dispose(); }
 }

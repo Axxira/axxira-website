@@ -4,12 +4,13 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class VisualRelocalizationEngineV2Tests
 {
-    internal const int TestCount = 9;
+    internal const int TestCount = 10;
 
     internal static void RunAll(ICollection<string> failures)
     {
         Run("relocalisation v2: santé se dégrade avec dérive et âge", HealthDegradesWithDriftAndAge, failures);
         Run("relocalisation V4: reconnaissance rejetée ne restaure pas la confiance", DeferredVisualCommitIsExplicit, failures);
+        Run("relocalisation V4: correction visuelle partielle ne remet pas l’âge F8 à zéro", PartialVisualCorrectionDoesNotResetF8Age, failures);
         Run("relocalisation v2: cadence accélère en rouge", LowResolutionCadenceAcceleratesWhenRed, failures);
         Run("relocalisation v2: haute résolution seulement quand utile", HighResolutionRunsWhenUseful, failures);
         Run("relocalisation v2: keyframe legacy produit micro-correction", LegacyLowResolutionCanSoftCorrect, failures);
@@ -195,6 +196,29 @@ internal static class VisualRelocalizationEngineV2Tests
         var metrics = engine.GetMetrics(now);
         Require(metrics.HardSnaps == 1 && metrics.LoopClosures == 1,
             "métriques de loop closure incorrectes");
+    }
+
+    private static void PartialVisualCorrectionDoesNotResetF8Age()
+    {
+        var engine = new VisualRelocalizationEngineV2();
+        var start = Stopwatch.Frequency;
+        var now = start + (12 * Stopwatch.Frequency);
+        engine.BeginSession(start);
+        engine.NoteAbsoluteAnchor(start);
+        var estimated = Pose(10, 0, 10, 45, 4.5);
+        var target = new VisualKeyframePose(10.7, 0, 10.2, 45);
+        var candidate = engine.Evaluate(estimated, LowConfirmed(target),
+            SuperConfirmed(target), true, now, commitImmediately: false);
+        Require(candidate.ShouldCorrect, "Le filtre devrait recevoir une relocalisation.");
+        var before = engine.GetMetrics(now);
+        Require(before.SecondsSinceAbsoluteConfirmation >= 11.9,
+            "Le temps depuis le F8 devrait dépasser 12 secondes.");
+        engine.NoteAppliedCorrection(candidate, now, countAsAbsoluteConfirmation: false);
+        var after = engine.GetMetrics(now);
+        Require(after.AcceptedCorrections == 1
+            && after.SecondsSinceAbsoluteConfirmation >= 11.9
+            && after.Health != LocalizationHealthState.Green,
+            "Une correction partielle ne peut masquer une ancre F8 périmée.");
     }
 
     private static void DeferredVisualCommitIsExplicit()

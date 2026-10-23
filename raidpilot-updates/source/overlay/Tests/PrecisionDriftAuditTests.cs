@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionDriftAuditTests
 {
-    internal const int TestCount = 11;
+    internal const int TestCount = 13;
 
     private static ScreenshotObservation Exact(double x = 0, double yaw = 0) =>
         new("synthetic-F8", x, 0, 0, 0, 0, 0, 1, yaw);
@@ -47,6 +47,25 @@ internal static class PrecisionDriftAuditTests
                 30 * Stopwatch.Frequency, true) && audit.Count == 0);
             Require(audit.ObserveExactAnchor(Exact(), Pred(3),
                 50 * Stopwatch.Frequency, true) && audit.Count == 1);
+        }, failures);
+        Run("F8 audit: entrée en V4 ne mélange pas le trajet V2 précédent", () => {
+            var audit = new PrecisionDriftAudit();
+            audit.ObserveExactAnchor(Exact(), null, 10 * Stopwatch.Frequency, true, false);
+            Require(!audit.ObserveExactAnchor(Exact(), Pred(4),
+                30 * Stopwatch.Frequency, true, true), "Mode V4 activé entre deux F8 : échantillon à écarter.");
+            Require(audit.ObserveExactAnchor(Exact(), Pred(2),
+                50 * Stopwatch.Frequency, true, true));
+            Require(audit.Count == 1 && audit.Last is { PrecisionV4Enabled: true });
+        }, failures);
+        Run("F8 audit: sortie de V4 ne corrompt pas les statistiques V2", () => {
+            var audit = new PrecisionDriftAudit();
+            audit.ObserveExactAnchor(Exact(), null, 10 * Stopwatch.Frequency, true, true);
+            Require(!audit.ObserveExactAnchor(Exact(), Pred(12),
+                30 * Stopwatch.Frequency, true, false));
+            Require(audit.ObserveExactAnchor(Exact(), Pred(1),
+                50 * Stopwatch.Frequency, true, false));
+            Require(audit.Count == 1 && audit.Last is { PrecisionV4Enabled: false }
+                && !audit.Samples[0].PrecisionV4Enabled);
         }, failures);
         Run("F8 audit: une pause de suivi ne fait pas un échantillon", () => {
             var audit = new PrecisionDriftAudit();

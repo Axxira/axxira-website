@@ -219,6 +219,18 @@ jobs:
           )
           $guide | Set-Content -LiteralPath (Join-Path $out "launcher\COMMENCE-ICI.txt") -Encoding UTF8
 
+      - name: Verify the published Launcher bundle starts and matches its versions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $folder = Join-Path $env:GITHUB_WORKSPACE "release-output/launcher"
+          $exe = Join-Path $folder "RaidPilot.Launcher.exe"
+          $smoke = Start-Process -FilePath $exe -WorkingDirectory $folder -ArgumentList @("--verify-bundle") -PassThru -Wait
+          if ($smoke.ExitCode -ne 0) {
+            throw "Launcher packaged-runtime smoke test failed with code $($smoke.ExitCode)."
+          }
+          Write-Host "Launcher, bundled Overlay/Beacon, WGC bridge and Stable feed verified."
+
       - name: Create release archives
         shell: pwsh
         run: |

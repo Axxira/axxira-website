@@ -75,6 +75,14 @@ internal sealed class LauncherForm : Form
     {
         try
         {
+            if (!LauncherUpdateRecovery.Recover(
+                LauncherUpdateRecovery.DefaultJournalPath,
+                LauncherPaths.RaidPilot, LauncherPaths.Beacon,
+                out var recoveryMessage))
+            {
+                SetStatus(recoveryMessage, LauncherStatus.Error);
+                return; // Do not mask a broken transaction with bundled payloads.
+            }
             UpdateService.EnsureBundledPayloadInstalled();
         }
         catch (Exception exception)
@@ -403,6 +411,7 @@ internal sealed class LauncherForm : Form
         var installedBeacon = File.Exists(LauncherPaths.BeaconExe);
         var completedRaid = false;
         var completedBeacon = false;
+        var transactionWritten = false;
         SetBusy(true);
         var progress = new Progress<int>(value =>
         {
@@ -412,6 +421,22 @@ internal sealed class LauncherForm : Form
 
         try
         {
+            // Always recover an interrupted previous transaction before
+            // taking another update, even when the Launcher remained open.
+            if (!LauncherUpdateRecovery.Recover(
+                LauncherUpdateRecovery.DefaultJournalPath,
+                LauncherPaths.RaidPilot, LauncherPaths.Beacon,
+                out var previousRecovery))
+                throw new InvalidOperationException(previousRecovery);
+            if (updateRaid || updateBeacon)
+            {
+                var snapshot = LauncherUpdateRecovery.Capture(
+                    updateRaid, updateBeacon,
+                    LauncherPaths.RaidPilotExe, LauncherPaths.BeaconExe);
+                LauncherUpdateRecovery.Begin(
+                    LauncherUpdateRecovery.DefaultJournalPath, snapshot);
+                transactionWritten = true;
+            }
             if (updateRaid)
             {
                 SetStatus($"Installation de RaidPilot v{_manifest.RaidPilot!.Version}…", LauncherStatus.Info);
@@ -455,6 +480,9 @@ internal sealed class LauncherForm : Form
                     _manifest.Launcher!,
                     progress,
                     CancellationToken.None);
+                if (transactionWritten)
+                    LauncherUpdateRecovery.Complete(
+                        LauncherUpdateRecovery.DefaultJournalPath);
                 SetStatus(
                     "Le launcher va redémarrer automatiquement…",
                     LauncherStatus.Success);
@@ -462,6 +490,9 @@ internal sealed class LauncherForm : Form
                 return;
             }
 
+            if (transactionWritten)
+                LauncherUpdateRecovery.Complete(
+                    LauncherUpdateRecovery.DefaultJournalPath);
             _surface.UpdateAvailable = false;
             _surface.RecentUpdates = ReleaseHistoryCatalog.FromManifest(
                 _manifest, _surface.RecentUpdates);
@@ -481,6 +512,17 @@ internal sealed class LauncherForm : Form
             if (completedRaid && !UpdateService.RollbackOrRemove(
                     LauncherPaths.RaidPilot, "RaidPilot.Overlay.exe", installedRaid))
                 rollbackErrors.Add("RaidPilot");
+            if (transactionWritten && rollbackErrors.Count == 0)
+            {
+                // A crash may have occurred after swapping a component but
+                // before InstallComponentAsync returned. Reconcile the entire
+                // journal, not just the 'completed' flags.
+                if (!LauncherUpdateRecovery.Recover(
+                    LauncherUpdateRecovery.DefaultJournalPath,
+                    LauncherPaths.RaidPilot, LauncherPaths.Beacon,
+                    out _))
+                    rollbackErrors.Add("journal de reprise");
+            }
             var restored = rollbackErrors.Count == 0;
             SetStatus(restored
                     ? "Échec d'installation · composants précédents restaurés."
