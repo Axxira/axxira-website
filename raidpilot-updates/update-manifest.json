@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T21:18:37.0194500+00:00",
+  "publishedAt": "2026-10-23T21:53:52.8049444+00:00",
   "raidPilot": {
-    "version": "0.14.2.23",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.23-b0.3.9-l0.2.14-ff3082520e53/RaidPilot-Overlay-v0.14.2.23-Windows-x64.zip",
-    "sha256": "84B632A6DB4995F152EBDE866A3D9DD3B88F160A5AEC420F42F5316A6A403096",
-    "sizeBytes": 234441788,
-    "releaseNotes": "RaidPilot 0.14.2.23 reste inchangé dans cette publication."
+    "version": "0.14.2.24",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-d08fb4076b44/RaidPilot-Overlay-v0.14.2.24-Windows-x64.zip",
+    "sha256": "855B9057E903EFE5F2EA235F8625D3E8B08870F4912C4016B3AB191AA48D955A",
+    "sizeBytes": 234442836,
+    "releaseNotes": "RaidPilot 0.14.2.24 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.23-b0.3.9-l0.2.14-ff3082520e53/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "299D6AF8F76FC2A2F881517925B6ADAE37E2284B2404B87F22AFEDC316C957FB",
-    "sizeBytes": 58328320,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-d08fb4076b44/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "9964FA66844C5DB733D11BA693F692EDF904F24EC88B84E67FA4AE51F0CFCD40",
+    "sizeBytes": 58328348,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.14",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.23-b0.3.9-l0.2.14-ff3082520e53/RaidPilot-Launcher-v0.2.14-Windows-x64.zip",
-    "sha256": "4EF5A937B6F321F5A52AB7A246A2E66B28C8473D4E904826395FCDFD7FD619D6",
-    "sizeBytes": 351008264,
-    "releaseNotes": "RaidPilot : Precision V4 ne valide et ne compte les repères qu'après application d'une correction acceptée, sans remplacer une ancre F8 par une mesure visuelle partielle; les cartes Terminal, Icebreaker et Labyrinth passent automatiquement en vue schématique tant que leur fond HD n'est pas calibré. Launcher : fenêtre adaptée à l'écran et aux clics haute DPI, préférence de mise à jour désactivée conservée, option d'installation automatique seulement hors EFT/Overlay/Beacon, taille des archives et chemins ZIP contrôlés, reprise après interruption et retour arrière des composants déjà installés si la mise à jour échoue. Les repères HD, droits des images et résultats réels en raid restent à valider. Beacon 0.3.9 : Overlay et Beacon utilisant le même profil ne peuvent plus diffuser deux positions simultanément; élection locale par fichier verrouillé libéré lors de l'arrêt ou d'une coupure de processus. L'affichage indique le mode passif ou la reprise de diffusion. À mesurer avec de vrais joueurs et sous coupures réseau. Menus français de l'Overlay réparés après détection de caractères mal encodés."
+    "version": "0.2.15",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-d08fb4076b44/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "C33D5103872F12F0451499ED3598FA0A196DD9E553A455CB25D1B2A8E89BA090",
+    "sizeBytes": 351014833,
+    "releaseNotes": "RaidPilot Precision V4 : les intervalles F8 qui traversent un changement de mode V2/V4 sont exclus de la comparaison, un recalage visuel partiel ne réinitialise plus artificiellement l'âge de l'ancre exacte F8, et les trajets corrigés en V4 restent des estimations plutôt que des ancres exactes dans l'atlas appris. Nouveaux tests de régression. Launcher 0.2.15 : journal de transaction local permettant de restaurer Overlay/Beacon après arrêt brutal de Windows entre deux mises à jour; restauration vérifiée par SHA-256 des binaires d'origine. Téléchargement HTTP résilient sur trois essais avec reprise Range sécurisée ou redémarrage propre si le serveur ignore Range, contrôle de blocage réseau de 60 secondes et vérification de la taille et de l'empreinte finale. Pour la source Stable intégrée, les archives doivent venir de la même publication officielle Axxira/axxira-website et la version déclarée doit correspondre aux exécutables Overlay/Beacon dans les ZIP. Le script de mise à jour du Launcher recalcule le SHA-256 après fermeture. Avant publication, Windows lance désormais le Launcher dans un mode de vérification non interactif pour confirmer les fichiers embarqués, versions, DLL GPU, notes et source Stable. Beacon 0.3.9, suivi équipe, zoom et cartes existantes conservés. Aucun test de jeu EFT réel ni droit commercial supplémentaire sur les images n'est prétendu. Code signing Authenticode dépend toujours d'un certificat de l'éditeur."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.15",
+      "raidPilotVersion": "0.14.2.24",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-23",
+      "summary": "RaidPilot 0.14.2.24 / Launcher 0.2.15 — résilience et intégrité renforcées",
+      "details": "RaidPilot Precision V4 : les intervalles F8 qui traversent un changement de mode V2/V4 sont exclus de la comparaison, un recalage visuel partiel ne réinitialise plus artificiellement l'âge de l'ancre exacte F8, et les trajets corrigés en V4 restent des estimations plutôt que des ancres exactes dans l'atlas appris. Nouveaux tests de régression. Launcher 0.2.15 : journal de transaction local permettant de restaurer Overlay/Beacon après arrêt brutal de Windows entre deux mises à jour; restauration vérifiée par SHA-256 des binaires d'origine. Téléchargement HTTP résilient sur trois essais avec reprise Range sécurisée ou redémarrage propre si le serveur ignore Range, contrôle de blocage réseau de 60 secondes et vérification de la taille et de l'empreinte finale. Pour la source Stable intégrée, les archives doivent venir de la même publication officielle Axxira/axxira-website et la version déclarée doit correspondre aux exécutables Overlay/Beacon dans les ZIP. Le script de mise à jour du Launcher recalcule le SHA-256 après fermeture. Avant publication, Windows lance désormais le Launcher dans un mode de vérification non interactif pour confirmer les fichiers embarqués, versions, DLL GPU, notes et source Stable. Beacon 0.3.9, suivi équipe, zoom et cartes existantes conservés. Aucun test de jeu EFT réel ni droit commercial supplémentaire sur les images n'est prétendu. Code signing Authenticode dépend toujours d'un certificat de l'éditeur."
+    },
     {
       "component": "launcher",
       "version": "0.2.14",
