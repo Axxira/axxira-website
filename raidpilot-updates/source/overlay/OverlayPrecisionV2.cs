@@ -13,6 +13,12 @@ internal sealed partial class OverlayForm
         Checked = true,
         CheckOnClick = true,
     };
+    private readonly ToolStripMenuItem _precisionV3GpuMenuItem = new(
+        "Capteur GPU WGC/Direct3D11 (expérimental, capture visible)")
+    {
+        Checked = false,
+        CheckOnClick = true,
+    };
     private bool _precisionV2TrackingActive;
     private long _precisionV2LastTurnAt;
 
@@ -21,7 +27,16 @@ internal sealed partial class OverlayForm
         _precisionV2Vision.ConfigureVerticalFieldOfView(
             EftGameViewSettings.Read().VerticalFieldOfViewDegrees);
         if (_trayIcon.ContextMenuStrip is { } menu)
+        {
             menu.Items.Insert(2, _precisionV2ToggleMenuItem);
+            menu.Items.Insert(3, _precisionV3GpuMenuItem);
+        }
+        _precisionV3GpuMenuItem.Click += (_, _) =>
+        {
+            _precisionV2DriftAudit.MarkInterrupted();
+            _precisionV2Vision.SelectGpuCapture(_precisionV3GpuMenuItem.Checked);
+            _precisionV2Fusion.Reset();
+        };
         _precisionV2ToggleMenuItem.Click += (_, _) =>
         {
             _precisionV2DriftAudit.MarkInterrupted();
@@ -80,9 +95,12 @@ internal sealed partial class OverlayForm
                 + $"arrêts fiables {_precisionV2Fusion.AcceptedStops}, "
                 + $"flux fiables {_precisionV2Vision.ReliableFrames}, "
                 + $"flux incertains {_precisionV2Vision.UnreliableFrames}, "
-                + $"dernier calcul {_precisionV2Vision.LastProcessingMilliseconds:F0} ms\n"
+                + $"dernier calcul {_precisionV2Vision.LastProcessingMilliseconds:F0} ms, "
+                + $"images GPU {_precisionV2Vision.GpuFrames}, "
+                + $"replis GPU {_precisionV2Vision.GpuFallbacks}\n"
                 + $"Arbitrage : {_precisionV2Fusion.LastDecision}";
-        return status + "\n\n" + _precisionV2DriftAudit.Describe();
+        return status + "\nCapteur Windows : " + _precisionV2Vision.GpuStatus
+            + "\n\n" + _precisionV2DriftAudit.Describe();
     }
 
     private void DisposePrecisionV2() => _precisionV2Vision.Dispose();
