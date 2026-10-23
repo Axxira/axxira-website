@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionV4Tests
 {
-    internal const int TestCount = 12;
+    internal const int TestCount = 14;
 
     private static readonly long Timestamp = Stopwatch.Frequency * 10;
     private static RealtimePose Pose(double x = 0, double y = 0, double z = 0,
@@ -156,6 +156,29 @@ internal static class PrecisionV4Tests
             var f = new PrecisionV4FusionEngine();
             f.Reset();
             Require(f.Accepted == 0 && f.Rejected == 0);
+        }, errors);
+        Run("V4: rapport réel F8 sans coordonnées ni identifiant", () =>
+        {
+            var report = PrecisionV4Report.Build(new[]
+            {
+                new PrecisionDriftSample(true, 2.5, 6, 10, 3, true),
+                new PrecisionDriftSample(true, 1.0, 2, 30, 2),
+            }, 1, 6, 3);
+            Require(report.Contains("\"mode\": \"V4\"")
+                && report.Contains("\"mode\": \"V2\"")
+                && report.Contains("\"visualCorrectionsAccepted\": 6")
+                && !report.Contains("\"position\"")
+                && !report.Contains("memberId")
+                && !report.Contains("screenshot"));
+        }, errors);
+        Run("V4: le rapport est strictement limité à 32 échantillons", () =>
+        {
+            var samples = Enumerable.Range(0, 50)
+                .Select(i => new PrecisionDriftSample(true, i + 1, 1, 20, 2))
+                .ToArray();
+            var report = PrecisionV4Report.Build(samples, 0, 0, 0);
+            using var document = System.Text.Json.JsonDocument.Parse(report);
+            Require(document.RootElement.GetProperty("samples").GetArrayLength() == 32);
         }, errors);
     }
 

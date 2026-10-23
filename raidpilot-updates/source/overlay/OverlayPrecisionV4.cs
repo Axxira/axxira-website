@@ -12,12 +12,48 @@ internal sealed partial class OverlayForm
         CheckOnClick = true,
     };
 
+    private readonly ToolStripMenuItem _precisionV4ExportMenu = new(
+        "Exporter rapport comparatif F8 (.json)");
+
     private void InitializePrecisionV4()
     {
         if (_trayIcon.ContextMenuStrip is { } menu)
         {
             menu.Items.Insert(4, _precisionV4Menu);
+            menu.Items.Insert(5, _precisionV4ExportMenu);
         }
+        _precisionV4ExportMenu.Click += (_, _) =>
+        {
+            using var dialog = new SaveFileDialog
+            {
+                Title = "Exporter les écarts de localisation F8",
+                Filter = "JSON (*.json)|*.json",
+                FileName = "RaidPilot-F8-Precision-Report.json",
+                OverwritePrompt = true,
+                RestoreDirectory = true,
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+            try
+            {
+                var text = PrecisionV4Report.Build(
+                    _precisionV2DriftAudit.Samples,
+                    _precisionV2DriftAudit.Ignored,
+                    _precisionV4Fusion.Accepted,
+                    _precisionV4Fusion.Rejected);
+                File.WriteAllText(dialog.FileName, text,
+                    new System.Text.UTF8Encoding(false));
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(this,
+                    "Export impossible : " + error.Message,
+                    "RaidPilot — rapport F8",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        };
         _precisionV4Menu.Click += (_, _) =>
         {
             _precisionV2DriftAudit.MarkInterrupted();

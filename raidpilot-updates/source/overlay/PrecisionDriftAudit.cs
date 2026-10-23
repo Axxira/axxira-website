@@ -107,9 +107,9 @@ internal sealed class PrecisionDriftAudit
             + $"intervalles écartés : {_ignored}\n"
             + DescribeMode("V1", v1) + "\n" + DescribeMode("V2", v2)
             + "\n" + DescribeMode("V4", v4)
-            + "\nV4 par durée : " + DescribeWindow(v4, 4, 12, "5-10 s")
-            + " · " + DescribeWindow(v4, 12, 25, "10-20 s")
-            + " · " + DescribeWindow(v4, 25, 60, "20-30+ s")
+            + "\nV4 par durée : " + DescribeWindow(v4, 4, 12, "4-12 s")
+            + " · " + DescribeWindow(v4, 12, 25, "12-25 s")
+            + " · " + DescribeWindow(v4, 25, 60, "25-60 s")
             + "\nComparaison indicative : durées observées et conditions peuvent différer.";
     }
 

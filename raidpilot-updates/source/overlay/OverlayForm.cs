@@ -899,7 +899,6 @@ internal sealed partial class OverlayForm : Form
             if (_controlTrackingActive)
             {
                 _precisionV2DriftAudit.MarkInterrupted();
-                _precisionV4Fusion.Reset();
                 _realtimeEstimator.SuspendMotion();
                 _precisionSegmentClean = false;
                 _precisionGaps++;
@@ -1122,7 +1121,6 @@ internal sealed partial class OverlayForm : Form
         if (_realtimeEstimator.IsAnchored && elapsedSeconds > 2.0)
         {
             _precisionV2DriftAudit.MarkInterrupted();
-            _precisionV4Fusion.Reset();
             _realtimeEstimator.SuspendMotion(elapsedSeconds);
             _precisionSegmentClean = false;
             _precisionGaps++;
@@ -3364,7 +3362,6 @@ internal sealed partial class OverlayForm : Form
             CalibrateRealtimeEstimator(observation, estimatedPoseAtCapture, allowCalibration);
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;
-            _precisionV4Fusion.Reset();
             _lastExactAnchorAt = now;
             _visualRelocalization.NoteAbsoluteAnchor(now);
             ResetPrecisionV2();
