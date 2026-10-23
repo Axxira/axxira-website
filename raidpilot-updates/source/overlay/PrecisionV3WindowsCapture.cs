@@ -9,6 +9,9 @@ namespace RaidPilot.Overlay;
 /// </summary>
 internal enum WgcFrameStatus { Ready, Pending, Unavailable }
 
+internal readonly record struct WgcCapturedFrame(
+    byte[] Luminance, int ContentWidth, int ContentHeight);
+
 internal sealed class PrecisionV3WindowsCapture : IDisposable
 {
     private const string Library = "RaidPilot.Capture.Native.dll";
@@ -30,6 +33,12 @@ internal sealed class PrecisionV3WindowsCapture : IDisposable
         nint handle, [Out] byte[] destination, int capacity,
         out ulong sequence);
 
+    [DllImport(Library, EntryPoint = "rp_wgc_poll_geometry",
+        ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int PollWithGeometry(
+        nint handle, [Out] byte[] destination, int capacity,
+        out ulong sequence, out uint contentWidth, out uint contentHeight);
+
     [DllImport(Library, EntryPoint = "rp_wgc_stop",
         ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
     private static extern void Stop(nint handle);
@@ -48,7 +57,15 @@ internal sealed class PrecisionV3WindowsCapture : IDisposable
 
     internal WgcFrameStatus Read(nint gameWindow, out byte[] luminance)
     {
-        luminance = [];
+        var status = ReadWithGeometry(gameWindow, out var frame);
+        luminance = status == WgcFrameStatus.Ready ? frame.Luminance : [];
+        return status;
+    }
+
+    internal WgcFrameStatus ReadWithGeometry(
+        nint gameWindow, out WgcCapturedFrame captured)
+    {
+        captured = default;
         if (gameWindow == nint.Zero) return WgcFrameStatus.Unavailable;
         lock (_gate)
         {
@@ -60,7 +77,7 @@ internal sealed class PrecisionV3WindowsCapture : IDisposable
 
                 if (_handle == nint.Zero)
                 {
-                    if (Version() != 1)
+                    if (Version() != 2)
                     {
                         _unavailable = true;
                         _status = "protocole du module graphique incompatible";
@@ -78,11 +95,23 @@ internal sealed class PrecisionV3WindowsCapture : IDisposable
                 }
 
                 var buffer = new byte[PixelCount];
-                var response = Poll(_handle, buffer, buffer.Length, out _);
+                var response = PollWithGeometry(
+                    _handle, buffer, buffer.Length, out _,
+                    out var contentWidth, out var contentHeight);
                 if (response == 1)
                 {
-                    luminance = buffer;
-                    _status = "WGC/Direct3D11 opérationnel";
+                    if (contentWidth < Width || contentHeight < Height
+                        || contentWidth > 16384 || contentHeight > 16384)
+                    {
+                        _unavailable = true;
+                        _status = "dimensions WGC non valides";
+                        StopCurrent();
+                        return WgcFrameStatus.Unavailable;
+                    }
+                    captured = new WgcCapturedFrame(
+                        buffer, (int)contentWidth, (int)contentHeight);
+                    _status = "WGC/Direct3D11 actif · "
+                        + contentWidth + "x" + contentHeight;
                     return WgcFrameStatus.Ready;
                 }
                 if (response == 0) return WgcFrameStatus.Pending;
