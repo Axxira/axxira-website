@@ -23,8 +23,45 @@
         return api;
     };
 
+    const globalZoomKey = "raidpilot.mapZoomFactor.global.v1";
+    const validZoomFactor = value => {
+        if (value === null || value === undefined || value === "") return null;
+        const n = Number(value);
+        return Number.isFinite(n) && n >= 0.20 && n <= 32 ? n : null;
+    };
+    const storedZoomFactor = () => {
+        const native = validZoomFactor(window.__raidPilotHostZoomFactor);
+        if (native !== null) return native;
+        try {
+            return validZoomFactor(localStorage.getItem(globalZoomKey));
+        } catch {
+            return null;
+        }
+    };
+
     let config = null;
     let zoom = 2;
+    let baseZoom = 2;
+    let zoomPreferenceTimer = null;
+    const clampZoom = value => Math.max(
+        Number(config?.minZoom ?? 1),
+        Math.min(Number(config?.maxZoom ?? 7), value));
+    const restoreZoom = () => {
+        zoom = clampZoom(baseZoom + Math.log2(storedZoomFactor() ?? 1));
+    };
+    const persistZoom = () => {
+        const factor = Math.max(0.20, Math.min(32, 2 ** (zoom - baseZoom)));
+        try { localStorage.setItem(globalZoomKey, String(factor)); } catch {}
+        if (zoomPreferenceTimer !== null) clearTimeout(zoomPreferenceTimer);
+        zoomPreferenceTimer = setTimeout(() => {
+            zoomPreferenceTimer = null;
+            try {
+                window.chrome?.webview?.postMessage?.({
+                    type:"raidpilot-map-zoom-preference",payload:{factor}
+                });
+            } catch {}
+        }, 160);
+    };
     let center = { lat: 0, lng: 0 };
     let boundsProjected = null;
 
@@ -170,6 +207,8 @@
             zoom = next;
             render();
             emit("zoom");
+            emit("zoomend");
+            persistZoom();
             return api;
         },
         zoomIn(delta = 1) { return api.setZoom(zoom + Number(delta || 1)); },
@@ -195,6 +234,13 @@
         api.setZoom(zoom + direction);
     }, { passive: false });
 
+    window.addEventListener("raidpilot-zoom-sync", () => {
+        if (config && storedZoomFactor() !== null) {
+            restoreZoom();
+            render();
+            emit("zoom");
+        }
+    });
     new ResizeObserver(() => api.invalidateSize()).observe(container);
 
     fetch("/OfflineMaps/config.json", { cache: "no-store" })
@@ -220,7 +266,9 @@
             api.options.baseData = {
                 coordinateRotation: Number(config.coordinateRotation || 0),
             };
-            zoom = Math.max(Number(config.minZoom || 1), Math.min(Number(config.maxZoom || 7), Number(config.minZoom || 1) + 1));
+            baseZoom = Math.max(Number(config.minZoom || 1),
+                Math.min(Number(config.maxZoom || 7), Number(config.minZoom || 1) + 1));
+            restoreZoom();
             boundsProjected = calculateProjectedBounds();
             if (!boundsProjected) throw new Error("offline bounds invalid");
             center = boundsProjected.centerWorld;
