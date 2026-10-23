@@ -19,6 +19,25 @@ internal readonly record struct PrecisionV2Frame(
 /// GDI is the default; user-opted WGC is accepted only with verified
 /// game-client geometry, otherwise it falls back to GDI.
 /// </summary>
+internal static class PrecisionV3ContinuityPolicy
+{
+    internal const int MaximumPendingPolls = 10;
+    internal const double MaximumFlowGapSeconds = 0.58;
+
+    // A short gap after valid WGC frames must not switch to GDI and destroy
+    // optical-flow tracks. Before the first GPU frame GDI keeps operating.
+    internal static bool ShouldHoldWgcOnPending(int activeBackend, int emptyPolls) =>
+        activeBackend == 1
+        && emptyPolls > 0
+        && emptyPolls < MaximumPendingPolls;
+
+    internal static bool MustReprimeAfterGap(long lastWgcFrameAt, long now) =>
+        lastWgcFrameAt <= 0
+        || now <= lastWgcFrameAt
+        || (now - lastWgcFrameAt) / (double)Stopwatch.Frequency
+            > MaximumFlowGapSeconds;
+}
+
 internal sealed class PrecisionV2VisualSampler : IDisposable
 {
     internal const int Width = 160;
@@ -55,6 +74,9 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     private int _activeCaptureBackend = -1; // -1 unprimed, 0 GDI, 1 WGC
     private long _gpuFrames;
     private long _gpuFallbacks;
+    private long _lastGpuObservationAt;
+    private long _gpuHeldPendingPolls;
+    private long _gpuLongGapReprimes;
     private long _geometryChanges;
     private long _geometryRejected;
     private nint _activeCaptureWindow;
@@ -80,6 +102,8 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
     internal double LastProcessingMilliseconds => Volatile.Read(ref _lastProcessingMilliseconds);
     internal bool GpuCaptureSelected => Volatile.Read(ref _gpuSelected) != 0;
     internal long GpuFrames => Interlocked.Read(ref _gpuFrames);
+    internal long GpuHeldPendingPolls => Interlocked.Read(ref _gpuHeldPendingPolls);
+    internal long GpuLongGapReprimes => Interlocked.Read(ref _gpuLongGapReprimes);
     internal long GpuFallbacks => Interlocked.Read(ref _gpuFallbacks);
     internal long GeometryChanges => Interlocked.Read(ref _geometryChanges);
     internal long GeometryRejected => Interlocked.Read(ref _geometryRejected);
@@ -144,6 +168,7 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                     _gate.Reset();
                     _activeCaptureWindow = gameWindow;
                     Volatile.Write(ref _activeCaptureBackend, -1);
+                    Volatile.Write(ref _lastGpuObservationAt, 0);
                 }
 
                 var started = Stopwatch.GetTimestamp();
@@ -176,11 +201,22 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                         }
                         else
                         {
-                            if (Volatile.Read(ref _activeCaptureBackend) != 1)
+                            var currentAt = Stopwatch.GetTimestamp();
+                            var previouslyGpu =
+                                Volatile.Read(ref _activeCaptureBackend) == 1;
+                            var longGap = previouslyGpu
+                                && PrecisionV3ContinuityPolicy.MustReprimeAfterGap(
+                                    Volatile.Read(ref _lastGpuObservationAt), currentAt);
+                            if (!previouslyGpu || longGap)
                             {
-                                _gate.Reset(); // Never compare GDI against WGC.
+                                // Never compare GDI and WGC, or frames separated
+                                // by an unobservably long render gap.
+                                _gate.Reset();
                                 Volatile.Write(ref _activeCaptureBackend, 1);
+                                if (longGap)
+                                    Interlocked.Increment(ref _gpuLongGapReprimes);
                             }
+                            Volatile.Write(ref _lastGpuObservationAt, currentAt);
                             var previousGeometry = _gate.CameraGeometryDiagnostic;
                             observation = _gate.ObserveLuminanceFrame(
                                 frame.Luminance, Width, Height,
@@ -195,11 +231,18 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                     }
                     else if (status == WgcFrameStatus.Pending)
                     {
-                        // Do not disable the reliable GDI backup while WGC
-                        // is starting. Ten consecutive empty polls (~2 seconds)
-                        // means this system cannot currently deliver frames.
-                        if (Interlocked.Increment(ref _gpuPendingFrames) >= 10)
+                        // Missing one or two GPU frames must not erase the
+                        // established WGC scene reference by interleaving GDI.
+                        // The old observation still expires after 480 ms.
+                        var pending = Interlocked.Increment(ref _gpuPendingFrames);
+                        if (pending >= PrecisionV3ContinuityPolicy.MaximumPendingPolls)
                             DisableGpuForSession();
+                        else if (PrecisionV3ContinuityPolicy.ShouldHoldWgcOnPending(
+                            Volatile.Read(ref _activeCaptureBackend), pending))
+                        {
+                            Interlocked.Increment(ref _gpuHeldPendingPolls);
+                            return;
+                        }
                     }
                     else
                     {
@@ -213,6 +256,7 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
                     {
                         _gate.Reset();
                         Volatile.Write(ref _activeCaptureBackend, 0);
+                        Volatile.Write(ref _lastGpuObservationAt, 0);
                     }
                     succeeded = _gate.TryObserveWindow(gameWindow, out observation);
                 }
@@ -287,6 +331,7 @@ internal sealed class PrecisionV2VisualSampler : IDisposable
         Interlocked.Exchange(ref _resetOnNextCapture, 1);
         Volatile.Write(ref _lastRequestedAt, 0);
         Volatile.Write(ref _gpuPendingFrames, 0);
+        Volatile.Write(ref _lastGpuObservationAt, 0);
         lock (_sync) _latest = null;
         _windowsCapture.Reset();
     }
