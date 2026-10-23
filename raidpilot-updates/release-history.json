@@ -3,13 +3,13 @@
   "entries": [
     {
       "component": "raidpilot",
-      "version": "0.14.2.19",
-      "raidPilotVersion": "0.14.2.19",
-      "beaconVersion": "0.3.7",
+      "version": "0.14.2.20",
+      "raidPilotVersion": "0.14.2.20",
+      "beaconVersion": "0.3.8",
       "launcherVersion": "0.2.13",
       "date": "2026-10-23",
-      "summary": "Precision V3.1 : résolution, écrans ultralarges et FOV synchronisés",
-      "details": "La voie Windows.Graphics.Capture transmet maintenant les vraies dimensions de la capture et reconstruit son frame pool après un redimensionnement de la fenêtre. Le suivi visuel ajuste automatiquement la projection et le champ de vision horizontal au client Tarkov de chaque joueur, notamment en 16:9, 21:9 et 32:9. Les changements de résolution ou de FOV invalident immédiatement les anciennes preuves de mouvement; une capture étirée/incompatible retourne au capteur GDI. Diagnostics du format et du FOV disponibles dans Overlay et Beacon. F8, mode GPU facultatif, relais Cloudflare et zoom sauvegardé inchangés. La réduction de dérive réelle devra être validée par les mesures F8 en jeu."
+      "summary": "Precision V3.2 : écrans ultralarges et suivi GPU plus stable",
+      "details": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
     },
     {
       "component": "launcher",

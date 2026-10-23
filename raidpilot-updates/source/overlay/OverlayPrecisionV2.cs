@@ -98,7 +98,9 @@ internal sealed partial class OverlayForm
                 + $"dernier calcul {_precisionV2Vision.LastProcessingMilliseconds:F0} ms, "
                 + $"images GPU {_precisionV2Vision.GpuFrames}, "
                 + $"replis GPU {_precisionV2Vision.GpuFallbacks}, "
-                + $"formats rejetés {_precisionV2Vision.GeometryRejected}\n"
+                + $"formats rejetés {_precisionV2Vision.GeometryRejected}, "
+                + $"trames GPU conservées {_precisionV2Vision.GpuHeldPendingPolls}, "
+                + $"nouveaux repères après pause {_precisionV2Vision.GpuLongGapReprimes}\n"
                 + $"Géométrie : {_precisionV2Vision.CameraGeometryDiagnostic}\n"
                 + $"Arbitrage : {_precisionV2Fusion.LastDecision}";
         return status + "\nContrôle format : " + _precisionV2Vision.GeometryWarning

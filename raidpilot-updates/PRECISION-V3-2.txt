@@ -1,0 +1,9 @@
+PRECISION V3.2 — Overlay 0.14.2.20 / Beacon 0.3.8 / Launcher 0.2.13
+
+Géométrie caméra 16:9, 21:9 et 32:9 (V3.1), capture WGC ABI2 avec vrai ContentSize et redimensionnements.
+Synchronisation FOV effectif et invalidation des anciennes observations en cas de changement de résolution/FOV; repli GDI si proportions incompatibles.
+Continuité flux GPU (V3.2) : attentes brèves ne déclenchent plus de va-et-vient WGC/GDI; un échec prolongé déclenche le repli.
+Après plus de 0,58 s sans nouvelle trame GPU, le suivi de points est réinitialisé sur une nouvelle référence.
+Une image d'arrêt datant de plus de 0,30 s ne peut plus annuler la vitesse du joueur.
+Statistiques de rejets de format, attentes préservées et reconstructions affichées dans les diagnostics.
+F8, profils, Cloudflare, zoom et protections de capture conservés. L'amélioration métrique réelle reste à mesurer en jeu.
