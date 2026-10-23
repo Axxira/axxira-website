@@ -741,6 +741,20 @@ finally {
         }
     }
 
+    internal static bool RollbackOrRemove(
+        string targetDirectory, string expectedExecutable, bool existedBefore)
+    {
+        if (existedBefore)
+            return Rollback(targetDirectory, expectedExecutable);
+        try
+        {
+            if (Directory.Exists(targetDirectory))
+                Directory.Delete(targetDirectory, recursive: true);
+            return !Directory.Exists(targetDirectory);
+        }
+        catch { return false; }
+    }
+
     internal static bool Rollback(string targetDirectory, string expectedExecutable)
     {
         var previous = targetDirectory + ".previous";
