@@ -4,11 +4,12 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class SquadSyncTests
 {
-    internal const int TestCount = 12;
+    internal const int TestCount = 13;
 
     internal static void RunAll(ICollection<string> failures)
     {
         Run("escouade génère un code partageable", GeneratesShareableCode, failures);
+        Run("escouade un seul émetteur Overlay/Beacon local", PreventsDuplicateLocalBroadcast, failures);
         Run("escouade normalise code avec séparateurs", NormalizesFormattedCode, failures);
         Run("escouade refuse caractères ambigus", RejectsAmbiguousCode, failures);
         Run("profil escouade persiste sans perdre l’identité", PersistsProfile, failures);
@@ -20,6 +21,19 @@ internal static class SquadSyncTests
         Run("pont local rejette les poses périmées et les retours arrière", HasLocalSquadReplayProtection, failures);
         Run("relais Cloudflare utilise notre Worker avec un code sécurisé stable", UsesOwnedRelayEndpoint, failures);
         Run("relais Cloudflare décode les positions retournées", ReadsCloudflarePose, failures);
+    }
+
+    private static void PreventsDuplicateLocalBroadcast()
+    {
+        var identity = "test-" + Guid.NewGuid().ToString("N");
+        var team = SquadRoomCode.Generate();
+        using var first = new SquadBroadcastLease(team, identity);
+        using var second = new SquadBroadcastLease(team, identity);
+        Require(first.TryAcquire(), "impossible de démarrer l'émetteur principal");
+        Require(!second.TryAcquire(), "Beacon et Overlay peuvent envoyer simultanément");
+        first.Release();
+        Require(second.TryAcquire(), "le relais secondaire ne reprend pas l'émission");
+        Require(!first.TryAcquire(), "l'ancien émetteur a repris malgré le verrou actif");
     }
 
     private static void GeneratesShareableCode()
