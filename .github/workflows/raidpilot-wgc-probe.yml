@@ -1,0 +1,44 @@
+name: RaidPilot WGC Native Build
+
+on:
+  push:
+    branches: [raidpilot-updates]
+    paths:
+      - "raidpilot-updates/native-capture/**"
+      - ".github/workflows/raidpilot-wgc-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Windows.Graphics.Capture bridge using Windows SDK
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $vswhere = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $msbuild = @(& $vswhere -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'MSBuild\Current\Bin\MSBuild.exe' | Select-Object -First 1)
+          if (-not $msbuild -or -not $msbuild[0]) { throw 'MSVC toolchain not installed' }
+          & $msbuild[0] 'raidpilot-updates\native-capture\RaidPilot.Capture.Native.vcxproj' /m:1 /p:Configuration=Release /p:Platform=x64 /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { throw 'WGC native bridge compilation failed' }
+          $path = 'raidpilot-updates\native-capture\build\x64\Release\RaidPilot.Capture.Native.dll'
+          if (!(Test-Path -LiteralPath $path)) { throw "Native DLL missing: $path" }
+          if ((Get-Item -LiteralPath $path).Length -lt 8192) { throw 'Native DLL unexpectedly small' }
+          Add-Type -TypeDefinition '[System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)] public delegate int RaidPilotWgcVersion();'
+          $dll = [System.Runtime.InteropServices.NativeLibrary]::Load((Resolve-Path -LiteralPath $path).Path)
+          try {
+            $export = [System.Runtime.InteropServices.NativeLibrary]::GetExport($dll,'rp_wgc_version')
+            $callback = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($export,[RaidPilotWgcVersion])
+            if ($callback.Invoke() -ne 1) { throw 'Wrong native WGC protocol version' }
+            foreach ($symbol in 'rp_wgc_start','rp_wgc_poll','rp_wgc_stop') {
+              [void][System.Runtime.InteropServices.NativeLibrary]::GetExport($dll,$symbol)
+            }
+            Write-Host 'PASS: native WGC bridge DLL loads and exports the versioned C ABI.'
+          } finally {
+            [System.Runtime.InteropServices.NativeLibrary]::Free($dll)
+          }
