@@ -55,6 +55,7 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
     std::array<std::uint8_t, kPixels> luminance{};
     std::uint64_t sequence = 0;
     std::chrono::steady_clock::time_point lastSample{};
+    std::chrono::steady_clock::time_point lastCompleteFrame{};
 
     bool Start(HWND window)
     {
@@ -171,6 +172,7 @@ struct CaptureState final : std::enable_shared_from_this<CaptureState>
                                 + static_cast<unsigned>(pixel[0]) * 19 + 128) >> 8);
                     }
                 }
+                lastCompleteFrame = std::chrono::steady_clock::now();
                 ++sequence;
             }
             catch (...)
@@ -245,6 +247,12 @@ extern "C" __declspec(dllexport) int __cdecl rp_wgc_poll(
     std::lock_guard guard(state->mutex);
     if (state->stopped) return -1;
     if (state->sequence == 0 || state->sequence == handle->lastRead)
+        return 0;
+    // Never label a frozen or paused frame as a fresh measurement.
+    // The managed sampler falls back to GDI after repeated pending polls.
+    if (state->lastCompleteFrame.time_since_epoch().count() == 0
+        || (std::chrono::steady_clock::now() - state->lastCompleteFrame)
+            > std::chrono::milliseconds(650))
         return 0;
     std::memcpy(dst, state->luminance.data(), kPixels);
     handle->lastRead = state->sequence;

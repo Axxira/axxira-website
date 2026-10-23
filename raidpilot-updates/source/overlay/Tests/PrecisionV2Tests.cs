@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionV2Tests
 {
-    internal const int TestCount = 14;
+    internal const int TestCount = 18;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -55,6 +55,39 @@ internal static class PrecisionV2Tests
                 && legacy.HorizontalSearchRadius == 6
                 && legacy.GridColumns == 8,
                 "la configuration basse résolution a été modifiée par erreur");
+        }, failures);
+        Run("V3: capture GPU désactivée sans choix utilisateur", () => {
+            using var sensor = new PrecisionV2VisualSampler();
+            Require(!sensor.GpuCaptureSelected
+                && sensor.Backend.Contains("GDI", StringComparison.Ordinal),
+                "le démarrage a activé le capteur GPU sans consentement");
+        }, failures);
+        Run("V3: activation GPU par choix explicite, désactivation réversible", () => {
+            using var sensor = new PrecisionV2VisualSampler();
+            sensor.SelectGpuCapture(true);
+            Require(sensor.GpuCaptureSelected && sensor.Backend.Contains("WGC"),
+                "l'activation ne sélectionne pas le capteur GPU");
+            sensor.SelectGpuCapture(false);
+            Require(!sensor.GpuCaptureSelected && sensor.Backend.Contains("GDI"),
+                "le retour au suivi GDI ne fonctionne pas");
+        }, failures);
+        Run("V3: refus d'une fenêtre nulle avant chargement natif", () => {
+            using var adapter = new PrecisionV3WindowsCapture();
+            var result = adapter.Read(nint.Zero, out var pixels);
+            Require(result == WgcFrameStatus.Unavailable && pixels.Length == 0,
+                "l'appel GPU n'a pas refusé une fenêtre invalide");
+        }, failures);
+        Run("V3: capteur redémarrable après repli sans forcer le mode GPU", () => {
+            using var sensor = new PrecisionV2VisualSampler();
+            sensor.SelectGpuCapture(true);
+            sensor.Reset();
+            Require(sensor.GpuCaptureSelected, "F8 a désactivé le choix GPU");
+            sensor.SelectGpuCapture(false);
+            sensor.Reset();
+            Require(!sensor.GpuCaptureSelected
+                && sensor.GpuFrames == 0
+                && sensor.GpuFallbacks == 0,
+                "un nouveau suivi a conservé une statistique GPU fictive");
         }, failures);
         Run("V2: premier flux fiable ne suffit pas à arrêter", () => {
             var f = new PrecisionV2MotionFusion();

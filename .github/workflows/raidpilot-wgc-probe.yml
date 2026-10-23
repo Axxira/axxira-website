@@ -2,10 +2,12 @@ name: RaidPilot WGC Native Build
 
 on:
   push:
-    branches: [raidpilot-updates]
+    branches: [raidpilot-wgc-integration]
     paths:
       - "raidpilot-updates/native-capture/**"
       - ".github/workflows/raidpilot-wgc-probe.yml"
+      - "raidpilot-updates/source/overlay/**"
+      - "raidpilot-updates/source/beacon/**"
   workflow_dispatch:
 
 permissions:
@@ -14,7 +16,7 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 12
+    timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
       - name: Compile Windows.Graphics.Capture bridge using Windows SDK
@@ -41,4 +43,56 @@ jobs:
             Write-Host 'PASS: native WGC bridge DLL loads and exports the versioned C ABI.'
           } finally {
             [System.Runtime.InteropServices.NativeLibrary]::Free($dll)
+          }
+
+      - name: Install .NET 10 for integrated RaidPilot and Beacon checks
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore verified game map assets (read-only public catalogues)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./raidpilot-updates/Restore-LocalMapAssets.ps1
+
+      - name: Generate RaidPilot application icon
+        shell: pwsh
+        run: |
+          dotnet run --project raidpilot-updates/source/brand/icon-builder/IconBuilder.csproj -c Release -- raidpilot-updates/source/brand
+          if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed' }
+
+      - name: Run native overlay and launcher regression tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run --project raidpilot-updates/source/overlay/Tests/RaidPilot.Overlay.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Precision V3 or overlay tests failed' }
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Launcher tests failed' }
+
+      - name: Publish test copies of Overlay and Beacon with native DLL
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = Join-Path $env:RUNNER_TEMP 'raidpilot-wgc-check'
+          $src = Join-Path $env:GITHUB_WORKSPACE 'raidpilot-updates/source'
+          $nativePath = Join-Path $env:GITHUB_WORKSPACE 'raidpilot-updates/native-capture/build/x64/Release/RaidPilot.Capture.Native.dll'
+          foreach ($component in 'overlay','beacon') {
+            $project = Join-Path $src ($component + '/RaidPilot.' + $(if($component -eq 'overlay'){'Overlay'}else{'Beacon'}) + '.csproj')
+            $destination = Join-Path $out $component
+            dotnet restore $project -r win-x64
+            if ($LASTEXITCODE -ne 0) { throw "Restore failed: $component" }
+            dotnet publish $project -c Release -r win-x64 --self-contained true --no-restore -o $destination
+            if ($LASTEXITCODE -ne 0) { throw "Publish failed: $component" }
+            Copy-Item -LiteralPath $nativePath -Destination (Join-Path $destination 'RaidPilot.Capture.Native.dll') -Force
+            $expected = (Get-FileHash -Algorithm SHA256 -LiteralPath $nativePath).Hash
+            $copy = Join-Path $destination 'RaidPilot.Capture.Native.dll'
+            if ((Get-FileHash -Algorithm SHA256 -LiteralPath $copy).Hash -ne $expected) {
+              throw "Native capture DLL corrupted in $component"
+            }
+            if (-not (Test-Path -LiteralPath (Join-Path $destination ('RaidPilot.' + $(if($component -eq 'overlay'){'Overlay'}else{'Beacon'}) + '.exe')))) {
+              throw "Executable not created: $component"
+            }
+            Write-Host "PASS: $component built with validated native DLL ($expected)"
           }
