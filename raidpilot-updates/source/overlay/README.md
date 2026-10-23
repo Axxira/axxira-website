@@ -12,7 +12,7 @@ L'ensemble complet est redimensionné proportionnellement, y compris la carte et
 
 ## Escouade temps réel — 0.11.0
 
-RaidPilot peut maintenant créer ou rejoindre une escouade depuis l’icône de notification. Le créateur obtient un code privé du type `RP-ABCD-EFGH-JKLM-NPQR`. Les teammates n’ont pas besoin de l’overlay complet : le petit **RaidPilot Beacon** suffit. Chaque Beacon utilise ses propres captures F8 et son suivi local puis transmet uniquement le nom choisi, la carte, X/Y/Z, le cap et l’incertitude au relais TLS `wss://socket.tarkov.dev`. Les captures d’écran, touches et mouvements de souris ne sont jamais transmis.
+RaidPilot peut maintenant créer ou rejoindre une escouade depuis l’icône de notification. Le créateur obtient un code privé du type `RP-ABCD-EFGH-JKLM-NPQR`. Les teammates n’ont pas besoin de l’overlay complet : le petit **RaidPilot Beacon** suffit. Chaque Beacon utilise ses propres captures F8 et son suivi local puis transmet uniquement le nom choisi, la carte, X/Y/Z, le cap et l’incertitude au relais TLS `wss://raidpilot-team-relay.tyronixstudio.workers.dev/ws`. Les captures d’écran, touches et mouvements de souris ne sont jamais transmis.
 
 Les pions d’escouade sont projetés localement dans Leaflet, possèdent une couleur stable et affichent le nom, la distance horizontale et un indicateur vertical ▲/▼ lorsque l’écart d’altitude est significatif. Une position sans mise à jour devient visuellement périmée après 2,5 s et disparaît après 8 s. Le rendu accepte jusqu’à 12 membres et masque les poses d’une autre carte. Le code d’escouade agit comme un secret d’accès : il doit uniquement être partagé avec les membres de l’équipe.
 
@@ -88,6 +88,14 @@ Pour chaque nouveau nom de capture reconnu, il envoie le message compatible avec
 ```
 
 Le client répond également aux messages `ping` par `pong`.
+
+## Precision V3 — capture Windows GPU optionnelle (expérimentale)
+
+Precision V3 peut alimenter le suivi optique 160×90 avec **Windows.Graphics.Capture + Direct3D11** au lieu de GDI. Cette voie est **désactivée par défaut**. Pour l'activer, le joueur coche **Capteur GPU WGC/Direct3D11 (expérimental, capture visible)** dans l'icône de notification de RaidPilot ou de Beacon. Le capteur cible uniquement la fenêtre Tarkov reconnue au premier plan, respecte l'indicateur de capture Windows et ne transmet aucune image au serveur d'escouade.
+
+Si Windows refuse la capture, si le composant natif manque ou si aucune image valide n'arrive, RaidPilot utilise automatiquement la voie GDI déjà disponible. Le suivi historique 64×36 et les recalages F8 restent indépendants. La sélection peut être désactivée immédiatement depuis le même menu; elle n'est pas conservée au prochain lancement. Les deux composantes de l'équipe utilisent toujours le relais Cloudflare existant, sans modifier leurs codes privés.
+
+**Limites :** cette capture n'est ni un GPS direct ni un SLAM métrique complet. Les tests de compilation et le test réseau ne peuvent pas confirmer que Tarkov autorise WGC sur une configuration particulière. Il faudra mesurer l'erreur réellement observée avant F8 et l'impact sur les FPS, tout en vérifiant les conditions applicables au jeu.
 
 ## Suivi hybride en temps réel
 
