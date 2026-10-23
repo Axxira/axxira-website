@@ -329,12 +329,125 @@ Run("migration depuis ancien launcher sans écraser le profil actuel", () =>
     finally { SafeDelete(root); }
 });
 
+
+Run("notes: historique absent accepté et manifeste ancien compatible", () =>
+{
+    var legacy = new UpdateManifest {
+        SchemaVersion = 1,
+        RaidPilot = new UpdateComponent { Version = "0.14.2.18", ReleaseNotes = "Zoom sauvegardé." }
+    };
+    Require(ReleaseHistoryCatalog.FromManifest(legacy).Count == 0,
+        "ancien manifeste ne devrait pas produire de faux historiques");
+    Require(ReleaseHistoryCatalog.FormatDetailed(legacy).Contains("Zoom sauvegardé."),
+        "anciennes notes de composants perdues");
+});
+
+Run("notes: dernier historique affiché et texte complet disponible", () =>
+{
+    var latest = SampleReleaseNote("0.2.13", "launcher", "2026-10-23", "Historique dynamique");
+    var previous = SampleReleaseNote("0.14.2.18", "raidpilot", "2026-10-23", "Zoom préservé");
+    var manifest = new UpdateManifest {
+        SchemaVersion = 1,
+        ReleaseHistory = [latest, previous]
+    };
+    var rows = ReleaseHistoryCatalog.FromManifest(manifest);
+    Require(rows.Count == 2 && rows[0].Version == "0.2.13"
+        && rows[1].Version == "0.14.2.18",
+        "les deux dernières mises à jour ne sont pas dans l'ordre");
+    var notes = ReleaseHistoryCatalog.FormatDetailed(manifest);
+    Require(notes.Contains("v0.2.13") && notes.Contains("v0.14.2.18")
+        && notes.Contains("Historique dynamique") && notes.Contains("Zoom préservé"),
+        "le bouton Voir les notes n'affiche pas l'historique détaillé");
+});
+
+Run("notes: version, date et champ résumé invalides rejetés", () =>
+{
+    var note = SampleReleaseNote("0.2.13", "launcher", "2026-10-23", "Historique");
+    var rows = ReleaseHistoryCatalog.Normalize([
+        note with { Version = "n'importe quoi" },
+        note with { Date = "2026-99-99" },
+        note with { Component = "inconnu" },
+        note with { Summary = "Incorrect\nligne" },
+        note with { Details = "Corrompu\u0001" },
+        note,
+        note
+    ]);
+    Require(rows.Count == 1 && rows[0].Version == "0.2.13",
+        "historique corrompu ou version répétée conservé");
+});
+
+Run("notes: manifeste JSON transporte le nouvel historique", () =>
+{
+    var json = JsonSerializer.Serialize(new {
+        schemaVersion = 1,
+        raidPilot = new { version = "0.14.2.18", url = "https://example.com/overlay.zip", sha256 = new string('a',64) },
+        releaseHistory = new [] { SampleReleaseNote("0.2.13", "launcher", "2026-10-23", "Nouveautés") }
+    });
+    // The generated authoring file uses the same property names as the feed.
+    using var document = JsonDocument.Parse(json);
+    Require(document.RootElement.TryGetProperty("releaseHistory", out _),
+        "historique manquant dans le manifeste");
+    var fixture = JsonSerializer.Serialize(new {
+        schemaVersion = 1,
+        releaseHistory = new [] { new {
+            component = "launcher",
+            version = "0.2.13",
+            raidPilotVersion = "0.14.2.18",
+            beaconVersion = "0.3.6",
+            launcherVersion = "0.2.13",
+            date = "2026-10-23",
+            summary = "Notes",
+            details = "Évolutions"
+        } }
+    });
+    var parsed = JsonSerializer.Deserialize<UpdateManifest>(fixture)!;
+    Require(parsed.ReleaseHistory?.Count == 1
+        && ReleaseHistoryCatalog.FromManifest(parsed).Count == 1,
+        "le champ JSON du manifeste n'est pas lu");
+});
+
+Run("notes: fichier local disponible hors connexion", () =>
+{
+    var root = CreateTemp();
+    try {
+        var path = Path.Combine(root, "release-history.json");
+        var file = new {
+            schemaVersion = 1,
+            entries = new [] { new {
+                component = "launcher", version = "0.2.13",
+                raidPilotVersion = "0.14.2.18",
+                beaconVersion = "0.3.6", launcherVersion = "0.2.13",
+                date = "2026-10-23", summary = "Notes hors ligne",
+                details = "Contenu disponible sans Internet"
+            } }
+        };
+        File.WriteAllText(path, JsonSerializer.Serialize(file));
+        var rows = ReleaseHistoryCatalog.ReadBundled(path);
+        Require(rows.Count == 1 && rows[0].Summary == "Notes hors ligne",
+            "le catalogue de secours local n'est pas chargé");
+        File.WriteAllText(path, "broken");
+        Require(ReleaseHistoryCatalog.ReadBundled(path).Count == 0,
+            "un historique local corrompu doit être ignoré");
+    }
+    finally { SafeDelete(root); }
+});
+
+Run("notes: grand historique borné et trois lignes dynamiques disponibles", () =>
+{
+    var notes = Enumerable.Range(1, 35)
+        .Select(i => SampleReleaseNote("0.14.2." + i, "raidpilot", "2026-10-23", "Note " + i))
+        .ToList();
+    var cleaned = ReleaseHistoryCatalog.Normalize(notes);
+    Require(cleaned.Count == 24 && cleaned.Take(3).Count() == 3,
+        "le panneau pourrait dépasser le budget d'affichage");
+});
+
 if (failures.Count == 0)
 {
-    Console.WriteLine("18/18 tests launcher réussis.");
+    Console.WriteLine("24/24 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/18 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/24 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
@@ -386,3 +499,16 @@ static void SafeDelete(string path)
 {
     try { if (Directory.Exists(path)) Directory.Delete(path, true); } catch { }
 }
+
+static ReleaseHistoryEntry SampleReleaseNote(
+    string version, string component, string date, string summary) => new()
+{
+    Component = component,
+    Version = version,
+    RaidPilotVersion = "0.14.2.18",
+    BeaconVersion = "0.3.6",
+    LauncherVersion = "0.2.13",
+    Date = date,
+    Summary = summary,
+    Details = "Modification détaillée et compatible avec les versions précédentes."
+};
