@@ -6,6 +6,7 @@ on:
       - raidpilot-updates
     paths:
       - "raidpilot-updates/source/**"
+      - "raidpilot-updates/release-history.json"
       - "raidpilot-updates/Restore-*.ps1"
       - "raidpilot-updates/Restore-*.cjs"
       - "raidpilot-updates/public-catalogues.json"
@@ -83,6 +84,54 @@ jobs:
           $shortSha = $env:GITHUB_SHA.Substring(0, 12)
           $releaseTag = "raidpilot-stable-rp$rpVersion-b$beaconVersion-l$launcherVersion-$shortSha"
           "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Verify versioned patch notes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $source = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\release-history.json"
+          $catalog = Get-Content -LiteralPath $source -Raw | ConvertFrom-Json
+          $entries = @($catalog.entries)
+          if ($catalog.schemaVersion -ne 1 -or $entries.Count -lt 1 -or $entries.Count -gt 40) {
+            throw "Le catalogue des notes est absent ou invalide."
+          }
+
+          $seen = @{}
+          foreach ($entry in $entries) {
+            $id = "$($entry.component)/$($entry.version)"
+            if ($seen.ContainsKey($id)) { throw "Note de version en double : $id" }
+            $seen[$id] = $true
+            if ([string]::IsNullOrWhiteSpace($entry.summary) -or
+                [string]::IsNullOrWhiteSpace($entry.details) -or
+                $entry.summary.Length -gt 115 -or
+                $entry.details.Length -gt 2000 -or
+                $entry.date -notmatch '^\d{4}-\d{2}-\d{2}$') {
+              throw "Note de version incomplète ou invalide : $id"
+            }
+          }
+
+          $current = @($entries | Where-Object {
+            $_.raidPilotVersion -eq $env:RP_VERSION -and
+            $_.beaconVersion -eq $env:BEACON_VERSION -and
+            $_.launcherVersion -eq $env:LAUNCHER_VERSION
+          })
+          if ($current.Count -ne 1) {
+            throw "Publication BLOQUÉE : ajoute une fiche de notes pour RaidPilot $env:RP_VERSION / Beacon $env:BEACON_VERSION / Launcher $env:LAUNCHER_VERSION dans release-history.json."
+          }
+          $entry = $current[0]
+          if ($entries[0].component -ne $entry.component -or
+              $entries[0].version -ne $entry.version) {
+            throw "Publication BLOQUÉE : la fiche de la version actuelle doit être la première."
+          }
+          switch ($entry.component) {
+            'raidpilot' { if ($entry.version -ne $env:RP_VERSION) { throw "La note Overlay a le mauvais numéro." } }
+            'beacon'   { if ($entry.version -ne $env:BEACON_VERSION) { throw "La note Beacon a le mauvais numéro." } }
+            'launcher' { if ($entry.version -ne $env:LAUNCHER_VERSION) { throw "La note Launcher a le mauvais numéro." } }
+            default    { throw "Composant de note inconnu : $($entry.component)" }
+          }
+          Write-Host "PASS: note de version obligatoire retrouvée : $($entry.component) $($entry.version)"
+          node raidpilot-updates/source/launcher/Tests/test-release-history.cjs
+          if ($LASTEXITCODE -ne 0) { throw "Le registre de notes de version a échoué aux tests." }
 
       - name: Generate RaidPilot icon
         shell: pwsh
