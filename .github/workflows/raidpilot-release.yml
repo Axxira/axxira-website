@@ -181,14 +181,14 @@ jobs:
               url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
               sha256 = $env:RP_SHA
               sizeBytes = [int64]$env:RP_SIZE
-              releaseNotes = "HOTFIX13 : fiabilisation du suivi Beacon entre F8 : sprint toggle, marche lente et preuve visuelle, posture accroupie/couchée, pauses de calcul. Position exacte toujours recalée par F8."
+              releaseNotes = "PRECISION V2 expérimental : capture GDI 160×90 hors fil UI, suivi visuel et fusion conservatrice de la vitesse; mode désactivable avec repli V1. Capture GPU et estimation métrique continue restent à valider."
             }
             beacon = [ordered]@{
               version = $env:BEACON_VERSION
               url = "$base/RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
               sha256 = $env:BEACON_SHA
               sizeBytes = [int64]$env:BEACON_SIZE
-              releaseNotes = "Beacon 0.3.2 : amélioration du suivi entre F8 (sprint, posture, capture visuelle et longues pauses de boucle) ; connexion Cloudflare conservée."
+              releaseNotes = "Beacon 0.3.3 : Vision Precision V2 160×90 et fusion de mouvement intégrées; désactivation possible dans le menu. Relais Cloudflare inchangé."
             }
             launcher = [ordered]@{
               version = $env:LAUNCHER_VERSION

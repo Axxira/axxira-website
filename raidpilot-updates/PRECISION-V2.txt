@@ -1,0 +1,20 @@
+RAIDPILOT — PRECISION V2 PILOTE
+Overlay 0.14.2.14 · Beacon 0.3.3 · Launcher 0.2.12
+
+Ajout effectivement raccordé aux deux exécutables :
+- Deux voies visuelles en parallèle : garde 64×36 d'origine et 160×90 Precision V2.
+- Capture et appariement 160×90 hors fil d'interface (5 Hz maximum), préfiltrage des images incohérentes, estimation de flux de points Census bidirectionnel et consensus spatial.
+- Fusion conservatrice AVANT l'intégration de vitesse : trois trames stationnaires fiables consécutives peuvent stopper l'odométrie par clavier quand une immobilité est étayée; aucune position absolue inventée depuis un simple déplacement de pixels.
+- Retour automatique à l'estimateur précédent si la capture échoue, si la trame est trop vieille, si le joueur change de fenêtre, si la caméra tourne ou si le décor ne donne pas un consensus fiable.
+- Réinitialisation au changement de carte/raid, lors d'un F8 et à la désactivation.
+- Interrupteur expérimental « Precision V2 — flux optique 160×90 » accessible via l'icône de notification de chaque programme; suivi V1 conservé et contrôlable immédiatement.
+- L'Overlay expose les statistiques Precision V2 dans le menu Précision GPS.
+- Le relais Cloudflare et les codes d'équipe existants ne sont pas modifiés.
+
+POINTS RESTANT À FAIRE :
+- Il s'agit d'une capture GDI 160×90, pas encore du backend Windows.Graphics.Capture/Direct3D.
+- L'odométrie visuelle monoculaire n'apporte pas seule une distance absolue en mètres; F8 reste la référence métrique.
+- Aucun résultat de test in-game n'est revendiqué. Le ressenti et les écarts réels avant F8 doivent être comparés sur plusieurs trajectoires avec V2 activée/désactivée.
+- Si le suivi visuel cause une fausse immobilité ou un ralentissement, décocher immédiatement le mode expérimental dans la zone de notification.
+
+Tests : dix tests déterministes de fusion, deux tests de branchement/flux 160×90, tests natifs et tests de launcher Windows ainsi que test Cloudflare C# toujours requis au pipeline Stable.
