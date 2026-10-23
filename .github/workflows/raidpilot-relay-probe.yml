@@ -14,20 +14,11 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
-      - name: Verify authorized RaidPilot Cloudflare Worker
-        shell: bash
-        run: |
-          set -euo pipefail
-          address="https://raidpilot-team-relay.tyronixstudio.workers.dev/health"
-          code="$(curl --silent --show-error --max-time 12 --output /tmp/raidpilot-health.json --write-out "%{http_code}" "$address")"
-          echo "Worker HTTP status: $code"
-          echo "Worker response:"
-          head -c 600 /tmp/raidpilot-health.json
-          echo
-          if [[ "$code" != "200" ]]; then
-            echo "::error::RaidPilot Worker is not responding with HTTP 200."
-            exit 1
-          fi
-          node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('/tmp/raidpilot-health.json','utf8'));if(j.service!=='RaidPilot Team Relay'||j.ok!==true)throw Error('Cloudflare Worker is not running RaidPilot relay protocol');console.log('RaidPilot relay health confirmed')"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Health and two-client synthetic WebSocket relay
+        run: node raidpilot-updates/relay/smoke.mjs
