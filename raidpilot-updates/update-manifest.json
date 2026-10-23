@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T10:33:53.9329158+00:00",
+  "publishedAt": "2026-10-23T10:41:45.4566636+00:00",
   "raidPilot": {
-    "version": "0.14.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.15-b0.3.4-l0.2.12-4d651c1b68e6/RaidPilot-Overlay-v0.14.2.15-Windows-x64.zip",
-    "sha256": "43AE4E179A6803298CBE00DDE928680D3817A04E4EFF10A9A5C3E75878CC9299",
-    "sizeBytes": 234401887,
-    "releaseNotes": "PRECISION V2.1 : statistiques locales de dérive réellement mesurée avant F8 (V1/V2), rejet des intervalles interrompus, garde anti-faux-arrêt après rotations et cadence de capture adaptée au coût GPU/GDI. Le gain en raid reste à quantifier."
+    "version": "0.14.2.16",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.16-b0.3.5-l0.2.12-df0d11e4fd9c/RaidPilot-Overlay-v0.14.2.16-Windows-x64.zip",
+    "sha256": "C68DEA451F2B86FA698717735C9BF72D4E6447F9D797296405343F046AF6B7D0",
+    "sizeBytes": 234401766,
+    "releaseNotes": "PRECISION V2.2 : meilleur suivi des mouvements d’image à 160×90 (recherche 12×7 et grille 10×6), statistiques de fiabilité du flux et comparaison d’erreurs F8 V1/V2. Capture GDI et F8 conservés."
   },
   "beacon": {
-    "version": "0.3.4",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.15-b0.3.4-l0.2.12-4d651c1b68e6/RaidPilot-Beacon-v0.3.4-Windows-x64.zip",
-    "sha256": "ADA46082C09B1D70664096819522DA7A20341B0B5D97A69CECE83765FB6298D5",
-    "sizeBytes": 58301104,
-    "releaseNotes": "Beacon 0.3.4 : diagnostic de dérive F8 par mode V1/V2, protection contre faux arrêt visuel et limitation de surcharge des captures. Cloudflare inchangé."
+    "version": "0.3.5",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.16-b0.3.5-l0.2.12-df0d11e4fd9c/RaidPilot-Beacon-v0.3.5-Windows-x64.zip",
+    "sha256": "C1D014343D2AE60FD1E50A2079289374AF2B715BC900A0CDE9DE8C825CF874DF",
+    "sizeBytes": 58301619,
+    "releaseNotes": "Beacon 0.3.5 : suivi visuel V2 étendu et diagnostic de dérive F8 en mémoire. Relais Cloudflare inchangé."
   },
   "launcher": {
     "version": "0.2.12",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.15-b0.3.4-l0.2.12-4d651c1b68e6/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
-    "sha256": "32C80E3D9CAD082855AD008741BE066D3BC184D2446CAC58BE2CD40B3AD321DA",
-    "sizeBytes": 350930257,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.16-b0.3.5-l0.2.12-df0d11e4fd9c/RaidPilot-Launcher-v0.2.12-Windows-x64.zip",
+    "sha256": "762228CA17B40FD0BE39843AED8FBFF2F09FD702A88FD8A2CFE5B8A6FBD3FA6E",
+    "sizeBytes": 350930651,
     "releaseNotes": "Launcher 0.2.12 : canal Stable actualisé sans cache intermédiaire ; vérification SHA-256 et sauvegarde de retour arrière conservées. Développé par Peko."
   }
 }
