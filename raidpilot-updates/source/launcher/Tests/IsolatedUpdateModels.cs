@@ -40,6 +40,9 @@ internal sealed record UpdateManifest
 
     [JsonPropertyName("launcher")]
     public UpdateComponent? Launcher { get; init; }
+
+    [JsonPropertyName("releaseHistory")]
+    public List<ReleaseHistoryEntry>? ReleaseHistory { get; init; }
 }
 
 internal sealed record LauncherSettings(string ManifestUrl, string Channel)

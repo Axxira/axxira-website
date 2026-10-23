@@ -17,7 +17,7 @@ internal sealed class UpdateService : IDisposable
 
     internal UpdateService()
     {
-        var currentVersion = typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "0.2.12";
+        var currentVersion = typeof(UpdateService).Assembly.GetName().Version?.ToString(3) ?? "0.2.13";
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
             new ProductInfoHeaderValue("RaidPilot-Launcher", currentVersion));
     }

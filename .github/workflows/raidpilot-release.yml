@@ -6,6 +6,7 @@ on:
       - raidpilot-updates
     paths:
       - "raidpilot-updates/source/**"
+      - "raidpilot-updates/release-history.json"
       - "raidpilot-updates/Restore-*.ps1"
       - "raidpilot-updates/Restore-*.cjs"
       - "raidpilot-updates/public-catalogues.json"
@@ -83,6 +84,54 @@ jobs:
           $shortSha = $env:GITHUB_SHA.Substring(0, 12)
           $releaseTag = "raidpilot-stable-rp$rpVersion-b$beaconVersion-l$launcherVersion-$shortSha"
           "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Verify versioned patch notes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $source = Join-Path $env:GITHUB_WORKSPACE "raidpilot-updates\release-history.json"
+          $catalog = Get-Content -LiteralPath $source -Raw | ConvertFrom-Json
+          $entries = @($catalog.entries)
+          if ($catalog.schemaVersion -ne 1 -or $entries.Count -lt 1 -or $entries.Count -gt 40) {
+            throw "Le catalogue des notes est absent ou invalide."
+          }
+
+          $seen = @{}
+          foreach ($entry in $entries) {
+            $id = "$($entry.component)/$($entry.version)"
+            if ($seen.ContainsKey($id)) { throw "Note de version en double : $id" }
+            $seen[$id] = $true
+            if ([string]::IsNullOrWhiteSpace($entry.summary) -or
+                [string]::IsNullOrWhiteSpace($entry.details) -or
+                $entry.summary.Length -gt 115 -or
+                $entry.details.Length -gt 2000 -or
+                $entry.date -notmatch '^\d{4}-\d{2}-\d{2}$') {
+              throw "Note de version incomplète ou invalide : $id"
+            }
+          }
+
+          $current = @($entries | Where-Object {
+            $_.raidPilotVersion -eq $env:RP_VERSION -and
+            $_.beaconVersion -eq $env:BEACON_VERSION -and
+            $_.launcherVersion -eq $env:LAUNCHER_VERSION
+          })
+          if ($current.Count -ne 1) {
+            throw "Publication BLOQUÉE : ajoute une fiche de notes pour RaidPilot $env:RP_VERSION / Beacon $env:BEACON_VERSION / Launcher $env:LAUNCHER_VERSION dans release-history.json."
+          }
+          $entry = $current[0]
+          if ($entries[0].component -ne $entry.component -or
+              $entries[0].version -ne $entry.version) {
+            throw "Publication BLOQUÉE : la fiche de la version actuelle doit être la première."
+          }
+          switch ($entry.component) {
+            'raidpilot' { if ($entry.version -ne $env:RP_VERSION) { throw "La note Overlay a le mauvais numéro." } }
+            'beacon'   { if ($entry.version -ne $env:BEACON_VERSION) { throw "La note Beacon a le mauvais numéro." } }
+            'launcher' { if ($entry.version -ne $env:LAUNCHER_VERSION) { throw "La note Launcher a le mauvais numéro." } }
+            default    { throw "Composant de note inconnu : $($entry.component)" }
+          }
+          Write-Host "PASS: note de version obligatoire retrouvée : $($entry.component) $($entry.version)"
+          node raidpilot-updates/source/launcher/Tests/test-release-history.cjs
+          if ($LASTEXITCODE -ne 0) { throw "Le registre de notes de version a échoué aux tests." }
 
       - name: Generate RaidPilot icon
         shell: pwsh
@@ -204,7 +253,8 @@ jobs:
           $ErrorActionPreference = "Stop"
           $PSNativeCommandUseErrorActionPreference = $true
           $repo = $env:GITHUB_REPOSITORY
-          $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`nPublication immuable : cette Release n'est jamais remplacée. Le manifeste Stable bascule vers elle seulement après création complète des ZIP et calcul des SHA-256."
+          $entry = (Get-Content -LiteralPath "raidpilot-updates/release-history.json" -Raw | ConvertFrom-Json).entries[0]
+          $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`n$($entry.summary)`n`n$($entry.details)`n`nPublication immuable : les archives et leur SHA-256 sont vérifiés avant activation du manifeste Stable."
           gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP --repo $repo --target $env:GITHUB_SHA --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
 
       - name: Update Stable manifest
@@ -212,6 +262,9 @@ jobs:
         run: |
           $repo = $env:GITHUB_REPOSITORY
           $base = "https://github.com/$repo/releases/download/$env:RELEASE_TAG"
+          $catalog = Get-Content -LiteralPath "raidpilot-updates/release-history.json" -Raw | ConvertFrom-Json
+          $note = $catalog.entries[0]
+          $recent = @($catalog.entries | Select-Object -First 24)
           $manifest = [ordered]@{
             schemaVersion = 1
             channel = "stable"
@@ -221,22 +274,23 @@ jobs:
               url = "$base/RaidPilot-Overlay-v$env:RP_VERSION-Windows-x64.zip"
               sha256 = $env:RP_SHA
               sizeBytes = [int64]$env:RP_SIZE
-              releaseNotes = "ZOOM PRÉFÉRENCES : zoom manuel enregistré entre raids et sur toutes les cartes locales/en ligne; AppData indépendant du Launcher, restauration automatique et bouton Ajuster. Capteur WGC optionnel conservé."
+              releaseNotes = $(if ($note.component -eq "raidpilot") { $note.details } else { "RaidPilot $env:RP_VERSION reste inchangé dans cette publication." })
             }
             beacon = [ordered]@{
               version = $env:BEACON_VERSION
               url = "$base/RaidPilot-Beacon-v$env:BEACON_VERSION-Windows-x64.zip"
               sha256 = $env:BEACON_SHA
               sizeBytes = [int64]$env:BEACON_SIZE
-              releaseNotes = "Beacon 0.3.6 : capteur Windows WGC facultatif avec retour GDI et diagnostic GPU. Les codes d’équipe et le relais Cloudflare sont inchangés."
+              releaseNotes = $(if ($note.component -eq "beacon") { $note.details } else { "Beacon $env:BEACON_VERSION reste inchangé dans cette publication." })
             }
             launcher = [ordered]@{
               version = $env:LAUNCHER_VERSION
               url = "$base/RaidPilot-Launcher-v$env:LAUNCHER_VERSION-Windows-x64.zip"
               sha256 = $env:LAUNCHER_SHA
               sizeBytes = [int64]$env:LAUNCHER_SIZE
-              releaseNotes = "Launcher 0.2.12 : canal Stable actualisé sans cache intermédiaire ; vérification SHA-256 et sauvegarde de retour arrière conservées. Développé par Peko."
+              releaseNotes = $(if ($note.component -eq "launcher") { $note.details } else { "Launcher $env:LAUNCHER_VERSION reste inchangé dans cette publication. Développé par Peko." })
             }
+            releaseHistory = $recent
           }
 
           git config user.name "github-actions[bot]"

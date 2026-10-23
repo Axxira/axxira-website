@@ -1,0 +1,70 @@
+name: RaidPilot Launcher Release History Tests
+
+on:
+  push:
+    branches: [raidpilot-release-history]
+    paths:
+      - "raidpilot-updates/release-history.json"
+      - "raidpilot-updates/source/launcher/**"
+      - ".github/workflows/raidpilot-release.yml"
+      - ".github/workflows/raidpilot-release-notes-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    timeout-minutes: 16
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Validate current patch notes and Launcher history wiring
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          node raidpilot-updates/source/launcher/Tests/test-release-history.cjs
+          if ($LASTEXITCODE -ne 0) { throw "Release history catalog invalid" }
+
+      - name: Generate RaidPilot icon
+        shell: pwsh
+        run: |
+          dotnet run --project raidpilot-updates/source/brand/icon-builder/IconBuilder.csproj -c Release -- raidpilot-updates/source/brand
+          if ($LASTEXITCODE -ne 0) { throw "Icon creation failed" }
+
+      - name: Run Launcher update and changelog regression tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw "Launcher tests failed" }
+
+      - name: Publish Launcher x64 including offline patch notes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $project = 'raidpilot-updates/source/launcher/RaidPilot.Launcher.csproj'
+          $out = Join-Path $env:RUNNER_TEMP 'raidpilot-launcher-changelog'
+          dotnet restore $project -r win-x64
+          if ($LASTEXITCODE -ne 0) { throw "Restore failed" }
+          dotnet publish $project -c Release -r win-x64 --self-contained true --no-restore -o $out
+          if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
+          $bin = Join-Path $out 'RaidPilot.Launcher.exe'
+          $feed = Join-Path $out 'release-history.json'
+          if (!(Test-Path -LiteralPath $bin) -or !(Test-Path -LiteralPath $feed)) {
+            throw "Published Launcher missing binary or offline release history"
+          }
+          $content = Get-Content -LiteralPath $feed -Raw | ConvertFrom-Json
+          if ($content.schemaVersion -ne 1 -or
+              $content.entries[0].version -ne '0.2.13') {
+            throw "Published Launcher offline notes are missing or outdated"
+          }
+          Write-Host 'PASS: Launcher 0.2.13 compiled and bundled release-history.json'
