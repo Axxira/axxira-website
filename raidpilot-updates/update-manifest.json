@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T16:49:20.9612421+00:00",
+  "publishedAt": "2026-10-23T17:42:09.7561021+00:00",
   "raidPilot": {
-    "version": "0.14.2.20",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.20-b0.3.8-l0.2.13-cf894d53b3e4/RaidPilot-Overlay-v0.14.2.20-Windows-x64.zip",
-    "sha256": "669EF3F06EB4C8508043DD71FA8AA85F912C21E42FEA223747D6F493D54CFE8A",
-    "sizeBytes": 234438210,
-    "releaseNotes": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
+    "version": "0.14.2.21",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.21-b0.3.8-l0.2.13-0c930fde3b0e/RaidPilot-Overlay-v0.14.2.21-Windows-x64.zip",
+    "sha256": "3A5FD3261CFBC9AC82B8311877E5542D90EB4A2A09AA58731F4E5A1CE0B177EB",
+    "sizeBytes": 234438953,
+    "releaseNotes": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
   },
   "beacon": {
     "version": "0.3.8",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.20-b0.3.8-l0.2.13-cf894d53b3e4/RaidPilot-Beacon-v0.3.8-Windows-x64.zip",
-    "sha256": "3B8D2036A02879915326321C1D400E926F82B7C8A51A488BC190733B8D69EC03",
-    "sizeBytes": 58327383,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.21-b0.3.8-l0.2.13-0c930fde3b0e/RaidPilot-Beacon-v0.3.8-Windows-x64.zip",
+    "sha256": "DAB3F71576CE9703F887F9FFE90FE9434FA14DCD8DE89B63378B497A4F06E96C",
+    "sizeBytes": 58327382,
     "releaseNotes": "Beacon 0.3.8 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.13",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.20-b0.3.8-l0.2.13-cf894d53b3e4/RaidPilot-Launcher-v0.2.13-Windows-x64.zip",
-    "sha256": "D6BD17E442E9F1E03E12EB8F5034FC8CA02636F237D00FFB799C20167A6B7EC6",
-    "sizeBytes": 350998998,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.21-b0.3.8-l0.2.13-0c930fde3b0e/RaidPilot-Launcher-v0.2.13-Windows-x64.zip",
+    "sha256": "750B0EBA638C0EC265A296BFD8D8EA5AE02C281D314D2F14B73249295BBE22E4",
+    "sizeBytes": 351000054,
     "releaseNotes": "Launcher 0.2.13 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.21",
+      "raidPilotVersion": "0.14.2.21",
+      "beaconVersion": "0.3.8",
+      "launcherVersion": "0.2.13",
+      "date": "2026-10-23",
+      "summary": "Carte locale : avertissement quand le GPS cesse de recevoir des positions",
+      "details": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.20",
