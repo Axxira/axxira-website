@@ -493,8 +493,9 @@
       const steps=this.stepsForMap(mapIds).filter(s=>!s.done&&this.isStepUnlocked(s));
       const at=player?.position||player||null;
       if(!this.positionReliable(player)) {
+        const focused=steps.find(s=>s.id===this.state.focused);
         const retained=steps.find(s=>s.id===this.lastReliableTarget);
-        const selected=retained||steps.find(s=>s.id===this.state.focused)||steps[0];
+        const selected=focused||retained||steps[0];
         return selected?{...selected,nearest:selected.locations[0],distance:null,
           locationUncertain:true}:null;
       }
@@ -506,8 +507,10 @@
           const d=distanceTo(at,place);
           if(d<best){best=d;nearest=place;}
         }
-        if(step.id===this.state.focused)
-          return {...step,nearest:nearest||step.locations[0],distance:best};
+        if(step.id===this.state.focused) {
+          this.lastReliableTarget=step.id;
+          return {...step,nearest:nearest||step.locations[0],distance:best,locationUncertain:false};
+        }
         if(!chosen || best<closest
           ||(best===closest && step.id.localeCompare(chosen.id)<0)){
           chosen=step;closest=best;chosenPlace=nearest||step.locations[0];
@@ -519,7 +522,8 @@
     suggested(mapIds,player) {
       const steps=this.stepsForMap(mapIds).filter(s=>!s.done&&this.isStepUnlocked(s));
       if(!steps.length)return [];
-      const result=[];let at=this.positionReliable(player)?player?.position||player:null;
+      const reliable=this.positionReliable(player);
+      const result=[];let at=reliable?player?.position||player:null;
       const pool=steps.slice();
       while(pool.length){
         pool.sort((a,b)=>{
@@ -530,7 +534,7 @@
         const step=pool.shift();
         const nearest=step.locations.slice().sort((a,b)=>distanceTo(at,a)-distanceTo(at,b))[0];
         const distance=distanceTo(at,nearest);
-        result.push({...step,nearest,distance});
+        result.push({...step,nearest,distance:reliable?distance:null,locationUncertain:!reliable});
         at=nearest.position;
       }
       const focusedIndex=result.findIndex(x=>x.id===this.state.focused);
