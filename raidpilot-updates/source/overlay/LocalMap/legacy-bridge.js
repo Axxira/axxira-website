@@ -9,6 +9,7 @@
   let routeGeneration=-1,questConfirmed=false,timerSequence=-1,contextSequence=-1,floorSequence=-1;
   const team = new Map();
   const latestMemberTimestamp = new Map();
+  const latestQuestPlanTimestamp = new Map();
   let renderedTeamMap = null;
   const pending = new Map();
   const api = () => window.RaidPilotLocalMap;
@@ -82,6 +83,30 @@
   window.__raidPilotApplyRaidQuests=()=>ready()?api().applyRaidQuests():0;
   // Native EFT log payloads contain only public task IDs, mode, outcome and time.
   // They are applied to mode-isolated local profiles, never to unrelated PvE/PvP.
+  // Live squad plans are ephemeral, never imported into personal progression.
+  window.__raidPilotSetTeamQuestPlan=payload=>{
+    if(!payload||typeof payload.id!=="string"||!Number.isSafeInteger(payload.at))return false;
+    const previous=latestQuestPlanTimestamp.get(payload.id);
+    if(previous!==undefined&&payload.at<=previous)return false;
+    return submit("teamquest:"+payload.id,()=>{
+      const latest=latestQuestPlanTimestamp.get(payload.id);
+      if(latest!==undefined&&payload.at<=latest)return false;
+      const ok=api().setLiveTeamQuestPlan(payload);
+      if(ok)latestQuestPlanTimestamp.set(payload.id,payload.at);
+      return ok;
+    },payload.at);
+  };
+  window.__raidPilotClearTeamQuestPlan=id=>{
+    if(typeof id!=="string"||id.length>64)return false;
+    pending.delete("teamquest:"+id);
+    latestQuestPlanTimestamp.delete(id);
+    return submit("teamquestclear:"+id,()=>api().clearLiveTeamQuestPlan(id));
+  };
+  window.__raidPilotClearAllTeamQuestPlans=()=>{
+    for(const key of pending.keys())if(key.startsWith("teamquest:"))pending.delete(key);
+    latestQuestPlanTimestamp.clear();
+    return submit("teamquestclear",()=>api().clearAllLiveTeamQuestPlans());
+  };
   window.__raidPilotApplyQuestLogEvents=events=>{
     if(!Array.isArray(events)||events.length>64)return 0;
     return submit("quest-log",()=>api().applyQuestLogEvents(events));
@@ -155,12 +180,18 @@
       if (sequence >= 0) latestMemberTimestamp.set(id, sequence);
       team.delete(id);
       api().setTeam([...team.values()]);
+      api().clearLiveTeamQuestPlan?.(id);
       return true;
     }, sequence);
   };
   window.__raidPilotClearSquad = () => {
     for (const key of pending.keys()) if (key.startsWith("team:")) pending.delete(key);
-    return submit("team-clear", () => { team.clear(); latestMemberTimestamp.clear(); renderedTeamMap=null; api().setTeam([]); return true; });
+    return submit("team-clear", () => {
+      team.clear(); latestMemberTimestamp.clear(); latestQuestPlanTimestamp.clear();
+      for(const key of pending.keys())if(key.startsWith("teamquest:"))pending.delete(key);
+      renderedTeamMap=null; api().setTeam([]);
+      api().clearAllLiveTeamQuestPlans?.();return true;
+    });
   };
   window.addEventListener("raidpilot-local-initialized", () => {
     const queued = [...pending.values()]; pending.clear();

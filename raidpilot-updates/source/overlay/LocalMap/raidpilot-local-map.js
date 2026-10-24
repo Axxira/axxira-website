@@ -962,11 +962,22 @@ function renderQuestPilotPanel(){
     if(!teams.length)qpEmpty(refs.questTeamPlans,"Aucun plan ami importé.");
     for(const [name,plan] of teams){
       const row=document.createElement("div");row.className="qp-team-item";
-      qpText(row,"strong",name+" · "+plan.active.length+" quête(s) · "+plan.done.length+" étape(s) cochée(s)");
+      qpText(row,"strong",name+" · "+plan.active.length+" quête(s) · "+plan.done.length+" étape(s) cochée(s) (importé)");
       const remove=document.createElement("button");remove.type="button";
       remove.textContent="Retirer";
       remove.addEventListener("click",()=>{planner.removeShare(name);renderQuestPilotPanel();render();});
       row.appendChild(remove);refs.questTeamPlans.appendChild(row);
+    }
+    const peers=Object.values(planner.livePlans||{}).filter(p=>p.mode===planner.mode
+      && Date.now()-p.receivedAt<90000);
+    if(peers.length){
+      qpText(refs.questTeamPlans,"small","Escouade en direct · progression individuelle, non confirmée par ton jeu.","qp-subtle");
+      for(const peer of peers){
+        const row=document.createElement("div");row.className="qp-team-item";
+        qpText(row,"strong",peer.name+" (direct) · "+peer.quests.length+
+          " quête(s) · "+peer.done.length+" étape(s) cochée(s)");
+        refs.questTeamPlans.appendChild(row);
+      }
     }
   }
 }
@@ -991,6 +1002,20 @@ function renderQuestPilotHud(){
     +(next.optional?" · facultatif":"");
 }
 
+function setLiveTeamQuestPlan(payload){
+  if(!state.questPilot)return false;
+  if(!state.questPilot.setLivePlan(payload))return false;
+  renderQuestPilotPanel();render();return true;
+}
+function clearLiveTeamQuestPlan(id){
+  if(!state.questPilot || !state.questPilot.clearLivePlan(id))return false;
+  renderQuestPilotPanel();render();return true;
+}
+function clearAllLiveTeamQuestPlans(){
+  if(!state.questPilot)return false;
+  state.questPilot.clearLivePlans();
+  renderQuestPilotPanel();render();return true;
+}
 function isRaidQuest(marker){return state.raidQuests?.map===state.mapKey&&state.raidQuests.ids.has(String(marker.meta?.questId||"").toLowerCase());}
 function applyRaidQuests(){return new Set(state.markers.filter(isRaidQuest).map(m=>m.meta.questId)).size;}
 function applyQuestLogEvents(events){
@@ -1465,6 +1490,10 @@ async function init() {
   if (typeof setInterval === "function") {
     const poseHealthTimer = setInterval(() => {
       if (state.initialized && state.player) updateHealth();
+      if (state.questPilot?.pruneLivePlans()) {
+        renderQuestPilotPanel();
+        render();
+      }
     }, 750);
     if (typeof addEventListener === "function")
       addEventListener("pagehide", () => clearInterval(poseHealthTimer), {once:true});
@@ -1485,6 +1514,8 @@ const api = {
   handleMessage:handleHostMessage
   ,resetRaid,setRaidExtractions,applyRaidExtractions,clearRaidExtractions,setBoundaryHazards:p=>setHazards(p,"boundary"),setMineHazards:p=>setHazards(p,"mine"),clearBoundaryHazards:()=>clearHazards("boundary"),clearMineHazards:()=>clearHazards("mine"),setGuidanceTarget,clearGuidanceTarget
   ,setRaidQuests,clearRaidQuests,applyRaidQuests,applyQuestLogEvents,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
+  ,setLiveTeamQuestPlan,clearLiveTeamQuestPlan,clearAllLiveTeamQuestPlans,
+    questPilotLiveSnapshot:()=>state.questPilot?.liveSnapshot()||null
   ,questPilotSnapshot:()=>({
       mode:state.questPilot?.mode,
       active:[...(state.questPilot?.state.active||[])],

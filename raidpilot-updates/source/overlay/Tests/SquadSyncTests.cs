@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class SquadSyncTests
 {
-    internal const int TestCount = 13;
+    internal const int TestCount = 19;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -21,6 +21,12 @@ internal static class SquadSyncTests
         Run("pont local rejette les poses périmées et les retours arrière", HasLocalSquadReplayProtection, failures);
         Run("relais Cloudflare utilise notre Worker avec un code sécurisé stable", UsesOwnedRelayEndpoint, failures);
         Run("relais Cloudflare décode les positions retournées", ReadsCloudflarePose, failures);
+        Run("questplan accepte les identifiants publics sans journal", ReadsValidatedQuestPlan, failures);
+        Run("questplan refuse un faux ID d'objectif", RejectsForgedStage, failures);
+        Run("questplan refuse une époque ancienne", RejectsStaleQuestPlan, failures);
+        Run("questplan refuse le mode inconnu", RejectsUnknownQuestMode, failures);
+        Run("questplan limite les quêtes et étapes diffusées", BoundsQuestPlan, failures);
+        Run("questplan accepte uniquement les données locales nécessaires", ValidatesOutgoingQuestPlan, failures);
     }
 
     private static void PreventsDuplicateLocalBroadcast()
@@ -187,6 +193,79 @@ internal static class SquadSyncTests
             """{"type":"pose","id":"fake-peer","name":"X","map":"customs","position":{"x":"102","y":1,"z":0},"rotation":270,"at":1761170000000}""");
         Require(!SquadRelayClient.TryReadPose(malformed.RootElement, out _),
             "une coordonnée non numérique a été acceptée");
+    }
+
+    private static readonly string QuestA = new('a', 24);
+    private static readonly string QuestB = new('b', 24);
+    private static string QuestJson(string mode = "pve", string? id = null,
+        string? done = null, long? at = null)
+    {
+        var timestamp = at ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        return JsonSerializer.Serialize(new
+        {
+            type = "questplan", id = "test-peer", name = "Ami",
+            mode, at = timestamp, quests = new[] { id ?? QuestA },
+            done = new[] { done ?? QuestA + ":" + QuestB }
+        });
+    }
+
+    private static void ReadsValidatedQuestPlan()
+    {
+        using var json = JsonDocument.Parse(QuestJson());
+        Require(SquadRelayClient.TryReadQuestPlan(json.RootElement, out var plan)
+            && plan is not null
+            && plan.Mode == "pve"
+            && plan.Quests.SequenceEqual([QuestA])
+            && plan.Done.SequenceEqual([QuestA + ":" + QuestB]),
+            "le plan valide et minimal n'a pas été décodé");
+    }
+
+    private static void RejectsForgedStage()
+    {
+        using var json = JsonDocument.Parse(QuestJson(done: "player@mail.com:secret"));
+        Require(!SquadRelayClient.TryReadQuestPlan(json.RootElement, out _),
+            "des données autres que les IDs de quêtes ont été acceptées");
+    }
+
+    private static void RejectsStaleQuestPlan()
+    {
+        using var json = JsonDocument.Parse(
+            QuestJson(at: DateTimeOffset.UtcNow.AddMinutes(-6).ToUnixTimeMilliseconds()));
+        Require(!SquadRelayClient.TryReadQuestPlan(json.RootElement, out _),
+            "une ancienne mise à jour pourrait réactiver une progression périmée");
+    }
+
+    private static void RejectsUnknownQuestMode()
+    {
+        using var json = JsonDocument.Parse(QuestJson(mode: "unknown"));
+        Require(!SquadRelayClient.TryReadQuestPlan(json.RootElement, out _),
+            "le mode d'un autre profil est accepté");
+    }
+
+    private static void BoundsQuestPlan()
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var payload = JsonSerializer.Serialize(new {
+            type = "questplan", id = "test-peer", name = "Ami",
+            mode = "pve", at = now, quests = Enumerable.Repeat(QuestA, 81).ToArray(),
+            done = Array.Empty<string>()
+        });
+        using var json = JsonDocument.Parse(payload);
+        Require(!SquadRelayClient.TryReadQuestPlan(json.RootElement, out _),
+            "un plan excessif n'a pas été limité");
+    }
+
+    private static void ValidatesOutgoingQuestPlan()
+    {
+        Require(SquadRelayClient.ValidQuestPlan(
+            new SquadQuestPlanSnapshot("pve", [QuestA], [QuestA + ":" + QuestB])),
+            "l'export minimal est refusé");
+        Require(!SquadRelayClient.ValidQuestPlan(
+            new SquadQuestPlanSnapshot("unknown", [QuestA], [])),
+            "un mode inconnu est exportable");
+        Require(!SquadRelayClient.ValidQuestPlan(
+            new SquadQuestPlanSnapshot("pve", ["Player Profile"], [])),
+            "un nom de joueur fuit vers le relais");
     }
 
     private static void Run(string name, Action test, ICollection<string> failures)

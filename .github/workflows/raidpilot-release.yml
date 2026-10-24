@@ -158,6 +158,7 @@ jobs:
           node (Join-Path $src "Tests/test-map-quality.cjs")
           node (Join-Path $src "Tests/test-raid-tactics.cjs")
           node (Join-Path $src "Tests/test-quest-pilot.cjs")
+          node (Join-Path $src "Tests/test-quest-relay-worker.cjs")
           node (Join-Path $src "Tests/test-projection.js")
 
       - name: Publish Windows x64 components

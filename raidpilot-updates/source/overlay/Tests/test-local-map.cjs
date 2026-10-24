@@ -239,5 +239,24 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
    'Imported teammate plan not visible in interactive panel');
  check(ids.overlay.children.some(node=>node.dataset.questId===chosen.id),
    'Teammate-only quest marker did not display on map');
+ // Live squad plans are ephemeral, mode-scoped and never imported as personal progress.
+ const second=locatable.find(q=>q.id!==chosen.id && /^[0-9a-f]{24}$/i.test(q.id));
+ check(!!second,'Need a second real geolocated quest for the live team smoke');
+ const live={id:'test-live-peer',name:'Amie',mode:'regular',
+   quests:[second.id],done:[],at:Date.now()};
+ check(context.__raidPilotSetTeamQuestPlan(live)===true,
+   'Live squad plan did not enter the WebView2 bridge');
+ check(ids.overlay.children.some(node=>node.dataset.questId===second.id),
+   'A peer-only quest did not appear on the actual map');
+ check(!api.questPilotSnapshot().active.includes(second.id),
+   'Receiving a peer plan contaminated my own active tasks');
+ check(api.questPilotLiveSnapshot().quests.every(id=>id!==second.id),
+   'Peer quest leaked into my outgoing privacy-scoped plan');
+ check(context.__raidPilotSetTeamQuestPlan({...live,quests:[],at:live.at-1})===false,
+   'Out-of-order peer plan was accepted');
+ check(context.__raidPilotClearTeamQuestPlan('test-live-peer')===true,
+   'Peer removal failed to clear ephemeral plans');
+ check(!ids.overlay.children.some(node=>node.dataset.questId===second.id),
+   'A departed peer left a ghost quest on the map');
  console.log(JSON.stringify({status:'PASS',checks,customsPOI:api.health().markerCount,visibleMarkers:ids.overlay.children.filter(e=>e.dataset.markerId).length,playerTransform:marker('__player').getAttribute('transform'),health:ids.health.textContent}));
 })().catch(e=>{console.error(e);process.exitCode=1;});
