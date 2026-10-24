@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.31",
+      "raidPilotVersion": "0.14.2.31",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Localisation — journal de dérive enrichi et mesures souris/ADS",
+      "details": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.30",
       "raidPilotVersion": "0.14.2.30",
       "beaconVersion": "0.3.9",
