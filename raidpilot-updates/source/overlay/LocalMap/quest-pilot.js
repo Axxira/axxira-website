@@ -113,7 +113,13 @@
         id:id + ":" + objectiveId, questId:id, objectiveId,
         number, objectiveCount:0, allNumber:objectives.length+1,
         allObjectiveCount:0,
-        name:text(translations, obj.description, obj.type || "Objectif"),
+        // Preserve plain-language objective text when the translation catalogue
+        // lacks this entry; never replace a readable instruction with the raw type.
+        // An untranslated 24-hex localization key must not be shown to players.
+        name:text(translations,obj.description,
+          typeof obj.description==="string" && obj.description.trim()
+            && !/^[0-9a-f]{24}$/i.test(obj.description.trim())
+              ?obj.description:obj.type||"Objectif"),
         type:String(obj.type || ""),
         optional:obj.optional === true,
         locations,
