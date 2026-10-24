@@ -10,6 +10,7 @@
   <div id="rp-root">
     <header id="toolbar">
       <button id="layers-btn" type="button" title="Filtres">☰ Couches</button>
+      <button id="quests-btn" type="button" title="Quêtes choisies, préparation et ordre des étapes">🎯 Mes quêtes</button>
       <select id="map-style" aria-label="Fond de carte"><option value="forge">TarkovForge HD</option><option value="tactical">Tactique</option></select>
       <select id="profile" aria-label="Profil d'affichage"></select>
       <input id="search" type="search" placeholder="Rechercher coffre, quête, item…" aria-label="Rechercher sur la carte">
@@ -39,6 +40,18 @@
         <div id="filters"></div>
       </aside>
 
+      <aside id="questpilot-panel" class="hidden" aria-label="QuestPilot — mes quêtes">
+        <div class="qp-panel-title"><strong>🎯 QuestPilot</strong><button id="questpilot-close" type="button" aria-label="Fermer les quêtes">✕</button></div>
+        <p class="qp-subtle">Sélectionne tes quêtes. Leur couleur et le numéro des étapes restent identiques entre les raids.</p>
+        <input id="questpilot-search" type="search" placeholder="Chercher une quête…" aria-label="Chercher une quête dans le catalogue">
+        <div id="questpilot-summary" class="qp-summary" role="status"></div>
+        <div id="questpilot-list"></div>
+        <div class="qp-section-title">Étapes sur cette carte</div>
+        <div id="questpilot-steps"></div>
+        <div class="qp-section-title">À préparer avant le raid</div>
+        <div id="questpilot-prep"></div>
+      </aside>
+
       <section id="viewport" aria-label="Carte RaidPilot">
         <div id="stage">
           <img id="base-map" alt="">
@@ -51,6 +64,10 @@
         <div id="details" aria-live="polite" hidden></div>
         <div id="tactical-warning" role="status" aria-live="polite" hidden></div>
         <div id="position-stale" role="status" aria-live="polite" hidden>GPS : position non actualisée · vérifie le suivi F8</div>
+        <section id="questpilot-hud" aria-live="off" aria-label="Prochain objectif QuestPilot" hidden>
+          <span id="questpilot-hud-color" aria-hidden="true"></span>
+          <div><strong id="questpilot-hud-title"></strong><small id="questpilot-hud-detail"></small></div>
+        </section>
         <div id="feature-hud">
           <div id="raid-timer" aria-label="Temps restant du raid" hidden></div>
           <div id="guidance-hud" hidden><span id="guidance-arrow" aria-hidden="true">↑</span><div><strong id="guidance-name"></strong><small id="guidance-details"></small></div></div>
@@ -76,6 +93,7 @@
   <script src="map-display.js"></script>
   <script src="raid-tactics.js"></script>
   <script src="automatic-floors.js"></script>
+  <script src="quest-pilot.js"></script>
   <script src="raidpilot-local-map.js"></script>
   <script src="map-features.js"></script>
   <script src="legacy-bridge.js"></script>
