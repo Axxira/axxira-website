@@ -47,7 +47,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Syntax error: $file" }
           }
           foreach ($name in @("test-local-map.cjs", "test-map-zoom-persistence.cjs",
-              "test-map-quality.cjs", "test-raid-tactics.cjs", "test-projection.js")) {
+              "test-map-quality.cjs", "test-raid-tactics.cjs", "test-quest-pilot.cjs", "test-projection.js")) {
             node (Join-Path $root ("Tests/" + $name))
             if ($LASTEXITCODE -ne 0) { throw "JS regression failure: $name" }
           }

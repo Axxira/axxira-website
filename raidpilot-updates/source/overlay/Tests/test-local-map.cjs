@@ -13,7 +13,10 @@ class Element {
  getBoundingClientRect(){return {width:1200,height:700,left:0,top:0};}
  setPointerCapture(){} get options(){return this.children;}
 }
-const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale'])ids[id]=new Element('div');
+const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale',
+  'quests-btn','questpilot-panel','questpilot-close','questpilot-search','questpilot-summary',
+  'questpilot-list','questpilot-steps','questpilot-prep','questpilot-hud',
+  'questpilot-hud-color','questpilot-hud-title','questpilot-hud-detail'])ids[id]=new Element('div');
 const listeners={}, messages=[], storage=new Map();
 const context={console,URLSearchParams,Event:class{constructor(type){this.type=type;}},setTimeout,clearTimeout,
  document:{getElementById:id=>ids[id]??null,querySelector:s=>ids[s.slice(1)]??null,createElement:t=>new Element(t),createElementNS:(_,t)=>new Element(t)},
@@ -30,7 +33,7 @@ const context={console,URLSearchParams,Event:class{constructor(type){this.type=t
 let checks=0;function check(ok,label){assert.ok(ok,label);checks++;}
 function marker(id){return ids.overlay.children.find(e=>e.dataset.markerId===id);}
 const ready=new Promise(resolve=>context.addEventListener('raidpilot-local-initialized',resolve));
-for(const f of ['projection.js','map-calibration.js','map-display.js','raid-tactics.js','automatic-floors.js','raidpilot-local-map.js','map-features.js','legacy-bridge.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+for(const f of ['projection.js','map-calibration.js','map-display.js','raid-tactics.js','automatic-floors.js','quest-pilot.js','raidpilot-local-map.js','map-features.js','legacy-bridge.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
 context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90});
 (async()=>{
  await Promise.race([ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Renderer did not initialize')),5000))]);
@@ -157,5 +160,40 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  check(api.health().position==='WAIT' && api.health().positionAgeMs===null,
    'Cleared pose leaked its last freshness timestamp');
  api.setPlayer({position:{x:160,y:2,z:40},rotation:180});
+ // QuestPilot: native OCR synchronization and local map share persistent user selection.
+ api.setMap('customs');
+ ids.fit.dispatchEvent(new context.Event('click'));
+ const mapsDocument=JSON.parse(fs.readFileSync(path.join(root,'cache/maps.json'),'utf8'));
+ const tasksDocument=JSON.parse(fs.readFileSync(path.join(root,'cache/tasks.json'),'utf8'));
+ const realMaps=mapsDocument.data?.maps||mapsDocument.maps||[];
+ const realTasks=tasksDocument.data?.tasks||tasksDocument.tasks||[];
+ const customsIds=new Set(realMaps.filter(m=>m.normalizedName==='customs').map(m=>m.id));
+ const locatable=realTasks.filter(task=>(task.objectives||[]).some(o=>
+   (o.zones||[]).some(z=>customsIds.has(z.map?.id||z.map)&&z.position) ||
+   (o.possibleLocations||[]).some(z=>customsIds.has(z.map?.id||z.map)&&(z.positions||[]).length)));
+ check(locatable.length>0,'Actual Tarkov quest catalogue contains no geolocated Customs tasks');
+ const chosen=locatable[0];
+ check(api.questPilotToggle(chosen.id,true),'QuestPilot failed to select a real task');
+ const qp=api.questPilotSnapshot();
+ check(qp.active.includes(chosen.id)&&qp.mapSteps.some(x=>x.questId===chosen.id),
+   'QuestPilot did not place its active objectives on the local map');
+ check(ids['questpilot-list'].children.length>0,
+   'QuestPilot panel did not expose a manually selectable catalogue');
+ const stage=qp.mapSteps.find(x=>x.questId===chosen.id);
+ const expectedColor=context.RPQuestPilot.colorFor(chosen.id);
+ check(qp.mapSteps.filter(x=>x.questId===chosen.id).every(x=>x.color===expectedColor),
+   'Quest stages and legend use different colors');
+ check(api.questPilotStepDone(stage.id,true),
+   'QuestPilot refused to mark a stage as done manually');
+ check(api.questPilotSnapshot().done.includes(stage.id),
+   'Manually marked completion missing');
+ check(JSON.parse(storage.get('raidpilot-questpilot-v1:regular')).done.includes(stage.id),
+   'Manual progress was not retained in profile');
+ api.questPilotToggle(chosen.id,false);
+ context.__raidPilotSetRaidQuests({generation:6,map:'customs',gameMode:'regular',
+   quests:[{id:chosen.id,name:chosen.name}]});
+ check(!api.questPilotSnapshot().active.includes(chosen.id),
+   'OCR unexpectedly restored a quest explicitly removed by player');
+
  console.log(JSON.stringify({status:'PASS',checks,customsPOI:api.health().markerCount,visibleMarkers:ids.overlay.children.filter(e=>e.dataset.markerId).length,playerTransform:marker('__player').getAttribute('transform'),health:ids.health.textContent}));
 })().catch(e=>{console.error(e);process.exitCode=1;});
