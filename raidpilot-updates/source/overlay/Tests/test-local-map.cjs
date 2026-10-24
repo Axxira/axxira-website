@@ -165,8 +165,10 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  ids.fit.dispatchEvent(new context.Event('click'));
  const mapsDocument=JSON.parse(fs.readFileSync(path.join(root,'cache/maps.json'),'utf8'));
  const tasksDocument=JSON.parse(fs.readFileSync(path.join(root,'cache/tasks.json'),'utf8'));
- const realMaps=mapsDocument.data?.maps||mapsDocument.maps||[];
- const realTasks=tasksDocument.data?.tasks||tasksDocument.tasks||[];
+ const mapValues=mapsDocument.data?.maps||mapsDocument.maps||[];
+ const taskValues=tasksDocument.data?.tasks||tasksDocument.tasks||[];
+ const realMaps=Array.isArray(mapValues)?mapValues:Object.values(mapValues);
+ const realTasks=Array.isArray(taskValues)?taskValues:Object.values(taskValues);
  const customsIds=new Set(realMaps.filter(m=>m.normalizedName==='customs').map(m=>m.id));
  const locatable=realTasks.filter(task=>(task.objectives||[]).some(o=>
    (o.zones||[]).some(z=>customsIds.has(z.map?.id||z.map)&&z.position) ||
