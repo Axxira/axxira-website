@@ -455,3 +455,32 @@ test("lieux alternatifs d'une seule étape ont toujours le même statut",()=>{
  assert.equal(after.done,true);
  assert.equal(after.number,1);
 });
+
+test("la priorité manuelle reste devant une ancienne cible quand la position est perdue",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);
+ p.toggle("quest-a",true);
+ const map=new Set(["customs"]);
+ p.nextForMap(map,{position:{x:0,z:0},positionReliable:true});
+ p.focus("quest-a:third");
+ const next=p.nextForMap(map,{position:{x:0,z:0},positionReliable:false});
+ assert.equal(next.id,"quest-a:third");
+ assert.equal(next.distance,null);
+ assert.equal(next.locationUncertain,true);
+});
+test("une priorité valide est mémorisée et ne prétend pas être incertaine",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);
+ p.toggle("quest-a",true);
+ p.focus("quest-a:third");
+ const next=p.nextForMap(new Set(["customs"]),{position:{x:0,z:0},positionReliable:true});
+ assert.equal(next.id,"quest-a:third");
+ assert.equal(next.locationUncertain,false);
+});
+test("le plan n'affiche aucune distance issue d'une position incertaine",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);
+ p.toggle("quest-a",true);
+ assert.ok(p.suggested(new Set(["customs"]),{positionReliable:false})
+   .every(step=>step.distance===null && step.locationUncertain===true));
+});
