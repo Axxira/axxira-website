@@ -94,6 +94,8 @@ internal sealed partial class OverlayForm
     {
         var status = _precisionV4Menu.Checked ? "actif (expérimental)" : "désactivé";
         return status + " · " + _precisionV4Fusion.Diagnostic
+            + "\nF8 en mouvement : " + (_mobileExactAnchorEnabled ? "actif" : "désactivé")
+            + $"; demandes {_mobileExactAnchorRequests}; captures reçues {_mobileExactAnchorConfirmed}"
             + "\n" + _precisionV2DriftAudit.Describe()
             + "\nGéométrie : étage surveillé. Sans polygones navigables "
             + "validés, aucun mur supposé ni GPS absolu.";

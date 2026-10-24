@@ -389,3 +389,15 @@ Le menu **Exporter rapport comparatif F8 (.json)** produit uniquement les écart
 - Le pipeline Windows vérifie les composants distribués et lance réellement le Launcher en mode `--verify-bundle` avant de créer les archives.
 
 **À valider en raid :** erreur de position réelle face aux F8 successifs sur plusieurs cartes/résolutions/postures, performance GPU selon PC et compatibilité de l'escouade avec plusieurs personnes en PvE. **À fournir avant distribution commerciale :** autorisations des auteurs des cartes non commerciales / à droits incertains, et certificat de signature des exécutables si l'on veut un package authentifié côté Windows. Ces éléments ne peuvent pas être réputés complets à partir des tests automatisés.
+
+
+## 0.14.2.25 — Exact F8 même pendant le déplacement (facultatif)
+
+Le moteur actuel utilise un mouvement à l'estime entre deux captures natives, ce qui ne peut pas garantir une position métrique exacte quand EFT varie la vitesse selon le terrain, le poids et les équipements. La version 0.14.2.25 ajoute donc une **source exacte répétée** : le menu de notification propose « **Recalage F8 pendant déplacement · 4 s (expérimental)** », initialement **désactivé**. Le joueur choisit volontairement de l'activer; la préférence locale survit aux raids et aux mises à jour.
+
+- Conditions strictes : jeu EFT actif au premier plan, raid en cours, mouvement détecté, ni visée/tir/free-look, première capture exacte déjà validée, dossier de captures détecté et touche « Screenshot » EFT **simple** dans F6 à F12 (par exemple F8). La touche est lue dans la configuration du joueur, jamais supposée. Au moins 4 secondes entre captures et après la dernière ancre exacte.
+- Le logiciel emploie l'envoi de touche Win32 déjà présent dans le projet. **Aucun accès à la mémoire du jeu, paquet réseau ou code EFT**. Le moteur garde l'historique entre le moment de l'image et sa détection pour replacer correctement le joueur à la capture, sans le renvoyer artificiellement en arrière.
+- **Pas de calibration ni d'apprentissage de keyframes lors d'une capture automatique en mouvement** : elle sert uniquement de position exacte. Les fichiers n'appartenant pas à la requête sont préservés; le mécanisme existant supprime prudemment les captures automatiques identifiées.
+- Diagnostic du menu GPS : demandes de recalage mobile et captures effectivement reconnues. Une demande sans réception doit rester un échec visible, jamais une réussite simulée.
+- Précaution : l'envoi automatique d'une touche peut afficher un message de capture dans EFT et affecter les performances. Les règles d'utilisation de Battlestate concernant les macros et logiciels tiers peuvent évoluer. Utiliser ce mode à ses propres risques, seulement après avoir vérifié ses permissions; il est **facultatif**. Les tests de CI montrent le comportement prévu, pas un F8 capturé à travers l'anticheat ou une précision certifiée en PvE.
+- Si le joueur préfère ne pas utiliser les entrées automatiques, la capture **F8 manuelle reste entièrement opérationnelle**. Un raccourci Screenshot facile à utiliser tout en bougeant permet un recalage rapide.
