@@ -236,7 +236,7 @@ test("partage manuel : profils sauvegardés et effacement individuel",()=>{
 });
 test("partage en direct limite le réseau aux identifiants publics de ses quêtes",()=>{
   const a="a".repeat(24),b="b".repeat(24);
-  const p=new QuestPilot.Planner(storage,"pve");
+  const p=new QuestPilot.Planner(null,"pve");
   p.toggle("fake-local-id",true);
   p.toggle(a,true);
   p.toggleDone(a+":"+b,true);
