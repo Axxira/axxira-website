@@ -426,3 +426,32 @@ test("une position incertaine conserve la derniere cible sans distance inventee"
  const lost=p.nextForMap(maps,{locationUncertain:true});
  assert.equal(lost.objectiveId,"first");
 });
+
+test("deux étapes terminées masquent leurs marqueurs mais la troisième reste visible",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);
+ p.toggle("quest-a",true);
+ p.toggleDone("quest-a:first",true);
+ p.toggleDone("quest-a:second",true);
+ const states=task.objectives.map(o=>p.markerVisual(
+  {meta:{questId:"quest-a",objectiveId:o.id}},new Set(["customs"])));
+ assert.deepEqual(states.map(x=>x.done),[true,true,false]);
+ assert.deepEqual(p.stepsForMap(new Set(["customs"])).filter(s=>!s.done)
+  .map(s=>s.objectiveId),["third"]);
+ p.toggleDone("quest-a:second",false);
+ assert.deepEqual(task.objectives.map(o=>p.markerVisual(
+  {meta:{questId:"quest-a",objectiveId:o.id}},new Set(["customs"])).done),
+  [true,false,false]);
+});
+test("lieux alternatifs d'une seule étape ont toujours le même statut",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([optionsTask],translated);p.toggle("quest-b",true);
+ const before=p.markerVisual({meta:{questId:"quest-b",objectiveId:"one",
+  possible:true}},new Set(["customs"]));
+ assert.equal(before.done,false);
+ p.toggleDone("quest-b:one",true);
+ const after=p.markerVisual({meta:{questId:"quest-b",objectiveId:"one",
+  possible:true}},new Set(["customs"]));
+ assert.equal(after.done,true);
+ assert.equal(after.number,1);
+});
