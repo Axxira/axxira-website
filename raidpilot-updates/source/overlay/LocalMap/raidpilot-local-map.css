@@ -187,6 +187,29 @@ html:not(.raidpilot-interactive) #questpilot-panel {display:none}
 #questpilot-hud small{display:block;color:#becbd7;font-size:10px}
 @media(max-width:650px){#questpilot-panel{max-width:90%;width:290px}#questpilot-hud{max-width:82%}}
 
+/* High-legibility quest strip BELOW the map, never over map pins. */
+#questpilot-hud{
+  position:relative;left:auto;bottom:auto;z-index:4;max-width:none;
+  width:100%;min-height:68px;flex:0 0 auto;display:flex;
+  align-items:center;gap:12px;padding:10px 14px;
+  border:0;border-top:2px solid #5dd4ff;border-radius:0;
+  background:#081725;pointer-events:none;box-shadow:none;overflow:hidden;
+}
+#questpilot-hud[hidden]{display:none}
+#questpilot-hud-color{width:7px;height:42px;flex:0 0 7px}
+#questpilot-hud .qp-current{min-width:0;flex:1}
+#questpilot-hud strong{font-size:15px;line-height:1.25;white-space:normal}
+#questpilot-hud small{font-size:13px;line-height:1.3;color:#e0e9f3}
+#questpilot-hud .qp-hotkey-label{flex:0 0 auto;min-width:120px;
+  text-align:center;color:#b9f8da;font-size:12px;font-weight:700;
+  border:1px solid #427c65;padding:6px;border-radius:7px}
+@media(max-width:650px){
+  #questpilot-hud{min-height:64px;padding:8px;gap:8px}
+  #questpilot-hud strong{font-size:13px}
+  #questpilot-hud small{font-size:11px}
+  #questpilot-hud .qp-hotkey-label{min-width:85px;font-size:10px}
+}
+
 /* QuestPilot evidence and consent-based, manual squad plan exchange. */
 .qp-task .qp-count{max-width:115px;text-align:right;line-height:1.2}
 .qp-share-code{display:block;width:100%;min-height:42px;max-height:90px;resize:vertical;
