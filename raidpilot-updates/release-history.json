@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.30",
+      "raidPilotVersion": "0.14.2.30",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Diagnostic localisation F8 — correction CSV et synchronisation privée",
+      "details": "Correctif de génération du diagnostic-localisation.csv : les observations F8 acceptées sont désormais consignées même lorsqu'il n'existe pas d'historique de pose, avec statut no_historical_pose plutôt qu'une comparaison inventée. Conserve la mesure des écarts lorsque l'historique est disponible, et la copie opt-in vers un dossier privé synchronisé. Version augmentée pour garantir la détection de cette mise à jour par les launchers. La précision du suivi entre F8 reste à améliorer à partir de mesures réelles."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.29",
       "raidPilotVersion": "0.14.2.29",
       "beaconVersion": "0.3.9",
