@@ -551,7 +551,8 @@ public sealed class SquadRelayClient : IAsyncDisposable
             || !root.TryGetProperty("done", out var done)
             || done.ValueKind != JsonValueKind.Array
             || done.GetArrayLength() > 120) return false;
-        var taskIds = new List<string>(), stepIds = new List<string>();
+        var taskIds = new List<string>();
+        var stepIds = new List<string>();
         foreach (var item in quests.EnumerateArray())
         {
             var value = item.ValueKind == JsonValueKind.String ? item.GetString() : null;
