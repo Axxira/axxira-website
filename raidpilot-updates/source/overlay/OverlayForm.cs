@@ -83,7 +83,7 @@ internal sealed partial class OverlayForm : Form
     private readonly LearnedRouteGraph _learnedRouteGraph;
     private readonly HashSet<Keys> _trackedKeyboardKeys;
     private readonly Dictionary<Keys, KeySample> _controlSamples = new(capacity: 10);
-    private readonly EftControlSettings _controlSettings;
+    private EftControlSettings _controlSettings;
     private RealtimePoseEstimator _realtimeEstimator;
 
     private ScreenshotFolderWatcher? _screenshotWatcher;
@@ -950,6 +950,7 @@ internal sealed partial class OverlayForm : Form
         var firstControlTick = !_controlTrackingActive;
         if (firstControlTick)
         {
+            RefreshMouseSensitivityFromEft();
             SynchronizeRawKeyboardTimeline();
             // The preceding interval may belong to another foreground app.
             // Synchronize physical state now, but never integrate that time.
@@ -3423,6 +3424,11 @@ internal sealed partial class OverlayForm : Form
                 && !_raidStartReplayCrossedTransition;
             if (estimatedPoseAtCapture is { } beforeCorrection)
                 _precisionResiduals.Observe(beforeCorrection, observation);
+            // Diagnostic local: comparer la prédiction historique AVANT recalage
+            // à la position absolue du PNG. Ne jamais enregistrer le screenshot.
+            if (estimatedPoseAtCapture is { } diagnosticPrediction)
+                LocalizationDiagnosticWriter.RecordAnchor(
+                    diagnosticPrediction, observation, _currentMap);
             _precisionV2DriftAudit.ObserveExactAnchor(
                 observation, estimatedPoseAtCapture,
                 hasCaptureTimestamp ? captureTimestamp : 0,
@@ -4126,6 +4132,40 @@ internal sealed partial class OverlayForm : Form
                     next.MapName);
             }
         }
+    }
+
+    // Read the user's CURRENT EFT sensitivity on every fresh foreground session.
+    // This never writes Control.ini and never changes keyboard bindings mid-raid.
+    // A changed sensitivity invalidates previously learned yaw gains.
+    private void RefreshMouseSensitivityFromEft()
+    {
+        var latest = EftControlSettings.Read();
+        if (!double.IsFinite(latest.MouseSensitivity)
+            || !double.IsFinite(latest.MouseAimingSensitivity)
+            || latest.MouseSensitivity < 0 || latest.MouseAimingSensitivity < 0)
+            return;
+        if (Math.Abs(latest.MouseSensitivity - _controlSettings.MouseSensitivity) < 0.000001
+            && Math.Abs(latest.MouseAimingSensitivity - _controlSettings.MouseAimingSensitivity) < 0.000001)
+            return;
+        _controlSettings = _controlSettings with {
+            MouseSensitivity = latest.MouseSensitivity,
+            MouseAimingSensitivity = latest.MouseAimingSensitivity
+        };
+        var settings = _realtimeEstimator.Settings with {
+            HipYawDegreesPerMouseCount = Math.Clamp(latest.MouseSensitivity * 0.1, 0.005, 0.5),
+            AdsYawDegreesPerMouseCount = Math.Clamp(latest.MouseAimingSensitivity * 0.1, 0.005, 0.5)
+        };
+        if (RealtimeCalibrationStore.TryLoad(GetRealtimeCalibrationPath(), settings,
+            new RealtimeCalibrationSource(latest.MouseSensitivity, latest.MouseAimingSensitivity),
+            out var calibrated))
+            settings = calibrated;
+        _realtimeEstimator.ApplySettings(settings);
+        // Do not let a pre-change sample segment teach the new sensitivity.
+        _precisionSegmentClean = false;
+        _hipMouseCountsSinceAnchor = 0;
+        _adsMouseCountsSinceAnchor = 0;
+        _hipMouseMagnitudeSinceAnchor = 0;
+        _adsMouseMagnitudeSinceAnchor = 0;
     }
 
     private void CalibrateRealtimeEstimator(
