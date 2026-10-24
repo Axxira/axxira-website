@@ -1035,7 +1035,13 @@ function renderQuestPilotHud(){
   if(!refs.questHud)return;
   const planner=state.questPilot;
   // A linear best-next lookup replaces full-route sorting on every 10Hz pose tick.
-  const next=planner?.nextForMap(state.questMapIds,state.player);
+  const fresh=state.player && Number.isFinite(state.lastPoseReceivedAt)
+    && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
+  const uncertainty=Number(state.player?.uncertainty);
+  const reliable=fresh && Number.isFinite(uncertainty) && uncertainty>=0 && uncertainty<=8;
+  const next=planner?.nextForMap(state.questMapIds,{
+    ...state.player,positionReliable:!!reliable
+  });
   if(!next){refs.questHud.hidden=true;return;}
   refs.questHud.hidden=false;
   refs.questHudColor.style.backgroundColor=next.color;
@@ -1043,8 +1049,7 @@ function renderQuestPilotHud(){
   const fresh=state.player && Number.isFinite(state.lastPoseReceivedAt)
     && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
   const uncertainty=Number(state.player?.uncertainty);
-  const located=fresh && Number.isFinite(uncertainty) && uncertainty>=0
-    && uncertainty<=8 && Number.isFinite(next.distance);
+  const located=reliable && !next.locationUncertain && Number.isFinite(next.distance);
   const distance=located?" ≈"+(Math.round(next.distance/5)*5)+" m (estimé)"
     :" distance non fiable · recalage F8";
   refs.questHudDetail.textContent=next.name
