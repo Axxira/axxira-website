@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T14:55:19.3387735+00:00",
+  "publishedAt": "2026-10-24T16:13:45.4306093+00:00",
   "raidPilot": {
     "version": "0.14.2.29",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.29-b0.3.9-l0.2.15-86292a6a3b0a/RaidPilot-Overlay-v0.14.2.29-Windows-x64.zip",
-    "sha256": "791B649843A63A6A24360529B50850CD05A2E1FB8989487636DDD513B17C591A",
-    "sizeBytes": 234476136,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.29-b0.3.9-l0.2.15-edc2ab551205/RaidPilot-Overlay-v0.14.2.29-Windows-x64.zip",
+    "sha256": "4D1BC660B9FEDE3181E79F671C57949BE4BB8733A7BAD558906F320860FFEEE4",
+    "sizeBytes": 234470964,
     "releaseNotes": "QuestPilot simplifie la préparation et le suivi des raids : la recherche dans « Mes quêtes » porte désormais sur toutes les cartes et sur le texte des objectifs, même sans coordonnées publiques. Les quêtes non géolocalisées restent sélectionnables et leurs étapes apparaissent dans « Autres étapes · sans lieu précis », avec des cases manuelles persistantes et une distinction claire entre la coche du joueur et la remise de quête confirmée par un journal EFT. Les marqueurs numérotés continuent d'utiliser la même couleur par quête; seuls les objectifs possédant une position fiable sont numérotés sur la carte 1/2/3, tandis que les autres sont conservés dans le suivi sans produire de faux points. Les préparatifs (clé, objet, balise, équipement) couvrent aussi les objectifs sans emplacement, sans prétendre lire l'inventaire. Nouvelle section « Objectifs communs à l'escouade » à l'intérieur de « Mes quêtes », distinguant la progression personnelle de la progression importée ou reçue en direct, avec mention explicite « coché par l'ami » vs « à faire ». Les repères appartenant seulement à l'équipe ne changent plus le focus de la propre quête du joueur. La boucle de HUD à 10Hz interroge seulement le prochain objectif pertinent en temps linéaire O(n), au lieu de recalculer toute la tournée de proximité O(n² log n) en permanence; la liste de planification détaillée reste dans le panneau. Tests de non-régression sur la recherche transcartes, les balises numérotées, les étapes non géolocalisées, les plans d'équipe et l'état de confiance. Aucun déploiement Cloudflare en production n'est effectué dans cette version : le partage manuel RPQ1 fonctionne, et le partage direct demeure bloqué tant que le relais n'annonce pas features.questplan=true et ne passe pas un test WebSocket bidirectionnel. L'ordre de visite n'est pas une route garantie entre bâtiments. Versions Beacon 0.3.9 et Launcher 0.2.15 inchangées."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.29-b0.3.9-l0.2.15-86292a6a3b0a/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "FE9B777D222333F6DA6585A435A314946A2F56DB9A183596AA51F90ADC4C854A",
-    "sizeBytes": 58332195,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.29-b0.3.9-l0.2.15-edc2ab551205/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "342FD728BB94AE44FA7ED30F9FCFA51997B7229319E9A3251BD81CE24912FB3E",
+    "sizeBytes": 58332196,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.29-b0.3.9-l0.2.15-86292a6a3b0a/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "4679D6092FFDE7E3FBEA96986B69A783C63E3386242893DC1F12E1436DF71316",
-    "sizeBytes": 351060299,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.29-b0.3.9-l0.2.15-edc2ab551205/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "7B80D63D63FA826F1C324A4227C3D5B83575AD7B0E664CB110FFE47A3640E855",
+    "sizeBytes": 351055128,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
