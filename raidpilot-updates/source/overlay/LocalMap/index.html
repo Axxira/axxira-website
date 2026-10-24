@@ -49,6 +49,7 @@
         <div id="questpilot-list"></div>
         <div class="qp-section-title">🎯 Mes prochains objectifs</div>
         <div id="questpilot-steps"></div>
+        <details class="qp-advanced"><summary>✓ Étapes terminées · réactiver si erreur</summary><div id="questpilot-done"></div></details>
         <details class="qp-advanced"><summary>Autres objectifs sans emplacement</summary>
         <div id="questpilot-other"></div></details>
         <details class="qp-advanced"><summary>Préparation · clés et objets</summary>
@@ -78,10 +79,7 @@
         <div id="details" aria-live="polite" hidden></div>
         <div id="tactical-warning" role="status" aria-live="polite" hidden></div>
         <div id="position-stale" role="status" aria-live="polite" hidden>GPS : position non actualisée · vérifie le suivi F8</div>
-        <section id="questpilot-hud" aria-live="off" aria-label="Prochain objectif QuestPilot" hidden>
-          <span id="questpilot-hud-color" aria-hidden="true"></span>
-          <div><strong id="questpilot-hud-title"></strong><small id="questpilot-hud-detail"></small></div>
-        </section>
+
         <div id="feature-hud">
           <div id="raid-timer" aria-label="Temps restant du raid" hidden></div>
           <div id="guidance-hud" hidden><span id="guidance-arrow" aria-hidden="true">↑</span><div><strong id="guidance-name"></strong><small id="guidance-details"></small></div></div>
@@ -100,6 +98,11 @@
         <div id="map-credit"></div>
       </section>
     </main>
+    <section id="questpilot-hud" aria-live="off" aria-label="Prochain objectif QuestPilot" hidden>
+      <span id="questpilot-hud-color" aria-hidden="true"></span>
+      <div class="qp-current"><strong id="questpilot-hud-title"></strong><small id="questpilot-hud-detail"></small></div>
+      <span class="qp-hotkey-label">Ctrl + Alt + I<br>✓ Étape faite</span>
+    </section>
     <section id="quest-context" aria-label="Quête proche, progression non vérifiée" hidden><strong id="quest-name"></strong><span id="quest-where"></span><span id="quest-instruction"></span><small id="quest-note"></small></section>
   </div>
   <script src="projection.js"></script>

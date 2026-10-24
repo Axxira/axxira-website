@@ -13,6 +13,7 @@ internal sealed partial class OverlayForm : Form
     private const string DefaultMapUrl = "https://tarkov.dev/map/customs";
     private const int ToggleVisibilityHotkeyId = 0x5250;
     private const int ToggleInteractionHotkeyId = 0x5251;
+    private const int QuestCompleteHotkeyId = 0x5254;
     private const int ToggleGpsHotkeyId = 0x5252;
     private const int CycleExtractionHotkeyId = 0x5253;
     private const double OverlayOpacity = 0.86;
@@ -104,6 +105,7 @@ internal sealed partial class OverlayForm : Form
     private bool _allowClose;
     private bool _visibilityHotkeyRegistered;
     private bool _interactionHotkeyRegistered;
+    private bool _questCompleteHotkeyRegistered;
     private bool _gpsHotkeyRegistered;
     private bool _extractionHotkeyRegistered;
     private bool _rawMouseInputRegistered;
@@ -355,6 +357,10 @@ internal sealed partial class OverlayForm : Form
             Handle,
             ToggleInteractionHotkeyId,
             NativeMethods.ModControl | NativeMethods.ModAlt | NativeMethods.ModNoRepeat,
+            (uint)Keys.U);
+        _questCompleteHotkeyRegistered = NativeMethods.RegisterHotKey(
+            Handle, QuestCompleteHotkeyId,
+            NativeMethods.ModControl | NativeMethods.ModAlt | NativeMethods.ModNoRepeat,
             (uint)Keys.I);
         _gpsHotkeyRegistered = NativeMethods.RegisterHotKey(
             Handle,
@@ -371,6 +377,7 @@ internal sealed partial class OverlayForm : Form
 
         if (!_visibilityHotkeyRegistered
             || !_interactionHotkeyRegistered
+            || !_questCompleteHotkeyRegistered
             || !_gpsHotkeyRegistered
             || !_extractionHotkeyRegistered)
         {
@@ -392,6 +399,8 @@ internal sealed partial class OverlayForm : Form
         {
             NativeMethods.UnregisterHotKey(Handle, ToggleInteractionHotkeyId);
         }
+        if (_questCompleteHotkeyRegistered)
+            NativeMethods.UnregisterHotKey(Handle, QuestCompleteHotkeyId);
         if (_gpsHotkeyRegistered)
         {
             NativeMethods.UnregisterHotKey(Handle, ToggleGpsHotkeyId);
@@ -490,6 +499,9 @@ internal sealed partial class OverlayForm : Form
                 case ToggleInteractionHotkeyId:
                     SetClickThrough(!_clickThrough, activateWhenInteractive: true);
                     return;
+                case QuestCompleteHotkeyId:
+                    _ = CompleteQuestFocusAsync();
+                    return;
                 case ToggleGpsHotkeyId:
                     OnGpsButtonClick(this, EventArgs.Empty);
                     return;
@@ -500,6 +512,20 @@ internal sealed partial class OverlayForm : Form
         }
 
         base.WndProc(ref message);
+    }
+
+    private async Task CompleteQuestFocusAsync()
+    {
+        if (!_raidActive || !_webReady || _webView.CoreWebView2 is null
+            || _formLifetime.IsCancellationRequested || !_tarkovIsForeground)
+            return;
+        try
+        {
+            await _webView.CoreWebView2.ExecuteScriptAsync(
+                "window.RaidPilotLocalMap?.questPilotCompleteFocused?.();");
+        }
+        catch (InvalidOperationException) { }
+        catch (System.Runtime.InteropServices.COMException) { }
     }
 
     private void BuildWebView()
@@ -519,7 +545,7 @@ internal sealed partial class OverlayForm : Form
             ShowNoActivate(force: true);
             ReassertTopMost();
         });
-        menu.Items.Add("Interagir (Ctrl+Alt+I)", null, (_, _) =>
+        menu.Items.Add("Interagir (Ctrl+Alt+U)", null, (_, _) =>
         {
             SetClickThrough(false, activateWhenInteractive: true);
         });

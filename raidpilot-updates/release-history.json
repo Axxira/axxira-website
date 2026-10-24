@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.35",
+      "raidPilotVersion": "0.14.2.35",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot — objectifs terminés masqués, bandeau lisible, Ctrl+Alt+I",
+      "details": "Sur la carte, chaque objectif personnel marqué terminé disparaît immédiatement; les autres points de la même quête restent affichés. Une section repliable « Étapes terminées » permet de réactiver en un clic un objectif coché manuellement. Les lieux alternatifs d'une seule étape partagent le même statut; les marqueurs des coéquipiers restent indépendants. Une quête entière remise et confirmée par les journaux EFT ne peut pas être remise en cours manuellement. Les journaux EFT disponibles confirment des quêtes entières, pas nécessairement chaque sous-objectif; la validation rapide des étapes se fait manuellement. Deux tests de non-régression ajoutés. Comprend également le correctif de priorité du suivi manuel et masque les distances quand la localisation est incertaine (PR #26 reprise dans cette version). Nouveau bandeau d'objectif placé sous la carte (texte plus grand) et raccourci global Ctrl+Alt+I pour cocher une seule étape ciblée pendant un raid, uniquement si Tarkov est au premier plan. Le raccourci Interagir est transféré à Ctrl+Alt+U pour éviter toute collision. Les étapes terminées sont restaurables manuellement."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.33",
       "raidPilotVersion": "0.14.2.33",
       "beaconVersion": "0.3.9",
