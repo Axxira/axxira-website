@@ -15,7 +15,7 @@ class Element {
 }
 const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale',
   'quests-btn','questpilot-panel','questpilot-close','questpilot-search','questpilot-summary',
-  'questpilot-list','questpilot-steps','questpilot-prep','questpilot-hud',
+  'questpilot-list','questpilot-steps','questpilot-other','questpilot-shared-steps','questpilot-prep','questpilot-hud',
   'questpilot-hud-color','questpilot-hud-title','questpilot-hud-detail',
   'questpilot-share','questpilot-share-status','questpilot-share-output',
   'questpilot-peer-name','questpilot-peer-code','questpilot-import','questpilot-team-plans'])ids[id]=new Element('div');
@@ -237,6 +237,12 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
    'Importing teammate plan changed my own quest selection');
  check(ids['questpilot-team-plans'].children.length>0,
    'Imported teammate plan not visible in interactive panel');
+ check(ids['questpilot-shared-steps'].children.length>0,
+   'The combined team objectives section did not render');
+ check(ids['questpilot-other'].children.length>0,
+   'Objectives lacking public coordinates are not described');
+ check(ids['questpilot-prep'].children.length>0,
+   'The simple raid-preparation summary is missing');
  check(ids.overlay.children.some(node=>node.dataset.questId===chosen.id),
    'Teammate-only quest marker did not display on map');
  // Live squad plans are ephemeral, mode-scoped and never imported as personal progress.

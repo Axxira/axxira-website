@@ -293,4 +293,97 @@ test("les plans en direct expirent et disparaissent sans supprimer les miens",()
   assert.equal(Object.keys(p.livePlans).length,0);
   assert.equal(p.isActive(a),true);
 });
+
+test("recherche globale : mission d'une autre carte disponible sans changer de carte",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ const target={id:"remote-quest",name:"Livraison aux Bois",objectives:[
+   {id:"wood",type:"visit",description:"Déposer une BALISE",zones:[
+     {map:{id:"woods"},position:{x:1,z:2}}]}]};
+ p.setCatalog([task,target],translated);
+ const found=p.searchTasks(new Set(["customs"]),"bois");
+ assert.ok(found.some(q=>q.id==="remote-quest"));
+ const description=p.searchTasks(new Set(["customs"]),"balise");
+ assert.ok(description.some(q=>q.id==="remote-quest"));
+ assert.ok(!p.visibleTasks(new Set(["customs"])).some(q=>q.id==="remote-quest"));
+});
+test("les objectifs sans coordonnées restent enregistrés comme étapes réelles",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ const q={id:"mixed",name:"Missions mixtes",objectives:[
+   {id:"kill",type:"kill",description:"Éliminer un ennemi",markerItem:"signal-item"},
+   objective("a","Balise A","customs",1,1),
+   {id:"hand",type:"giveItem",description:"Remettre l'objet",zones:[]},
+   objective("b","Balise B","customs",10,10)
+ ]};
+ p.setCatalog([q],{"signal-item":"Signaux"});
+ const t=p.taskFor("mixed");
+ assert.equal(t.objectives.length,4);
+ assert.equal(t.mappedCount,2);
+ assert.equal(t.unmappedCount,2);
+ assert.deepEqual(t.objectives.map(s=>s.number),[null,1,null,2]);
+ assert.deepEqual(t.objectives.map(s=>s.allNumber),[1,2,3,4]);
+ p.toggle("mixed",true);
+ const shown=p.stepsForMap(new Set(["customs"]));
+ assert.deepEqual(shown.map(s=>s.number),[1,2]);
+ assert.equal(p.unmappedSteps().length,2);
+ assert.ok(p.preparationForMap(new Set(["customs"])).some(s=>s.need.includes("Balise")));
+ assert.equal(p.markerVisual({meta:{questId:"mixed",objectiveId:"kill"}},
+     new Set(["customs"])),null);
+});
+test("le choix manuel d'une étape sans carte survit au redémarrage",()=>{
+ const storageMap=new Map();
+ const store={getItem:k=>storageMap.get(k),setItem:(k,v)=>storageMap.set(k,v)};
+ const p=new QuestPilot.Planner(store,"pve");
+ p.setCatalog([{id:"nogeo",name:"Sans carte",objectives:[{
+   id:"search",type:"findItem",description:"Chercher un objet",zones:[]}]}]);
+ p.toggle("nogeo",true);
+ assert.equal(p.unmappedSteps().length,1);
+ p.toggleDone("nogeo:search",true);
+ const restored=new QuestPilot.Planner(store,"pve");
+ restored.setCatalog(p.tasks.map(q=>({
+   id:q.id,name:q.name,objectives:[{id:"search",description:"Chercher un objet"}]
+ })));
+ assert.equal(restored.unmappedSteps()[0].done,true);
+ assert.equal(restored.searchTasks(new Set(["customs"]),"sans carte")[0].id,"nogeo");
+});
+test("le HUD choisit une seule étape sans recalculer toute la tournée",()=>{
+ const p=new QuestPilot.Planner(null,"pve");p.setCatalog([task],translated);
+ p.toggle("quest-a",true);
+ const loc={position:{x:1,z:1}};
+ assert.equal(p.nextForMap(new Set(["customs"]),loc).id,"quest-a:first");
+ p.focus("quest-a:third");
+ assert.equal(p.nextForMap(new Set(["customs"]),loc).id,"quest-a:third");
+ p.toggleDone("quest-a:third",true);
+ assert.equal(p.nextForMap(new Set(["customs"]),loc).id,"quest-a:first");
+ p.toggleDone("quest-a:first",true);p.toggleDone("quest-a:second",true);
+ assert.equal(p.nextForMap(new Set(["customs"]),loc),null);
+});
+test("escouade : statut individuel de chaque balise, sans modifier mes coches",()=>{
+ const p=new QuestPilot.Planner(null,"pve");p.setCatalog([task],translated);
+ const friend=new QuestPilot.Planner(null,"pve");friend.setCatalog([task],translated);
+ friend.toggle("quest-a",true);friend.toggleDone("quest-a:first",true);
+ assert.equal(p.importShare(friend.exportShare(),"Pierre"),true);
+ const steps=p.sharedStepsForMap(new Set(["customs"]));
+ assert.equal(steps.length,3);
+ assert.deepEqual(steps.map(s=>s.number),[1,2,3]);
+ assert.equal(steps[0].members[0].name,"Pierre");
+ assert.equal(steps[0].members[0].done,true);
+ assert.equal(steps[1].members[0].done,false);
+ assert.equal(steps[0].mine,false);
+ assert.equal(p.isDone("quest-a:first"),false);
+});
+test("préparation : exclut quêtes remises, conserve exigences sans GPS",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ const id="eeeeeeeeeeeeeeeeeeeeeeee";
+ p.setCatalog([{id,name:"Équipement obligatoire",objectives:[
+   {id:"unmapped",type:"wearing",description:"Équipement",markerItem:"signal-item"},
+   objective("mapped","Placer la balise","customs",1,1)]}]);
+ p.toggle(id,true);
+ const before=p.preparationForMap(new Set(["customs"]));
+ assert.ok(before.length>=1);
+ assert.equal(p.recordEvidence({taskId:id,mode:"pve",status:"completed",
+   source:"eft-local-log",at:1792828800}),true);
+ assert.equal(p.preparationForMap(new Set(["customs"])).length,0);
+ assert.equal(p.unmappedSteps()[0].doneSource,"eft-local-log");
+});
+
 console.log(JSON.stringify({status:"PASS",checks}));

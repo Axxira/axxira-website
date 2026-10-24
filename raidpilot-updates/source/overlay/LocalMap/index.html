@@ -42,14 +42,18 @@
 
       <aside id="questpilot-panel" class="hidden" aria-label="QuestPilot — mes quêtes">
         <div class="qp-panel-title"><strong>🎯 QuestPilot</strong><button id="questpilot-close" type="button" aria-label="Fermer les quêtes">✕</button></div>
-        <p class="qp-subtle">Sélectionne tes quêtes. Leur couleur et le numéro des étapes restent identiques entre les raids.</p>
-        <input id="questpilot-search" type="search" placeholder="Chercher une quête…" aria-label="Chercher une quête dans le catalogue">
+        <p class="qp-subtle">Choisis tes quêtes ou utilise TAB → TÂCHES → F8. Recherche aussi les missions d'autres cartes. Les numéros et couleurs restent stables entre les raids.</p>
+        <input id="questpilot-search" type="search" placeholder="Chercher une quête partout…" aria-label="Chercher une quête parmi toutes les cartes et objectifs">
         <div id="questpilot-summary" class="qp-summary" role="status"></div>
         <div id="questpilot-list"></div>
         <div class="qp-section-title">Étapes sur cette carte</div>
         <div id="questpilot-steps"></div>
+        <div class="qp-section-title">Autres étapes · sans lieu précis</div>
+        <div id="questpilot-other"></div>
         <div class="qp-section-title">À préparer avant le raid</div>
         <div id="questpilot-prep"></div>
+        <div class="qp-section-title">Objectifs communs à l'escouade</div>
+        <div id="questpilot-shared-steps"></div>
         <div class="qp-section-title">Escouade · partage facultatif</div>
         <p class="qp-subtle">Crée ou rejoins une escouade. Si le relais prend en charge les quêtes, active « Escouade → Partager mes quêtes » depuis l'icône RaidPilot. Sinon, copie ton plan ci-dessous. Les progressions restent individuelles.</p>
         <button id="questpilot-share" type="button">Copier mon plan</button>

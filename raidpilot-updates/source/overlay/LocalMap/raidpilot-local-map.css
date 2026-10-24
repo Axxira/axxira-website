@@ -199,3 +199,17 @@ html:not(.raidpilot-interactive) #questpilot-panel {display:none}
 .qp-team-item button{min-height:24px;font-size:11px;padding:1px 5px}
 .rp-marker.quest.quest-pilot-step.team-only{opacity:.72}
 .rp-marker.quest.quest-pilot-step.team-only .rp-step-ring{stroke-dasharray:3 3;stroke:#e8efff}
+
+/* QuestPilot quick-plan: unlocated objectives and shared stages live inside the
+   existing interactive menu; the combat HUD and map dimensions are unchanged. */
+.qp-unmapped {color:#b9c7d3}
+.qp-unmapped>div {min-width:0;flex:1}
+.qp-unmapped-tag{display:inline-flex;width:24px;height:24px;flex:0 0 24px;border:1px dashed #8b9cab;
+  border-radius:50%;align-items:center;justify-content:center;color:#afc2cf}
+.qp-team-step{display:flex;align-items:center;gap:9px;min-height:30px;padding:5px 2px;
+  border-bottom:1px solid #253542}
+.qp-team-step>div{flex:1;min-width:0}
+.qp-team-step strong{display:block;color:#e7eeff;font-size:11px}
+.qp-team-step small{display:block;color:#9fb4c6;font-size:11px}
+.qp-step input:disabled{opacity:.7;cursor:not-allowed}
+.qp-task .qp-count{max-width:140px}

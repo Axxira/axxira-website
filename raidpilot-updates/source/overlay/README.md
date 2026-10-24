@@ -450,3 +450,16 @@ Cette version prépare le partage direct des plans de quêtes via le relais d'es
 - **Worker candidat de staging** : `raidpilot-updates/relay/worker-quest.mjs`, configuration de staging et documentation de migration. Ce code doit d'abord être testé puis déployé par une personne disposant d'un accès autorisé au compte Cloudflare. **Aucun Worker en production n'a été remplacé par ce commit.**
 
 Validation prévue : suite JS, tests C# de paquetage, compilation Windows, simulation de deux sockets et de séparation des salles. Les confirmations de quêtes dans les journaux EFT restent locales et ne sont pas diffusées automatiquement. Le partage direct ne pourra être annoncé comme fonctionnel qu'après test de bout en bout sur le serveur de production, avec deux clients réels.
+
+
+## 0.14.2.29 — QuestPilot, parcours plus simple et HUD léger
+
+- **Recherche globale dans « Mes quêtes ».** Saisir un nom de mission ou les mots d'un objectif recherche maintenant dans la totalité du catalogue courant (PvE ou PvP), même si la mission ne se déroule pas sur la carte affichée et même si aucune coordonnée n'est publiée. Sans recherche, la liste reste ciblée sur les missions choisies et sur la carte affichée.
+- **Toutes les étapes conservées.** Les objectifs publics non géolocalisés ne disparaissent plus du modèle. Ils figurent sous « Autres étapes · sans lieu précis » avec une case personnelle, sans marqueur inventé. Les objectifs localisés restent numérotés 1, 2, 3... dans leur ordre de la mission. Les positions alternatives d'une même étape gardent un numéro commun.
+- **Préparation de raid.** La checklist inclut maintenant les exigences connues des objectifs qui n'ont aucun point GPS; les éléments cochés restent locaux. Une indication du nombre de conditions encore à vérifier est montrée. Ceci n'est pas une lecture de l'inventaire EFT.
+- **Étapes communes d'escouade.** Dans le panneau interactif « Mes quêtes », la section « Objectifs communs à l'escouade » montre les étapes connues de chaque plan d'ami (import manuel ou direct autorisé), avec la même couleur que sur la carte et la mention individuelle « coché » / « à faire ». Une étape d'ami ne devient jamais une étape personnelle cochée, et cliquer un repère réservé à l'équipe ne change plus l'objectif de navigation du joueur.
+- **HUD optimisé.** Le petit bandeau pendant le raid ne recalcule plus la totalité de la tournée à chaque position : il choisit le prochain objectif pertinent par un parcours linéaire des étapes géolocalisées encore à faire. Le panneau conserve le détail et la sélection manuelle de la cible.
+- **Fiabilité.** Une étape déjà confirmée par la remise de la quête dans les journaux EFT reste explicitement distinguée des coches manuelles. Une quête sans point public n'affiche aucune distance inventée. Le GPS garde sa marge d'incertitude.
+- **Relais.** Le code client de partage volontaire est présent depuis 0.14.2.28, mais le Worker Cloudflare de production n'est pas modifié ici. La synchronisation en direct exige une validation effective du service questplan (et des tests à deux PC); l'import/export manuel fonctionne indépendamment du Worker.
+
+Les tests automatiques .NET, JavaScript et de production sont un garde-fou technique, **pas** une certification de progression EFT en partie réelle ni une garantie d'itinéraire praticable.
