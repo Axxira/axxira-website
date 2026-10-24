@@ -5684,6 +5684,11 @@ internal sealed partial class OverlayForm : Form
             }
 
             SetRaidActive(true);
+            // Never reuse a PvE/PvP mode verified in a previous raid.
+            // A fresh Session mode line is mandatory before classifying
+            // any new notification from this session.
+            _logVerifiedGameMode = null;
+            _unscopedQuestLogEvents.Clear();
 
             // Un nouveau fichier de session reprÃƒÂ©sente un nouveau raid mÃƒÂªme si
             // le joueur relance exactement la mÃƒÂªme carte.
@@ -5744,6 +5749,8 @@ internal sealed partial class OverlayForm : Form
             }
 
             SetRaidActive(false);
+            _logVerifiedGameMode = null;
+            _unscopedQuestLogEvents.Clear();
             StopCollectiveAtlasRelay();
             _compassOverlay.ClearHeading();
             _learnedRouteGraph.BreakContinuity();
