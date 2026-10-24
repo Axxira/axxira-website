@@ -3,7 +3,7 @@ const assert=require("node:assert/strict");
 const {pathToFileURL}=require("node:url");
 const path=require("node:path");
 (async()=>{
-  const mod=await import(pathToFileURL(path.join(__dirname,"../relay/worker-quest.mjs")));
+  const mod=await import(pathToFileURL(path.join(__dirname,"../../../relay/worker-quest.mjs")));
   let n=0;
   const check=(ok,label)=>{assert.ok(ok,label);n++;};
   const team="q".repeat(43),a="a".repeat(24),b="b".repeat(24);
