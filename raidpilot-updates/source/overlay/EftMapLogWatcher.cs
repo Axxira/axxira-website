@@ -5,6 +5,11 @@ using Microsoft.Win32;
 
 namespace RaidPilot.Overlay;
 
+public sealed class EftGameModeDetectedEventArgs(string gameMode) : EventArgs
+{
+    public string GameMode { get; } = gameMode;
+}
+
 public sealed class EftMapDetectedEventArgs(EftMapRoute map) : EventArgs
 {
     public EftMapRoute Map { get; } = map;
@@ -47,6 +52,8 @@ public sealed class EftMapLogWatcher : IDisposable
     private DateTime? _lastMapDetectionLogTime;
     private bool _raidEndPending;
     private bool _lastLifecycleEventWasRaidEnd;
+    private string? _lastGameMode;
+    private readonly List<string> _pendingGameModes = [];
     private bool _started;
     private bool _disposed;
 
@@ -75,6 +82,7 @@ public sealed class EftMapLogWatcher : IDisposable
     }
 
     public event EventHandler<EftMapDetectedEventArgs>? MapDetected;
+    public event EventHandler<EftGameModeDetectedEventArgs>? GameModeDetected;
     public event EventHandler? RaidEnded;
 
     /// <summary>Starts silently. False means EFT logs are not currently available.</summary>
@@ -117,7 +125,7 @@ public sealed class EftMapLogWatcher : IDisposable
             {
                 MapDetected?.Invoke(this, new EftMapDetectedEventArgs(initialMap));
             }
-
+            Publish(null);
             return available;
         }
     }
@@ -494,6 +502,8 @@ public sealed class EftMapLogWatcher : IDisposable
         _lastMapDetectionLogTime = null;
         _raidEndPending = false;
         _lastLifecycleEventWasRaidEnd = false;
+        _lastGameMode = null;
+        _pendingGameModes.Clear();
         try
         {
             _position = startAtEnd ? new FileInfo(path).Length : 0;
@@ -567,6 +577,12 @@ public sealed class EftMapLogWatcher : IDisposable
                         if (contentLength > 0)
                         {
                             var line = Encoding.UTF8.GetString(lineBuffer, 0, contentLength);
+                            if (EftMapLogParser.DetectSessionMode(line) is { } detectedMode
+                                && !string.Equals(_lastGameMode, detectedMode, StringComparison.Ordinal))
+                            {
+                                _lastGameMode = detectedMode;
+                                _pendingGameModes.Add(detectedMode);
+                            }
                             if (IsRaidEndedLine(line))
                             {
                                 _raidEndPending = true;
@@ -676,6 +692,8 @@ public sealed class EftMapLogWatcher : IDisposable
             ? null
             : detections?.LastOrDefault();
         _lastMapName = latestMap?.NormalizedName;
+        // A finished raid cannot establish the mode of a new one.
+        if (_lastLifecycleEventWasRaidEnd) _pendingGameModes.Clear();
         // The bounded tail establishes startup state synchronously. Do not
         // replay an older end marker on the next reconciliation tick.
         _raidEndPending = false;
@@ -710,15 +728,16 @@ public sealed class EftMapLogWatcher : IDisposable
             RaidEnded?.Invoke(this, EventArgs.Empty);
         }
 
-        if (detections is null)
+        if (detections is not null)
         {
-            return;
+            foreach (var map in detections)
+                MapDetected?.Invoke(this, new EftMapDetectedEventArgs(map));
         }
-
-        foreach (var map in detections)
-        {
-            MapDetected?.Invoke(this, new EftMapDetectedEventArgs(map));
-        }
+        // Publish mode *after* map transitions so raid reset cannot erase it.
+        var modes = _pendingGameModes.ToArray();
+        _pendingGameModes.Clear();
+        foreach (var mode in modes)
+            GameModeDetected?.Invoke(this, new EftGameModeDetectedEventArgs(mode));
     }
 
     internal static bool IsRaidEndedLine(string? line) =>
@@ -833,6 +852,8 @@ public sealed class EftMapLogWatcher : IDisposable
         _discardUntilNewline = false;
         _lastMapName = null;
         _lastMapDetectionLogTime = null;
+        _lastGameMode = null;
+        _pendingGameModes.Clear();
     }
 
     public void Dispose()

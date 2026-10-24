@@ -51,6 +51,11 @@ jobs:
             node (Join-Path $root ("Tests/" + $name))
             if ($LASTEXITCODE -ne 0) { throw "JS regression failure: $name" }
           }
+      - name: Probe existing Cloudflare relay for QuestPilot messages (informational)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          node raidpilot-updates/relay/probe-quest.mjs
       - name: Test native zoom storage and full RaidPilot suite
         shell: pwsh
         run: |

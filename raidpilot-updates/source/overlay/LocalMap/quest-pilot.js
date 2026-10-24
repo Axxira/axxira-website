@@ -124,13 +124,40 @@
   function sanitizeArray(v) {
     return [...new Set((Array.isArray(v) ? v : []).map(identifier).filter(Boolean))].slice(0,MAX_SAVED);
   }
-  function defaultState() { return {schemaVersion:1,active:[],excluded:[],done:[],packed:[],focused:""}; }
+  function safeEvidence(input){
+    const output=Object.create(null);
+    if(!input || typeof input!=="object" || Array.isArray(input))return output;
+    for(const [id,event] of Object.entries(input).slice(0,MAX_SAVED)){
+      if(!/^[0-9a-f]{24}$/i.test(id)||!event||typeof event!=="object")continue;
+      if(!["active","completed","failed"].includes(event.status)||event.source!=="eft-local-log"
+        ||!Number.isSafeInteger(event.at)||event.at<1500000000||event.at>4102444800)continue;
+      output[id.toLowerCase()]={status:event.status,source:"eft-local-log",at:event.at};
+    }
+    return output;
+  }
+  function safePeerPlans(raw){
+    const result=Object.create(null);
+    if(!raw||typeof raw!=="object"||Array.isArray(raw))return result;
+    for(const [name,plan] of Object.entries(raw).slice(0,6)){
+      const key=String(name).trim().slice(0,24);
+      if(!key||!plan||typeof plan!=="object")continue;
+      result[key]={
+        active:sanitizeArray(plan.active).slice(0,80),
+        done:sanitizeArray(plan.done).slice(0,120),
+        imported:true
+      };
+    }
+    return result;
+  }
+  function defaultState() { return {schemaVersion:1,active:[],excluded:[],done:[],packed:[],focused:"",
+    evidence:Object.create(null),sharedPlans:Object.create(null)}; }
   function normalizeState(input) {
     if (!input || typeof input !== "object" || input.schemaVersion !== 1) return defaultState();
     return {
       schemaVersion:1,active:sanitizeArray(input.active), excluded:sanitizeArray(input.excluded),
       done:sanitizeArray(input.done), packed:sanitizeArray(input.packed),
-      focused:identifier(input.focused)
+      focused:identifier(input.focused), evidence:safeEvidence(input.evidence),
+      sharedPlans:safePeerPlans(input.sharedPlans)
     };
   }
   function distanceTo(player, location) {
@@ -174,7 +201,65 @@
       this.byId=new Map(this.tasks.map(q=>[q.id,q]));
     }
     isActive(id) { return this.state.active.includes(String(id)); }
+    memberNamesFor(id){
+      return Object.entries(this.state.sharedPlans||{})
+        .filter(([,plan])=>plan.active.includes(String(id))).map(([name])=>name);
+    }
+    isTeamActive(id) { return this.memberNamesFor(id).length>0; }
+    exportShare(){
+      // Deliberately contains only public mission IDs, manual checks and game mode.
+      // Never includes room codes, profile/account identifiers or log evidence.
+      const payload={version:1,mode:this.mode,
+        active:this.state.active.slice(0,80),done:this.state.done.slice(0,120)};
+      return "RPQ1:"+encodeURIComponent(JSON.stringify(payload));
+    }
+    importShare(code,name){
+      const label=String(name||"Ami").trim().slice(0,24);
+      if(!label||Array.from(label).some(c=>c.charCodeAt(0)<32)
+        ||typeof code!=="string"||code.length>12000||!code.startsWith("RPQ1:"))return false;
+      try{
+        const data=JSON.parse(decodeURIComponent(code.slice(5)));
+        if(!data||data.version!==1||data.mode!==this.mode
+          ||!Array.isArray(data.active)||!Array.isArray(data.done)
+          ||data.active.length>80||data.done.length>120)return false;
+        const selected=sanitizeArray(data.active);
+        const done=sanitizeArray(data.done);
+        const plans=this.state.sharedPlans||Object.create(null);
+        if(!Object.prototype.hasOwnProperty.call(plans,label)
+          && Object.keys(plans).length>=6)return false;
+        plans[label]={active:selected,done,imported:true};
+        this.state.sharedPlans=plans;
+        this.save();return true;
+      }catch(_){return false;}
+    }
+    removeShare(name){
+      if(!this.state.sharedPlans||!Object.prototype.hasOwnProperty.call(this.state.sharedPlans,name))
+        return false;
+      delete this.state.sharedPlans[name];this.save();return true;
+    }
     isDone(id) { return this.state.done.includes(String(id)); }
+    isQuestCompleted(id) { return this.state.evidence?.[String(id)]?.status==="completed"; }
+    statusFor(id) { return this.state.evidence?.[String(id)]||null; }
+    stageStatus(stepId,questId) {
+      if(this.isQuestCompleted(questId))return {done:true,source:"eft-local-log"};
+      if(this.isDone(stepId))return {done:true,source:"manual"};
+      return {done:false,source:"unknown"};
+    }
+    recordEvidence(change){
+      if(!change||change.mode!==this.mode
+        ||typeof change.taskId!=="string"||!/^[0-9a-f]{24}$/i.test(change.taskId)
+        ||!["active","completed","failed"].includes(change.status)
+        ||change.source!=="eft-local-log"
+        ||!Number.isSafeInteger(change.at)||change.at<1500000000||change.at>4102444800)
+        return false;
+      const id=change.taskId.toLowerCase();
+      const previous=this.state.evidence[id];
+      if(previous && previous.at>=change.at)return true; // Valid repeated/stale event: already handled.
+      this.state.evidence[id]={status:change.status,at:change.at,source:"eft-local-log"};
+      // An explicit manual exclusion wins: reading logs cannot force a task back.
+      if(change.status==="active")this.recognize([id]);
+      this.save();return true;
+    }
     isPacked(id) { return this.state.packed.includes(String(id)); }
     toggle(id,force) {
       const valid=identifier(id);if(!valid)return false;
@@ -228,14 +313,16 @@
         for(const step of quest.objectives) {
           const locations=step.locations.filter(l=>ids.has(l.map));
           if(!locations.length)continue;
-          list.push({...step,locations,questName:quest.name,color:quest.color,done:this.isDone(step.id)});
+          const stage=this.stageStatus(step.id,quest.id);
+          list.push({...step,locations,questName:quest.name,color:quest.color,
+            done:stage.done,doneSource:stage.source,questStatus:this.statusFor(quest.id)});
         }
       }
       return list;
     }
     markerVisual(marker, mapIds) {
       const id=identifier(marker?.meta?.questId), obj=identifier(marker?.meta?.objectiveId);
-      if(!id||!this.isActive(id))return null;
+      if(!id||(!this.isActive(id)&&!this.isTeamActive(id)))return null;
       const task=this.taskFor(id), step=task?.byObjective.get(obj);
       if(!task||!step)return null;
       const ids=mapIds instanceof Set?mapIds:new Set(mapIds||[]);
@@ -244,7 +331,10 @@
         color:task.color,number:step.number, label:String(step.number),
         id:step.id,name:task.name,description:step.name,
         possible:marker?.meta?.possible===true || step.alternative,
-        done:this.isDone(step.id),focused:this.state.focused===step.id,
+        done:this.isActive(id)&&this.stageStatus(step.id,id).done,
+        doneSource:this.isActive(id)?this.stageStatus(step.id,id).source:"team",
+        teamOnly:!this.isActive(id),teamNames:this.memberNamesFor(id),
+        focused:this.state.focused===step.id,
       };
     }
     suggested(mapIds,player) {

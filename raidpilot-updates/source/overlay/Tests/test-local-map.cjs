@@ -16,7 +16,9 @@ class Element {
 const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale',
   'quests-btn','questpilot-panel','questpilot-close','questpilot-search','questpilot-summary',
   'questpilot-list','questpilot-steps','questpilot-prep','questpilot-hud',
-  'questpilot-hud-color','questpilot-hud-title','questpilot-hud-detail'])ids[id]=new Element('div');
+  'questpilot-hud-color','questpilot-hud-title','questpilot-hud-detail',
+  'questpilot-share','questpilot-share-status','questpilot-share-output',
+  'questpilot-peer-name','questpilot-peer-code','questpilot-import','questpilot-team-plans'])ids[id]=new Element('div');
 const listeners={}, messages=[], storage=new Map();
 const context={console,URLSearchParams,Event:class{constructor(type){this.type=type;}},setTimeout,clearTimeout,
  document:{getElementById:id=>ids[id]??null,querySelector:s=>ids[s.slice(1)]??null,createElement:t=>new Element(t),createElementNS:(_,t)=>new Element(t)},
@@ -197,5 +199,45 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  check(!api.questPilotSnapshot().active.includes(chosen.id),
    'OCR unexpectedly restored a quest explicitly removed by player');
 
+ // EFT log evidence crosses the native bridge and persists in the isolated profile.
+ const logEvent={mode:'regular',taskId:chosen.id,status:'completed',
+   at:1792828800,source:'eft-local-log'};
+ check(context.__raidPilotApplyQuestLogEvents([logEvent])===1,
+   'Native journal message was not acknowledged by QuestPilot');
+ const afterLog=api.questPilotSnapshot();
+ check(afterLog.evidence[chosen.id]?.status==='completed',
+   'Quest hand-in was not recorded as EFT-log evidence');
+ check(!afterLog.active.includes(chosen.id),
+   'Native log reactivated a manually excluded quest');
+ check(JSON.parse(storage.get('raidpilot-questpilot-v1:regular')).evidence[chosen.id].source==='eft-local-log',
+   'Quest evidence did not persist locally');
+ const pveLog={mode:'pve',taskId:'1234567890abcdef12345678',status:'active',
+   at:1792828801,source:'eft-local-log'};
+ check(context.__raidPilotApplyQuestLogEvents([pveLog])===1,
+   'PvE event could not be stored while viewing PvP');
+ check(!api.questPilotSnapshot().active.includes(pveLog.taskId)
+   && JSON.parse(storage.get('raidpilot-questpilot-v1:pve')).active.includes(pveLog.taskId),
+   'PvE journal event crossed into PvP profile');
+ check(context.__raidPilotApplyQuestLogEvents([{...logEvent,source:'untrusted'}])===0,
+   'Forged source was accepted as an EFT journal event');
+
+ // Manually imported squad objectives remain distinct from my quest progress.
+ const friend=new context.RPQuestPilot.Planner(null,'regular');
+ friend.toggle(chosen.id,true);
+ friend.toggleDone(stage.id,true);
+ ids['questpilot-peer-name'].value='Pierre';
+ ids['questpilot-peer-code'].value=friend.exportShare();
+ ids['questpilot-import'].dispatchEvent(new context.Event('click'));
+ const squadPlan=JSON.parse(storage.get('raidpilot-questpilot-v1:regular'));
+ check(!!squadPlan.sharedPlans?.Pierre,
+   'QuestPilot failed manual plan import: '+ids['questpilot-share-status'].textContent);
+ check(squadPlan.sharedPlans.Pierre.active.includes(chosen.id),
+   'QuestPilot did not import the manually shared teammate plan');
+ check(!api.questPilotSnapshot().active.includes(chosen.id),
+   'Importing teammate plan changed my own quest selection');
+ check(ids['questpilot-team-plans'].children.length>0,
+   'Imported teammate plan not visible in interactive panel');
+ check(ids.overlay.children.some(node=>node.dataset.questId===chosen.id),
+   'Teammate-only quest marker did not display on map');
  console.log(JSON.stringify({status:'PASS',checks,customsPOI:api.health().markerCount,visibleMarkers:ids.overlay.children.filter(e=>e.dataset.markerId).length,playerTransform:marker('__player').getAttribute('transform'),health:ids.health.textContent}));
 })().catch(e=>{console.error(e);process.exitCode=1;});
