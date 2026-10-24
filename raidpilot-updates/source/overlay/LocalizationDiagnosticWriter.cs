@@ -49,17 +49,18 @@ internal static class LocalizationDiagnosticWriter
         try
         {
             if (!File.Exists(EnablePath)) return;
-            var valid = predicted is { } pose && new[] {pose.X,pose.Z,pose.YawDegrees,
-                pose.PositionUncertaintyMeters,exact.X,exact.Z,exact.YawDegrees}.All(double.IsFinite);
+            var valid = predicted is not null && new[] {p.X,p.Z,p.YawDegrees,
+                p.PositionUncertaintyMeters,exact.X,exact.Z,exact.YawDegrees}.All(double.IsFinite);
             if (!double.IsFinite(exact.X) || !double.IsFinite(exact.Z)
                 || !double.IsFinite(exact.YawDegrees)) return;
             string f(double value) => value.ToString("0.###",CultureInfo.InvariantCulture);
             var safeMap = new string((map ?? "").Where(c => char.IsAsciiLetterOrDigit(c) || c == '-').Take(48).ToArray());
+            var p = predicted.GetValueOrDefault();
             var fields = valid
-                ? new[] { f(pose.X),f(pose.Z),f(pose.YawDegrees),f(exact.X),f(exact.Z),
-                    f(exact.YawDegrees),f(Math.Hypot(pose.X-exact.X,pose.Z-exact.Z)),
-                    f((pose.YawDegrees-exact.YawDegrees+540)%360-180),
-                    f(pose.PositionUncertaintyMeters),"compared" }
+                ? new[] { f(p.X),f(p.Z),f(p.YawDegrees),f(exact.X),f(exact.Z),
+                    f(exact.YawDegrees),f(Math.Hypot(p.X-exact.X,p.Z-exact.Z)),
+                    f((p.YawDegrees-exact.YawDegrees+540)%360-180),
+                    f(p.PositionUncertaintyMeters),"compared" }
                 : new[] { "","","",f(exact.X),f(exact.Z),f(exact.YawDegrees),
                     "","","","no_historical_pose" };
             var line = DateTimeOffset.UtcNow.ToString("O",CultureInfo.InvariantCulture)
