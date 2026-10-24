@@ -1109,6 +1109,21 @@ function renderQuestPilotHud(){
     +(next.optional?" · facultatif":"");
 }
 
+function questPilotCompleteFocused(){
+  const planner=state.questPilot;
+  if(!planner || !state.raidQuests && !state.player)return false;
+  const fresh=state.player && Number.isFinite(state.lastPoseReceivedAt)
+    && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
+  const uncertainty=Number(state.player?.uncertainty);
+  const reliable=!!fresh && Number.isFinite(uncertainty) && uncertainty<=8;
+  const next=planner.nextForMap(state.questMapIds,{
+    ...state.player,positionReliable:reliable
+  });
+  if(!next || next.done || next.doneSource==="eft-local-log")return false;
+  planner.toggleDone(next.id,true);
+  renderQuestPilotPanel();render();
+  return true;
+}
 function setLiveTeamQuestPlan(payload){
   if(!state.questPilot)return false;
   if(!state.questPilot.setLivePlan(payload))return false;
@@ -1639,6 +1654,7 @@ const api = {
       const value=state.questPilot.toggle(id,enabled);
       renderQuestPilotPanel();render();return value;
     },
+    questPilotCompleteFocused,
     questPilotStepDone:(id,done)=>{
       if(!state.questPilot)return false;
       const value=state.questPilot.toggleDone(id,done);
