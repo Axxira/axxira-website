@@ -22,6 +22,17 @@ internal static class ScreenshotHotkeySender
                 && IsKeyboardKey(key));
     }
 
+    /// <summary>
+    /// Injecting a shortcut that includes a held modifier could release
+    /// the player's sprint/lean/fire key. Allow mobile capture only for a
+    /// single dedicated function key already bound to EFT's Screenshot.
+    /// </summary>
+    internal static bool CanSendWhileMoving(EftScreenshotBindingInfo binding) =>
+        CanSend(binding)
+        && binding.KeyCodes.Count == 1
+        && EftControlSettings.TryMapKeyCode(binding.KeyCodes[0], out var key)
+        && key >= Keys.F6 && key <= Keys.F12;
+
     internal static bool TrySend(EftScreenshotBindingInfo binding)
     {
         if (!CanSend(binding))

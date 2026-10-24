@@ -17,8 +17,11 @@ internal sealed class AutomaticReanchorRequest
         long requestedAtTimestamp,
         DateTimeOffset requestedAtUtc,
         int raidGeneration,
-        IReadOnlySet<string> existingFileNames)
+        IReadOnlySet<string> existingFileNames,
+        bool requestedWhileMoving = false)
     {
+        RequestedWhileMoving = requestedWhileMoving;
+        MovementOccurred = requestedWhileMoving;
         RequestedAtTimestamp = requestedAtTimestamp;
         RequestedAtUtc = requestedAtUtc;
         RaidGeneration = raidGeneration;
@@ -33,6 +36,7 @@ internal sealed class AutomaticReanchorRequest
 
     internal IReadOnlySet<string> ExistingFileNames { get; }
 
+    internal bool RequestedWhileMoving { get; }
     internal string? CandidateFileName { get; private set; }
 
     internal bool IsAmbiguous { get; private set; }

@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "component": "raidpilot",
+      "version": "0.14.2.25",
+      "raidPilotVersion": "0.14.2.25",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Recalage exact F8 facultatif pendant la marche — réduit la dérive prolongée",
+      "details": "Nouveau mode expérimental facultatif « Recalage F8 pendant déplacement · 4 s » dans le menu de l’Overlay, désactivé par défaut et mémorisé localement. Tant que le raid est actif, le jeu au premier plan, que le joueur se déplace et n'est pas en train de viser/tirer, RaidPilot peut redemander toutes les quatre secondes au minimum une capture avec la touche Screenshot F6–F12 SEULE que le joueur a configurée dans EFT. Les coordonnées exactes lues dans les noms de captures corrigent alors la trajectoire à l'instant de prise de vue, en conservant le mouvement postérieur grâce à l'historique. Aucun accès mémoire ni injection dans le jeu; le mécanisme Win32 SendInput déjà utilisé pour le recalage au repos est réemployé, mais peut produire une notification de screenshot en jeu. Les captures prises pendant le mouvement ne calibrent PAS les vitesses et ne sont PAS enregistrées comme repères visuels stationnaires. Limite de cadence, exclusion des touches à modificateurs qui pourraient perturber le sprint, suppression prudente des seules captures automatiques et diagnostics des demandes/réceptions. Nouveaux tests comportementaux, de persistance, de touche F8, et simulation de dérive bornée (pas une mesure de performance réelle EFT). Les méthodes de suivi optique/Precision V4, l'équipe, Beacon 0.3.9 et Launcher 0.2.15 restent disponibles. Le joueur doit activer lui-même cette fonctionnalité expérimentale et vérifier la conformité aux règles EFT; son efficacité et l'acceptation des touches synthétiques sont à valider en raid."
+    },
+    {
       "component": "launcher",
       "version": "0.2.15",
       "raidPilotVersion": "0.14.2.24",

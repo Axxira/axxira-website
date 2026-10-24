@@ -60,6 +60,12 @@ internal sealed partial class OverlayForm : Form
         Checked = true,
         CheckOnClick = true,
     };
+    private readonly ToolStripMenuItem _mobileExactAnchorMenuItem = new(
+        "Recalage F8 pendant déplacement · 4 s (expérimental)")
+    {
+        Checked = false,
+        CheckOnClick = true,
+    };
     private readonly NotifyIcon _trayIcon = new();
     private readonly CancellationTokenSource _formLifetime = new();
     private readonly System.Windows.Forms.Timer _realtimeTimer = new() { Interval = 50 };
@@ -110,6 +116,9 @@ internal sealed partial class OverlayForm : Form
     private bool _raidTimerScanInProgress;
     private bool _liveTrackingEnabled = true;
     private bool _autoReanchorEnabled = true;
+    private bool _mobileExactAnchorEnabled;
+    private long _mobileExactAnchorRequests;
+    private long _mobileExactAnchorConfirmed;
     private bool _visibleInScreenCaptures = true;
     private int? _mapScalePercent;
     private OverlayCorner _mapCorner = OverlayCorner.TopRight;
@@ -258,6 +267,8 @@ internal sealed partial class OverlayForm : Form
         _ = SuperKeyframeStore.TryLoad(
             _superKeyframeRecognizer,
             SuperKeyframeStore.GetPath(_squadProfile.MemberId));
+        _mobileExactAnchorEnabled = MobileExactAnchorPreference.Load();
+        _mobileExactAnchorMenuItem.Checked = _mobileExactAnchorEnabled;
         _streamVisibilityMenuItem.Checked = OverlayPreferencesStore.LoadVisibleInCaptures();
         _mapScalePercent = OverlayPreferencesStore.LoadMapScalePercent();
         _mapCorner = OverlayPreferencesStore.LoadMapCorner();
@@ -553,6 +564,20 @@ internal sealed partial class OverlayForm : Form
                 ToolTipIcon.Info);
         };
         menu.Items.Add(_autoReanchorMenuItem);
+        _mobileExactAnchorMenuItem.Click += (_, _) =>
+        {
+            _mobileExactAnchorEnabled = _mobileExactAnchorMenuItem.Checked;
+            var saved = MobileExactAnchorPreference.TrySave(_mobileExactAnchorEnabled);
+            _trayIcon.ShowBalloonTip(
+                4200,
+                "RaidPilot — recalage en marche",
+                _mobileExactAnchorEnabled
+                    ? "Recalage F8 périodique actif pendant les déplacements, sous réserve de la touche Screenshot d'EFT (F6-F12 seule). Les captures peuvent afficher une notification en jeu."
+                    : "Recalage pendant les déplacements arrêté. F8 manuel et recalage au repos restent disponibles."
+                    + (saved ? "" : " Préférence non enregistrée."),
+                saved ? ToolTipIcon.Info : ToolTipIcon.Warning);
+        };
+        menu.Items.Add(_mobileExactAnchorMenuItem);
         menu.Items.Add(BuildRaidSideMenu());
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Quitter", null, async (_, _) => await ExitAsync());
@@ -1749,35 +1774,47 @@ internal sealed partial class OverlayForm : Form
             Interlocked.Exchange(ref _autoReanchorRequestedAt, 0);
         }
 
-        if (actionInProgress)
-        {
-            _idleSeconds = 0.0;
-            return;
-        }
-
-        _idleSeconds += elapsedSeconds;
         var secondsSinceLastAttempt = _lastAutoReanchorAttempt == 0
             ? double.PositiveInfinity
             : (now - _lastAutoReanchorAttempt) / (double)Stopwatch.Frequency;
-        var recoveryReady =
-            LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(
-                uncertaintyMeters,
-                _idleSeconds,
-                secondsSinceLastAttempt)
-            || LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
-                _visualRelocalization.Health == LocalizationHealthState.Red,
-                uncertaintyMeters,
-                _idleSeconds,
-                secondsSinceLastAttempt);
-        if (!_autoReanchorEnabled
-            || _lastExactObservation is null
-            || !recoveryReady
+        var secondsSinceExactAnchor = _lastExactAnchorAt <= 0
+            ? 0.0
+            : (now - _lastExactAnchorAt) / (double)Stopwatch.Frequency;
+        var mobileRequest = MobileExactAnchorPolicy.ShouldCapture(
+            _mobileExactAnchorEnabled,
+            _liveTrackingEnabled && _tarkovIsForeground && _controlTrackingActive && _raidActive,
+            inputMagnitude > 0.15,
+            aiming || _middleMouseDown || IsKeyDown(Keys.LButton)
+                || IsKeyDown(Keys.RButton),
+            ScreenshotHotkeySender.CanSendWhileMoving(_screenshotBinding),
+            _screenshotWatcher is not null,
+            _lastExactObservation is not null,
+            secondsSinceExactAnchor,
+            secondsSinceLastAttempt);
+
+        if (actionInProgress)
+        {
+            _idleSeconds = 0.0;
+        }
+        else
+        {
+            _idleSeconds += elapsedSeconds;
+        }
+
+        var stationaryRecoveryReady = !actionInProgress && _autoReanchorEnabled
+            && (LocalizationRecoveryPolicy.ShouldAttemptAutomaticReanchor(
+                    uncertaintyMeters, _idleSeconds, secondsSinceLastAttempt)
+                || LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
+                    _visualRelocalization.Health == LocalizationHealthState.Red,
+                    uncertaintyMeters, _idleSeconds, secondsSinceLastAttempt));
+        if (!mobileRequest && !stationaryRecoveryReady)
+            return;
+
+        if (_lastExactObservation is null
             || !ScreenshotHotkeySender.CanSend(_screenshotBinding)
             || _screenshotWatcher is null
-            || (now - _lastExactAnchorAt) / (double)Stopwatch.Frequency < 1.5)
-        {
+            || secondsSinceExactAnchor < 1.5)
             return;
-        }
 
         var existingFileNames = SnapshotScreenshotFileNames();
         var requestedAtTimestamp = Stopwatch.GetTimestamp();
@@ -1787,12 +1824,14 @@ internal sealed partial class OverlayForm : Form
             requestedAtTimestamp,
             requestedAtUtc,
             _raidGeneration,
-            existingFileNames);
+            existingFileNames,
+            requestedWhileMoving: mobileRequest);
         _automaticReanchorRequest = automaticRequest;
         Interlocked.Exchange(ref _autoReanchorRequestedAt, requestedAtTimestamp);
         if (ScreenshotHotkeySender.TrySend(_screenshotBinding))
         {
             _idleSeconds = 0.0;
+            if (mobileRequest) _mobileExactAnchorRequests++;
         }
         else
         {
@@ -3288,6 +3327,8 @@ internal sealed partial class OverlayForm : Form
                     _raidGeneration,
                     now);
             var isAutomaticReanchor = matchesAutomaticRequest && !requestAlreadyHadCandidate;
+            if (isAutomaticReanchor && automaticRequest is { RequestedWhileMoving: true })
+                _mobileExactAnchorConfirmed++;
             if (matchesAutomaticRequest && !automaticRequest!.CleanupScheduled)
             {
                 automaticRequest.CleanupScheduled = true;
@@ -3393,7 +3434,7 @@ internal sealed partial class OverlayForm : Form
                     isAutomaticReanchor,
                     hasFileTimestamp,
                     hasCaptureTimestamp)
-                && automaticRequest is not null)
+                && automaticRequest is { MovementOccurred: false })
             {
                 // Une capture automatique dÃƒÂ©clenchÃƒÂ©e au repos est dÃƒÂ©jÃƒÂ  une vue
                 // de jeu propre: elle peut ÃƒÂªtre transformÃƒÂ©e immÃƒÂ©diatement en
