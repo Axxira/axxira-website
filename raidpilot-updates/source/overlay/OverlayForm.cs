@@ -1748,6 +1748,16 @@ internal sealed partial class OverlayForm : Form
         double uncertaintyMeters,
         bool rotationOccurred)
     {
+        // F is Tarkov's default hold-to-interact/plant control. Injecting F8
+        // while it is held can interrupt a placement even if the screenshot
+        // binding itself is a distinct key. Do not trigger any automatic capture.
+        // This guard applies to stationary AND mobile reanchoring.
+        if (IsKeyDown(Keys.F))
+        {
+            _idleSeconds = 0.0;
+            return;
+        }
+
         var playerActionInProgress = inputMagnitude > 0.0
             || rotationOccurred
             || Math.Abs(mouseDelta) > 1
