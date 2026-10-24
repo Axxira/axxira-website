@@ -215,7 +215,7 @@
     }
     importShare(code,name){
       const label=String(name||"Ami").trim().slice(0,24);
-      if(!label||/[\\u0000-\\u001f]/.test(label)
+      if(!label||Array.from(label).some(c=>c.charCodeAt(0)<32)
         ||typeof code!=="string"||code.length>12000||!code.startsWith("RPQ1:"))return false;
       try{
         const data=JSON.parse(decodeURIComponent(code.slice(5)));

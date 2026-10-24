@@ -49,11 +49,11 @@ internal static class EftQuestLogTests
             Require(!EftQuestLogParser.TryParseNotification(new string('x',66000),out _));
         }, failures);
         Run("Journal EFT : mode PvE et PvP explicitement reconnus",()=>{
-            Require(EftQuestLogParser.DetectSessionMode("Game: Session mode: Pve")=="pve");
-            Require(EftQuestLogParser.DetectSessionMode("Game: Session mode: Pvp")=="regular");
-            Require(EftQuestLogParser.DetectSessionMode("Game: Session mode: PvpSeason")=="pvp-season");
-            Require(EftQuestLogParser.DetectSessionMode("without any mode")==null);
-            Require(EftQuestLogParser.DetectSessionMode("Session mode: unknown")==null);
+            Require(EftMapLogParser.DetectSessionMode("Game: Session mode: Pve")=="pve");
+            Require(EftMapLogParser.DetectSessionMode("Game: Session mode: Pvp")=="regular");
+            Require(EftMapLogParser.DetectSessionMode("Game: Session mode: PvpSeason")=="pvp-season");
+            Require(EftMapLogParser.DetectSessionMode("without any mode")==null);
+            Require(EftMapLogParser.DetectSessionMode("Session mode: unknown")==null);
         }, failures);
         Run("Journal EFT : ancienne quête ignorée au démarrage",()=>{
             WithLog((dir,log)=>{

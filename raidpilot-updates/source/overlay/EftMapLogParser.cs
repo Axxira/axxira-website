@@ -14,6 +14,23 @@ public static partial class EftMapLogParser
 {
     private static readonly IReadOnlyDictionary<string, EftMapRoute> MapAliases = BuildAliases();
 
+    internal static string? DetectSessionMode(string? line)
+    {
+        if (string.IsNullOrWhiteSpace(line) || line.Length > 8192) return null;
+        var at = line.IndexOf("Session mode:", StringComparison.OrdinalIgnoreCase);
+        if (at < 0) return null;
+        var suffix = line[(at + "Session mode:".Length)..].TrimStart();
+        var token = suffix.Split([' ', ',', '|', ';', '\r', '\n'], 2,
+            StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+        return token?.ToLowerInvariant() switch
+        {
+            "pve" => "pve",
+            "pvp" => "regular",
+            "pvpseason" => "pvp-season",
+            _ => null
+        };
+    }
+
     [GeneratedRegex(
         @"scene\s+preset\s+path\s*:\s*maps[\\/](?<map>[a-z0-9_\-]+)\.bundle(?=\s|[,;|]|$)",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

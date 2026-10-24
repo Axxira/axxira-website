@@ -577,7 +577,7 @@ public sealed class EftMapLogWatcher : IDisposable
                         if (contentLength > 0)
                         {
                             var line = Encoding.UTF8.GetString(lineBuffer, 0, contentLength);
-                            if (EftQuestLogParser.DetectSessionMode(line) is { } detectedMode
+                            if (EftMapLogParser.DetectSessionMode(line) is { } detectedMode
                                 && !string.Equals(_lastGameMode, detectedMode, StringComparison.Ordinal))
                             {
                                 _lastGameMode = detectedMode;

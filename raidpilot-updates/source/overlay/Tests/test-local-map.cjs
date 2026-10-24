@@ -229,6 +229,8 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  ids['questpilot-peer-code'].value=friend.exportShare();
  ids['questpilot-import'].dispatchEvent(new context.Event('click'));
  const squadPlan=JSON.parse(storage.get('raidpilot-questpilot-v1:regular'));
+ check(!!squadPlan.sharedPlans?.Pierre,
+   'QuestPilot failed manual plan import: '+ids['questpilot-share-status'].textContent);
  check(squadPlan.sharedPlans.Pierre.active.includes(chosen.id),
    'QuestPilot did not import the manually shared teammate plan');
  check(!api.questPilotSnapshot().active.includes(chosen.id),
