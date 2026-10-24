@@ -481,7 +481,7 @@
     }
     positionReliable(player) {
       const pos=player?.position||player;
-      if(!Number.isFinite(Number(pos?.x))||!Number.isFinite(Number(pos?.z)))return false;
+      if(pos?.x==null||pos?.z==null||!Number.isFinite(Number(pos.x))||!Number.isFinite(Number(pos.z)))return false;
       if(player?.positionReliable===false||player?.locationUncertain===true
         ||player?.quality==="low"||player?.quality==="lost")return false;
       const confidence=player?.positionConfidence;
