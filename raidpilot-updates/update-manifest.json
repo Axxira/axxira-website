@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T05:01:12.0318058+00:00",
+  "publishedAt": "2026-10-24T13:52:57.2037618+00:00",
   "raidPilot": {
-    "version": "0.14.2.26",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.26-b0.3.9-l0.2.15-3729e4b82792/RaidPilot-Overlay-v0.14.2.26-Windows-x64.zip",
-    "sha256": "6818F6A0D0692248DACA5EE8E31167E0DFD0131C4F4FEE66657FA5F86D73047C",
-    "sizeBytes": 234465397,
-    "releaseNotes": "Nouveau QuestPilot intégré à la carte locale RaidPilot : un bouton « Mes quêtes » ouvre une liste persistante de quêtes actives et permet de sélectionner ou retirer manuellement des missions en PvE et PvP (profils indépendants). Les quêtes reconnues par TAB → TÂCHES → F8 sont ajoutées à la sélection sans supprimer les quêtes précédentes; un retrait manuel reste prioritaire sur un nouveau scan OCR. Toutes les étapes géolocalisées d'une quête utilisent la même couleur, y compris les repères SVG sur la carte et les entrées de liste. Chaque objectif distinct du catalogue public reçoit un numéro stable dans l'ordre de ses objectifs : pour trois balises avec trois objectifs distincts, marqueurs 1, 2 et 3. Plusieurs positions possibles d'une seule étape gardent le même numéro avec avertissement de localisation incertaine; aucune fausse validation. Le joueur peut cocher une étape faite manuellement et les conditions de préparation (balise, clé, objet, arme/équipement), conservées dans le profil WebView2 entre raids et mises à jour Launcher. Un bandeau compact montre le prochain objectif et sa distance seulement lorsque le suivi est assez fiable. L'ordre suggéré tient compte de la proximité euclidienne seulement; ce n'est pas un chemin navigable garanti ni une affirmation que la quête est accomplie dans EFT. Les 13 cartes, l'overlay, le GPS V4, les F8 mobiles, les extractions et le relais d'équipe restent inchangés. Tests nouveaux de tâches multi-étapes, correspondance de couleur, états persistants, OCR, PvE/PvP, emplacements possibles et carte réelle. Partage d'objectifs par coéquipier et détection certifiée de l'inventaire EFT non annoncés; aucune donnée personnelle transmise."
+    "version": "0.14.2.27",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.27-b0.3.9-l0.2.15-248822cae7be/RaidPilot-Overlay-v0.14.2.27-Windows-x64.zip",
+    "sha256": "A95917E9E4B63EA3FBE96DBC8621A174DD1EFC3EABD3CEDDF28606F0B104FB73",
+    "sizeBytes": 234462989,
+    "releaseNotes": "QuestPilot améliore le suivi des objectifs et la coopération. Nouveau lecteur en lecture seule des journaux EFT push-notifications : il décode uniquement les événements de quête new_message, types 10 (acceptée), 11 (échouée), 12 (remise au marchand), identifiés par leur identifiant public 24 hex et une date de notification valide. Les autres messages sont rejetés, aucun chat ni identifiant de compte n'est conservé. Les notifications sont lues de manière bornée, par lignes et fragments JSON, sans rejouer les événements historiques au lancement et sans accès mémoire au jeu. Le mode PvE/PvP/PvP saison est déterminé explicitement depuis les logs d'application EFT; les événements dont le mode reste inconnu attendent une identification fiable, jamais de transfert implicite vers PvP. Dans QuestPilot, une quête remise est marquée « Journal EFT »; les étapes posées mais non confirmées dans les logs restent « faites selon toi ». Les exclusions manuelles des quêtes dominent l'OCR et les nouveaux événements; les profils restent locaux et séparés. En escouade, un nouveau partage MANUEL de plan par code RPQ1 permet de copier son plan, importer celui d'un ami sans modifier sa progression et afficher les balises des quêtes partagées avec un rendu distinct; le code ne contient que des identifiants publics de quêtes et les cases cochées, jamais les identifiants personnels ou les journaux. Le relais Cloudflare actuellement déployé ne retransmet pas encore les types de messages QuestPilot (test synthétique négatif le 24 octobre 2026) : le partage automatique en temps réel n'est PAS activé ni annoncé comme fonctionnel. Toutes les fonctions Overlay, Launcher, Beacon, GPS, quêtes numérotées, extractions et cartes sont conservées. Tests C#, JS, multi-étape, priorité manuelle, lecture des nouveaux logs, isolation PvE/PvP et import local."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.26-b0.3.9-l0.2.15-3729e4b82792/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "E158172DE5F0CABE164B36CB46C6A676252FF265062815E7988A3FB569F45DB8",
-    "sizeBytes": 58328424,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.27-b0.3.9-l0.2.15-248822cae7be/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "7F9A3899FDCC6D551532C57A6241868CAF632C60CFA7E00E5016942716596654",
+    "sizeBytes": 58329044,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.26-b0.3.9-l0.2.15-3729e4b82792/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "199D7D52F8DD86A681D47A3FF9DD8F1B0A0F2320AC5AE5627784457AA76C1203",
-    "sizeBytes": 351038914,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.27-b0.3.9-l0.2.15-248822cae7be/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "3D666C4F3276F856E2D03336356A035D24E63BD9A1CF3DE1FB2469498B1D7E59",
+    "sizeBytes": 351037894,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.27",
+      "raidPilotVersion": "0.14.2.27",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot : remise de quête reconnue dans les journaux EFT + plans d'équipe copiables",
+      "details": "QuestPilot améliore le suivi des objectifs et la coopération. Nouveau lecteur en lecture seule des journaux EFT push-notifications : il décode uniquement les événements de quête new_message, types 10 (acceptée), 11 (échouée), 12 (remise au marchand), identifiés par leur identifiant public 24 hex et une date de notification valide. Les autres messages sont rejetés, aucun chat ni identifiant de compte n'est conservé. Les notifications sont lues de manière bornée, par lignes et fragments JSON, sans rejouer les événements historiques au lancement et sans accès mémoire au jeu. Le mode PvE/PvP/PvP saison est déterminé explicitement depuis les logs d'application EFT; les événements dont le mode reste inconnu attendent une identification fiable, jamais de transfert implicite vers PvP. Dans QuestPilot, une quête remise est marquée « Journal EFT »; les étapes posées mais non confirmées dans les logs restent « faites selon toi ». Les exclusions manuelles des quêtes dominent l'OCR et les nouveaux événements; les profils restent locaux et séparés. En escouade, un nouveau partage MANUEL de plan par code RPQ1 permet de copier son plan, importer celui d'un ami sans modifier sa progression et afficher les balises des quêtes partagées avec un rendu distinct; le code ne contient que des identifiants publics de quêtes et les cases cochées, jamais les identifiants personnels ou les journaux. Le relais Cloudflare actuellement déployé ne retransmet pas encore les types de messages QuestPilot (test synthétique négatif le 24 octobre 2026) : le partage automatique en temps réel n'est PAS activé ni annoncé comme fonctionnel. Toutes les fonctions Overlay, Launcher, Beacon, GPS, quêtes numérotées, extractions et cartes sont conservées. Tests C#, JS, multi-étape, priorité manuelle, lecture des nouveaux logs, isolation PvE/PvP et import local."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.26",
