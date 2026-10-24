@@ -451,8 +451,15 @@ function visibleMarkers() {
   return base.filter(m => {
     if(!m.position)return false;
     if(m.meta?.questId) {
-      if(state.questPilot) return (state.questPilot.isActive(m.meta.questId)
-        || state.questPilot.isTeamActive(m.meta.questId)) && markerOnFloor(m);
+      if(state.questPilot) {
+        if(!markerOnFloor(m))return false;
+        const style=state.questPilot.markerVisual(m,state.questMapIds);
+        if(!style)return false;
+        // Hidden only for this player's completed objectives. A completed
+        // objective on the same mission must not hide remaining objective pins.
+        // Team-only markers remain personal to the teammate.
+        return style.teamOnly || !style.done;
+      }
       return isRaidQuest(m) && markerOnFloor(m);
     }
     if(m.category==="player-position"||isRaidExtraction(m))return true;
@@ -924,6 +931,23 @@ function renderQuestPilotPanel(){
   if(candidates.length>visible.length)
     qpText(refs.questList,"small",String(candidates.length-visible.length)+" autres quêtes : affine ta recherche.","qp-empty");
 
+  const completedSteps=planner.stepsForMap(state.questMapIds).filter(step=>step.done);
+  if(refs.questDoneList){
+    refs.questDoneList.replaceChildren();
+    if(!completedSteps.length)qpEmpty(refs.questDoneList,"Aucune étape terminée sur cette carte.");
+    for(const step of completedSteps.slice(0,40)){
+      const row=document.createElement("div");row.className="qp-step done";
+      qpText(row,"strong",step.questName+" · "+step.number+" — "+step.name);
+      const doneFromEft=step.doneSource==="eft-local-log";
+      const undo=document.createElement("button");undo.type="button";
+      undo.textContent=doneFromEft?"✓ Confirmé par EFT":"↶ Réactiver ce point";
+      undo.disabled=doneFromEft;
+      undo.addEventListener("click",()=>{
+        planner.toggleDone(step.id,false);renderQuestPilotPanel();render();
+      });
+      row.appendChild(undo);refs.questDoneList.appendChild(row);
+    }
+  }
   const selectedSteps=planner.suggested(state.questMapIds,state.player);
   if(selectedSteps.length){
     const step=selectedSteps[0];
@@ -1521,7 +1545,7 @@ async function init() {
     panel:$("#panel"),filters:$("#filters"),layersBtn:$("#layers-btn"),search:$("#search"),
     questPanel:$("#questpilot-panel"),questsBtn:$("#quests-btn"),questClose:$("#questpilot-close"),
     questSearch:$("#questpilot-search"),questList:$("#questpilot-list"),questSteps:$("#questpilot-steps"),
-    questOther:$("#questpilot-other"),questSharedSteps:$("#questpilot-shared-steps"),
+    questOther:$("#questpilot-other"),questDoneList:$("#questpilot-done"),questSharedSteps:$("#questpilot-shared-steps"),
     questPrep:$("#questpilot-prep"),questSummary:$("#questpilot-summary"),
     questShare:$("#questpilot-share"),questShareStatus:$("#questpilot-share-status"),
     questShareOutput:$("#questpilot-share-output"),questPeerName:$("#questpilot-peer-name"),
