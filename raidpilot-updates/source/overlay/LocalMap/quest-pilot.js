@@ -30,6 +30,7 @@
     return COLORS[(hash >>> 0) % COLORS.length];
   }
   function asArray(v) { return Array.isArray(v) ? v : v && typeof v === "object" ? Object.values(v) : []; }
+  function fold(v) { return String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
   function text(dict, id, fallback) {
     const k = String(id || "");
     const mapped = dict && Object.prototype.hasOwnProperty.call(dict, k) ? dict[k] : null;
@@ -99,15 +100,26 @@
     if (!id) return null;
     const name = text(translations, raw.name, raw.normalizedName || raw.name || "Quête");
     const objectives = [], byObjective = new Map();
+    let numberedLocations = 0;
     for (const obj of asArray(raw.objectives).slice(0,LIMIT_OBJECTIVES)) {
       const objectiveId = identifier(obj?.id);
       if (!objectiveId || byObjective.has(objectiveId)) continue;
       const locations = objectiveLocations(obj);
-      if (!locations.length) continue;
+      // Every public objective remains visible in the manual checklist,
+      // but only *geolocated* objectives get numbered map pins.
+      // A kill/hand-over objective without a location must not shift ①②③.
+      const number = locations.length ? ++numberedLocations : null;
       const step = {
         id:id + ":" + objectiveId, questId:id, objectiveId,
-        number:objectives.length + 1, objectiveCount:0,
-        name:text(translations, obj.description, obj.type || "Objectif"),
+        number, objectiveCount:0, allNumber:objectives.length+1,
+        allObjectiveCount:0,
+        // Preserve plain-language objective text when the translation catalogue
+        // lacks this entry; never replace a readable instruction with the raw type.
+        // An untranslated 24-hex localization key must not be shown to players.
+        name:text(translations,obj.description,
+          typeof obj.description==="string" && obj.description.trim()
+            && !/^[0-9a-f]{24}$/i.test(obj.description.trim())
+              ?obj.description:obj.type||"Objectif"),
         type:String(obj.type || ""),
         optional:obj.optional === true,
         locations,
@@ -118,8 +130,12 @@
       objectives.push(step);
       byObjective.set(objectiveId,step);
     }
-    for (const step of objectives) step.objectiveCount = objectives.length;
-    return {id,name,color:colorFor(id),objectives,byObjective};
+    for (const step of objectives) {
+      step.objectiveCount = numberedLocations;
+      step.allObjectiveCount = objectives.length;
+    }
+    return {id,name,color:colorFor(id),objectives,byObjective,
+      mappedCount:numberedLocations,unmappedCount:objectives.length-numberedLocations};
   }
   function sanitizeArray(v) {
     return [...new Set((Array.isArray(v) ? v : []).map(identifier).filter(Boolean))].slice(0,MAX_SAVED);
@@ -356,11 +372,76 @@
       return this.tasks.filter(q=>this.isActive(q.id)
         || q.objectives.some(s=>s.locations.some(l=>ids.has(l.map))));
     }
+    searchTasks(mapIds,query="") {
+      const needle=fold(query);
+      // An explicit search is GLOBAL: a player can prepare a Woods task
+      // while still looking at Customs, or find an objective without map data.
+      const pool=needle ? this.tasks.filter(q=>fold(q.name).includes(needle)
+        || q.objectives.some(step=>fold(step.name).includes(needle)))
+        : this.visibleTasks(mapIds);
+      return pool.sort((a,b)=>Number(this.isActive(b.id))-Number(this.isActive(a.id))
+        || a.name.localeCompare(b.name,"fr"));
+    }
+    unmappedSteps() {
+      const list=[];
+      for(const id of this.state.active){
+        const quest=this.byId.get(id);if(!quest)continue;
+        for(const step of quest.objectives){
+          if(step.locations.length)continue;
+          const stage=this.stageStatus(step.id,quest.id);
+          list.push({...step,questName:quest.name,color:quest.color,
+            done:stage.done,doneSource:stage.source});
+        }
+      }
+      return list;
+    }
+    preparationForMap(mapIds) {
+      const ids=mapIds instanceof Set?mapIds:new Set(mapIds||[]),out=[],seen=new Set();
+      for(const id of this.state.active){
+        const quest=this.byId.get(id);if(!quest||this.isQuestCompleted(id))continue;
+        for(const step of quest.objectives){
+          if(step.locations.length&&!step.locations.some(l=>ids.has(l.map)))continue;
+          for(const need of step.needs){
+            const k=id+":"+need;
+            if(seen.has(k))continue;
+            seen.add(k);
+            out.push({id:k,questId:id,questName:quest.name,need,packed:this.isPacked(k)});
+          }
+        }
+      }
+      return out;
+    }
+    memberStatusesForStep(questId,stepId) {
+      const id=String(questId),step=String(stepId),out=[];
+      for(const [name,plan] of Object.entries(this.state.sharedPlans||{})){
+        if(plan.active.includes(id))out.push({name,done:plan.done.includes(step),source:"importé"});
+      }
+      for(const plan of Object.values(this.livePlans||{})){
+        if(plan.mode===this.mode && plan.quests.includes(id)
+          && Date.now()-plan.receivedAt<90000)
+          out.push({name:plan.name+" (direct)",done:plan.done.includes(step),source:"direct"});
+      }
+      return out;
+    }
+    sharedStepsForMap(mapIds) {
+      const ids=mapIds instanceof Set?mapIds:new Set(mapIds||[]),out=[];
+      for(const quest of this.tasks){
+        if(!this.isTeamActive(quest.id))continue;
+        for(const step of quest.objectives){
+          if(!step.locations.some(loc=>ids.has(loc.map)))continue;
+          out.push({...step,questName:quest.name,color:quest.color,
+            mine:this.isActive(quest.id),
+            members:this.memberStatusesForStep(quest.id,step.id)});
+        }
+      }
+      return out;
+    }
     stepsForMap(mapIds) {
       const ids=mapIds instanceof Set?mapIds:new Set(mapIds||[]);
       const list=[];
-      for(const quest of this.tasks) {
-        if(!this.isActive(quest.id))continue;
+      for(const id of this.state.active) {
+        const quest=this.byId.get(id);
+        if(!quest)continue;
         for(const step of quest.objectives) {
           const locations=step.locations.filter(l=>ids.has(l.map));
           if(!locations.length)continue;
@@ -387,6 +468,28 @@
         teamOnly:!this.isActive(id),teamNames:this.memberNamesFor(id),
         focused:this.state.focused===step.id,
       };
+    }
+    nextForMap(mapIds,player) {
+      // UI HUD runs at up to 10Hz. Only ONE next step is needed,
+      // so avoid O(n² log n) full-route sorting on every pose update.
+      const steps=this.stepsForMap(mapIds);
+      const at=player?.position||player||null;
+      let chosen=null,closest=Infinity,chosenPlace=null;
+      for(const step of steps){
+        if(step.done)continue;
+        let best=Infinity,nearest=null;
+        for(const place of step.locations){
+          const d=distanceTo(at,place);
+          if(d<best){best=d;nearest=place;}
+        }
+        if(step.id===this.state.focused)
+          return {...step,nearest:nearest||step.locations[0],distance:best};
+        if(!chosen || best<closest
+          ||(best===closest && step.id.localeCompare(chosen.id)<0)){
+          chosen=step;closest=best;chosenPlace=nearest||step.locations[0];
+        }
+      }
+      return chosen?{...chosen,nearest:chosenPlace,distance:closest}:null;
     }
     suggested(mapIds,player) {
       const steps=this.stepsForMap(mapIds).filter(s=>!s.done);

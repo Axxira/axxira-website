@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.29",
+      "raidPilotVersion": "0.14.2.29",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot pratique — toutes les quêtes recherchables, étapes sans GPS, équipe et HUD optimisé",
+      "details": "QuestPilot simplifie la préparation et le suivi des raids : la recherche dans « Mes quêtes » porte désormais sur toutes les cartes et sur le texte des objectifs, même sans coordonnées publiques. Les quêtes non géolocalisées restent sélectionnables et leurs étapes apparaissent dans « Autres étapes · sans lieu précis », avec des cases manuelles persistantes et une distinction claire entre la coche du joueur et la remise de quête confirmée par un journal EFT. Les marqueurs numérotés continuent d'utiliser la même couleur par quête; seuls les objectifs possédant une position fiable sont numérotés sur la carte 1/2/3, tandis que les autres sont conservés dans le suivi sans produire de faux points. Les préparatifs (clé, objet, balise, équipement) couvrent aussi les objectifs sans emplacement, sans prétendre lire l'inventaire. Nouvelle section « Objectifs communs à l'escouade » à l'intérieur de « Mes quêtes », distinguant la progression personnelle de la progression importée ou reçue en direct, avec mention explicite « coché par l'ami » vs « à faire ». Les repères appartenant seulement à l'équipe ne changent plus le focus de la propre quête du joueur. La boucle de HUD à 10Hz interroge seulement le prochain objectif pertinent en temps linéaire O(n), au lieu de recalculer toute la tournée de proximité O(n² log n) en permanence; la liste de planification détaillée reste dans le panneau. Tests de non-régression sur la recherche transcartes, les balises numérotées, les étapes non géolocalisées, les plans d'équipe et l'état de confiance. Aucun déploiement Cloudflare en production n'est effectué dans cette version : le partage manuel RPQ1 fonctionne, et le partage direct demeure bloqué tant que le relais n'annonce pas features.questplan=true et ne passe pas un test WebSocket bidirectionnel. L'ordre de visite n'est pas une route garantie entre bâtiments. Versions Beacon 0.3.9 et Launcher 0.2.15 inchangées."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.28",
       "raidPilotVersion": "0.14.2.28",
       "beaconVersion": "0.3.9",

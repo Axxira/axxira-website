@@ -350,7 +350,9 @@ function renderMarker(marker, view) {
   g.appendChild(title);
   g.addEventListener("click", ev => {
     ev.stopPropagation();
-    if(questStyle) { state.questPilot.focus(questStyle.id); renderQuestPilotPanel(); }
+    if(questStyle && !questStyle.teamOnly) {
+      state.questPilot.focus(questStyle.id);renderQuestPilotPanel();
+    }
     selectMarker(marker);
   });
   g.addEventListener("pointerdown", ev => ev.stopPropagation());
@@ -876,13 +878,12 @@ function renderQuestPilotPanel(){
     +confirmed+" remise(s) confirmée(s) par les journaux EFT · "
     +"balises cochées manuellement";
   const search=state.questSearch;
-  const candidates=planner.visibleTasks(state.questMapIds)
-    .filter(q=>!search||q.name.toLowerCase().includes(search))
-    .sort((a,b)=>Number(planner.isActive(b.id))-Number(planner.isActive(a.id))
-      ||a.name.localeCompare(b.name,"fr"));
+  // Search every map and all objective types; no search keeps relevant tasks only.
+  const candidates=planner.searchTasks(state.questMapIds,search);
   const visible=candidates.slice(0,search?80:65);
   if(!visible.length)qpEmpty(refs.questList,
-    "Aucune quête trouvée sur cette carte. Utilise TAB → TÂCHES → F8 pour synchroniser, ou cherche une autre carte.");
+    search?"Aucune quête ne correspond à ta recherche, même sur les autres cartes."
+      :"Aucune quête localisée ici. Cherche une mission ou utilise TAB → TÂCHES → F8.");
   for(const quest of visible){
     const selected=planner.isActive(quest.id);
     const row=document.createElement("label");
@@ -903,7 +904,9 @@ function renderQuestPilotPanel(){
     const statusLabel=logStatus?.status==="completed"?"✓ Journal EFT"
       :logStatus?.status==="failed"?"Échec · journal"
       :logStatus?.status==="active"?"Acceptée · journal":null;
-    qpText(row,"small",statusLabel|| (count?count+" étape(s)":"sans lieu"),"qp-count");
+    const countLabel=count?count+" étape(s) · "+(quest.mappedCount||0)+" repère(s)"
+      :"aucun objectif public";
+    qpText(row,"small",statusLabel||countLabel,"qp-count");
     refs.questList.appendChild(row);
   }
   if(candidates.length>visible.length)
@@ -914,7 +917,8 @@ function renderQuestPilotPanel(){
     "Aucune étape active localisée ici. Les quêtes sans point public restent dans la liste.");
   for(const step of selectedSteps.slice(0,28)){
     const row=document.createElement("div");row.className="qp-step"+(step.done?" done":"");
-    const tick=document.createElement("input");tick.type="checkbox";tick.checked=planner.isDone(step.id);
+    const tick=document.createElement("input");tick.type="checkbox";tick.checked=step.done;
+    tick.disabled=step.doneSource==="eft-local-log";
     tick.setAttribute("aria-label","Étape "+step.number+" terminée selon moi");
     tick.addEventListener("change",()=>{planner.toggleDone(step.id,tick.checked);renderQuestPilotPanel();render();});
     row.appendChild(tick);
@@ -934,28 +938,9 @@ function renderQuestPilotPanel(){
   }
   if(selectedSteps.length>28)
     qpText(refs.questSteps,"small",String(selectedSteps.length-28)+" étapes de plus","qp-empty");
-  qpText(refs.questPrep,"small","Coche uniquement ce que tu as réellement préparé. Inventaire non consulté.","qp-subtle");
-  let prepCount=0;
-  const seen=new Set();
-  for(const step of planner.stepsForMap(state.questMapIds)){
-    for(const need of step.needs){
-      const k=step.questId+":"+need;
-      if(seen.has(k))continue;
-      seen.add(k);prepCount++;
-      if(prepCount>35)continue;
-      const row=document.createElement("label");row.className="qp-prep";
-      const input=document.createElement("input");input.type="checkbox";
-      input.checked=planner.isPacked(k);
-      input.addEventListener("change",()=>{planner.togglePacked(k,input.checked);});
-      row.appendChild(input);
-      qpText(row,"span",step.questName+" : "+need);
-      refs.questPrep.appendChild(row);
-    }
-  }
-  if(prepCount===0)qpEmpty(refs.questPrep,
-    "Aucune clé ni équipement explicitement déclaré pour les étapes localisées.");
-  if(prepCount>35)qpText(refs.questPrep,"small",
-    String(prepCount-35)+" éléments non affichés","qp-empty");
+  renderQuestPilotUnmapped(planner);
+  renderQuestPilotPreparation(planner);
+  renderQuestPilotSharedSteps(planner);
   if(refs.questTeamPlans){
     refs.questTeamPlans.replaceChildren();
     const teams=Object.entries(planner.state.sharedPlans||{});
@@ -981,11 +966,76 @@ function renderQuestPilotPanel(){
     }
   }
 }
+// Keep optional advanced details inside 'Mes quêtes': the combat overlay stays compact.
+function renderQuestPilotUnmapped(planner){
+  const root=refs.questOther;if(!root)return;root.replaceChildren();
+  const steps=planner.unmappedSteps();
+  if(!steps.length)qpEmpty(root,"Aucun autre objectif sans position publique.");
+  for(const step of steps.slice(0,30)){
+    const row=document.createElement("label");row.className="qp-step qp-unmapped"+(step.done?" done":"");
+    const checkbox=document.createElement("input");checkbox.type="checkbox";
+    checkbox.checked=step.done;checkbox.disabled=step.doneSource==="eft-local-log";
+    checkbox.setAttribute("aria-label","Objectif sans point "+step.name+" · fait selon moi");
+    checkbox.addEventListener("change",()=>{
+      planner.toggleDone(step.id,checkbox.checked);renderQuestPilotPanel();render();
+    });
+    row.appendChild(checkbox);
+    const badge=document.createElement("span");badge.className="qp-unmapped-tag";
+    badge.textContent="—";row.appendChild(badge);
+    const info=document.createElement("div");
+    qpText(info,"strong",step.questName+" · Étape "+step.allNumber+"/"+step.allObjectiveCount);
+    qpText(info,"span",step.name);
+    qpText(info,"small",step.doneSource==="eft-local-log"?"Quête remise · journal EFT":
+      step.done?"Coché manuellement":"Pas de point géolocalisé public");
+    row.appendChild(info);root.appendChild(row);
+  }
+  if(steps.length>30)qpText(root,"small",String(steps.length-30)+" étapes supplémentaires","qp-empty");
+}
+function renderQuestPilotPreparation(planner){
+  const root=refs.questPrep;if(!root)return;root.replaceChildren();
+  const requirements=planner.preparationForMap(state.questMapIds);
+  const missing=requirements.filter(item=>!item.packed).length;
+  qpText(root,"small",requirements.length
+    ?missing+" condition(s) à vérifier avant de partir · inventaire non consulté"
+    :"Aucune condition publiée pour cette carte.","qp-subtle");
+  for(const requirement of requirements.slice(0,35)){
+    const row=document.createElement("label");row.className="qp-prep";
+    const checkbox=document.createElement("input");checkbox.type="checkbox";
+    checkbox.checked=requirement.packed;
+    checkbox.addEventListener("change",()=>{
+      planner.togglePacked(requirement.id,checkbox.checked);
+      renderQuestPilotPanel();
+    });
+    row.appendChild(checkbox);
+    qpText(row,"span",requirement.questName+" : "+requirement.need);
+    root.appendChild(row);
+  }
+  if(requirements.length>35)qpText(root,"small",
+    String(requirements.length-35)+" autres préparations","qp-empty");
+}
+function renderQuestPilotSharedSteps(planner){
+  const root=refs.questSharedSteps;if(!root)return;root.replaceChildren();
+  const steps=planner.sharedStepsForMap(state.questMapIds);
+  if(!steps.length)qpEmpty(root,"Aucun plan d'ami sur cette carte. Ta progression reste personnelle.");
+  for(const step of steps.slice(0,18)){
+    const row=document.createElement("div");row.className="qp-team-step";
+    const dot=document.createElement("span");dot.className="qp-swatch";
+    dot.style.backgroundColor=step.color;row.appendChild(dot);
+    const info=document.createElement("div");
+    qpText(info,"strong",step.questName+" · "+step.number+"/"+step.objectiveCount
+      +(step.mine?" · aussi ta quête":" · équipe seulement"));
+    const statuses=step.members.map(m=>m.name+(m.done?" ✓ coché":" · à faire"));
+    qpText(info,"small",statuses.join(" · ")||"Aucune progression de coéquipier disponible");
+    row.appendChild(info);root.appendChild(row);
+  }
+  if(steps.length>18)qpText(root,"small",
+    String(steps.length-18)+" autres étapes d'escouade","qp-empty");
+}
 function renderQuestPilotHud(){
   if(!refs.questHud)return;
   const planner=state.questPilot;
-  const suggested=planner?.suggested(state.questMapIds,state.player)||[];
-  const next=suggested[0];
+  // A linear best-next lookup replaces full-route sorting on every 10Hz pose tick.
+  const next=planner?.nextForMap(state.questMapIds,state.player);
   if(!next){refs.questHud.hidden=true;return;}
   refs.questHud.hidden=false;
   refs.questHudColor.style.backgroundColor=next.color;
@@ -1438,6 +1488,7 @@ async function init() {
     panel:$("#panel"),filters:$("#filters"),layersBtn:$("#layers-btn"),search:$("#search"),
     questPanel:$("#questpilot-panel"),questsBtn:$("#quests-btn"),questClose:$("#questpilot-close"),
     questSearch:$("#questpilot-search"),questList:$("#questpilot-list"),questSteps:$("#questpilot-steps"),
+    questOther:$("#questpilot-other"),questSharedSteps:$("#questpilot-shared-steps"),
     questPrep:$("#questpilot-prep"),questSummary:$("#questpilot-summary"),
     questShare:$("#questpilot-share"),questShareStatus:$("#questpilot-share-status"),
     questShareOutput:$("#questpilot-share-output"),questPeerName:$("#questpilot-peer-name"),
