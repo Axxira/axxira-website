@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.33",
+      "raidPilotVersion": "0.14.2.33",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot simplifié — prochain objectif, suivi rapide, options avancées repliées",
+      "details": "La liste QuestPilot montre par défaut uniquement les quêtes suivies, avec un bouton pour afficher le catalogue complet. La recherche révèle aussi les missions non suivies. Un encart Prochain objectif permet de suivre une étape sur la carte ou de la cocher d'un seul clic. L'affichage principal est limité à dix étapes et les préparatifs, objectifs sans GPS et options d'escouade sont regroupés dans des sections dépliables. Les marqueurs numérotés, couleurs, statuts personnels et d'équipe restent disponibles. Aucune quête n'est cochée automatiquement sans action du joueur ou preuve EFT."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.32",
       "raidPilotVersion": "0.14.2.32",
       "beaconVersion": "0.3.9",
