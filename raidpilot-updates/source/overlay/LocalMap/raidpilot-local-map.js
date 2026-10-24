@@ -1046,9 +1046,7 @@ function renderQuestPilotHud(){
   refs.questHud.hidden=false;
   refs.questHudColor.style.backgroundColor=next.color;
   refs.questHudTitle.textContent=next.questName+" · Étape "+next.number+"/"+next.objectiveCount;
-  const fresh=state.player && Number.isFinite(state.lastPoseReceivedAt)
-    && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
-  const uncertainty=Number(state.player?.uncertainty);
+
   const located=reliable && !next.locationUncertain && Number.isFinite(next.distance);
   const distance=located?" ≈"+(Math.round(next.distance/5)*5)+" m (estimé)"
     :" distance non fiable · recalage F8";
