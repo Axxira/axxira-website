@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-23T21:53:52.8049444+00:00",
+  "publishedAt": "2026-10-24T04:28:50.7727267+00:00",
   "raidPilot": {
-    "version": "0.14.2.24",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-d08fb4076b44/RaidPilot-Overlay-v0.14.2.24-Windows-x64.zip",
-    "sha256": "855B9057E903EFE5F2EA235F8625D3E8B08870F4912C4016B3AB191AA48D955A",
-    "sizeBytes": 234442836,
-    "releaseNotes": "RaidPilot 0.14.2.24 reste inchangé dans cette publication."
+    "version": "0.14.2.25",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.25-b0.3.9-l0.2.15-8020d7012df5/RaidPilot-Overlay-v0.14.2.25-Windows-x64.zip",
+    "sha256": "107E20F2D71919B8FF97C2964918D010FEA867CA03F53E3AC6A7FDDF4F7E08AF",
+    "sizeBytes": 234453035,
+    "releaseNotes": "Nouveau mode expérimental facultatif « Recalage F8 pendant déplacement · 4 s » dans le menu de l’Overlay, désactivé par défaut et mémorisé localement. Tant que le raid est actif, le jeu au premier plan, que le joueur se déplace et n'est pas en train de viser/tirer, RaidPilot peut redemander toutes les quatre secondes au minimum une capture avec la touche Screenshot F6–F12 SEULE que le joueur a configurée dans EFT. Les coordonnées exactes lues dans les noms de captures corrigent alors la trajectoire à l'instant de prise de vue, en conservant le mouvement postérieur grâce à l'historique. Aucun accès mémoire ni injection dans le jeu; le mécanisme Win32 SendInput déjà utilisé pour le recalage au repos est réemployé, mais peut produire une notification de screenshot en jeu. Les captures prises pendant le mouvement ne calibrent PAS les vitesses et ne sont PAS enregistrées comme repères visuels stationnaires. Limite de cadence, exclusion des touches à modificateurs qui pourraient perturber le sprint, suppression prudente des seules captures automatiques et diagnostics des demandes/réceptions. Nouveaux tests comportementaux, de persistance, de touche F8, et simulation de dérive bornée (pas une mesure de performance réelle EFT). Les méthodes de suivi optique/Precision V4, l'équipe, Beacon 0.3.9 et Launcher 0.2.15 restent disponibles. Le joueur doit activer lui-même cette fonctionnalité expérimentale et vérifier la conformité aux règles EFT; son efficacité et l'acceptation des touches synthétiques sont à valider en raid."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-d08fb4076b44/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "9964FA66844C5DB733D11BA693F692EDF904F24EC88B84E67FA4AE51F0CFCD40",
-    "sizeBytes": 58328348,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.25-b0.3.9-l0.2.15-8020d7012df5/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "14553873C9FEE9B031551E296CB57D08C73D997026AD629C98E94B44332E0446",
+    "sizeBytes": 58328424,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.24-b0.3.9-l0.2.15-d08fb4076b44/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "C33D5103872F12F0451499ED3598FA0A196DD9E553A455CB25D1B2A8E89BA090",
-    "sizeBytes": 351014833,
-    "releaseNotes": "RaidPilot Precision V4 : les intervalles F8 qui traversent un changement de mode V2/V4 sont exclus de la comparaison, un recalage visuel partiel ne réinitialise plus artificiellement l'âge de l'ancre exacte F8, et les trajets corrigés en V4 restent des estimations plutôt que des ancres exactes dans l'atlas appris. Nouveaux tests de régression. Launcher 0.2.15 : journal de transaction local permettant de restaurer Overlay/Beacon après arrêt brutal de Windows entre deux mises à jour; restauration vérifiée par SHA-256 des binaires d'origine. Téléchargement HTTP résilient sur trois essais avec reprise Range sécurisée ou redémarrage propre si le serveur ignore Range, contrôle de blocage réseau de 60 secondes et vérification de la taille et de l'empreinte finale. Pour la source Stable intégrée, les archives doivent venir de la même publication officielle Axxira/axxira-website et la version déclarée doit correspondre aux exécutables Overlay/Beacon dans les ZIP. Le script de mise à jour du Launcher recalcule le SHA-256 après fermeture. Avant publication, Windows lance désormais le Launcher dans un mode de vérification non interactif pour confirmer les fichiers embarqués, versions, DLL GPU, notes et source Stable. Beacon 0.3.9, suivi équipe, zoom et cartes existantes conservés. Aucun test de jeu EFT réel ni droit commercial supplémentaire sur les images n'est prétendu. Code signing Authenticode dépend toujours d'un certificat de l'éditeur."
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.25-b0.3.9-l0.2.15-8020d7012df5/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "9B1658C1617DE0E446035BBAED1ECB2DB06C2CB15757C380AC3B7F69E4C5B896",
+    "sizeBytes": 351025786,
+    "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.25",
+      "raidPilotVersion": "0.14.2.25",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Recalage exact F8 facultatif pendant la marche — réduit la dérive prolongée",
+      "details": "Nouveau mode expérimental facultatif « Recalage F8 pendant déplacement · 4 s » dans le menu de l’Overlay, désactivé par défaut et mémorisé localement. Tant que le raid est actif, le jeu au premier plan, que le joueur se déplace et n'est pas en train de viser/tirer, RaidPilot peut redemander toutes les quatre secondes au minimum une capture avec la touche Screenshot F6–F12 SEULE que le joueur a configurée dans EFT. Les coordonnées exactes lues dans les noms de captures corrigent alors la trajectoire à l'instant de prise de vue, en conservant le mouvement postérieur grâce à l'historique. Aucun accès mémoire ni injection dans le jeu; le mécanisme Win32 SendInput déjà utilisé pour le recalage au repos est réemployé, mais peut produire une notification de screenshot en jeu. Les captures prises pendant le mouvement ne calibrent PAS les vitesses et ne sont PAS enregistrées comme repères visuels stationnaires. Limite de cadence, exclusion des touches à modificateurs qui pourraient perturber le sprint, suppression prudente des seules captures automatiques et diagnostics des demandes/réceptions. Nouveaux tests comportementaux, de persistance, de touche F8, et simulation de dérive bornée (pas une mesure de performance réelle EFT). Les méthodes de suivi optique/Precision V4, l'équipe, Beacon 0.3.9 et Launcher 0.2.15 restent disponibles. Le joueur doit activer lui-même cette fonctionnalité expérimentale et vérifier la conformité aux règles EFT; son efficacité et l'acceptation des touches synthétiques sont à valider en raid."
+    },
     {
       "component": "launcher",
       "version": "0.2.15",
