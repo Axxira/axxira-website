@@ -58,7 +58,7 @@ internal static class LocalizationDiagnosticWriter
             var safeMap = new string((map ?? "").Where(c => char.IsAsciiLetterOrDigit(c) || c == '-').Take(48).ToArray());
             var fields = valid
                 ? new[] { f(p.X),f(p.Z),f(p.YawDegrees),f(exact.X),f(exact.Z),
-                    f(exact.YawDegrees),f(Math.Hypot(p.X-exact.X,p.Z-exact.Z)),
+                    f(exact.YawDegrees),f(Math.Sqrt(Math.Pow(p.X-exact.X,2)+Math.Pow(p.Z-exact.Z,2))),
                     f((p.YawDegrees-exact.YawDegrees+540)%360-180),
                     f(p.PositionUncertaintyMeters),"compared" }
                 : new[] { "","","",f(exact.X),f(exact.Z),f(exact.YawDegrees),
