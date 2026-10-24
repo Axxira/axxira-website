@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T13:52:57.2037618+00:00",
+  "publishedAt": "2026-10-24T14:28:10.0721311+00:00",
   "raidPilot": {
-    "version": "0.14.2.27",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.27-b0.3.9-l0.2.15-248822cae7be/RaidPilot-Overlay-v0.14.2.27-Windows-x64.zip",
-    "sha256": "A95917E9E4B63EA3FBE96DBC8621A174DD1EFC3EABD3CEDDF28606F0B104FB73",
-    "sizeBytes": 234462989,
-    "releaseNotes": "QuestPilot améliore le suivi des objectifs et la coopération. Nouveau lecteur en lecture seule des journaux EFT push-notifications : il décode uniquement les événements de quête new_message, types 10 (acceptée), 11 (échouée), 12 (remise au marchand), identifiés par leur identifiant public 24 hex et une date de notification valide. Les autres messages sont rejetés, aucun chat ni identifiant de compte n'est conservé. Les notifications sont lues de manière bornée, par lignes et fragments JSON, sans rejouer les événements historiques au lancement et sans accès mémoire au jeu. Le mode PvE/PvP/PvP saison est déterminé explicitement depuis les logs d'application EFT; les événements dont le mode reste inconnu attendent une identification fiable, jamais de transfert implicite vers PvP. Dans QuestPilot, une quête remise est marquée « Journal EFT »; les étapes posées mais non confirmées dans les logs restent « faites selon toi ». Les exclusions manuelles des quêtes dominent l'OCR et les nouveaux événements; les profils restent locaux et séparés. En escouade, un nouveau partage MANUEL de plan par code RPQ1 permet de copier son plan, importer celui d'un ami sans modifier sa progression et afficher les balises des quêtes partagées avec un rendu distinct; le code ne contient que des identifiants publics de quêtes et les cases cochées, jamais les identifiants personnels ou les journaux. Le relais Cloudflare actuellement déployé ne retransmet pas encore les types de messages QuestPilot (test synthétique négatif le 24 octobre 2026) : le partage automatique en temps réel n'est PAS activé ni annoncé comme fonctionnel. Toutes les fonctions Overlay, Launcher, Beacon, GPS, quêtes numérotées, extractions et cartes sont conservées. Tests C#, JS, multi-étape, priorité manuelle, lecture des nouveaux logs, isolation PvE/PvP et import local."
+    "version": "0.14.2.28",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.28-b0.3.9-l0.2.15-2310b16c4517/RaidPilot-Overlay-v0.14.2.28-Windows-x64.zip",
+    "sha256": "53C1F2EA79D91A6D12EE8848B8A42561522D56A359EB5EDEB7374B2E5405879E",
+    "sizeBytes": 234471390,
+    "releaseNotes": "Ajout d'une architecture de synchronisation de quêtes entre coéquipiers, toujours facultative et désactivée par défaut. Le menu Escouade propose « Partager mes quêtes » avec consentement explicite pour chaque connexion. Le logiciel interroge /health du relais Cloudflare officiel : aucun plan n'est transmis si le serveur n'annonce pas explicitement features.questplan=true. Les paquets contiennent uniquement les identifiants publics des quêtes et étapes cochées de l'utilisateur, séparés par mode PvE/PvP, jamais les captures, journaux EFT, identifiants de profil ou secrets de connexion. Les plans reçus sont éphémères, expirent après 90 secondes, sont effacés lors du départ du joueur/déconnexion et ne modifient jamais la progression locale. Numéros et couleurs des balises existantes conservés, étapes d'équipe étiquetées comme non vérifiées. Sécurisation de la validation des paquets et de leurs horodatages, limitation des échanges et anti-rejeu; tests du protocole WebSocket et de la carte locale. Un Worker Cloudflare v2 candidat, avec Durable Objects, protection des salles et compatibilité pose, est livré dans le dépôt UNIQUEMENT pour staging, sans être déployé sur le relais réel. Important : le relais Cloudflare actuellement en production n'a pas encore confirmé la prise en charge des quêtes; seul le partage manuel RPQ1 reste garanti tant que le Worker n'est pas migré et validé avec deux clients. Aucune mise à jour à distance de Cloudflare n'est revendiquée. Beacon 0.3.9 et Launcher 0.2.15 inchangés."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.27-b0.3.9-l0.2.15-248822cae7be/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "7F9A3899FDCC6D551532C57A6241868CAF632C60CFA7E00E5016942716596654",
-    "sizeBytes": 58329044,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.28-b0.3.9-l0.2.15-2310b16c4517/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "8F94BAFB76CF3C0FF3C6E70980D8C9DF8B1A6261D660ADBC2A075E40998DCE5A",
+    "sizeBytes": 58332196,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.27-b0.3.9-l0.2.15-248822cae7be/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "3D666C4F3276F856E2D03336356A035D24E63BD9A1CF3DE1FB2469498B1D7E59",
-    "sizeBytes": 351037894,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.28-b0.3.9-l0.2.15-2310b16c4517/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "940DAEE1B6A8EB2F32D2D41545CD9582CE1FF6CBA2333701850F8AB234964E96",
+    "sizeBytes": 351054891,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.28",
+      "raidPilotVersion": "0.14.2.28",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot — partage en direct prêt côté client, opt-in et protection des plans d'escouade",
+      "details": "Ajout d'une architecture de synchronisation de quêtes entre coéquipiers, toujours facultative et désactivée par défaut. Le menu Escouade propose « Partager mes quêtes » avec consentement explicite pour chaque connexion. Le logiciel interroge /health du relais Cloudflare officiel : aucun plan n'est transmis si le serveur n'annonce pas explicitement features.questplan=true. Les paquets contiennent uniquement les identifiants publics des quêtes et étapes cochées de l'utilisateur, séparés par mode PvE/PvP, jamais les captures, journaux EFT, identifiants de profil ou secrets de connexion. Les plans reçus sont éphémères, expirent après 90 secondes, sont effacés lors du départ du joueur/déconnexion et ne modifient jamais la progression locale. Numéros et couleurs des balises existantes conservés, étapes d'équipe étiquetées comme non vérifiées. Sécurisation de la validation des paquets et de leurs horodatages, limitation des échanges et anti-rejeu; tests du protocole WebSocket et de la carte locale. Un Worker Cloudflare v2 candidat, avec Durable Objects, protection des salles et compatibilité pose, est livré dans le dépôt UNIQUEMENT pour staging, sans être déployé sur le relais réel. Important : le relais Cloudflare actuellement en production n'a pas encore confirmé la prise en charge des quêtes; seul le partage manuel RPQ1 reste garanti tant que le Worker n'est pas migré et validé avec deux clients. Aucune mise à jour à distance de Cloudflare n'est revendiquée. Beacon 0.3.9 et Launcher 0.2.15 inchangés."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.27",
