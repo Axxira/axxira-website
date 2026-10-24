@@ -44,7 +44,15 @@ internal static class LocalizationDiagnosticWriter
     }
 
 
-    internal static void RecordAnchor(RealtimePose? predicted, ScreenshotObservation exact, string map)
+    internal readonly record struct MovementSample(
+        long HipCounts, long AdsCounts, long HipMagnitude, long AdsMagnitude,
+        double WalkMeters, double SprintMeters, double SlowMeters,
+        double HipDegreesPerCount, double AdsDegreesPerCount,
+        bool CleanSegment, bool TimestampMatched);
+
+    internal static void RecordAnchor(
+        RealtimePose? predicted, ScreenshotObservation exact, string map,
+        MovementSample? movement = null)
     {
         try
         {
@@ -63,16 +71,38 @@ internal static class LocalizationDiagnosticWriter
                     f(p.PositionUncertaintyMeters),"compared" }
                 : new[] { "","","",f(exact.X),f(exact.Z),f(exact.YawDegrees),
                     "","","","no_historical_pose" };
+            var movementFields = movement is { } sample
+                ? new[] {sample.HipCounts.ToString(CultureInfo.InvariantCulture),
+                    sample.AdsCounts.ToString(CultureInfo.InvariantCulture),
+                    sample.HipMagnitude.ToString(CultureInfo.InvariantCulture),
+                    sample.AdsMagnitude.ToString(CultureInfo.InvariantCulture),
+                    f(sample.WalkMeters),f(sample.SprintMeters),f(sample.SlowMeters),
+                    f(sample.HipDegreesPerCount),f(sample.AdsDegreesPerCount),
+                    sample.CleanSegment ? "true" : "false",
+                    sample.TimestampMatched ? "true" : "false"}
+                : Enumerable.Repeat("", 11).ToArray();
             var line = DateTimeOffset.UtcNow.ToString("O",CultureInfo.InvariantCulture)
-                + "," + safeMap + "," + string.Join(",",fields);
+                + "," + safeMap + "," + string.Join(",",fields.Concat(movementFields));
             lock (Gate)
             {
                 Directory.CreateDirectory(DirectoryPath);
                 if (File.Exists(CsvPath) && new FileInfo(CsvPath).Length >= MaximumBytes)
                     File.Move(CsvPath,CsvPath + ".previous",true);
+                // Preserve previous schema separately; never mix CSV column counts.
+                if (File.Exists(CsvPath) && new FileInfo(CsvPath).Length > 0)
+                {
+                    using (var reader = new StreamReader(CsvPath))
+                    {
+                        if (!string.Equals(reader.ReadLine(), "utc,map,pred_x,pred_z,pred_yaw,exact_x,exact_z,exact_yaw,error_m,yaw_error_deg,uncertainty_m,status,hip_counts,ads_counts,hip_magnitude,ads_magnitude,walk_m,sprint_m,slow_m,hip_deg_per_count,ads_deg_per_count,clean_segment,timestamp_matched", StringComparison.Ordinal))
+                        {
+                            reader.Close();
+                            File.Move(CsvPath, CsvPath + ".legacy", true);
+                        }
+                    }
+                }
                 var fresh = !File.Exists(CsvPath) || new FileInfo(CsvPath).Length == 0;
                 using var writer = new StreamWriter(CsvPath, append: true, encoding: new UTF8Encoding(false));
-                if (fresh) writer.WriteLine("utc,map,pred_x,pred_z,pred_yaw,exact_x,exact_z,exact_yaw,error_m,yaw_error_deg,uncertainty_m,status");
+                if (fresh) writer.WriteLine("utc,map,pred_x,pred_z,pred_yaw,exact_x,exact_z,exact_yaw,error_m,yaw_error_deg,uncertainty_m,status,hip_counts,ads_counts,hip_magnitude,ads_magnitude,walk_m,sprint_m,slow_m,hip_deg_per_count,ads_deg_per_count,clean_segment,timestamp_matched");
                 writer.WriteLine(line);
                 writer.Flush();
                 SyncToUserSelectedFolder();
