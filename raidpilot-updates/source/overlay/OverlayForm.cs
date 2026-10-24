@@ -3424,6 +3424,11 @@ internal sealed partial class OverlayForm : Form
                 && !_raidStartReplayCrossedTransition;
             if (estimatedPoseAtCapture is { } beforeCorrection)
                 _precisionResiduals.Observe(beforeCorrection, observation);
+            // Diagnostic local: comparer la prédiction historique AVANT recalage
+            // à la position absolue du PNG. Ne jamais enregistrer le screenshot.
+            if (estimatedPoseAtCapture is { } diagnosticPrediction)
+                LocalizationDiagnosticWriter.RecordAnchor(
+                    diagnosticPrediction, observation, _currentMap);
             _precisionV2DriftAudit.ObserveExactAnchor(
                 observation, estimatedPoseAtCapture,
                 hasCaptureTimestamp ? captureTimestamp : 0,
