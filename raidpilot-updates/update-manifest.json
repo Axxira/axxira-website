@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T21:24:17.6548173+00:00",
+  "publishedAt": "2026-10-24T21:33:28.7925798+00:00",
   "raidPilot": {
-    "version": "0.14.2.31",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.31-b0.3.9-l0.2.15-b2e856b7b8c0/RaidPilot-Overlay-v0.14.2.31-Windows-x64.zip",
-    "sha256": "01622A47DFE59E46B03046129DBDD92C4A5BB1AB4C08DE4EC0074EA65BC1AB07",
-    "sizeBytes": 234477241,
-    "releaseNotes": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
+    "version": "0.14.2.32",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.32-b0.3.9-l0.2.15-62f122b7082f/RaidPilot-Overlay-v0.14.2.32-Windows-x64.zip",
+    "sha256": "F1A66F8BB5917D89E8A40A16AA75825CFDB57391A6A0C0431679259E3725A88E",
+    "sizeBytes": 234478705,
+    "releaseNotes": "Le capteur visuel 160×90 déjà présent peut désormais contribuer à la calibration de rotation (yaw) lorsqu'il observe une rotation pure confirmée par les mouvements de souris horodatés. Les images anciennes ou trop lentes, les changements de fenêtre, les déplacements même brefs entre captures, la visée ADS, les interactions (notamment le maintien de F) et les signaux contradictoires sont ignorés. Les corrections restent bornées par VisualYawCalibration et la capture 64×36 sert de repli lorsqu'aucun signal V2 fiable n'est récent. Capture Windows Graphics Capture toujours désactivée par défaut et uniquement activable par l'utilisateur; le mode visuel GDI reste local. Aucune lecture de la mémoire EFT, aucune injection et aucune collecte d'images sur disque. Les pixels ne donnent pas de distance absolue en mètres : le suivi des coordonnées reste estimé entre deux F8, à valider par le diagnostic CSV. Sept tests ajoutés pour vérifier la fraîcheur des images et le filtrage des actions."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.31-b0.3.9-l0.2.15-b2e856b7b8c0/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "34F7BA97CB4775CFAA9F139B4E3AE283C667878FF9C7FDBF01E00C0B918EDD7A",
-    "sizeBytes": 58332195,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.32-b0.3.9-l0.2.15-62f122b7082f/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "810E0E727C1721C666BAA2D28387A58538B74F4B87B6A9FD2B22BD85C127BE83",
+    "sizeBytes": 58332196,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.31-b0.3.9-l0.2.15-b2e856b7b8c0/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "BEA81AF7E82FEBF2FA99A45C3ECF17AD347A0AAA7FD1BB81A10C38E5EE9D6633",
-    "sizeBytes": 351061939,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.32-b0.3.9-l0.2.15-62f122b7082f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "8A34614FBC9769BA114FA695EE74A3E3E2EFF60C698F5B5EF029CC81C2CB3664",
+    "sizeBytes": 351063799,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.32",
+      "raidPilotVersion": "0.14.2.32",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Reader visuel 160×90 — fusion de rotation avec Raw Input, contrôles renforcés",
+      "details": "Le capteur visuel 160×90 déjà présent peut désormais contribuer à la calibration de rotation (yaw) lorsqu'il observe une rotation pure confirmée par les mouvements de souris horodatés. Les images anciennes ou trop lentes, les changements de fenêtre, les déplacements même brefs entre captures, la visée ADS, les interactions (notamment le maintien de F) et les signaux contradictoires sont ignorés. Les corrections restent bornées par VisualYawCalibration et la capture 64×36 sert de repli lorsqu'aucun signal V2 fiable n'est récent. Capture Windows Graphics Capture toujours désactivée par défaut et uniquement activable par l'utilisateur; le mode visuel GDI reste local. Aucune lecture de la mémoire EFT, aucune injection et aucune collecte d'images sur disque. Les pixels ne donnent pas de distance absolue en mètres : le suivi des coordonnées reste estimé entre deux F8, à valider par le diagnostic CSV. Sept tests ajoutés pour vérifier la fraîcheur des images et le filtrage des actions."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.31",
@@ -253,16 +263,6 @@
       "date": "2026-10-21",
       "summary": "Cartes et localisation : série d'améliorations intermédiaires",
       "details": "Mise à jour intermédiaire de RaidPilot et Beacon dans la série 0.14.\nLes anciens correctifs sont conservés dans les archives GitHub; les informations détaillées de cette publication ne sont pas disponibles dans le registre actuel."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.11.0",
-      "raidPilotVersion": "0.11.0",
-      "beaconVersion": "0.1.0",
-      "launcherVersion": "0.2.3",
-      "date": "2026-10-19",
-      "summary": "Escouade temps réel, Beacon et interface actualisée",
-      "details": "Premières fonctionnalités de groupe, Beacon pour partager sa position et nouvelle présentation du Launcher.\nCette entrée correspond aux anciennes notes déjà affichées par le programme."
     }
   ]
 }
