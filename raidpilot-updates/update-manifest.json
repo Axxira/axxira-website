@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T21:33:28.7925798+00:00",
+  "publishedAt": "2026-10-24T23:32:10.9536487+00:00",
   "raidPilot": {
-    "version": "0.14.2.32",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.32-b0.3.9-l0.2.15-62f122b7082f/RaidPilot-Overlay-v0.14.2.32-Windows-x64.zip",
-    "sha256": "F1A66F8BB5917D89E8A40A16AA75825CFDB57391A6A0C0431679259E3725A88E",
-    "sizeBytes": 234478705,
-    "releaseNotes": "Le capteur visuel 160×90 déjà présent peut désormais contribuer à la calibration de rotation (yaw) lorsqu'il observe une rotation pure confirmée par les mouvements de souris horodatés. Les images anciennes ou trop lentes, les changements de fenêtre, les déplacements même brefs entre captures, la visée ADS, les interactions (notamment le maintien de F) et les signaux contradictoires sont ignorés. Les corrections restent bornées par VisualYawCalibration et la capture 64×36 sert de repli lorsqu'aucun signal V2 fiable n'est récent. Capture Windows Graphics Capture toujours désactivée par défaut et uniquement activable par l'utilisateur; le mode visuel GDI reste local. Aucune lecture de la mémoire EFT, aucune injection et aucune collecte d'images sur disque. Les pixels ne donnent pas de distance absolue en mètres : le suivi des coordonnées reste estimé entre deux F8, à valider par le diagnostic CSV. Sept tests ajoutés pour vérifier la fraîcheur des images et le filtrage des actions."
+    "version": "0.14.2.33",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.33-b0.3.9-l0.2.15-a4d6df642ce5/RaidPilot-Overlay-v0.14.2.33-Windows-x64.zip",
+    "sha256": "13A6C0DC358162116BF0777AA59B96AB2C2BBC3069907476C4465E77BCCAC2E0",
+    "sizeBytes": 234480136,
+    "releaseNotes": "La liste QuestPilot montre par défaut uniquement les quêtes suivies, avec un bouton pour afficher le catalogue complet. La recherche révèle aussi les missions non suivies. Un encart Prochain objectif permet de suivre une étape sur la carte ou de la cocher d'un seul clic. L'affichage principal est limité à dix étapes et les préparatifs, objectifs sans GPS et options d'escouade sont regroupés dans des sections dépliables. Les marqueurs numérotés, couleurs, statuts personnels et d'équipe restent disponibles. Aucune quête n'est cochée automatiquement sans action du joueur ou preuve EFT."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.32-b0.3.9-l0.2.15-62f122b7082f/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "810E0E727C1721C666BAA2D28387A58538B74F4B87B6A9FD2B22BD85C127BE83",
-    "sizeBytes": 58332196,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.33-b0.3.9-l0.2.15-a4d6df642ce5/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "6D2A6B64802F7834964313382F9849795710FF61B3243C770E19C91F5341846C",
+    "sizeBytes": 58332197,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.32-b0.3.9-l0.2.15-62f122b7082f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "8A34614FBC9769BA114FA695EE74A3E3E2EFF60C698F5B5EF029CC81C2CB3664",
-    "sizeBytes": 351063799,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.33-b0.3.9-l0.2.15-a4d6df642ce5/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "F2B5776D9BFD12CBE0603BC9E9F50376F01A54F112FCF414E4AF8543A82105B8",
+    "sizeBytes": 351065462,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.33",
+      "raidPilotVersion": "0.14.2.33",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot simplifié — prochain objectif, suivi rapide, options avancées repliées",
+      "details": "La liste QuestPilot montre par défaut uniquement les quêtes suivies, avec un bouton pour afficher le catalogue complet. La recherche révèle aussi les missions non suivies. Un encart Prochain objectif permet de suivre une étape sur la carte ou de la cocher d'un seul clic. L'affichage principal est limité à dix étapes et les préparatifs, objectifs sans GPS et options d'escouade sont regroupés dans des sections dépliables. Les marqueurs numérotés, couleurs, statuts personnels et d'équipe restent disponibles. Aucune quête n'est cochée automatiquement sans action du joueur ou preuve EFT."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.32",
@@ -253,16 +263,6 @@
       "date": "2026-10-22",
       "summary": "HOTFIX10 : cartes HD locales et profils préservés",
       "details": "Intégration des cartes HD, des catalogues de quêtes et d'objets et des filtres de dangers.\nCorrection des changements de raid sur la même carte; prise en charge de plusieurs étages sur Factory et The Lab.\nLe Launcher conserve les préférences cartographiques et une version précédente pour retour arrière."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.1",
-      "raidPilotVersion": "0.14.1",
-      "beaconVersion": "0.3.0",
-      "launcherVersion": "0.2.8",
-      "date": "2026-10-21",
-      "summary": "Cartes et localisation : série d'améliorations intermédiaires",
-      "details": "Mise à jour intermédiaire de RaidPilot et Beacon dans la série 0.14.\nLes anciens correctifs sont conservés dans les archives GitHub; les informations détaillées de cette publication ne sont pas disponibles dans le registre actuel."
     }
   ]
 }
