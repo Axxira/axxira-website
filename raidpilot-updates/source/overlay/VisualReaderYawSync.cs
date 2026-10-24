@@ -97,7 +97,10 @@ internal sealed class VisualReaderYawSync
         if (!mouse.TrySummarizeInterval(previous, frame.CapturedAt, out var summary)
             || summary.Samples == 0 || summary.Counts == 0
             || summary.Magnitude < 5 || summary.MixedAiming || summary.Aiming
-            || Math.Abs(summary.Counts) < summary.Magnitude * 0.90)
+            || Math.Abs(summary.Counts) < summary.Magnitude * 0.90
+            || !double.IsFinite(visual.EstimatedYawDeltaDegrees)
+            || Math.Abs(visual.EstimatedYawDeltaDegrees) is < 0.20 or > 8.0
+            || Math.Sign(visual.EstimatedYawDeltaDegrees) != Math.Sign(summary.Counts))
         {
             Rejected++;
             LastStatus = "rotation souris incomplète, ADS ou ambiguë";
