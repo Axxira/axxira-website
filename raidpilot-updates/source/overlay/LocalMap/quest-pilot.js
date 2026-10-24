@@ -174,6 +174,8 @@
       this.tasks=[];
       this.byId=new Map();
       this.state=defaultState();
+      // Ephemeral live plans: NEVER saved as personal task completion.
+      this.livePlans=Object.create(null);
       this.load();
     }
     load() {
@@ -202,8 +204,57 @@
     }
     isActive(id) { return this.state.active.includes(String(id)); }
     memberNamesFor(id){
-      return Object.entries(this.state.sharedPlans||{})
-        .filter(([,plan])=>plan.active.includes(String(id))).map(([name])=>name);
+      const taskId=String(id);
+      const manual=Object.entries(this.state.sharedPlans||{})
+        .filter(([,plan])=>plan.active.includes(taskId)).map(([name])=>name);
+      const live=Object.values(this.livePlans||{})
+        .filter(plan=>plan.mode===this.mode && plan.quests.includes(taskId)
+          && Date.now()-plan.receivedAt<90000)
+        .map(plan=>plan.name+" (direct)");
+      return [...new Set([...manual,...live])];
+    }
+    setLivePlan(raw){
+      if(!raw||typeof raw!=="object"||typeof raw.id!=="string"
+        ||!/^[a-z0-9_-]{1,64}$/i.test(raw.id)
+        ||typeof raw.name!=="string"||raw.name.length>24
+        ||!["regular","pve","pvp-season"].includes(raw.mode)
+        ||!Array.isArray(raw.quests)||raw.quests.length>80
+        ||!Array.isArray(raw.done)||raw.done.length>120
+        ||!Number.isSafeInteger(raw.at)||Math.abs(raw.at-Date.now())>120000)
+        return false;
+      const tasks=raw.quests.every(id=>typeof id==="string"&&/^[0-9a-f]{24}$/i.test(id));
+      const steps=raw.done.every(id=>typeof id==="string"
+        &&/^[0-9a-f]{24}:[0-9a-f]{24}$/i.test(id));
+      if(!tasks||!steps)return false;
+      const existing=this.livePlans[raw.id];
+      if(existing && existing.at>=raw.at)return false;
+      if(!existing && Object.keys(this.livePlans).length>=12)return false;
+      this.livePlans[raw.id]={
+        id:raw.id,name:raw.name,mode:raw.mode,
+        quests:[...new Set(raw.quests.map(s=>s.toLowerCase()))],
+        done:[...new Set(raw.done.map(s=>s.toLowerCase()))],
+        at:raw.at,receivedAt:Date.now()};
+      return true;
+    }
+    clearLivePlan(peerId){
+      if(!Object.prototype.hasOwnProperty.call(this.livePlans,peerId))return false;
+      delete this.livePlans[peerId];return true;
+    }
+    clearLivePlans(){this.livePlans=Object.create(null);}
+    pruneLivePlans(now=Date.now()){
+      let changed=false;
+      for(const [id,plan] of Object.entries(this.livePlans)){
+        if(now-plan.receivedAt>90000){delete this.livePlans[id];changed=true;}
+      }
+      return changed;
+    }
+    liveSnapshot(){
+      // Narrow wire format: no nicknames, account IDs, logs, room code or coordinates.
+      const quests=this.state.active.filter(id=>/^[0-9a-f]{24}$/i.test(id)).slice(0,80);
+      const ids=new Set(quests);
+      const done=this.state.done.filter(id=>/^[0-9a-f]{24}:[0-9a-f]{24}$/i.test(id)
+        && ids.has(id.slice(0,24))).slice(0,120);
+      return {mode:this.mode,quests,done};
     }
     isTeamActive(id) { return this.memberNamesFor(id).length>0; }
     exportShare(){

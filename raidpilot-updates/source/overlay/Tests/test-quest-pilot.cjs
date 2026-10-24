@@ -234,4 +234,63 @@ test("partage manuel : profils sauvegardés et effacement individuel",()=>{
  assert.equal(restored.isTeamActive("quest-a"),false);
  assert.equal(restored.removeShare("Pierre"),false);
 });
+test("partage en direct limite le réseau aux identifiants publics de ses quêtes",()=>{
+  const a="a".repeat(24),b="b".repeat(24);
+  const p=new QuestPilot.Planner(null,"pve");
+  p.toggle("fake-local-id",true);
+  p.toggle(a,true);
+  p.toggleDone(a+":"+b,true);
+  p.toggleDone("unrelated:secret",true);
+  const snapshot=p.liveSnapshot();
+  assert.equal(snapshot.mode,"pve");
+  assert.deepEqual(snapshot.quests,[a]);
+  assert.deepEqual(snapshot.done,[a+":"+b]);
+  assert.equal(JSON.stringify(snapshot).includes("evidence"),false);
+});
+test("plan reçu ne modifie jamais mes propres cases",()=>{
+  const a="a".repeat(24),b="b".repeat(24);
+  const p=new QuestPilot.Planner(null,"pve");
+  const now=Date.now();
+  assert.equal(p.setLivePlan({id:"peer-1",name:"Ami",mode:"pve",
+    quests:[a],done:[a+":"+b],at:now}),true);
+  assert.equal(p.isTeamActive(a),true);
+  assert.equal(p.isActive(a),false);
+  assert.equal(p.isDone(a+":"+b),false);
+  assert.equal(p.memberNamesFor(a).includes("Ami (direct)"),true);
+});
+test("un plan d'escouade en mode PvE ne fuit jamais en PvP",()=>{
+  const a="a".repeat(24),p=new QuestPilot.Planner(null,"pve");
+  assert.equal(p.setLivePlan({id:"peer-2",name:"Ami",mode:"pve",
+    quests:[a],done:[],at:Date.now()}),true);
+  p.setMode("regular");
+  assert.equal(p.isTeamActive(a),false);
+  p.setMode("pve");
+  assert.equal(p.isTeamActive(a),true);
+});
+test("les quêtes en direct n'entrent pas dans les préférences persistées",()=>{
+  const a="a".repeat(24),p=new QuestPilot.Planner(storage,"pve");
+  assert.equal(p.setLivePlan({id:"peer-3",name:"Ami",mode:"pve",
+    quests:[a],done:[],at:Date.now()}),true);
+  p.save();
+  const restored=new QuestPilot.Planner(storage,"pve");
+  assert.equal(restored.isTeamActive(a),false);
+});
+test("une fausse mise à jour expirée ou rejouée ne remplace pas la précédente",()=>{
+  const a="a".repeat(24),p=new QuestPilot.Planner(null,"pve"),now=Date.now();
+  const msg={id:"peer-4",name:"Ami",mode:"pve",quests:[a],done:[],at:now};
+  assert.equal(p.setLivePlan(msg),true);
+  assert.equal(p.setLivePlan({...msg,quests:[],at:now}),false);
+  assert.equal(p.setLivePlan({...msg,quests:[],at:now-250000}),false);
+  assert.equal(p.isTeamActive(a),true);
+  assert.equal(p.setLivePlan({...msg,done:["profile:secret"],at:now+5}),false);
+});
+test("les plans en direct expirent et disparaissent sans supprimer les miens",()=>{
+  const a="a".repeat(24),p=new QuestPilot.Planner(null,"pve"),now=Date.now();
+  p.toggle(a,true);
+  p.setLivePlan({id:"peer-5",name:"Ami",mode:"pve",
+    quests:[a],done:[],at:now});
+  assert.equal(p.pruneLivePlans(now+91000),true);
+  assert.equal(Object.keys(p.livePlans).length,0);
+  assert.equal(p.isActive(a),true);
+});
 console.log(JSON.stringify({status:"PASS",checks}));

@@ -33,6 +33,7 @@ internal sealed partial class OverlayForm
             // A local WebView navigation may postpone applying a validated quest
             // log event; retry until QuestPilot explicitly acknowledges it.
             await FlushQuestLogEventsAsync();
+            await MaybeShareQuestPlanAsync();
         };
         _squadMaintenanceTimer.Start();
         RefreshSquadMenu();
@@ -160,6 +161,7 @@ internal sealed partial class OverlayForm
 
         _squadLeaveMenuItem.Click += async (_, _) => await LeaveSquadAsync(clearSavedRoom: true);
         _squadMenuItem.DropDownItems.Add(_squadLeaveMenuItem);
+        InitializeSquadQuestMenu();
         _squadMenuItem.DropDownOpening += (_, _) => RefreshSquadMenu();
         return _squadMenuItem;
     }
@@ -274,6 +276,8 @@ internal sealed partial class OverlayForm
             _squadProfile.MemberId,
             normalizedName);
         client.PoseReceived += OnSquadPoseReceived;
+        client.QuestPlanReceived += OnSquadQuestPlanReceived;
+        client.QuestPeerLeft += OnSquadQuestPeerLeft;
         client.ReceiverConnectionChanged += OnSquadReceiverConnectionChanged;
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_formLifetime.Token);
@@ -285,12 +289,16 @@ internal sealed partial class OverlayForm
         catch
         {
             client.PoseReceived -= OnSquadPoseReceived;
+            client.QuestPlanReceived -= OnSquadQuestPlanReceived;
+            client.QuestPeerLeft -= OnSquadQuestPeerLeft;
             client.ReceiverConnectionChanged -= OnSquadReceiverConnectionChanged;
             await client.DisposeAsync();
             throw;
         }
 
         _squadClient = client;
+        ResetSquadQuestSharing();
+        _ = await client.ProbeQuestPlanSupportAsync(_formLifetime.Token);
         _squadProfile = _squadProfile with
         {
             Name = normalizedName,
@@ -330,6 +338,8 @@ internal sealed partial class OverlayForm
         if (client is not null)
         {
             client.PoseReceived -= OnSquadPoseReceived;
+            client.QuestPlanReceived -= OnSquadQuestPlanReceived;
+            client.QuestPeerLeft -= OnSquadQuestPeerLeft;
             client.ReceiverConnectionChanged -= OnSquadReceiverConnectionChanged;
             await client.DisposeAsync();
         }
@@ -339,6 +349,8 @@ internal sealed partial class OverlayForm
             _squadMembers.Clear();
         }
         await ClearSquadMarkersAsync();
+        ResetSquadQuestSharing();
+        await ClearIncomingSquadQuestPlanAsync(null);
 
         if (clearSavedRoom)
         {
@@ -414,6 +426,7 @@ internal sealed partial class OverlayForm
                 return;
             }
             _squadConnectionState = connected ? "Connectée" : "Reconnexion…";
+            if (!connected) _ = ClearIncomingSquadQuestPlanAsync(null);
             RefreshSquadMenu();
         });
     }

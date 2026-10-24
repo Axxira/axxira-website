@@ -16,6 +16,24 @@ public sealed record SquadMemberPose(
     double UncertaintyMeters,
     long SentAtUnixMilliseconds);
 
+/// <summary>
+/// Only public quest/objective identifiers and an opt-in squad nickname.
+/// No player account, screenshots, logs, coordinates or secrets.
+/// </summary>
+public sealed record SquadQuestPlan(
+    string PeerId,
+    string Name,
+    string Mode,
+    IReadOnlyList<string> Quests,
+    IReadOnlyList<string> Done,
+    long SentAtUnixMilliseconds);
+
+public sealed record SquadQuestPlanSnapshot(
+    string Mode,
+    IReadOnlyList<string> Quests,
+    IReadOnlyList<string> Done);
+
+
 public static class SquadRoomCode
 {
     private const string Alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -136,6 +154,17 @@ public sealed class SquadRelayClient : IAsyncDisposable
     private const int ProtocolVersion = 1;
     private const int MaximumInboundBytes = 32 * 1024;
     private static readonly Uri SocketBaseUri = new("wss://raidpilot-team-relay.tyronixstudio.workers.dev/ws");
+    private static readonly Uri HealthUri = new("https://raidpilot-team-relay.tyronixstudio.workers.dev/health");
+    private static readonly HttpClient CapabilityHttp = new()
+    {
+        Timeout = TimeSpan.FromSeconds(3),
+        MaxResponseContentBufferSize = 4096,
+    };
+    private static readonly System.Text.RegularExpressions.Regex TaskIdPattern =
+        new("^[0-9a-fA-F]{24}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+    private static readonly System.Text.RegularExpressions.Regex StepIdPattern =
+        new("^[0-9a-fA-F]{24}:[0-9a-fA-F]{24}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
 
     private readonly string _roomCode;
     private readonly string _sessionId;
@@ -149,6 +178,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
     private ClientWebSocket? _receiver;
     private Task? _receiverLoop;
     private int _disposed;
+    private int _questPlanSupported;
 
     public SquadRelayClient(string roomCode, string memberId, string name)
     {
@@ -174,6 +204,7 @@ public sealed class SquadRelayClient : IAsyncDisposable
     public bool IsReceiving => _receiverLoop is { IsCompleted: false };
     public bool IsConnected => _receiver?.State == WebSocketState.Open;
     public bool IsPrimarySender => _broadcastLease.IsHeld;
+    public bool QuestPlanSupported => Volatile.Read(ref _questPlanSupported) != 0;
 
     internal static string DeriveRelayTeamKey(string teamCode)
     {
@@ -187,7 +218,81 @@ public sealed class SquadRelayClient : IAsyncDisposable
         new($"{SocketBaseUri}?team={Uri.EscapeDataString(DeriveRelayTeamKey(teamCode))}&name={Uri.EscapeDataString(NormalizeName(name))}");
 
     public event Action<SquadMemberPose>? PoseReceived;
+    public event Action<SquadQuestPlan>? QuestPlanReceived;
+    public event Action<string>? QuestPeerLeft;
     public event Action<bool>? ReceiverConnectionChanged;
+
+    /// <summary>
+    /// A trusted feature advertisement is required before any quest plan is
+    /// sent. Old production Workers never advertised questplan: fail closed.
+    /// </summary>
+    public async Task<bool> ProbeQuestPlanSupportAsync(CancellationToken cancellationToken = default)
+    {
+        Interlocked.Exchange(ref _questPlanSupported, 0);
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken, _lifetime.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(3));
+            using var response = await CapabilityHttp.GetAsync(
+                HealthUri, timeout.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) return false;
+            using var document = JsonDocument.Parse(
+                await response.Content.ReadAsStringAsync(timeout.Token).ConfigureAwait(false));
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !ReadString(root, "service", out var service)
+                || service != "RaidPilot Team Relay"
+                || !root.TryGetProperty("features", out var features)
+                || features.ValueKind != JsonValueKind.Object
+                || !features.TryGetProperty("questplan", out var quest)
+                || quest.ValueKind != JsonValueKind.True)
+                return false;
+            Interlocked.Exchange(ref _questPlanSupported, 1);
+            return true;
+        }
+        catch (Exception exception) when (exception is HttpRequestException
+            or OperationCanceledException
+            or JsonException or IOException or InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> SendQuestPlanAsync(
+        SquadQuestPlanSnapshot plan, CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        if (!QuestPlanSupported || !ValidQuestPlan(plan)) return false;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken, _lifetime.Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(4));
+        await StartReceivingAsync(timeout.Token).ConfigureAwait(false);
+        await _senderGate.WaitAsync(timeout.Token).ConfigureAwait(false);
+        try
+        {
+            var socket = await EnsureReceiverConnectedAsync(
+                timeout.Token).ConfigureAwait(false);
+            var payload = JsonSerializer.Serialize(new
+            {
+                type = "questplan",
+                mode = plan.Mode,
+                quests = plan.Quests,
+                done = plan.Done,
+                at = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            });
+            await SendTextAsync(socket, payload, timeout.Token).ConfigureAwait(false);
+            return true;
+        }
+        finally { _senderGate.Release(); }
+    }
+
+    internal static bool ValidQuestPlan(SquadQuestPlanSnapshot? plan) =>
+        plan is not null && (plan.Mode is "pve" or "regular" or "pvp-season")
+        && plan.Quests is { Count: <= 80 } && plan.Done is { Count: <= 120 }
+        && plan.Quests.All(id => id is not null && TaskIdPattern.IsMatch(id))
+        && plan.Done.All(id => id is not null && StepIdPattern.IsMatch(id));
+
 
     public async Task StartReceivingAsync(CancellationToken cancellationToken = default)
     {
@@ -392,6 +497,14 @@ public sealed class SquadRelayClient : IAsyncDisposable
                 var root = document.RootElement;
                 if (!ReadString(root, "type", out var type)) continue;
                 if (type == "pose") PublishIncoming(root);
+                else if (type == "questplan" && QuestPlanSupported)
+                    PublishIncomingQuestPlan(root);
+                else if (type == "peer_left" && QuestPlanSupported
+                    && ReadString(root, "id", out var leftId)
+                    && leftId.Length <= 64)
+                {
+                    try { QuestPeerLeft?.Invoke(leftId); } catch { }
+                }
                 else if (type == "welcome"
                     && root.TryGetProperty("peers", out var peers)
                     && peers.ValueKind == JsonValueKind.Array)
@@ -410,6 +523,55 @@ public sealed class SquadRelayClient : IAsyncDisposable
             try { PoseReceived?.Invoke(pose); }
             catch { /* UI callbacks cannot disrupt the receiver. */ }
         }
+    }
+
+    private void PublishIncomingQuestPlan(JsonElement root)
+    {
+        if (TryReadQuestPlan(root, out var plan) && plan is not null)
+        {
+            try { QuestPlanReceived?.Invoke(plan); }
+            catch { /* UI callbacks cannot interrupt the relay receiver. */ }
+        }
+    }
+
+    internal static bool TryReadQuestPlan(JsonElement root, out SquadQuestPlan? plan)
+    {
+        plan = null;
+        if (root.ValueKind != JsonValueKind.Object
+            || !ReadString(root, "type", out var kind) || kind != "questplan"
+            || !ReadString(root, "id", out var id) || id.Length > 64
+            || !ReadString(root, "name", out var name) || name.Length > 24
+            || !ReadString(root, "mode", out var mode)
+            || !ReadInt64(root, "at", out var at)
+            || at < DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 120000
+            || at > DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + 120000
+            || !root.TryGetProperty("quests", out var quests)
+            || quests.ValueKind != JsonValueKind.Array
+            || quests.GetArrayLength() > 80
+            || !root.TryGetProperty("done", out var done)
+            || done.ValueKind != JsonValueKind.Array
+            || done.GetArrayLength() > 120) return false;
+        var taskIds = new List<string>();
+        var stepIds = new List<string>();
+        foreach (var item in quests.EnumerateArray())
+        {
+            var value = item.ValueKind == JsonValueKind.String ? item.GetString() : null;
+            if (value is null || !TaskIdPattern.IsMatch(value)) return false;
+            taskIds.Add(value.ToLowerInvariant());
+        }
+        foreach (var item in done.EnumerateArray())
+        {
+            var value = item.ValueKind == JsonValueKind.String ? item.GetString() : null;
+            if (value is null || !StepIdPattern.IsMatch(value)) return false;
+            stepIds.Add(value.ToLowerInvariant());
+        }
+        var candidate = new SquadQuestPlan(id, name, mode,
+            taskIds.Distinct(StringComparer.Ordinal).ToArray(),
+            stepIds.Distinct(StringComparer.Ordinal).ToArray(), at);
+        if (!ValidQuestPlan(new SquadQuestPlanSnapshot(
+                candidate.Mode, candidate.Quests, candidate.Done))) return false;
+        plan = candidate;
+        return true;
     }
 
     internal static bool TryReadPose(JsonElement root, out SquadMemberPose? pose)
