@@ -302,7 +302,7 @@ function renderMarker(marker, view) {
     ? state.questPilot?.markerVisual(marker, state.questMapIds) : null;
   const inverse = (1/state.zoom).toFixed(6);
   const confirmed=isRaidExtraction(marker),target=confirmed&&isGuidanceTarget(marker);
-  const g = svgEl("g", { class: `rp-marker ${cls}${marker.id === state.selectedId ? " selected" : ""}${confirmed?" raid-confirmed":""}${target?" guidance-target":""}${questStyle?" quest-pilot-step"+(questStyle.done?" done":"")+(questStyle.focused?" focused":"")+(questStyle.possible?" possible":""):""}`, transform: `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) scale(${inverse})` });
+  const g = svgEl("g", { class: `rp-marker ${cls}${marker.id === state.selectedId ? " selected" : ""}${confirmed?" raid-confirmed":""}${target?" guidance-target":""}${questStyle?" quest-pilot-step"+(questStyle.done?" done":"")+(questStyle.focused?" focused":"")+(questStyle.possible?" possible":"")+(questStyle.teamOnly?" team-only":""):""}`, transform: `translate(${p.x.toFixed(2)} ${p.y.toFixed(2)}) scale(${inverse})` });
   g.dataset.markerId = marker.id;
   g.dataset.category = marker.category;
   if(isRaidQuest(marker))g.classList.add("quest-confirmed");
@@ -344,7 +344,8 @@ function renderMarker(marker, view) {
   title.textContent = questStyle
     ? questStyle.name + " · Étape " + questStyle.number + " : " + questStyle.description
       + (questStyle.possible ? " · zone à confirmer" : "")
-      + (questStyle.done ? " · fait selon le joueur" : "")
+      + (questStyle.done ? (questStyle.doneSource==="eft-local-log"?" · remis (journal EFT)":" · coché manuellement") : "")
+      + (questStyle.teamOnly ? " · plan ami : "+questStyle.teamNames.join(", ") : "")
     : marker.name || marker.category;
   g.appendChild(title);
   g.addEventListener("click", ev => {
@@ -448,7 +449,8 @@ function visibleMarkers() {
   return base.filter(m => {
     if(!m.position)return false;
     if(m.meta?.questId) {
-      if(state.questPilot) return state.questPilot.isActive(m.meta.questId) && markerOnFloor(m);
+      if(state.questPilot) return (state.questPilot.isActive(m.meta.questId)
+        || state.questPilot.isTeamActive(m.meta.questId)) && markerOnFloor(m);
       return isRaidQuest(m) && markerOnFloor(m);
     }
     if(m.category==="player-position"||isRaidExtraction(m))return true;
@@ -868,8 +870,11 @@ function renderQuestPilotPanel(){
   refs.questSteps.replaceChildren();
   refs.questPrep.replaceChildren();
   const active=planner.countActive();
-  refs.questSummary.textContent=active+" quête(s) choisie(s) · "+
-    "progression enregistrée localement · jamais confirmée automatiquement";
+  const confirmed=Object.values(planner.state.evidence||{})
+    .filter(e=>e.status==="completed").length;
+  refs.questSummary.textContent=active+" quête(s) choisie(s) · "
+    +confirmed+" remise(s) confirmée(s) par les journaux EFT · "
+    +"balises cochées manuellement";
   const search=state.questSearch;
   const candidates=planner.visibleTasks(state.questMapIds)
     .filter(q=>!search||q.name.toLowerCase().includes(search))
@@ -894,7 +899,11 @@ function renderQuestPilotPanel(){
     const name=document.createElement("span");name.className="qp-name";name.textContent=quest.name;
     row.appendChild(name);
     const count=quest.objectives.length;
-    qpText(row,"small",count?count+" étape(s)":"sans lieu","qp-count");
+    const logStatus=planner.statusFor(quest.id);
+    const statusLabel=logStatus?.status==="completed"?"✓ Journal EFT"
+      :logStatus?.status==="failed"?"Échec · journal"
+      :logStatus?.status==="active"?"Acceptée · journal":null;
+    qpText(row,"small",statusLabel|| (count?count+" étape(s)":"sans lieu"),"qp-count");
     refs.questList.appendChild(row);
   }
   if(candidates.length>visible.length)
@@ -917,7 +926,8 @@ function renderQuestPilotPanel(){
     qpText(button,"span",step.name);
     const place=step.alternative?" · emplacements possibles, étape unique":"";
     qpText(button,"small",(step.optional?"Facultatif · ":"")
-      +(step.done?"Déclarée faite · ":"")+step.needs.join(" · ")+place);
+      +(step.done?(step.doneSource==="eft-local-log"?"Quête remise · journal EFT · ":"Faite selon toi · "):"")
+      +step.needs.join(" · ")+place);
     button.addEventListener("click",()=>{planner.focus(step.id);renderQuestPilotPanel();render();});
     row.appendChild(button);
     refs.questSteps.appendChild(row);
@@ -946,6 +956,19 @@ function renderQuestPilotPanel(){
     "Aucune clé ni équipement explicitement déclaré pour les étapes localisées.");
   if(prepCount>35)qpText(refs.questPrep,"small",
     String(prepCount-35)+" éléments non affichés","qp-empty");
+  if(refs.questTeamPlans){
+    refs.questTeamPlans.replaceChildren();
+    const teams=Object.entries(planner.state.sharedPlans||{});
+    if(!teams.length)qpEmpty(refs.questTeamPlans,"Aucun plan ami importé.");
+    for(const [name,plan] of teams){
+      const row=document.createElement("div");row.className="qp-team-item";
+      qpText(row,"strong",name+" · "+plan.active.length+" quête(s) · "+plan.done.length+" étape(s) cochée(s)");
+      const remove=document.createElement("button");remove.type="button";
+      remove.textContent="Retirer";
+      remove.addEventListener("click",()=>{planner.removeShare(name);renderQuestPilotPanel();render();});
+      row.appendChild(remove);refs.questTeamPlans.appendChild(row);
+    }
+  }
 }
 function renderQuestPilotHud(){
   if(!refs.questHud)return;
@@ -970,6 +993,22 @@ function renderQuestPilotHud(){
 
 function isRaidQuest(marker){return state.raidQuests?.map===state.mapKey&&state.raidQuests.ids.has(String(marker.meta?.questId||"").toLowerCase());}
 function applyRaidQuests(){return new Set(state.markers.filter(isRaidQuest).map(m=>m.meta.questId)).size;}
+function applyQuestLogEvents(events){
+  if(!Array.isArray(events)||events.length>64)return 0;
+  let accepted=0,changed=false;
+  for(const event of events){
+    if(!["regular","pve","pvp-season"].includes(event?.mode))continue;
+    const same=event.mode===state.gameMode;
+    const planner=same?state.questPilot:new RPQuestPilot.Planner(window.localStorage,event.mode);
+    if(!planner)continue;
+    if(planner.recordEvidence(event)){
+      accepted++;
+      if(same)changed=true;
+    }
+  }
+  if(changed){renderQuestPilotPanel();render();}
+  return accepted;
+}
 function setRaidQuests(p){
   if(p.gameMode)setGameMode(p.gameMode);
   const recognized=p.quests.map(q=>String(q.id||"").trim()).filter(Boolean);
@@ -1327,6 +1366,28 @@ function wireUI() {
     state.questSearch=refs.questSearch.value.trim().toLowerCase();
     renderQuestPilotPanel();
   });
+  refs.questShare?.addEventListener("click",async()=>{
+    const code=state.questPilot?.exportShare()||"";
+    if(!code)return;
+    refs.questShareOutput.hidden=false;refs.questShareOutput.value=code;
+    let copied=false;
+    try{
+      if(window.navigator?.clipboard?.writeText){
+        await window.navigator.clipboard.writeText(code);copied=true;
+      }
+    }catch(_){}
+    refs.questShareStatus.textContent=copied
+      ?"Plan copié. Envoie ce code à ton ami."
+      :"Sélectionne et copie le code ci-dessous (Ctrl+C), puis envoie-le à ton ami.";
+  });
+  refs.questImport?.addEventListener("click",()=>{
+    const planner=state.questPilot;
+    const ok=planner?.importShare(refs.questPeerCode.value,refs.questPeerName.value);
+    refs.questShareStatus.textContent=ok
+      ?"Plan ami importé, sans changer tes quêtes ni tes cases cochées."
+      :"Code RPQ1 invalide ou incompatible avec le mode PvE/PvP choisi.";
+    if(ok){refs.questPeerCode.value="";renderQuestPilotPanel();render();}
+  });
   refs.labels.value=state.labelMode;
   refs.labels.addEventListener("change",()=>{state.labelMode=refs.labels.value;savePreferences();render();});
   refs.search.addEventListener("input",()=>{state.search=refs.search.value.trim().toLowerCase();render();});
@@ -1353,6 +1414,10 @@ async function init() {
     questPanel:$("#questpilot-panel"),questsBtn:$("#quests-btn"),questClose:$("#questpilot-close"),
     questSearch:$("#questpilot-search"),questList:$("#questpilot-list"),questSteps:$("#questpilot-steps"),
     questPrep:$("#questpilot-prep"),questSummary:$("#questpilot-summary"),
+    questShare:$("#questpilot-share"),questShareStatus:$("#questpilot-share-status"),
+    questShareOutput:$("#questpilot-share-output"),questPeerName:$("#questpilot-peer-name"),
+    questPeerCode:$("#questpilot-peer-code"),questImport:$("#questpilot-import"),
+    questTeamPlans:$("#questpilot-team-plans"),
     questHud:$("#questpilot-hud"),questHudColor:$("#questpilot-hud-color"),
     questHudTitle:$("#questpilot-hud-title"),questHudDetail:$("#questpilot-hud-detail"),
     profile:$("#profile"),floor:$("#floor"),zoomIn:$("#zoom-in"),zoomOut:$("#zoom-out"),
@@ -1419,11 +1484,12 @@ const api = {
   setFloor, setLevel:setFloor, setCalibration, setBaseAsset, applySnapshot, health, render,
   handleMessage:handleHostMessage
   ,resetRaid,setRaidExtractions,applyRaidExtractions,clearRaidExtractions,setBoundaryHazards:p=>setHazards(p,"boundary"),setMineHazards:p=>setHazards(p,"mine"),clearBoundaryHazards:()=>clearHazards("boundary"),clearMineHazards:()=>clearHazards("mine"),setGuidanceTarget,clearGuidanceTarget
-  ,setRaidQuests,clearRaidQuests,applyRaidQuests,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
+  ,setRaidQuests,clearRaidQuests,applyRaidQuests,applyQuestLogEvents,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
   ,questPilotSnapshot:()=>({
       mode:state.questPilot?.mode,
       active:[...(state.questPilot?.state.active||[])],
       done:[...(state.questPilot?.state.done||[])],
+      evidence:{...(state.questPilot?.state.evidence||{})},
       focused:state.questPilot?.state.focused||"",
       mapSteps:state.questPilot?.stepsForMap(state.questMapIds).map(s=>({
         id:s.id,number:s.number,questId:s.questId,locations:s.locations.length,done:s.done,color:s.color

@@ -186,3 +186,16 @@ html:not(.raidpilot-interactive) #questpilot-panel {display:none}
 #questpilot-hud strong{font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #questpilot-hud small{display:block;color:#becbd7;font-size:10px}
 @media(max-width:650px){#questpilot-panel{max-width:90%;width:290px}#questpilot-hud{max-width:82%}}
+
+/* QuestPilot evidence and consent-based, manual squad plan exchange. */
+.qp-task .qp-count{max-width:115px;text-align:right;line-height:1.2}
+.qp-share-code{display:block;width:100%;min-height:42px;max-height:90px;resize:vertical;
+ background:#111e2c;color:#bce0f4;border:1px solid #384e62;border-radius:5px;padding:6px;font:10px/1.25 monospace}
+#questpilot-share-output[hidden]{display:none}
+#questpilot-peer-name{display:block;width:100%;margin:7px 0 4px}
+#questpilot-team-plans{margin-top:7px}
+.qp-team-item{display:flex;gap:8px;align-items:center;padding:5px 2px;border-bottom:1px solid #283848}
+.qp-team-item strong{flex:1;min-width:0}
+.qp-team-item button{min-height:24px;font-size:11px;padding:1px 5px}
+.rp-marker.quest.quest-pilot-step.team-only{opacity:.72}
+.rp-marker.quest.quest-pilot-step.team-only .rp-step-ring{stroke-dasharray:3 3;stroke:#e8efff}

@@ -148,4 +148,90 @@ test("les quêtes choisies restent listées même hors de la carte actuelle",()=
  planner.toggle("quest-c",true);
  assert.ok(planner.visibleTasks(new Set(["factory"])).some(x=>x.id==="quest-c"));
 });
+test("journal EFT : remise valide confirmée et conservée",()=>{
+ const id="aaaaaaaaaaaaaaaaaaaaaaaa";
+ const mission={id,name:"task-log",objectives:[objective("step","mark-first","customs",24,24)]};
+ planner.setMode("pve");
+ planner.setCatalog([mission],{"task-log":"Quête du journal",...translated});
+ assert.equal(planner.recordEvidence({mode:"pve",taskId:id,status:"completed",
+   source:"eft-local-log",at:1792828800}),true);
+ assert.equal(planner.isQuestCompleted(id),true);
+ assert.equal(planner.stageStatus(id+":step",id).source,"eft-local-log");
+ const restarted=new QuestPilot.Planner(storage,"pve");
+ assert.equal(restarted.isQuestCompleted(id),true);
+});
+test("journal EFT : impossible de confondre les profils PvE/PvP",()=>{
+ const id="aaaaaaaaaaaaaaaaaaaaaaaa";
+ assert.equal(planner.recordEvidence({mode:"regular",taskId:id,status:"failed",
+   source:"eft-local-log",at:1792828810}),false);
+ assert.equal(planner.isQuestCompleted(id),true);
+});
+test("journal EFT : ancien événement ne remplace pas une remise",()=>{
+ const id="aaaaaaaaaaaaaaaaaaaaaaaa";
+ assert.equal(planner.recordEvidence({mode:"pve",taskId:id,status:"active",
+   source:"eft-local-log",at:1792828799}),true);
+ assert.equal(planner.statusFor(id).status,"completed");
+});
+test("journal EFT : ancien événement inconnu ou horodaté faussement est rejeté",()=>{
+ const id="aaaaaaaaaaaaaaaaaaaaaaaa";
+ assert.equal(planner.recordEvidence({mode:"pve",taskId:id,status:"completed",
+   source:"browser",at:1792828900}),false);
+ assert.equal(planner.recordEvidence({mode:"pve",taskId:id,status:"completed",
+   source:"eft-local-log",at:0}),false);
+ assert.equal(planner.recordEvidence({mode:"pve",taskId:"not-an-id",status:"completed",
+   source:"eft-local-log",at:1792828900}),false);
+});
+test("journal EFT : exclusion manuelle domine un nouveau démarrage reconnu",()=>{
+ const id="bbbbbbbbbbbbbbbbbbbbbbbb";
+ planner.toggle(id,false);
+ assert.equal(planner.recordEvidence({mode:"pve",taskId:id,status:"active",
+   source:"eft-local-log",at:1792828800}),true);
+ assert.equal(planner.isActive(id),false);
+});
+test("journal EFT : démarrage identifié peut sélectionner la quête du bon profil",()=>{
+ const id="cccccccccccccccccccccccc";
+ assert.equal(planner.recordEvidence({mode:"pve",taskId:id,status:"active",
+   source:"eft-local-log",at:1792828800}),true);
+ assert.equal(planner.isActive(id),true);
+});
+test("partage manuel : code public sans journal ni identité",()=>{
+ const code=planner.exportShare();
+ assert.ok(code.startsWith("RPQ1:"));
+ const shared=JSON.parse(decodeURIComponent(code.slice(5)));
+ assert.equal(shared.mode,"pve");
+ assert.ok(!JSON.stringify(shared).includes("eft-local-log"));
+ assert.ok(!JSON.stringify(shared).includes("RoomCode"));
+});
+test("partage manuel : plan ami distinct de mes propres quêtes",()=>{
+ const friend=new QuestPilot.Planner(null,"pve");
+ friend.setCatalog([task,optionsTask,remoteTask],translated);
+ friend.toggle("quest-a",true);friend.toggleDone("quest-a:first",true);
+ const before=[...planner.state.active];
+ assert.equal(planner.importShare(friend.exportShare(),"Pierre"),true);
+ assert.deepEqual(planner.state.active,before);
+ assert.deepEqual(planner.memberNamesFor("quest-a"),["Pierre"]);
+ assert.equal(planner.state.sharedPlans.Pierre.done.includes("quest-a:first"),true);
+});
+test("partage manuel : marqueur ami différent des marqueurs personnels",()=>{
+ planner.setCatalog([task,optionsTask,remoteTask],translated);
+ planner.toggle("quest-a",false);
+ assert.equal(planner.isActive("quest-a"),false);
+ const visual=planner.markerVisual({meta:{questId:"quest-a",objectiveId:"second"}},map);
+ assert.equal(visual.teamOnly,true);
+ assert.deepEqual(visual.teamNames,["Pierre"]);
+ assert.equal(visual.number,2);
+});
+test("partage manuel : mode différent et code malveillant rejetés",()=>{
+ const friend=new QuestPilot.Planner(null,"regular");
+ assert.equal(planner.importShare(friend.exportShare(),"Ami"),false);
+ assert.equal(planner.importShare("RPQ1:%7Bnot-json","Ami"),false);
+ assert.equal(planner.importShare("RPQ1:"+encodeURIComponent('{"version":1,"mode":"pve","active":{},"done":[]}'),"Ami"),false);
+});
+test("partage manuel : profils sauvegardés et effacement individuel",()=>{
+ const restored=new QuestPilot.Planner(storage,"pve");
+ assert.equal(restored.memberNamesFor("quest-a").includes("Pierre"),true);
+ assert.equal(restored.removeShare("Pierre"),true);
+ assert.equal(restored.isTeamActive("quest-a"),false);
+ assert.equal(restored.removeShare("Pierre"),false);
+});
 console.log(JSON.stringify({status:"PASS",checks}));

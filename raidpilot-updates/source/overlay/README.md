@@ -415,3 +415,24 @@ RaidPilot ajoute un planificateur de quêtes **local** sous le bouton « 🎯 Me
 - La numérotation et la liste ne sont jamais reconstruites à partir de l'ordre de proximité : elles suivent l'ordre des objectifs du catalogue, et leur couleur reste liée à l'identifiant de quête même si d'autres quêtes sont ajoutées.
 
 **Limites connues :** le suivi des étapes cochées est déclaratif et local, l'OCR peut manquer les quêtes hors écran, et les positions publiques ne décrivent pas toujours une pièce/étage ou une zone navigable. Le partage automatique du plan entre membres de l'escouade et l'accès autorisé à la progression du profil Tarkov nécessiteront une intégration distincte; ils ne sont pas simulés. Les droits des cartes HD et les essais en raid réel restent à valider.
+
+
+## 0.14.2.27 — Journal de quêtes EFT et partage simple des plans
+
+### Suivi des quêtes (sans promesse de détecter chaque étape)
+
+RaidPilot surveille localement, en lecture seule, le fichier EFT le plus récent dont le nom contient `push-notifications` ou `notifications` dans le dossier des journaux déjà découvert pour le suivi de la carte. La lecture commence en fin de fichier à l'ouverture (pas de réécriture rétroactive des anciennes quêtes), suit les ajouts, accepte les JSON multi-lignes, et ne garde **que** les notifications de quête de type `new_message`, `message.type=10/11/12`, dont `templateId` commence par **un identifiant de quête de 24 caractères hexadécimaux** et dont `dt` est une date raisonnable.
+
+- 10 : quête acceptée; propose l'ajout à la liste locale si le joueur ne l'a pas exclue.
+- 11 : quête échouée; signale le statut, sans altérer les cases des étapes.
+- 12 : **quête remise au marchand**; QuestPilot la classe comme `Journal EFT`, et non comme un F8 ou un succès deviné. Cette source est distincte des étapes que le joueur coche manuellement.
+- La seule source de mode de jeu est un événement explicite `Session mode: Pve/Pvp/PvpSeason` dans les journaux d'application. Si le mode est inconnu, les événements attendent en mémoire et ne sont pas attribués au profil PvE ou PvP par supposition. Les profils de progression restent distincts.
+- Les événements bruts et messages de discussion ne sont ni sauvegardés, ni envoyés au réseau. Les changements en mémoire n'exposent que l'identifiant public de quête, le statut et l'horodatage. Le moteur n'affirme **pas** avoir confirmé individuellement chaque balise pendant la partie : ces événements ne sont pas fournis dans le journal pour toutes les quêtes.
+
+### Plans d'équipe : partage manuel opérationnel, synchronisation automatique non disponible
+
+Dans `Ctrl+Alt+I → 🎯 Mes quêtes`, les joueurs disposent maintenant de **« Copier mon plan »** et **« Ajouter le plan ami »**. Le code `RPQ1:` contient seulement la sélection publique et les étapes cochées du profil courant (PvE ou PvP). Chaque ami peut être importé sans modifier les choix locaux : ses objectifs apparaissent sur la carte avec des cercles numérotés en tirets. Les plans d'équipe importés sont mémorisés localement, au maximum six coéquipiers; un bouton permet d'en retirer un. Aucune information de compte, nom de personnage, identifiant de session, de raid, coordonnées, mot de passe ou journal n'est incorporée au code.
+
+**Limite observée :** le test réel et synthétique du Worker `wss://raidpilot-team-relay.tyronixstudio.workers.dev/ws` a retourné `QUEST_RELAY_SUPPORT=no` pour un message `questplan`. Le relais en production **ne transporte donc pas les quêtes** au 24 octobre 2026. La transmission automatique et les confirmations de livraison ne peuvent pas être proposées sans mettre à jour le Worker Cloudflare lui-même. Les positions d'escouade restent fonctionnelles comme avant; aucun message de quêtes non reconnu n'est injecté dans les messages de position. Une synchronisation en temps réel devra être testée entre deux PC après évolution contrôlée du serveur.
+
+**À tester en partie réelle :** événement d'acceptation et remise dans un journal EFT réel, identité du mode, cas où les logs sont absents, réception d'un plan de coéquipier, et affichage des balises. Le passage des tests automatisés prouve la logique de lecture et la stabilité de la build, mais pas une progression en raid certifiée.

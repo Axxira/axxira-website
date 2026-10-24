@@ -47,6 +47,7 @@ internal static class ScreenshotNameParserTests
         TarkovDevQuestProviderTests.RunAll(failures);
         TarkovDevJsonCacheTests.RunAll(failures);
         QuestAdvisorTests.RunAll(failures);
+        EftQuestLogTests.RunAll(failures);
         EftControlSettingsTests.RunAll(failures);
         EftGameViewSettingsTests.RunAll(failures);
         RealtimePoseEstimatorTests.RunAll(failures);
@@ -99,6 +100,7 @@ internal static class ScreenshotNameParserTests
             + TarkovDevQuestProviderTests.TestCount
             + TarkovDevJsonCacheTests.TestCount
             + QuestAdvisorTests.TestCount
+            + EftQuestLogTests.TestCount
             + EftControlSettingsTests.TestCount
             + EftGameViewSettingsTests.TestCount
             + RealtimePoseEstimatorTests.TestCount

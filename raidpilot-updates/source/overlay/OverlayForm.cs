@@ -2875,6 +2875,7 @@ internal sealed partial class OverlayForm : Form
             }
 
             await RestoreRaidQuestMarkersAsync();
+            await FlushQuestLogEventsAsync();
             if (!IsNavigationContinuationCurrent(completedNavigationSequence))
             {
                 return;
@@ -5615,6 +5616,7 @@ internal sealed partial class OverlayForm : Form
     {
         if (_mapLogWatcher is not null)
         {
+            EnsureQuestLogWatcherStarted();
             return;
         }
 
@@ -5623,15 +5625,18 @@ internal sealed partial class OverlayForm : Form
         {
             watcher = new EftMapLogWatcher();
             watcher.MapDetected += OnMapDetected;
+            watcher.GameModeDetected += OnEftGameModeDetected;
             watcher.RaidEnded += OnRaidEnded;
             _mapLogWatcher = watcher;
             watcher.Start();
+            EnsureQuestLogWatcherStarted();
         }
         catch
         {
             if (watcher is not null)
             {
                 watcher.MapDetected -= OnMapDetected;
+                watcher.GameModeDetected -= OnEftGameModeDetected;
                 watcher.RaidEnded -= OnRaidEnded;
                 watcher.Dispose();
             }
@@ -6464,6 +6469,7 @@ internal sealed partial class OverlayForm : Form
         DisposeRaidClockUi();
         DisposeAutomaticFloors();
         DisposeQuestContext();
+        DisposeQuestLog();
         _realtimeTimer.Stop();
         _realtimeTimer.Dispose();
         SaveLearnedRouteGraphForShutdown();
@@ -6481,6 +6487,7 @@ internal sealed partial class OverlayForm : Form
         if (_mapLogWatcher is not null)
         {
             _mapLogWatcher.MapDetected -= OnMapDetected;
+            _mapLogWatcher.GameModeDetected -= OnEftGameModeDetected;
             _mapLogWatcher.RaidEnded -= OnRaidEnded;
             _mapLogWatcher.Dispose();
         }

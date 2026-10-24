@@ -80,6 +80,13 @@
     return submit("quests",()=>{if(!acceptGeneration(p.generation))return 0;questConfirmed=true;return api().setRaidQuests(p);},p.generation);
   };
   window.__raidPilotApplyRaidQuests=()=>ready()?api().applyRaidQuests():0;
+  // Native EFT log payloads contain only public task IDs, mode, outcome and time.
+  // They are applied to mode-isolated local profiles, never to unrelated PvE/PvP.
+  window.__raidPilotApplyQuestLogEvents=events=>{
+    if(!Array.isArray(events)||events.length>64)return 0;
+    return submit("quest-log",()=>api().applyQuestLogEvents(events));
+  };
+
   window.__raidPilotClearRaidQuests=next=>submit("quests",()=>{
     if(next===generation&&questConfirmed)return false;
     if(!acceptGeneration(next))return false;questConfirmed=false;api().clearRaidQuests();return true;

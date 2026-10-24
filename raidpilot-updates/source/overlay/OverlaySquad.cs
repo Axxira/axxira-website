@@ -30,6 +30,9 @@ internal sealed partial class OverlayForm
         {
             PruneSquadMembers();
             await RefreshSquadProfileFromDiskAsync();
+            // A local WebView navigation may postpone applying a validated quest
+            // log event; retry until QuestPilot explicitly acknowledges it.
+            await FlushQuestLogEventsAsync();
         };
         _squadMaintenanceTimer.Start();
         RefreshSquadMenu();

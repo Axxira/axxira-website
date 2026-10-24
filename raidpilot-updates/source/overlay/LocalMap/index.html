@@ -50,6 +50,15 @@
         <div id="questpilot-steps"></div>
         <div class="qp-section-title">À préparer avant le raid</div>
         <div id="questpilot-prep"></div>
+        <div class="qp-section-title">Escouade · partage manuel</div>
+        <p class="qp-subtle">Le relais Cloudflare ne partage pas encore les quêtes. Tu peux copier ton plan et importer celui d'un ami sans modifier ta progression.</p>
+        <button id="questpilot-share" type="button">Copier mon plan</button>
+        <small id="questpilot-share-status" class="qp-subtle" role="status"></small>
+        <textarea id="questpilot-share-output" class="qp-share-code" rows="2" readonly aria-label="Code de partage à copier" hidden></textarea>
+        <input id="questpilot-peer-name" type="text" placeholder="Nom de l'ami" aria-label="Nom du coéquipier">
+        <textarea id="questpilot-peer-code" class="qp-share-code" rows="2" placeholder="Coller le code RPQ1 de l'ami…" aria-label="Code de partage d'un ami"></textarea>
+        <button id="questpilot-import" type="button">Ajouter le plan ami</button>
+        <div id="questpilot-team-plans"></div>
       </aside>
 
       <section id="viewport" aria-label="Carte RaidPilot">

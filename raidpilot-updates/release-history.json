@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.27",
+      "raidPilotVersion": "0.14.2.27",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot : remise de quête reconnue dans les journaux EFT + plans d'équipe copiables",
+      "details": "QuestPilot améliore le suivi des objectifs et la coopération. Nouveau lecteur en lecture seule des journaux EFT push-notifications : il décode uniquement les événements de quête new_message, types 10 (acceptée), 11 (échouée), 12 (remise au marchand), identifiés par leur identifiant public 24 hex et une date de notification valide. Les autres messages sont rejetés, aucun chat ni identifiant de compte n'est conservé. Les notifications sont lues de manière bornée, par lignes et fragments JSON, sans rejouer les événements historiques au lancement et sans accès mémoire au jeu. Le mode PvE/PvP/PvP saison est déterminé explicitement depuis les logs d'application EFT; les événements dont le mode reste inconnu attendent une identification fiable, jamais de transfert implicite vers PvP. Dans QuestPilot, une quête remise est marquée « Journal EFT »; les étapes posées mais non confirmées dans les logs restent « faites selon toi ». Les exclusions manuelles des quêtes dominent l'OCR et les nouveaux événements; les profils restent locaux et séparés. En escouade, un nouveau partage MANUEL de plan par code RPQ1 permet de copier son plan, importer celui d'un ami sans modifier sa progression et afficher les balises des quêtes partagées avec un rendu distinct; le code ne contient que des identifiants publics de quêtes et les cases cochées, jamais les identifiants personnels ou les journaux. Le relais Cloudflare actuellement déployé ne retransmet pas encore les types de messages QuestPilot (test synthétique négatif le 24 octobre 2026) : le partage automatique en temps réel n'est PAS activé ni annoncé comme fonctionnel. Toutes les fonctions Overlay, Launcher, Beacon, GPS, quêtes numérotées, extractions et cartes sont conservées. Tests C#, JS, multi-étape, priorité manuelle, lecture des nouveaux logs, isolation PvE/PvP et import local."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.26",
       "raidPilotVersion": "0.14.2.26",
       "beaconVersion": "0.3.9",
