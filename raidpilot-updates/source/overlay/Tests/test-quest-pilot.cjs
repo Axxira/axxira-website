@@ -387,3 +387,42 @@ test("préparation : exclut quêtes remises, conserve exigences sans GPS",()=>{
 });
 
 console.log(JSON.stringify({status:"PASS",checks}));
+
+test("une dependance explicite bloque une etape avant la premiere",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ const a=objective("first","first","customs",100,100);
+ const b=objective("second","second","customs",1,1,{requiredPreviousObjectives:["first"]});
+ p.setCatalog([{id:"dependency-quest",name:"Dependency",objectives:[a,b]}]);
+ p.toggle("dependency-quest",true);
+ const pos={position:{x:0,z:0}};
+ assert.equal(p.nextForMap(new Set(["customs"]),pos).objectiveId,"first");
+ p.toggleDone("dependency-quest:first",true);
+ assert.equal(p.nextForMap(new Set(["customs"]),pos).objectiveId,"second");
+});
+test("numero de balise ne suppose pas un ordre obligatoire",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([{id:"independent-quest",name:"Independent",objectives:[
+  objective("first","first","customs",100,100),
+  objective("second","second","customs",1,1)
+ ]}]);
+ p.toggle("independent-quest",true);
+ assert.equal(p.nextForMap(new Set(["customs"]),{position:{x:0,z:0}}).objectiveId,"second");
+});
+test("une position incertaine conserve la derniere cible sans distance inventee",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([{id:"location-quest",name:"Locations",objectives:[
+  objective("first","first","customs",3,3),
+  objective("second","second","customs",100,100)
+ ]}]);
+ p.toggle("location-quest",true);
+ const maps=new Set(["customs"]);
+ const first=p.nextForMap(maps,{position:{x:0,z:0},positionConfidence:0.95});
+ assert.equal(first.objectiveId,"first");
+ assert.equal(first.locationUncertain,false);
+ const uncertain=p.nextForMap(maps,{position:{x:99,z:99},positionConfidence:0.2});
+ assert.equal(uncertain.objectiveId,"first");
+ assert.equal(uncertain.locationUncertain,true);
+ assert.equal(uncertain.distance,null);
+ const lost=p.nextForMap(maps,{locationUncertain:true});
+ assert.equal(lost.objectiveId,"first");
+});
