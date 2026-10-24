@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T19:58:32.2583677+00:00",
+  "publishedAt": "2026-10-24T21:24:17.6548173+00:00",
   "raidPilot": {
-    "version": "0.14.2.30",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.30-b0.3.9-l0.2.15-a1c2cf682017/RaidPilot-Overlay-v0.14.2.30-Windows-x64.zip",
-    "sha256": "F66F8139865EBD170BA43EF7A45AAA51DC924E1AA25569090A65D96AD08F60A2",
-    "sizeBytes": 234477688,
-    "releaseNotes": "Correctif de génération du diagnostic-localisation.csv : les observations F8 acceptées sont désormais consignées même lorsqu'il n'existe pas d'historique de pose, avec statut no_historical_pose plutôt qu'une comparaison inventée. Conserve la mesure des écarts lorsque l'historique est disponible, et la copie opt-in vers un dossier privé synchronisé. Version augmentée pour garantir la détection de cette mise à jour par les launchers. La précision du suivi entre F8 reste à améliorer à partir de mesures réelles."
+    "version": "0.14.2.31",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.31-b0.3.9-l0.2.15-b2e856b7b8c0/RaidPilot-Overlay-v0.14.2.31-Windows-x64.zip",
+    "sha256": "01622A47DFE59E46B03046129DBDD92C4A5BB1AB4C08DE4EC0074EA65BC1AB07",
+    "sizeBytes": 234477241,
+    "releaseNotes": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.30-b0.3.9-l0.2.15-a1c2cf682017/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "43EB2B1D42904808AC1675E80ACEFB6B13614BE59D02945FDD3A7F8F1292EAC3",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.31-b0.3.9-l0.2.15-b2e856b7b8c0/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "34F7BA97CB4775CFAA9F139B4E3AE283C667878FF9C7FDBF01E00C0B918EDD7A",
     "sizeBytes": 58332195,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.30-b0.3.9-l0.2.15-a1c2cf682017/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "1596297A12F5FC825DE2A1D880CE93578DBEBBE447442E4E47E2120ADCF9A130",
-    "sizeBytes": 351062091,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.31-b0.3.9-l0.2.15-b2e856b7b8c0/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "BEA81AF7E82FEBF2FA99A45C3ECF17AD347A0AAA7FD1BB81A10C38E5EE9D6633",
+    "sizeBytes": 351061939,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.31",
+      "raidPilotVersion": "0.14.2.31",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Localisation — journal de dérive enrichi et mesures souris/ADS",
+      "details": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.30",
