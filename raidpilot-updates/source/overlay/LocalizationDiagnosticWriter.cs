@@ -42,7 +42,7 @@ internal static class LocalizationDiagnosticWriter
                 if (File.Exists(CsvPath) && new FileInfo(CsvPath).Length >= MaximumBytes)
                     File.Move(CsvPath,CsvPath + ".previous",true);
                 var fresh = !File.Exists(CsvPath) || new FileInfo(CsvPath).Length == 0;
-                using var writer = new StreamWriter(CsvPath,append:true,new UTF8Encoding(false));
+                using var writer = new StreamWriter(CsvPath, append: true, encoding: new UTF8Encoding(false));
                 if (fresh) writer.WriteLine("utc,map,pred_x,pred_z,pred_yaw,exact_x,exact_z,exact_yaw,error_m,yaw_error_deg,uncertainty_m");
                 writer.WriteLine(line);
             }
