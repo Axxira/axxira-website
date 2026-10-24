@@ -44,24 +44,26 @@ internal static class LocalizationDiagnosticWriter
     }
 
 
-    internal static void RecordAnchor(RealtimePose predicted, ScreenshotObservation exact, string map)
+    internal static void RecordAnchor(RealtimePose? predicted, ScreenshotObservation exact, string map)
     {
         try
         {
             if (!File.Exists(EnablePath)) return;
-            var values = new[] {predicted.X,predicted.Z,predicted.YawDegrees,
-                predicted.PositionUncertaintyMeters,exact.X,exact.Z,exact.YawDegrees};
-            if (values.Any(v => !double.IsFinite(v))) return;
-            var dx = predicted.X - exact.X;
-            var dz = predicted.Z - exact.Z;
-            var distance = Math.Sqrt(dx * dx + dz * dz);
-            var yaw = (predicted.YawDegrees - exact.YawDegrees + 540) % 360 - 180;
+            var valid = predicted is { } pose && new[] {pose.X,pose.Z,pose.YawDegrees,
+                pose.PositionUncertaintyMeters,exact.X,exact.Z,exact.YawDegrees}.All(double.IsFinite);
+            if (!double.IsFinite(exact.X) || !double.IsFinite(exact.Z)
+                || !double.IsFinite(exact.YawDegrees)) return;
             string f(double value) => value.ToString("0.###",CultureInfo.InvariantCulture);
             var safeMap = new string((map ?? "").Where(c => char.IsAsciiLetterOrDigit(c) || c == '-').Take(48).ToArray());
-            var line = string.Join(",",DateTimeOffset.UtcNow.ToString("O",CultureInfo.InvariantCulture),
-                safeMap,f(predicted.X),f(predicted.Z),f(predicted.YawDegrees),
-                f(exact.X),f(exact.Z),f(exact.YawDegrees),f(distance),f(yaw),
-                f(predicted.PositionUncertaintyMeters));
+            var fields = valid
+                ? new[] { f(pose.X),f(pose.Z),f(pose.YawDegrees),f(exact.X),f(exact.Z),
+                    f(exact.YawDegrees),f(Math.Hypot(pose.X-exact.X,pose.Z-exact.Z)),
+                    f((pose.YawDegrees-exact.YawDegrees+540)%360-180),
+                    f(pose.PositionUncertaintyMeters),"compared" }
+                : new[] { "","","",f(exact.X),f(exact.Z),f(exact.YawDegrees),
+                    "","","","no_historical_pose" };
+            var line = DateTimeOffset.UtcNow.ToString("O",CultureInfo.InvariantCulture)
+                + "," + safeMap + "," + string.Join(",",fields);
             lock (Gate)
             {
                 Directory.CreateDirectory(DirectoryPath);
@@ -69,7 +71,7 @@ internal static class LocalizationDiagnosticWriter
                     File.Move(CsvPath,CsvPath + ".previous",true);
                 var fresh = !File.Exists(CsvPath) || new FileInfo(CsvPath).Length == 0;
                 using var writer = new StreamWriter(CsvPath, append: true, encoding: new UTF8Encoding(false));
-                if (fresh) writer.WriteLine("utc,map,pred_x,pred_z,pred_yaw,exact_x,exact_z,exact_yaw,error_m,yaw_error_deg,uncertainty_m");
+                if (fresh) writer.WriteLine("utc,map,pred_x,pred_z,pred_yaw,exact_x,exact_z,exact_yaw,error_m,yaw_error_deg,uncertainty_m,status");
                 writer.WriteLine(line);
                 writer.Flush();
                 SyncToUserSelectedFolder();
