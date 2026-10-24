@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Windows.Forms;
 
 namespace RaidPilot.Overlay;
 
@@ -6,6 +7,7 @@ internal sealed partial class OverlayForm
 {
     private readonly PrecisionV2VisualSampler _precisionV2Vision = new();
     private readonly PrecisionV2MotionFusion _precisionV2Fusion = new();
+    private readonly VisualReaderYawSync _precisionV2YawReader = new();
     private readonly PrecisionDriftAudit _precisionV2DriftAudit = new();
     private readonly ToolStripMenuItem _precisionV2ToggleMenuItem = new(
         "Precision V2 — flux optique 160×90 (expérimental)")
@@ -36,6 +38,7 @@ internal sealed partial class OverlayForm
             _precisionV2DriftAudit.MarkInterrupted();
             _precisionV2Vision.SelectGpuCapture(_precisionV3GpuMenuItem.Checked);
             _precisionV2Fusion.Reset();
+            _precisionV2YawReader.Reset();
         };
         _precisionV2ToggleMenuItem.Click += (_, _) =>
         {
@@ -48,6 +51,7 @@ internal sealed partial class OverlayForm
     {
         _precisionV2Vision.Reset();
         _precisionV2Fusion.Reset();
+        _precisionV2YawReader.Reset();
         _precisionV2TrackingActive = false;
         _precisionV2LastTurnAt = 0;
     }
@@ -70,6 +74,8 @@ internal sealed partial class OverlayForm
         }
 
         _precisionV2TrackingActive = true;
+        _precisionV2YawReader.ObserveActivity(
+            movementInputActive, aiming, _middleMouseDown || IsKeyDown(Keys.F));
         if (rotationOccurred || _middleMouseDown)
             _precisionV2LastTurnAt = now;
         var quietDirection = !_middleMouseDown && !aiming
@@ -79,6 +85,22 @@ internal sealed partial class OverlayForm
         // Consume an already completed worker frame BEFORE integrating
         // this tick's motion; queue a fresh capture without blocking UI.
         var observation = _precisionV2Vision.GetFresh(now, _lastForegroundWindow);
+        Span<Keys> movementKeys = stackalloc Keys[4] {
+            _controlSettings.MoveForward, _controlSettings.MoveBackward,
+            _controlSettings.MoveLeft, _controlSettings.MoveRight
+        };
+        if (_rawKeyboardInputRegistered
+            && _precisionV2YawReader.TryRead(
+                observation, now, _lastForegroundWindow,
+                _rawKeyboardTimeline, _precisionYaw, movementKeys,
+                out var from, out var to)
+            && observation is { } validatedFrame)
+        {
+            // Only pure turns may update yaw: monocular flow does not provide
+            // trustworthy metres, so never derive X/Z from pixel movement.
+            TryCalibrateYawFromVision(from, to, validatedFrame.Visual,
+                movementActive: false, aiming: false);
+        }
         var fused = _precisionV2Fusion.Fuse(
             observation, now, _lastForegroundWindow,
             movementInputActive, quietDirection, baseline);
@@ -101,6 +123,8 @@ internal sealed partial class OverlayForm
                 + $"formats rejetés {_precisionV2Vision.GeometryRejected}, "
                 + $"trames GPU conservées {_precisionV2Vision.GpuHeldPendingPolls}, "
                 + $"nouveaux repères après pause {_precisionV2Vision.GpuLongGapReprimes}\n"
+                + $"Reader 160×90 : yaw validés {_precisionV2YawReader.Accepted}, "
+                + $"rejetés {_precisionV2YawReader.Rejected} — {_precisionV2YawReader.LastStatus}\n"
                 + $"Géométrie : {_precisionV2Vision.CameraGeometryDiagnostic}\n"
                 + $"Arbitrage : {_precisionV2Fusion.LastDecision}";
         return status + "\nContrôle format : " + _precisionV2Vision.GeometryWarning

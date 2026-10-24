@@ -1,10 +1,11 @@
 using System.Diagnostics;
+using System.Windows.Forms;
 
 namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionV2Tests
 {
-    internal const int TestCount = 31;
+    internal const int TestCount = 38;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -289,6 +290,104 @@ internal static class PrecisionV2Tests
                 at, (nint)1, true, true, RealtimeMotionEvidence.Unknown)
                 == RealtimeMotionEvidence.Unknown);
         }, failures);
+        RunVisualReaderTests(failures);
+    }
+
+
+    private static (VisualReaderYawSync reader, RawKeyboardTimeline keyboard,
+        PrecisionYawTimeline mouse, long start, long end) ReaderScenario()
+    {
+        var start=Stopwatch.Frequency*10L;
+        var end=start+Stopwatch.Frequency/5;
+        var keyboard=new RawKeyboardTimeline();
+        foreach(var key in new[]{Keys.W,Keys.S,Keys.A,Keys.D})
+            keyboard.Synchronize(key,false);
+        var mouse=new PrecisionYawTimeline();
+        mouse.Record(start+Stopwatch.Frequency/10,100,false);
+        var reader=new VisualReaderYawSync();
+        Require(!reader.TryRead(ReaderFrame(start),start,(nint)1,
+            keyboard,mouse,new[]{Keys.W,Keys.S,Keys.A,Keys.D},out _,out _),
+            "première image ne définit pas une rotation relative");
+        return (reader,keyboard,mouse,start,end);
+    }
+
+    private static PrecisionV2Frame ReaderFrame(long at)
+    {
+        var original=Frame(at,VisualEgomotionState.Tracking);
+        var flow=original.Visual.Egomotion with {
+            EstimatedYawDeltaDegrees=5.0,
+            SceneShiftX=-4,
+            SceneShiftY=0.1
+        };
+        return original with { Visual=original.Visual with { Egomotion=flow } };
+    }
+
+    private static bool ReadReader(
+        VisualReaderYawSync reader,RawKeyboardTimeline keyboard,
+        PrecisionYawTimeline mouse,long at,long now,PrecisionV2Frame? frame=null)
+        => reader.TryRead(frame??ReaderFrame(at),now,(nint)1,keyboard,mouse,
+            new[]{Keys.W,Keys.S,Keys.A,Keys.D},out _,out _);
+
+    private static void RunVisualReaderTests(ICollection<string> failures)
+    {
+        Run("Reader V2: deux images live + yaw raw correspondent",()=>{
+            var (reader,keys,mouse,_,end)=ReaderScenario();
+            Require(ReadReader(reader,keys,mouse,end,end)
+                && reader.Accepted==1 && reader.HasRecentReliableFrame(end),
+                "rotation visuelle correctement horodatée non détectée");
+        },failures);
+        Run("Reader V2: même image non réutilisée",()=>{
+            var (reader,keys,mouse,_,end)=ReaderScenario();
+            Require(ReadReader(reader,keys,mouse,end,end));
+            Require(!ReadReader(reader,keys,mouse,end,end) && reader.Accepted==1,
+                "une vieille trame est recomptée");
+        },failures);
+        Run("Reader V2: interaction ou ADS invalide une rotation",()=>{
+            var (reader,keys,mouse,_,end)=ReaderScenario();
+            reader.ObserveActivity(false,false,true);
+            Require(!ReadReader(reader,keys,mouse,end,end));
+            reader.Reset();
+            var start=end+Stopwatch.Frequency;
+            Require(!ReadReader(reader,keys,mouse,start,start));
+            reader.ObserveActivity(false,true,false);
+            Require(!ReadReader(reader,keys,mouse,start+Stopwatch.Frequency/5,
+                start+Stopwatch.Frequency/5));
+        },failures);
+        Run("Reader V2: tap de mouvement entre deux images exclu",()=>{
+            var (reader,keys,mouse,start,end)=ReaderScenario();
+            keys.Record(Keys.W,true,start+Stopwatch.Frequency/20);
+            keys.Record(Keys.W,false,start+Stopwatch.Frequency/10);
+            Require(!ReadReader(reader,keys,mouse,end,end)
+                && reader.LastStatus.Contains("clavier",StringComparison.Ordinal),
+                "le tap court est traité comme rotation pure");
+        },failures);
+        Run("Reader V2: image ancienne ou lente exclue",()=>{
+            var (reader,keys,mouse,_,end)=ReaderScenario();
+            Require(!ReadReader(reader,keys,mouse,end,end+Stopwatch.Frequency/2));
+            reader.Reset();
+            var later=end+Stopwatch.Frequency;
+            Require(!ReadReader(reader,keys,mouse,later,later));
+            var slow=ReaderFrame(later+Stopwatch.Frequency/5) with {
+                ProcessingMilliseconds=150
+            };
+            Require(!ReadReader(reader,keys,mouse,slow.CapturedAt,slow.CapturedAt,slow));
+        },failures);
+        Run("Reader V2: flux peu fiable interdit",()=>{
+            var (reader,keys,mouse,_,end)=ReaderScenario();
+            var original=ReaderFrame(end);
+            var bad=original with {Visual=original.Visual with {
+                Egomotion=original.Visual.Egomotion with {Confidence=0.12}
+            }};
+            Require(!ReadReader(reader,keys,mouse,end,end,bad));
+        },failures);
+        Run("Reader V2: mouvement visuel opposé au raw refusé",()=>{
+            var (reader,keys,mouse,_,end)=ReaderScenario();
+            var original=ReaderFrame(end);
+            var wrong=original with {Visual=original.Visual with {
+                Egomotion=original.Visual.Egomotion with {EstimatedYawDeltaDegrees=-5}
+            }};
+            Require(!ReadReader(reader,keys,mouse,end,end,wrong));
+        },failures);
     }
 
     private static byte[] SampleScene(int shiftX)

@@ -1179,12 +1179,13 @@ internal sealed partial class OverlayForm : Form
                     // recherchÃƒÂ©, tout en restant indÃƒÂ©pendant de la pose absolue.
                     estimateEgomotion: true))
             {
-                TryCalibrateYawFromVision(
-                    visualIntervalStart,
-                    now,
-                    visualObservation,
-                    movementInputActive,
-                    aiming);
+                // Prefer the verified 160x90 camera-only reader when it has
+                // recent evidence. The 64x36 flow remains a safe fallback.
+                // Never apply both yaw corrections to the same time interval.
+                if (!_precisionV2YawReader.HasRecentReliableFrame(now))
+                    TryCalibrateYawFromVision(
+                        visualIntervalStart, now, visualObservation,
+                        movementInputActive, aiming);
 
                 if (_realtimeEstimator.CurrentPose is { } estimatedVisualPose)
                 {
