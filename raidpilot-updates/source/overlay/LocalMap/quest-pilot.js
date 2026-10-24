@@ -206,7 +206,7 @@
     memberNamesFor(id){
       const taskId=String(id);
       const manual=Object.entries(this.state.sharedPlans||{})
-        .filter(([,plan])=>plan.active.includes(taskId)).map(([name])=>name+" (importé)");
+        .filter(([,plan])=>plan.active.includes(taskId)).map(([name])=>name);
       const live=Object.values(this.livePlans||{})
         .filter(plan=>plan.mode===this.mode && plan.quests.includes(taskId)
           && Date.now()-plan.receivedAt<90000)
