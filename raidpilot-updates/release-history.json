@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.34",
+      "raidPilotVersion": "0.14.2.34",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot — priorité manuelle et distances fiables",
+      "details": "Une quête ciblée par le joueur garde maintenant la priorité même quand la localisation devient incertaine. Le moteur retient correctement une cible sélectionnée en position fiable et n'affiche plus de distance calculée à partir d'une position perdue dans le plan de raid. Tests dédiés à la sélection, la perte de position et au retour de fiabilité. Aucun objectif n'est terminé automatiquement."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.33",
       "raidPilotVersion": "0.14.2.33",
       "beaconVersion": "0.3.9",
