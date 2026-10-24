@@ -14,7 +14,7 @@ internal sealed class EftQuestLogWatcher : IDisposable
     private readonly object _gate = new();
     private readonly string? _logsDirectory;
     private readonly TimeSpan _pollEvery;
-    private Timer? _timer;
+    private System.Threading.Timer? _timer;
     private bool _started, _disposed;
     private string? _currentPath;
     private long _cursor;
@@ -48,7 +48,7 @@ internal sealed class EftQuestLogWatcher : IDisposable
                 catch (UnauthorizedAccessException) { _cursor = 0; }
             }
             _started = true;
-            _timer = new Timer(_ => Poll(), null, _pollEvery, _pollEvery);
+            _timer = new System.Threading.Timer(_ => Poll(), null, _pollEvery, _pollEvery);
             return true;
         }
     }
@@ -95,6 +95,7 @@ internal sealed class EftQuestLogWatcher : IDisposable
             var bytes = new byte[available];
             var count = stream.ReadAtLeast(bytes, 1, throwOnEndOfStream: false);
             // ReadAtLeast may be short on a live file. Do not commit partial lines.
+            if (count == 0) return output;
             var lastNewline = Array.LastIndexOf(bytes, (byte)'\n', count - 1, count);
             if (lastNewline < 0)
             {
@@ -209,7 +210,8 @@ internal sealed class EftQuestLogWatcher : IDisposable
         try
         {
             IEnumerable<string> folders = new[] { root }
-                .Concat(Directory.EnumerateDirectories(root).Take(80));
+                .Concat(Directory.EnumerateDirectories(root)
+                    .OrderByDescending(Directory.GetLastWriteTimeUtc).Take(16));
             string? latest = null;
             DateTime newest = DateTime.MinValue;
             foreach (var folder in folders)
@@ -234,7 +236,7 @@ internal sealed class EftQuestLogWatcher : IDisposable
 
     public void Dispose()
     {
-        Timer? previous;
+        System.Threading.Timer? previous;
         lock (_gate)
         {
             if (_disposed) return;
