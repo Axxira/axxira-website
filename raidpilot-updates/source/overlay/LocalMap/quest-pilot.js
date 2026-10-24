@@ -122,6 +122,10 @@
               ?obj.description:obj.type||"Objectif"),
         type:String(obj.type || ""),
         optional:obj.optional === true,
+        // Only explicit objective-level prerequisites imply a mandatory order.
+        // Numbered pins are identifiers, NOT evidence of required sequencing.
+        requires:asArray(obj.requiredPreviousObjectives).map(v=>identifier(v?.id||v))
+          .filter(Boolean).map(v=>id+":"+v),
         locations,
         alternative:locations.some(l=>l.possible) || (locations.length > 1
           && !["plantItem","plantQuestItem"].includes(obj.type)),
@@ -190,6 +194,8 @@
       this.tasks=[];
       this.byId=new Map();
       this.state=defaultState();
+      // Last reliable target is session-only; never persist guessed distances.
+      this.lastReliableTarget=null;
       // Ephemeral live plans: NEVER saved as personal task completion.
       this.livePlans=Object.create(null);
       this.load();
@@ -207,7 +213,7 @@
     }
     setMode(mode) {
       if (this.mode===modeName(mode)) return;
-      this.mode=modeName(mode);this.tasks=[];this.byId.clear();this.load();
+      this.mode=modeName(mode);this.tasks=[];this.byId.clear();this.lastReliableTarget=null;this.load();
     }
     setCatalog(tasks, translations={}, itemLookup={}, itemTranslations={}) {
       const list=[];
@@ -469,11 +475,29 @@
         focused:this.state.focused===step.id,
       };
     }
+    isStepUnlocked(step) {
+      return (step.requires||[]).every(id=>this.isDone(id)
+        || this.isQuestCompleted(step.questId));
+    }
+    positionReliable(player) {
+      const pos=player?.position||player;
+      if(!Number.isFinite(Number(pos?.x))||!Number.isFinite(Number(pos?.z)))return false;
+      if(player?.positionReliable===false||player?.locationUncertain===true
+        ||player?.quality==="low"||player?.quality==="lost")return false;
+      const confidence=player?.positionConfidence;
+      return confidence==null || (Number.isFinite(Number(confidence))&&Number(confidence)>=0.5);
+    }
     nextForMap(mapIds,player) {
       // UI HUD runs at up to 10Hz. Only ONE next step is needed,
       // so avoid O(n² log n) full-route sorting on every pose update.
-      const steps=this.stepsForMap(mapIds);
+      const steps=this.stepsForMap(mapIds).filter(s=>!s.done&&this.isStepUnlocked(s));
       const at=player?.position||player||null;
+      if(!this.positionReliable(player)) {
+        const retained=steps.find(s=>s.id===this.lastReliableTarget);
+        const selected=retained||steps.find(s=>s.id===this.state.focused)||steps[0];
+        return selected?{...selected,nearest:selected.locations[0],distance:null,
+          locationUncertain:true}:null;
+      }
       let chosen=null,closest=Infinity,chosenPlace=null;
       for(const step of steps){
         if(step.done)continue;
@@ -489,12 +513,13 @@
           chosen=step;closest=best;chosenPlace=nearest||step.locations[0];
         }
       }
-      return chosen?{...chosen,nearest:chosenPlace,distance:closest}:null;
+      if(chosen)this.lastReliableTarget=chosen.id;
+      return chosen?{...chosen,nearest:chosenPlace,distance:closest,locationUncertain:false}:null;
     }
     suggested(mapIds,player) {
-      const steps=this.stepsForMap(mapIds).filter(s=>!s.done);
+      const steps=this.stepsForMap(mapIds).filter(s=>!s.done&&this.isStepUnlocked(s));
       if(!steps.length)return [];
-      const result=[];let at=player?.position||player||null;
+      const result=[];let at=this.positionReliable(player)?player?.position||player:null;
       const pool=steps.slice();
       while(pool.length){
         pool.sort((a,b)=>{
