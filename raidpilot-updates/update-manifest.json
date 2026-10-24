@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T23:32:10.9536487+00:00",
+  "publishedAt": "2026-10-24T23:49:30.2025510+00:00",
   "raidPilot": {
-    "version": "0.14.2.33",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.33-b0.3.9-l0.2.15-a4d6df642ce5/RaidPilot-Overlay-v0.14.2.33-Windows-x64.zip",
-    "sha256": "13A6C0DC358162116BF0777AA59B96AB2C2BBC3069907476C4465E77BCCAC2E0",
-    "sizeBytes": 234480136,
-    "releaseNotes": "La liste QuestPilot montre par défaut uniquement les quêtes suivies, avec un bouton pour afficher le catalogue complet. La recherche révèle aussi les missions non suivies. Un encart Prochain objectif permet de suivre une étape sur la carte ou de la cocher d'un seul clic. L'affichage principal est limité à dix étapes et les préparatifs, objectifs sans GPS et options d'escouade sont regroupés dans des sections dépliables. Les marqueurs numérotés, couleurs, statuts personnels et d'équipe restent disponibles. Aucune quête n'est cochée automatiquement sans action du joueur ou preuve EFT."
+    "version": "0.14.2.35",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.35-b0.3.9-l0.2.15-319a286f539f/RaidPilot-Overlay-v0.14.2.35-Windows-x64.zip",
+    "sha256": "7BCC692C95FFCCD9F6329E541869270FDE5A20C40ADF1654B93826A8C227912D",
+    "sizeBytes": 234481432,
+    "releaseNotes": "Sur la carte, chaque objectif personnel marqué terminé disparaît immédiatement; les autres points de la même quête restent affichés. Une section repliable « Étapes terminées » permet de réactiver en un clic un objectif coché manuellement. Les lieux alternatifs d'une seule étape partagent le même statut; les marqueurs des coéquipiers restent indépendants. Une quête entière remise et confirmée par les journaux EFT ne peut pas être remise en cours manuellement. Les journaux EFT disponibles confirment des quêtes entières, pas nécessairement chaque sous-objectif; la validation rapide des étapes se fait manuellement. Deux tests de non-régression ajoutés. Comprend également le correctif de priorité du suivi manuel et masque les distances quand la localisation est incertaine (PR #26 reprise dans cette version). Nouveau bandeau d'objectif placé sous la carte (texte plus grand) et raccourci global Ctrl+Alt+I pour cocher une seule étape ciblée pendant un raid, uniquement si Tarkov est au premier plan. Le raccourci Interagir est transféré à Ctrl+Alt+U pour éviter toute collision. Les étapes terminées sont restaurables manuellement."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.33-b0.3.9-l0.2.15-a4d6df642ce5/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "6D2A6B64802F7834964313382F9849795710FF61B3243C770E19C91F5341846C",
-    "sizeBytes": 58332197,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.35-b0.3.9-l0.2.15-319a286f539f/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "188E50B812BCCF4EB3FA6B2BE96F828B267072F5E921A7512218CCAA82C1ED32",
+    "sizeBytes": 58332195,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.33-b0.3.9-l0.2.15-a4d6df642ce5/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "F2B5776D9BFD12CBE0603BC9E9F50376F01A54F112FCF414E4AF8543A82105B8",
-    "sizeBytes": 351065462,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.35-b0.3.9-l0.2.15-319a286f539f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "01A168BA5469A030EF9D0FD2FD6F1AE633D7499949015AA94B7682DF6AC1D30F",
+    "sizeBytes": 351067156,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.35",
+      "raidPilotVersion": "0.14.2.35",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot — objectifs terminés masqués, bandeau lisible, Ctrl+Alt+I",
+      "details": "Sur la carte, chaque objectif personnel marqué terminé disparaît immédiatement; les autres points de la même quête restent affichés. Une section repliable « Étapes terminées » permet de réactiver en un clic un objectif coché manuellement. Les lieux alternatifs d'une seule étape partagent le même statut; les marqueurs des coéquipiers restent indépendants. Une quête entière remise et confirmée par les journaux EFT ne peut pas être remise en cours manuellement. Les journaux EFT disponibles confirment des quêtes entières, pas nécessairement chaque sous-objectif; la validation rapide des étapes se fait manuellement. Deux tests de non-régression ajoutés. Comprend également le correctif de priorité du suivi manuel et masque les distances quand la localisation est incertaine (PR #26 reprise dans cette version). Nouveau bandeau d'objectif placé sous la carte (texte plus grand) et raccourci global Ctrl+Alt+I pour cocher une seule étape ciblée pendant un raid, uniquement si Tarkov est au premier plan. Le raccourci Interagir est transféré à Ctrl+Alt+U pour éviter toute collision. Les étapes terminées sont restaurables manuellement."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.33",
@@ -253,16 +263,6 @@
       "date": "2026-10-22",
       "summary": "HOTFIX11 : coéquipiers et changements de carte",
       "details": "Les positions de coéquipiers appartenant à une autre carte sont retirées immédiatement.\nLes alias de carte et les paquets reçus dans le désordre sont mieux gérés.\nLes changements de carte purgent les marqueurs obsolètes et le diagnostic indique le nombre de coéquipiers."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.10",
-      "raidPilotVersion": "0.14.2.10",
-      "beaconVersion": "0.3.0",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "HOTFIX10 : cartes HD locales et profils préservés",
-      "details": "Intégration des cartes HD, des catalogues de quêtes et d'objets et des filtres de dangers.\nCorrection des changements de raid sur la même carte; prise en charge de plusieurs étages sur Factory et The Lab.\nLe Launcher conserve les préférences cartographiques et une version précédente pour retour arrière."
     }
   ]
 }
