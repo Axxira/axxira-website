@@ -17,6 +17,32 @@ internal static class LocalizationDiagnosticWriter
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "RaidPilot");
     internal static string EnablePath => Path.Combine(DirectoryPath, "diagnostic-localisation.on");
     internal static string CsvPath => Path.Combine(DirectoryPath, "diagnostic-localisation.csv");
+    // Optional: a user-selected local folder already synchronized by Google Drive Desktop.
+    internal static string SyncFolderConfigPath => Path.Combine(DirectoryPath, "diagnostic-sync-folder.txt");
+
+    private static void SyncToUserSelectedFolder()
+    {
+        try
+        {
+            if (!File.Exists(SyncFolderConfigPath)) return;
+            var location = File.ReadAllText(SyncFolderConfigPath).Trim().Trim('"');
+            if (string.IsNullOrWhiteSpace(location) || !Path.IsPathFullyQualified(location)
+                || location.StartsWith(new string(Path.DirectorySeparatorChar, 2), StringComparison.Ordinal)
+                || !Directory.Exists(location)) return;
+            var destination = Path.GetFullPath(location);
+            if (destination.TrimEnd(Path.DirectorySeparatorChar).Equals(
+                Path.GetFullPath(DirectoryPath).TrimEnd(Path.DirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase)) return;
+            var target = Path.Combine(destination, "raidpilot-localization-diagnostic.csv");
+            var tmp = target + ".tmp";
+            File.Copy(CsvPath, tmp, true);
+            File.Move(tmp, target, true);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        catch (ArgumentException) { }
+    }
+
 
     internal static void RecordAnchor(RealtimePose predicted, ScreenshotObservation exact, string map)
     {
@@ -45,6 +71,8 @@ internal static class LocalizationDiagnosticWriter
                 using var writer = new StreamWriter(CsvPath, append: true, encoding: new UTF8Encoding(false));
                 if (fresh) writer.WriteLine("utc,map,pred_x,pred_z,pred_yaw,exact_x,exact_z,exact_yaw,error_m,yaw_error_deg,uncertainty_m");
                 writer.WriteLine(line);
+                writer.Flush();
+                SyncToUserSelectedFolder();
             }
         }
         catch (IOException) { }
