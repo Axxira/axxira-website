@@ -878,12 +878,24 @@ function renderQuestPilotPanel(){
     +confirmed+" remise(s) confirmée(s) par les journaux EFT · "
     +"balises cochées manuellement";
   const search=state.questSearch;
-  // Search every map and all objective types; no search keeps relevant tasks only.
-  const candidates=planner.searchTasks(state.questMapIds,search);
+  const showAllButton=document.getElementById("questpilot-show-all");
+  if(showAllButton){
+    showAllButton.textContent=state.questShowAll
+      ?"Afficher seulement mes quêtes":"Voir toutes les quêtes disponibles";
+    showAllButton.setAttribute("aria-pressed",state.questShowAll?"true":"false");
+    showAllButton.onclick=()=>{
+      state.questShowAll=!state.questShowAll;
+      renderQuestPilotPanel();
+    };
+  }
+  // Default to selected missions; explicitly searching or toggling discovery
+  // reveals the wider catalogue without overwhelming the player.
+  const candidates=planner.searchTasks(state.questMapIds,search)
+    .filter(q=>Boolean(search)||state.questShowAll||planner.isActive(q.id));
   const visible=candidates.slice(0,search?80:65);
   if(!visible.length)qpEmpty(refs.questList,
-    search?"Aucune quête ne correspond à ta recherche, même sur les autres cartes."
-      :"Aucune quête localisée ici. Cherche une mission ou utilise TAB → TÂCHES → F8.");
+    search?"Aucune quête ne correspond à ta recherche."
+      :"Aucune quête suivie. Recherche une mission ou clique « Voir toutes les quêtes ».");
   for(const quest of visible){
     const selected=planner.isActive(quest.id);
     const row=document.createElement("label");
@@ -913,9 +925,27 @@ function renderQuestPilotPanel(){
     qpText(refs.questList,"small",String(candidates.length-visible.length)+" autres quêtes : affine ta recherche.","qp-empty");
 
   const selectedSteps=planner.suggested(state.questMapIds,state.player);
+  if(selectedSteps.length){
+    const step=selectedSteps[0];
+    const quick=document.createElement("div");quick.className="qp-step qp-quick-next";
+    qpText(quick,"strong","➡️ PROCHAIN OBJECTIF · "+step.questName);
+    qpText(quick,"span",step.name);
+    const controls=document.createElement("div");controls.className="qp-quick-controls";
+    const target=document.createElement("button");target.type="button";
+    target.textContent="🎯 Suivre sur la carte";
+    target.addEventListener("click",()=>{planner.focus(step.id);renderQuestPilotPanel();render();});
+    controls.appendChild(target);
+    const complete=document.createElement("button");complete.type="button";
+    complete.textContent="✓ Fait";
+    complete.addEventListener("click",()=>{
+      planner.toggleDone(step.id,true);renderQuestPilotPanel();render();
+    });
+    controls.appendChild(complete);
+    quick.appendChild(controls);refs.questSteps.appendChild(quick);
+  }
   if(!selectedSteps.length)qpEmpty(refs.questSteps,
     "Aucune étape active localisée ici. Les quêtes sans point public restent dans la liste.");
-  for(const step of selectedSteps.slice(0,28)){
+  for(const step of selectedSteps.slice(0,10)){
     const row=document.createElement("div");row.className="qp-step"+(step.done?" done":"");
     const tick=document.createElement("input");tick.type="checkbox";tick.checked=step.done;
     tick.disabled=step.doneSource==="eft-local-log";
@@ -936,8 +966,8 @@ function renderQuestPilotPanel(){
     row.appendChild(button);
     refs.questSteps.appendChild(row);
   }
-  if(selectedSteps.length>28)
-    qpText(refs.questSteps,"small",String(selectedSteps.length-28)+" étapes de plus","qp-empty");
+  if(selectedSteps.length>10)
+    qpText(refs.questSteps,"small",String(selectedSteps.length-10)+" autres objectifs : décoche les étapes terminées ou sélectionne la priorité.","qp-empty");
   renderQuestPilotUnmapped(planner);
   renderQuestPilotPreparation(planner);
   renderQuestPilotSharedSteps(planner);
