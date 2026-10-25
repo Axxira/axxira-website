@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.43",
+      "raidPilotVersion": "0.14.2.43",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Intelligence V2 — repli sur les entrées lors de captures visuelles répétées",
+      "details": "Corrige la fusion de mouvement : une même trame visuelle ne conserve plus une décision de mouvement antérieure lorsque les entrées de déplacement ont évolué. Le moteur se replie sur les entrées actuelles et journalise le refus. Aucune coordonnée absolue n'est inventée; la précision doit être validée dans un raid réel."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.42",
       "raidPilotVersion": "0.14.2.42",
       "beaconVersion": "0.3.9",
