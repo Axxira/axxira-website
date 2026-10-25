@@ -71,6 +71,7 @@ internal sealed class ScreenshotFolderWatcher : IDisposable
     }
 
     internal event EventHandler<ScreenshotObservation>? ObservationCreated;
+    internal event EventHandler<string>? ScreenshotFileCreated;
     internal event EventHandler<string>? StatusChanged;
 
     internal string ScreenshotsPath => _screenshotsPath;
@@ -339,6 +340,13 @@ internal sealed class ScreenshotFolderWatcher : IDisposable
         if (!string.IsNullOrWhiteSpace(fileName))
         {
             _knownFileNames.TryAdd(Path.GetFileName(fileName), 0);
+        }
+
+        if (!string.IsNullOrWhiteSpace(fileName)
+            && Path.GetExtension(fileName).Equals(".png", StringComparison.OrdinalIgnoreCase)
+            && _seen.TryAdd("raw:" + Path.GetFileName(fileName), _utcNow()))
+        {
+            ScreenshotFileCreated?.Invoke(this, Path.GetFileName(fileName));
         }
 
         if (!ScreenshotNameParser.TryParse(fileName, out var observation) || observation is null)

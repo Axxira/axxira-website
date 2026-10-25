@@ -11,6 +11,47 @@ internal sealed class StashPilotForm : Form
 {
     private readonly StashPilotF8Gate _f8Gate = new();
     internal bool HasPendingF8Scan => _f8Gate.IsArmed;
+    private bool _menuScanRunning;
+    internal void ReceiveMenuF8(string path)
+    {
+        if (_menuScanRunning || IsDisposed) return;
+        _f8Gate.Cancel();
+        _ = ReceiveMenuF8Async(path);
+    }
+
+    private async Task ReceiveMenuF8Async(string path)
+    {
+        _menuScanRunning = true;
+        try
+        {
+            _status.Text = "F8 détecté dans le menu — lecture de l'inventaire...";
+            // FileSystemWatcher often signals Created before Tarkov has
+            // finished flushing the PNG. Wait briefly; never delete it.
+            long previousLength = -1;
+            var stableProbes = 0;
+            for (var attempt = 0; attempt < 20; attempt++)
+            {
+                try
+                {
+                    var info = new FileInfo(path);
+                    var length = info.Exists ? info.Length : 0;
+                    stableProbes = length > 4096 && length == previousLength
+                        ? stableProbes + 1 : 0;
+                    previousLength = length;
+                    if (stableProbes >= 2)
+                    {
+                        await ScanAndReviewAsync(path);
+                        return;
+                    }
+                }
+                catch (IOException) { stableProbes = 0; }
+                await Task.Delay(150);
+            }
+            _status.Text = "Capture F8 incomplète — relance le scan.";
+        }
+        finally { _menuScanRunning = false; }
+    }
+
     internal bool TryReceiveF8(string path, long now, bool automatic, bool verified)
     {
         if (!_f8Gate.TryConsume(now, automatic, verified)) return false;
