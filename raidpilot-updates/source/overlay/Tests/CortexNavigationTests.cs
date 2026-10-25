@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexNavigationTests
 {
-    internal const int TestCount = 17;
+    internal const int TestCount = 23;
 
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
@@ -59,9 +59,15 @@ internal static class CortexNavigationTests
     private static bool Visual(CortexNavigationEngine engine, double at,
         bool shared = false,
         VisualRelocalizationDecision? correction = null,
-        string map = Map, int raid = 1, nint? window = null) =>
+        string map = Map, int raid = 1, nint? window = null,
+        long? lowId = 1, long? superId = 1,
+        double landmarkX = 0, double landmarkY = 0) =>
         engine.NoteAppliedVisual(At(at), map, raid, window ?? Window,
-            correction ?? Consensus(), shared);
+            correction ?? (Consensus() with
+            {
+                TargetPose = new VisualKeyframePose(landmarkX, landmarkY, 0, 0)
+            }),
+            shared, lowId, superId);
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -107,7 +113,7 @@ internal static class CortexNavigationTests
             Require(Visual(e, 0.50));
             Require(!Visual(e, 0.61));
             Observe(e, 0.78);
-            Require(Visual(e, 1.0));
+            Require(Visual(e, 1.0, lowId: 2, superId: 2, landmarkX: 6));
             Observe(e, 1.1);
             Require(Assess(e, 1.15).AllowStrongExtension);
             Require(e.AcceptedVisualCorrections == 2);
@@ -139,6 +145,73 @@ internal static class CortexNavigationTests
             Require(!Visual(e, 0.40));
             Observe(e, 0.8);
             Require(!Assess(e, 0.85).AllowStrongExtension);
+        }, failures);
+
+        Run("CORTEX refuse extension forte pour même repère revisité", () =>
+        {
+            var e = Anchored();
+            Require(Visual(e, 0.5));
+            Observe(e, 0.7);
+            Require(Visual(e, 1.0));
+            Observe(e, 1.1);
+            var assessment = Assess(e, 1.15);
+            Require(assessment.AllowExtendedF8 && !assessment.AllowStrongExtension);
+            Require(e.RememberedLandmarks == 1);
+        }, failures);
+
+        Run("CORTEX refuse extension forte pour deux repères adjacents", () =>
+        {
+            var e = Anchored();
+            Require(Visual(e, 0.5));
+            Observe(e, 0.7);
+            Require(Visual(e, 1.0, lowId: 2, superId: 2, landmarkX: 0.4));
+            Observe(e, 1.1);
+            Require(!Assess(e, 1.15).AllowStrongExtension);
+            Require(e.RememberedLandmarks == 2);
+        }, failures);
+
+        Run("CORTEX refuse correspondance sans les deux identifiants locaux", () =>
+        {
+            var e = Anchored();
+            Require(!Visual(e, 0.6, lowId: null));
+            Require(!Visual(e, 0.9, superId: null));
+            Require(!Assess(e, 0.95).AllowExtendedF8);
+        }, failures);
+
+        Run("CORTEX rétrograde après une identité visuelle contradictoire", () =>
+        {
+            var e = Anchored();
+            Require(Visual(e, 0.50));
+            Observe(e, 0.70);
+            Require(!Visual(e, 1.00, correction: Consensus() with
+            {
+                TargetPose = new VisualKeyframePose(35, 0, 0, 0)
+            }));
+            Observe(e, 1.10);
+            Require(Assess(e, 1.15).Quality == CortexTrackingQuality.Degraded);
+            Require(e.LandmarkIdentityConflicts == 1);
+        }, failures);
+
+        Run("CORTEX écarte un saut dû à un vrai recalage visuel", () =>
+        {
+            var e = Anchored();
+            Require(Visual(e, 0.5));
+            e.ObservePose(At(0.60), Map, 1, Window, Pose(x: 25),
+                true, RealtimeMotionEvidence.Moving,
+                correctionAppliedThisTick: true);
+            Require(Assess(e, 0.65, pose: Pose(x: 25)).Quality
+                == CortexTrackingQuality.VisuallySupported);
+        }, failures);
+
+        Run("CORTEX efface la mémoire après chaque F8 réel", () =>
+        {
+            var e = Anchored();
+            Require(Visual(e, 0.50));
+            Require(e.RememberedLandmarks == 1);
+            e.NoteNativeF8(At(4), Map, 1, Window, null);
+            Require(e.RememberedLandmarks == 0);
+            Observe(e, 4.25);
+            Require(!Assess(e, 4.3).AllowExtendedF8);
         }, failures);
 
         Run("CORTEX expire une preuve silencieuse non renouvelée", () =>
