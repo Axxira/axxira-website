@@ -988,6 +988,11 @@ function renderQuestPilotPanel(){
       +step.needs.join(" · ")+place);
     button.addEventListener("click",()=>{planner.focus(step.id);renderQuestPilotPanel();render();});
     row.appendChild(button);
+    const complete=document.createElement("button");complete.type="button";
+    complete.className="qp-done-action";complete.textContent="✓ Fait";
+    complete.setAttribute("aria-label","Marquer l'étape "+step.number+" comme faite");
+    complete.addEventListener("click",()=>{planner.toggleDone(step.id,true);renderQuestPilotPanel();render();});
+    row.appendChild(complete);
     refs.questSteps.appendChild(row);
   }
   if(selectedSteps.length>10)
@@ -1109,6 +1114,12 @@ function renderQuestPilotHud(){
     +(next.optional?" · facultatif":"");
 }
 
+function questPilotOpenPanel(){
+  if(!refs.questPanel)return false;
+  refs.questPanel.classList.remove("hidden");
+  renderQuestPilotPanel();
+  return true;
+}
 function questPilotCompleteFocused(){
   const planner=state.questPilot;
   if(!planner || !state.raidQuests && !state.player)return false;
@@ -1654,6 +1665,7 @@ const api = {
       const value=state.questPilot.toggle(id,enabled);
       renderQuestPilotPanel();render();return value;
     },
+    questPilotOpenPanel,
     questPilotCompleteFocused,
     questPilotStepDone:(id,done)=>{
       if(!state.questPilot)return false;
