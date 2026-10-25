@@ -549,6 +549,10 @@ internal sealed partial class OverlayForm : Form
         {
             OpenQuestInterface();
         });
+        menu.Items.Add("StashPilot — Inventaire, planque et quêtes", null, (_, _) =>
+        {
+            new StashPilotForm().Show();
+        });
         menu.Items.Add(
             "Masquer (Ctrl+Alt+M)",
             null,

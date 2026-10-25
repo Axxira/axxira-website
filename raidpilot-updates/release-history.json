@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.2.0",
+      "raidPilotVersion": "0.15.2.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — premier conseiller de quêtes, planque et inventaire",
+      "details": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.1.0",
       "raidPilotVersion": "0.15.1.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-22",
       "summary": "HOTFIX10 : cartes HD locales et profils préservés",
       "details": "Intégration des cartes HD, des catalogues de quêtes et d'objets et des filtres de dangers.\nCorrection des changements de raid sur la même carte; prise en charge de plusieurs étages sur Factory et The Lab.\nLe Launcher conserve les préférences cartographiques et une version précédente pour retour arrière."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.1",
-      "raidPilotVersion": "0.14.1",
-      "beaconVersion": "0.3.0",
-      "launcherVersion": "0.2.8",
-      "date": "2026-10-21",
-      "summary": "Cartes et localisation : série d'améliorations intermédiaires",
-      "details": "Mise à jour intermédiaire de RaidPilot et Beacon dans la série 0.14.\nLes anciens correctifs sont conservés dans les archives GitHub; les informations détaillées de cette publication ne sont pas disponibles dans le registre actuel."
     }
   ]
 }
