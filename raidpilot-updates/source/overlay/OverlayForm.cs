@@ -3459,9 +3459,7 @@ internal sealed partial class OverlayForm : Form
             OpenStashPilot();
             if (_stashPilotWindow is { IsDisposed: false } window)
             {
-                // Opening StashPilot automatically arms its one-use F8 scan.
-                window.TryReceiveF8(path, Stopwatch.GetTimestamp(),
-                    automatic: false, verified: true);
+                window.ReceiveMenuF8(path);
             }
         });
     }
