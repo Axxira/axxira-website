@@ -59,7 +59,12 @@ internal sealed class RaidPilotIntelligenceEngine
         // A worker frame is used at most once for fresh evidence. Never
         // promote a repeated old frame into a stronger stop decision.
         if (f.CapturedAt <= _lastFrameAt)
-            return _lastDecisionEvidence;
+        {
+            // Repeated captures cannot override new input evidence.
+            Rejected++;
+            LastDecision = "Trame déjà traitée : retour au modèle de base";
+            return _lastDecisionEvidence = baseline;
+        }
         if (_lastFrameAt > 0 &&
             (f.CapturedAt - _lastFrameAt)/(double)Stopwatch.Frequency > 0.65)
             _stationaryFrames = 0;
