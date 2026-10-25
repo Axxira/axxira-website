@@ -146,7 +146,7 @@ html:not(.raidpilot-interactive) #calibration-panel{display:none}
   border:1px solid #655b84;border-radius:10px;background:#0e1721f6;padding:12px;
   box-shadow:0 9px 28px #000b;font-size:12px}
 #questpilot-panel.hidden, #questpilot-hud[hidden] {display:none}
-html:not(.raidpilot-interactive) #questpilot-panel {display:none}
+/* Quest panel is visible in click-through and interactive modes. */
 .qp-panel-title {display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px}
 .qp-panel-title button {border:0;background:transparent;font-size:16px;min-height:26px}
 .qp-subtle{font-size:11px;color:#aec0cc;margin:7px 0}
@@ -268,3 +268,6 @@ html:not(.raidpilot-interactive) #questpilot-panel {display:none}
 @media(max-height:560px){
  #questpilot-panel{height:clamp(110px,30vh,210px)}
 }
+
+/* QuestPilot remains present; no misleading close control. */
+#questpilot-close{display:none}

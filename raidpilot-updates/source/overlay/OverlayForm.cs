@@ -506,24 +506,18 @@ internal sealed partial class OverlayForm : Form
 
     private void OpenQuestInterface()
     {
-        // Ctrl+Alt+I must be a true toggle, never a quest validation shortcut.
-        if (_questInterfaceOpened && Visible)
-        {
-            _questInterfaceOpened = false;
-            SetClickThrough(true, activateWhenInteractive: false);
-            SetManualOverlayHidden(true);
-            return;
-        }
-
-        _questInterfaceOpened = true;
+        // Map AND QuestPilot remain visible. Ctrl+Alt+I only toggles
+        // whether the player can click the overlay.
+        var interactive = _clickThrough;
+        _questInterfaceOpened = interactive;
         SetManualOverlayHidden(false);
-        SetClickThrough(false, activateWhenInteractive: true);
-        ShowNoActivate(force: true);
+        SetClickThrough(!interactive, activateWhenInteractive: interactive);
+        if (interactive) ShowNoActivate(force: true);
         if (_webReady && _webView.CoreWebView2 is not null)
-            _ = OpenQuestPanelAsync();
+            _ = KeepQuestPanelVisibleAsync();
     }
 
-    private async Task OpenQuestPanelAsync()
+    private async Task KeepQuestPanelVisibleAsync()
     {
         try
         {

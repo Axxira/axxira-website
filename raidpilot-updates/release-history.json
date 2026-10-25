@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.38",
+      "raidPilotVersion": "0.14.2.38",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Carte et QuestPilot toujours visibles — Ctrl+Alt+I active/désactive les clics",
+      "details": "Corrige la régression : carte et panneau QuestPilot restent visibles pendant le raid, y compris en mode clics désactivés. Ctrl+Alt+I active ou désactive seulement l'interaction (click-through) sans masquer la carte ni la liste des quêtes, et ne valide aucune étape. La liste QuestPilot s'affiche dès l'initialisation et reste positionnée sous la carte. Les règles existantes de visibilité automatique selon l'état du raid et le loot sont conservées."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.37",
       "raidPilotVersion": "0.14.2.37",
       "beaconVersion": "0.3.9",

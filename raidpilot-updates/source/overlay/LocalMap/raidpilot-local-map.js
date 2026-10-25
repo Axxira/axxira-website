@@ -1114,6 +1114,11 @@ function renderQuestPilotHud(){
     +(next.optional?" · facultatif":"");
 }
 
+function questPilotClosePanel(){
+  if(!refs.questPanel)return false;
+  refs.questPanel.classList.add("hidden");
+  return true;
+}
 function questPilotOpenPanel(){
   if(!refs.questPanel)return false;
   refs.questPanel.classList.remove("hidden");
@@ -1516,10 +1521,10 @@ function wireUI() {
   });
   refs.questsBtn?.addEventListener("click",()=>{
     refs.panel.classList.add("hidden");
-    refs.questPanel?.classList.toggle("hidden");
+    refs.questPanel?.classList.remove("hidden");
     renderQuestPilotPanel();
   });
-  refs.questClose?.addEventListener("click",()=>refs.questPanel?.classList.add("hidden"));
+  refs.questClose?.addEventListener("click",()=>{ /* always-visible quest panel */ });
   refs.questSearch?.addEventListener("input",()=>{
     state.questSearch=refs.questSearch.value.trim().toLowerCase();
     renderQuestPilotPanel();
@@ -1613,6 +1618,9 @@ async function init() {
   await loadCache();
   state.questPilot = new RPQuestPilot.Planner(window.localStorage,state.gameMode);
   refreshQuestPilotCatalogue();
+  // Quest list stays visible even when input is click-through.
+  refs.questPanel?.classList.remove("hidden");
+  renderQuestPilotPanel();
   if($("#game-mode"))$("#game-mode").value=state.gameMode;
   state.initialized = true;
   const requested = new URLSearchParams(location.search).get("map");
@@ -1666,6 +1674,7 @@ const api = {
       renderQuestPilotPanel();render();return value;
     },
     questPilotOpenPanel,
+    questPilotClosePanel,
     questPilotCompleteFocused,
     questPilotStepDone:(id,done)=>{
       if(!state.questPilot)return false;
