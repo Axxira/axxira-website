@@ -43,6 +43,15 @@ internal sealed class CortexNavigationEngine
     internal long ComparableF8Anchors => _f8Compared;
     internal long SuspiciousF8Anchors => _f8Bad;
 
+    // Only a real EFT screenshot advances this clock. Visual keyframe
+    // corrections may adjust the position, but cannot create a new F8.
+    internal double SecondsSinceNativeF8(
+        long timestamp, string mapId, int raidGeneration, nint gameWindow) =>
+        !IsCurrentSession(mapId, raidGeneration, gameWindow)
+        || _lastNativeAnchorAt <= 0 || timestamp < _lastNativeAnchorAt
+            ? 0.0
+            : (timestamp - _lastNativeAnchorAt) / (double)Stopwatch.Frequency;
+
     internal double? MedianF8ErrorMeters =>
         _f8Errors.Count == 0
             ? null
