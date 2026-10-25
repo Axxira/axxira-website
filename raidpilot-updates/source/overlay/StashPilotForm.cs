@@ -117,8 +117,70 @@ internal sealed class StashPilotForm : Form
             _requirements.Text = needs;
             Analyze();
         };
+        var scan = new Button { Text = "Lire screenshot PNG", AutoSize = true, Height = 35 };
+        scan.Click += async (_, _) =>
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Filter = "Capture Tarkov PNG (*.png)|*.png",
+                Title = "Choisir une capture — lecture locale uniquement",
+                CheckFileExists = true
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+            scan.Enabled = false;
+            try
+            {
+                var lines = await StashPilotImageScanner.ScanAsync(
+                    dialog.FileName, CancellationToken.None);
+                using var review = new Form
+                {
+                    Text = "StashPilot — lignes OCR à vérifier",
+                    Size = new Size(790, 570),
+                    StartPosition = FormStartPosition.CenterParent
+                };
+                var editor = new TextBox
+                {
+                    Multiline = true, ScrollBars = ScrollBars.Both,
+                    Dock = DockStyle.Fill,
+                    Text = string.Join(Environment.NewLine, lines),
+                    Font = new Font("Consolas", 10)
+                };
+                var footer = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48 };
+                var toInventory = new Button { Text = "Joindre à inventaire (non confirmé)", AutoSize = true };
+                var toObjectives = new Button { Text = "Joindre aux objectifs (non confirmé)", AutoSize = true };
+                footer.Controls.AddRange([toInventory, toObjectives]);
+                toInventory.Click += (_, _) =>
+                {
+                    _inventory.AppendText(Environment.NewLine + "# OCR non vérifié, corriger les quantités et le nom" +
+                        Environment.NewLine + string.Join(Environment.NewLine,
+                            StashPilotImageScanner.FilterCandidates(editor.Lines)
+                                .Select(line => "# OCR : " + line)));
+                    review.Close();
+                };
+                toObjectives.Click += (_, _) =>
+                {
+                    _requirements.AppendText(Environment.NewLine +
+                        string.Join(Environment.NewLine,
+                            StashPilotImageScanner.FilterCandidates(editor.Lines)
+                                .Select(line => "# OCR : " + line)));
+                    review.Close();
+                };
+                review.Controls.Add(editor);
+                review.Controls.Add(footer);
+                review.ShowDialog(this);
+                _status.Text = "OCR importé comme notes non vérifiées. Confirme manuellement chaque objet et quantité avant analyse.";
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException
+                or ArgumentException or NotSupportedException
+                or System.Runtime.InteropServices.COMException)
+            {
+                MessageBox.Show(this, "Lecture impossible : " + error.Message,
+                    "StashPilot OCR", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            finally { scan.Enabled = true; }
+        };
         actions.Controls.AddRange([calculate, pasteInventory, pasteNeeds,
-            save, reload, copyResult]);
+            scan, save, reload, copyResult]);
         layout.Controls.Add(actions, 0, 2);
         layout.SetColumnSpan(actions, 2);
 
