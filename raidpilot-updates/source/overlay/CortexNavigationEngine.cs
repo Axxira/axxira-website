@@ -29,8 +29,9 @@ internal sealed class CortexNavigationEngine
     private long _lastBadAnchorAt;
     private RealtimePose? _lastPose;
     private readonly Queue<double> _f8Errors = new(ErrorSampleCapacity);
-    private int _independentVisualCount;
+    private readonly CortexLandmarkMemory _landmarks = new();
     private int _cleanAnchorsAfterBad;
+    private long _landmarkConflicts;
     private long _visualAccepted;
     private long _visualRejected;
     private long _poseRejected;
@@ -42,6 +43,8 @@ internal sealed class CortexNavigationEngine
     internal long RejectedPoseObservations => _poseRejected;
     internal long ComparableF8Anchors => _f8Compared;
     internal long SuspiciousF8Anchors => _f8Bad;
+    internal int RememberedLandmarks => _landmarks.Count;
+    internal long LandmarkIdentityConflicts => _landmarkConflicts;
 
     // Only a real EFT screenshot advances this clock. Visual keyframe
     // corrections may adjust the position, but cannot create a new F8.
@@ -69,7 +72,8 @@ internal sealed class CortexNavigationEngine
         _lastBadAnchorAt = 0;
         _lastPose = null;
         _f8Errors.Clear();
-        _independentVisualCount = 0;
+        _landmarks.Reset();
+        _landmarkConflicts = 0;
         _cleanAnchorsAfterBad = 0;
         _visualAccepted = _visualRejected = _poseRejected = 0;
         _f8Compared = _f8Bad = 0;
@@ -82,7 +86,8 @@ internal sealed class CortexNavigationEngine
         nint gameWindow,
         RealtimePose pose,
         bool movementCommanded,
-        RealtimeMotionEvidence visualEvidence)
+        RealtimeMotionEvidence visualEvidence,
+        bool correctionAppliedThisTick = false)
     {
         if (timestamp <= 0 || gameWindow == nint.Zero || string.IsNullOrWhiteSpace(mapId))
             return;
@@ -112,8 +117,10 @@ internal sealed class CortexNavigationEngine
                 // measurement; do not invent the distance crossed during it.
                 MarkMotionConflict(timestamp);
             }
-            else if (deltaSeconds > 0)
+            else if (deltaSeconds > 0 && !correctionAppliedThisTick)
             {
+                // An accepted keyframe correction is not travel speed.
+                // The estimator already bounded that correction separately.
                 var distance = Math.Sqrt(Math.Pow(pose.X - previous.X, 2)
                     + Math.Pow(pose.Z - previous.Z, 2));
                 var floorJump = Math.Abs(pose.Y - previous.Y);
@@ -147,7 +154,9 @@ internal sealed class CortexNavigationEngine
         int raidGeneration,
         nint gameWindow,
         VisualRelocalizationDecision correction,
-        bool fromSharedAtlas)
+        bool fromSharedAtlas,
+        long? lowKeyframeId = null,
+        long? superKeyframeId = null)
     {
         if (!IsCurrentSession(mapId, raidGeneration, gameWindow)
             || _lastNativeAnchorAt <= 0
@@ -169,15 +178,31 @@ internal sealed class CortexNavigationEngine
         var elapsed = _lastTrustedVisualAt <= 0
             ? double.PositiveInfinity
             : (timestamp - _lastTrustedVisualAt) / (double)Stopwatch.Frequency;
-        if (elapsed < MinimumIndependentVisualGapSeconds)
+        if (elapsed < MinimumIndependentVisualGapSeconds
+            || lowKeyframeId is not > 0
+            || superKeyframeId is not > 0
+            || correction.TargetPose is not { } targetPose)
         {
             _visualRejected++;
             return false;
         }
 
-        _independentVisualCount = elapsed <= MaximumIndependentVisualGapSeconds
-            ? Math.Min(3, _independentVisualCount + 1)
-            : 1;
+        // Visual confidence alone cannot prove independent geography. Require
+        // the actual local low/high keyframe identities used by the matcher.
+        var landmark = _landmarks.Observe(timestamp,
+            lowKeyframeId.Value, superKeyframeId.Value, targetPose);
+        if (landmark is CortexLandmarkResult.Invalid
+            or CortexLandmarkResult.ConflictingPose)
+        {
+            _visualRejected++;
+            if (landmark == CortexLandmarkResult.ConflictingPose)
+            {
+                _landmarkConflicts++;
+                MarkMotionConflict(timestamp);
+            }
+            return false;
+        }
+
         _lastTrustedVisualAt = timestamp;
         _visualAccepted++;
         return true;
@@ -204,7 +229,7 @@ internal sealed class CortexNavigationEngine
         _lastPoseAt = 0;
         _lastPose = null;
         _lastTrustedVisualAt = 0;
-        _independentVisualCount = 0;
+        _landmarks.Reset();
 
         if (comparable is not { } sample
             || !double.IsFinite(sample.ErrorMeters)
@@ -275,7 +300,8 @@ internal sealed class CortexNavigationEngine
         var recentF8 = SecondsSince(_lastNativeAnchorAt, timestamp) <= 45.0;
         var eligible = visualFresh && reliableHealth && safeGeometry
             && recentF8 && !badF8NotRecovered && !conflictsRecent;
-        var strong = eligible && _independentVisualCount >= 2;
+        var strong = eligible &&
+            _landmarks.CountRecentDistinct(timestamp, MaximumIndependentVisualGapSeconds) >= 2;
 
         // This number is a transparent *quality indicator*, not a statistical
         // guarantee of localization accuracy. Actual errors come from F8.
@@ -308,6 +334,8 @@ internal sealed class CortexNavigationEngine
             + $"\nF8 comparables {_f8Compared}, dérives fortes {_f8Bad}, médiane {median}"
             + $"\nVision locale acceptée {_visualAccepted}, refusée {_visualRejected}, "
             + $"poses refusées {_poseRejected}"
+            + $"\nMémoire CORTEX : {_landmarks.Count} repères, "
+            + $"{_landmarks.Repeated} revisites, {_landmarkConflicts} conflits d'identité"
             + "\nExtension F8 : " + (assessment.AllowExtendedF8
                 ? assessment.AllowStrongExtension ? "forte" : "modérée"
                 : "désactivée");
@@ -332,7 +360,7 @@ internal sealed class CortexNavigationEngine
     private void MarkMotionConflict(long timestamp)
     {
         _lastMotionConflictAt = Math.Max(_lastMotionConflictAt, timestamp);
-        _independentVisualCount = 0;
+        _landmarks.Reset();
         _lastTrustedVisualAt = 0;
     }
 
