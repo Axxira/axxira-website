@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T00:31:42.7314009+00:00",
+  "publishedAt": "2026-10-25T00:51:30.3761282+00:00",
   "raidPilot": {
-    "version": "0.14.2.37",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.37-b0.3.9-l0.2.15-f4c0a3891959/RaidPilot-Overlay-v0.14.2.37-Windows-x64.zip",
-    "sha256": "3DBFA3A482A943621AC8225D7C299D730D41973C55F82C33776A8DD1CC0169F2",
-    "sizeBytes": 234478823,
-    "releaseNotes": "Le panneau complet QuestPilot (liste des quêtes, étapes, bouton Fait, restauration et options) a été déplacé hors de la zone de carte dans une section défilante sous la carte, avec texte agrandi. Le raccourci global Ctrl+Alt+I bascule entre l'ouverture interactive carte+quêtes et la fermeture de l'interface, sans cocher d'étape. Les marqueurs des étapes terminées restent masqués, sauf objectifs encore à faire; les anciens contrôles restent accessibles."
+    "version": "0.14.2.38",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.38-b0.3.9-l0.2.15-cfa2ab45c6ff/RaidPilot-Overlay-v0.14.2.38-Windows-x64.zip",
+    "sha256": "53BCDC550C00DBD9C26234B89C6298819317EC1541D5B05AE1926C8955FAE116",
+    "sizeBytes": 234479317,
+    "releaseNotes": "Corrige la régression : carte et panneau QuestPilot restent visibles pendant le raid, y compris en mode clics désactivés. Ctrl+Alt+I active ou désactive seulement l'interaction (click-through) sans masquer la carte ni la liste des quêtes, et ne valide aucune étape. La liste QuestPilot s'affiche dès l'initialisation et reste positionnée sous la carte. Les règles existantes de visibilité automatique selon l'état du raid et le loot sont conservées."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.37-b0.3.9-l0.2.15-f4c0a3891959/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "A6E4A8B75AE3CEF4B608D706EE71154EBB94EB433275BF46C461E71A0B119524",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.38-b0.3.9-l0.2.15-cfa2ab45c6ff/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "E32A86296A4B4DE2D2D1ABD51D1EE1700C586AE19917B7B83A4E8E3A27229177",
     "sizeBytes": 58332196,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.37-b0.3.9-l0.2.15-f4c0a3891959/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "A0E7449B65A0D03DDCDAD080C4D0907A098A8F7143F8BA083D734330D09A85A2",
-    "sizeBytes": 351064864,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.38-b0.3.9-l0.2.15-cfa2ab45c6ff/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "3A14FBC0D6474EDA578D1355860B0F41D8D0DDCC6D986940844EBA2902FCD1D4",
+    "sizeBytes": 351065525,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.38",
+      "raidPilotVersion": "0.14.2.38",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Carte et QuestPilot toujours visibles — Ctrl+Alt+I active/désactive les clics",
+      "details": "Corrige la régression : carte et panneau QuestPilot restent visibles pendant le raid, y compris en mode clics désactivés. Ctrl+Alt+I active ou désactive seulement l'interaction (click-through) sans masquer la carte ni la liste des quêtes, et ne valide aucune étape. La liste QuestPilot s'affiche dès l'initialisation et reste positionnée sous la carte. Les règles existantes de visibilité automatique selon l'état du raid et le loot sont conservées."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.37",
@@ -253,16 +263,6 @@
       "date": "2026-10-22",
       "summary": "Precision V2 : capteur visuel 160×90 et fusion",
       "details": "Ajout d'une deuxième analyse visuelle en 160×90 hors du fil d'interface, en parallèle de la voie historique 64×36.\nLa fusion peut corriger certains faux déplacements si un arrêt est visuellement confirmé.\nMode expérimental désactivable; F8 conserve le rôle d'ancrage absolu et l'estimation de distance réelle demande encore des tests en jeu."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.13",
-      "raidPilotVersion": "0.14.2.13",
-      "beaconVersion": "0.3.2",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "HOTFIX13 : déplacements et postures Beacon fiabilisés",
-      "details": "Correction du sprint en bascule et des ralentissements du suivi, et meilleure gestion de la marche lente.\nBeacon tient compte des postures accroupie/couchée, des sauts et des interruptions temporaires.\nRéduction des faux arrêts visuels, sans modifier la connexion d'équipe Cloudflare."
     }
   ]
 }
