@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T06:00:48.3278248+00:00",
+  "publishedAt": "2026-10-25T14:03:44.2691703+00:00",
   "raidPilot": {
-    "version": "0.15.1.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.1.0-b0.3.10-l0.2.15-045a3c81261d/RaidPilot-Overlay-v0.15.1.0-Windows-x64.zip",
-    "sha256": "786AD3EF8D467D853907CD973F9C690241BA3E27E2BFEF4BFEEB6C75FC85847B",
-    "sizeBytes": 234488736,
-    "releaseNotes": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
+    "version": "0.15.2.0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.0-b0.3.10-l0.2.15-39ef0b24d181/RaidPilot-Overlay-v0.15.2.0-Windows-x64.zip",
+    "sha256": "A9C488474A89D057C21D525EDC6EA52DB7C19101BCE91631C0A5E5892EA5AC1F",
+    "sizeBytes": 234495435,
+    "releaseNotes": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.1.0-b0.3.10-l0.2.15-045a3c81261d/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "0DA2816486AE1197856EBA3D4BDE03AA6CBCD08F68CA2E001AA202BAAF24DE59",
-    "sizeBytes": 58332208,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.0-b0.3.10-l0.2.15-39ef0b24d181/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "8D945E96A2AC449F2E001852F3B1FC1DBBA5C9EDB3480332578F428C558A2327",
+    "sizeBytes": 58332207,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.1.0-b0.3.10-l0.2.15-045a3c81261d/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "8838DF88D14379FEC5F11EDC4E09D1C0135F54C2BFC42458750FD7FEFA40DA82",
-    "sizeBytes": 351077296,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.0-b0.3.10-l0.2.15-39ef0b24d181/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "CBF75F2B046394450C03149678077AF7946070C06C7A259B7148B658E36359AD",
+    "sizeBytes": 351084137,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.2.0",
+      "raidPilotVersion": "0.15.2.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — premier conseiller de quêtes, planque et inventaire",
+      "details": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.1.0",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot v1 : quêtes personnelles, balises colorées 1→2→3 et préparation de raid",
       "details": "Nouveau QuestPilot intégré à la carte locale RaidPilot : un bouton « Mes quêtes » ouvre une liste persistante de quêtes actives et permet de sélectionner ou retirer manuellement des missions en PvE et PvP (profils indépendants). Les quêtes reconnues par TAB → TÂCHES → F8 sont ajoutées à la sélection sans supprimer les quêtes précédentes; un retrait manuel reste prioritaire sur un nouveau scan OCR. Toutes les étapes géolocalisées d'une quête utilisent la même couleur, y compris les repères SVG sur la carte et les entrées de liste. Chaque objectif distinct du catalogue public reçoit un numéro stable dans l'ordre de ses objectifs : pour trois balises avec trois objectifs distincts, marqueurs 1, 2 et 3. Plusieurs positions possibles d'une seule étape gardent le même numéro avec avertissement de localisation incertaine; aucune fausse validation. Le joueur peut cocher une étape faite manuellement et les conditions de préparation (balise, clé, objet, arme/équipement), conservées dans le profil WebView2 entre raids et mises à jour Launcher. Un bandeau compact montre le prochain objectif et sa distance seulement lorsque le suivi est assez fiable. L'ordre suggéré tient compte de la proximité euclidienne seulement; ce n'est pas un chemin navigable garanti ni une affirmation que la quête est accomplie dans EFT. Les 13 cartes, l'overlay, le GPS V4, les F8 mobiles, les extractions et le relais d'équipe restent inchangés. Tests nouveaux de tâches multi-étapes, correspondance de couleur, états persistants, OCR, PvE/PvP, emplacements possibles et carte réelle. Partage d'objectifs par coéquipier et détection certifiée de l'inventaire EFT non annoncés; aucune donnée personnelle transmise."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.25",
-      "raidPilotVersion": "0.14.2.25",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Recalage exact F8 facultatif pendant la marche — réduit la dérive prolongée",
-      "details": "Nouveau mode expérimental facultatif « Recalage F8 pendant déplacement · 4 s » dans le menu de l’Overlay, désactivé par défaut et mémorisé localement. Tant que le raid est actif, le jeu au premier plan, que le joueur se déplace et n'est pas en train de viser/tirer, RaidPilot peut redemander toutes les quatre secondes au minimum une capture avec la touche Screenshot F6–F12 SEULE que le joueur a configurée dans EFT. Les coordonnées exactes lues dans les noms de captures corrigent alors la trajectoire à l'instant de prise de vue, en conservant le mouvement postérieur grâce à l'historique. Aucun accès mémoire ni injection dans le jeu; le mécanisme Win32 SendInput déjà utilisé pour le recalage au repos est réemployé, mais peut produire une notification de screenshot en jeu. Les captures prises pendant le mouvement ne calibrent PAS les vitesses et ne sont PAS enregistrées comme repères visuels stationnaires. Limite de cadence, exclusion des touches à modificateurs qui pourraient perturber le sprint, suppression prudente des seules captures automatiques et diagnostics des demandes/réceptions. Nouveaux tests comportementaux, de persistance, de touche F8, et simulation de dérive bornée (pas une mesure de performance réelle EFT). Les méthodes de suivi optique/Precision V4, l'équipe, Beacon 0.3.9 et Launcher 0.2.15 restent disponibles. Le joueur doit activer lui-même cette fonctionnalité expérimentale et vérifier la conformité aux règles EFT; son efficacité et l'acceptation des touches synthétiques sont à valider en raid."
     }
   ]
 }
