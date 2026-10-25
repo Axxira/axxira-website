@@ -98,7 +98,27 @@ internal sealed class StashPilotForm : Form
                     .Select(c => Convert.ToString(c.Value) ?? "")));
             Clipboard.SetText(string.Join(Environment.NewLine, rows));
         };
-        actions.Controls.AddRange([calculate, pasteInventory, pasteNeeds, copyResult]);
+        var save = new Button { Text = "Sauvegarder sur ce PC", AutoSize = true, Height = 35 };
+        save.Click += (_, _) =>
+        {
+            _status.Text = StashPilotWorkspace.TrySave(_inventory.Text, _requirements.Text)
+                ? "Progression enregistrée localement. Aucune synchronisation réseau."
+                : "Sauvegarde impossible — aucune donnée modifiée.";
+        };
+        var reload = new Button { Text = "Charger ma progression", AutoSize = true, Height = 35 };
+        reload.Click += (_, _) =>
+        {
+            if (!StashPilotWorkspace.TryLoad(out var items, out var needs))
+            {
+                _status.Text = "Aucune progression locale valide trouvée.";
+                return;
+            }
+            _inventory.Text = items;
+            _requirements.Text = needs;
+            Analyze();
+        };
+        actions.Controls.AddRange([calculate, pasteInventory, pasteNeeds,
+            save, reload, copyResult]);
         layout.Controls.Add(actions, 0, 2);
         layout.SetColumnSpan(actions, 2);
 
@@ -116,6 +136,11 @@ internal sealed class StashPilotForm : Form
         _results.Columns.Add("surplus", "Excédent théorique");
         _results.Columns.Add("fir", "FIR manquant");
         _results.Columns.Add("why", "Pour");
+        if (StashPilotWorkspace.TryLoad(out var storedInventory, out var storedNeeds))
+        {
+            _inventory.Text = storedInventory;
+            _requirements.Text = storedNeeds;
+        }
         Analyze();
     }
 
