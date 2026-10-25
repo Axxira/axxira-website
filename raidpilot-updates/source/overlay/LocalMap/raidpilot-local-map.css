@@ -271,3 +271,23 @@ html:not(.raidpilot-interactive) #calibration-panel{display:none}
 
 /* QuestPilot remains present; no misleading close control. */
 #questpilot-close{display:none}
+
+/* QuestPilot 2026 raid-only professional compact layout. */
+#questpilot-panel{height:clamp(215px,42vh,410px);padding:14px 18px;
+  border-top:3px solid #68c9eb;background:#101a26;scrollbar-width:thin}
+#questpilot-panel .qp-panel-title{font-size:19px;letter-spacing:.02em;margin-bottom:8px}
+#questpilot-panel .qp-summary{font-size:13px;font-weight:600;color:#a8dff4}
+#questpilot-panel .qp-subtle{font-size:12px;line-height:1.5}
+#questpilot-panel .qp-task{min-height:47px;padding:8px 10px;background:#182636;
+  border:1px solid #314358;border-radius:8px;margin:4px 0}
+#questpilot-panel .qp-task .qp-name{font-size:14px;font-weight:700}
+#questpilot-panel .qp-step{background:#162535;border:1px solid #2b4257;
+  border-radius:8px;padding:10px;margin:7px 0;min-height:58px}
+#questpilot-panel .qp-step strong{font-size:14px}
+#questpilot-panel .qp-step small{font-size:12px;line-height:1.5}
+#questpilot-panel .qp-section-title{font-size:15px;padding:12px 0 8px}
+#questpilot-panel .qp-done-action{min-height:40px;min-width:92px;font-weight:700}
+#questpilot-panel details.qp-advanced{border-top:1px solid #334457;padding:9px 0}
+#questpilot-panel details.qp-advanced summary{font-size:13px;font-weight:600;
+  cursor:pointer;color:#b5d5ea}
+@media(max-height:600px){#questpilot-panel{height:clamp(130px,35vh,265px)}}
