@@ -3431,6 +3431,41 @@ internal sealed partial class OverlayForm : Form
         });
     }
 
+    private void OnStashScreenshotFileCreated(object? sender, string fileName)
+    {
+        RunOnUiThread(() =>
+        {
+            if (!ReferenceEquals(sender, _screenshotWatcher)
+                || _raidActive || !_tarkovIsForeground
+                || _screenshotWatcher is not { } watcher
+                || !string.Equals(Path.GetExtension(fileName), ".png",
+                    StringComparison.OrdinalIgnoreCase))
+                return;
+
+            // In the Tarkov main menu, EFT screenshots can omit the world
+            // coordinates required by ScreenshotNameParser. The raw event
+            // lets StashPilot consume these screenshots without changing GPS.
+            var root = Path.GetFullPath(watcher.ScreenshotsPath);
+            var safeName = Path.GetFileName(fileName);
+            if (!string.Equals(fileName, safeName, StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(safeName))
+                return;
+            var path = Path.GetFullPath(Path.Combine(root, safeName));
+            if (!path.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar)
+                    + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                || !File.Exists(path))
+                return;
+
+            OpenStashPilot();
+            if (_stashPilotWindow is { IsDisposed: false } window)
+            {
+                // Opening StashPilot automatically arms its one-use F8 scan.
+                window.TryReceiveF8(path, Stopwatch.GetTimestamp(),
+                    automatic: false, verified: true);
+            }
+        });
+    }
+
     private void OnObservationCreated(object? sender, ScreenshotObservation observation)
     {
         RunOnUiThread(() =>
@@ -5848,6 +5883,7 @@ internal sealed partial class OverlayForm : Form
             watcher = new ScreenshotFolderWatcher();
             watcher.StatusChanged += OnWatcherStatusChanged;
             watcher.ObservationCreated += OnObservationCreated;
+            watcher.ScreenshotFileCreated += OnStashScreenshotFileCreated;
             _screenshotWatcher = watcher;
             watcher.Start();
         }
@@ -5857,6 +5893,7 @@ internal sealed partial class OverlayForm : Form
             {
                 watcher.StatusChanged -= OnWatcherStatusChanged;
                 watcher.ObservationCreated -= OnObservationCreated;
+                watcher.ScreenshotFileCreated -= OnStashScreenshotFileCreated;
                 watcher.Dispose();
             }
             _screenshotWatcher = null;
