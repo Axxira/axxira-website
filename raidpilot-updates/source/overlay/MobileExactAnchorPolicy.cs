@@ -18,6 +18,27 @@ internal static class MobileExactAnchorPolicy
     // Never trust motion estimates or screenshots alone as an absolute fix.
     // Only recently APPLIED and independently corroborated visual keyframes
     // can justify asking Tarkov for fewer disruptive absolute F8 samples.
+    // Invoke only after the correction has actually been applied. A lone
+    // keyframe or unverified teammate contribution cannot extend the F8
+    // interval, even if its matching confidence looks high.
+    internal static bool IsTrustedSilentCorrection(
+        VisualRelocalizationSource source,
+        bool sharedAtlasSource,
+        double confidence,
+        double positionResidualMeters,
+        double verticalResidualMeters,
+        double yawResidualDegrees) =>
+        !sharedAtlasSource
+        && source == VisualRelocalizationSource.Consensus
+        && double.IsFinite(confidence)
+        && confidence >= 0.90 && confidence <= 1.0
+        && double.IsFinite(positionResidualMeters)
+        && positionResidualMeters is >= 0 and <= 2.0
+        && double.IsFinite(verticalResidualMeters)
+        && verticalResidualMeters is >= 0 and <= 1.25
+        && double.IsFinite(yawResidualDegrees)
+        && yawResidualDegrees is >= 0 and <= 15.0;
+
     internal static double RequiredIntervalSeconds(
         double uncertaintyMeters,
         LocalizationHealthState health,
