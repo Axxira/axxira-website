@@ -207,13 +207,25 @@ internal sealed class StashPilotForm : Form
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
-        layout.Controls.Add(CreatePanel("Mes objets : nom;quantité;FIR;CONFIRMÉ", _inventory), 0, 0);
-        layout.Controls.Add(CreatePanel("Mes besoins : nom;quantité;source;FIR;CONFIRMÉ", _requirements), 1, 0);
+        var itemsEditor = new TextBox
+        {
+            Multiline = true, ScrollBars = ScrollBars.Vertical,
+            Dock = DockStyle.Fill, Text = _inventory.Text
+        };
+        var needsEditor = new TextBox
+        {
+            Multiline = true, ScrollBars = ScrollBars.Vertical,
+            Dock = DockStyle.Fill, Text = _requirements.Text
+        };
+        layout.Controls.Add(CreatePanel("Mes objets : nom;quantité;FIR;CONFIRMÉ", itemsEditor), 0, 0);
+        layout.Controls.Add(CreatePanel("Mes besoins : nom;quantité;source;FIR;CONFIRMÉ", needsEditor), 1, 0);
         var save = new Button { Text = "Enregistrer et actualiser", AutoSize = true };
         save.Click += (_, _) =>
         {
-            if (StashPilotWorkspace.TrySave(_inventory.Text, _requirements.Text))
+            if (StashPilotWorkspace.TrySave(itemsEditor.Text, needsEditor.Text))
             {
+                _inventory.Text = itemsEditor.Text;
+                _requirements.Text = needsEditor.Text;
                 Analyze();
                 dialog.Close();
             }
