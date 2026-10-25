@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MobileExactAnchorPolicyTests
 {
-    internal const int TestCount = 15;
+    internal const int TestCount = 22;
 
     private static bool Ready(
         bool enabled = true,
@@ -15,8 +15,12 @@ internal static class MobileExactAnchorPolicyTests
         bool watcher = true,
         bool anchor = true,
         double age = 5,
-        double cooldown = 5) => MobileExactAnchorPolicy.ShouldCapture(
-            enabled, controls, moving, combat, screenshot, watcher, anchor, age, cooldown);
+        double cooldown = 5,
+        double uncertainty = 4.0,
+        LocalizationHealthState health = LocalizationHealthState.Red,
+        bool trustedVisual = false) => MobileExactAnchorPolicy.ShouldCapture(
+            enabled, controls, moving, combat, screenshot, watcher, anchor,
+            age, cooldown, uncertainty, health, trustedVisual);
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -48,6 +52,59 @@ internal static class MobileExactAnchorPolicyTests
             Require(!Ready(age: double.NaN)
                 && !Ready(cooldown: double.NaN)
                 && !Ready(age: -1)), failures);
+        Run("F8 silencieux prolonge uniquement un consensus visuel local", () =>
+        {
+            Require(MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, false,
+                0.95, 1.0, 0.3, 8.0));
+        }, failures);
+        Run("F8 silencieux refuse image isolée, atlas partagé et mesure aberrante", () =>
+        {
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.SuperKeyframe, false,
+                0.98, 0.5, 0.2, 5.0));
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, true,
+                0.98, 0.5, 0.2, 5.0));
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, false,
+                0.98, 3.5, 0.2, 5.0));
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, false,
+                double.NaN, 0.5, 0.2, 5.0));
+        }, failures);
+        Run("F8 adaptatif attend 12 s quand deux repères visuels sont corroborés", () =>
+        {
+            Require(!Ready(age: 10, cooldown: 10, uncertainty: 0.8,
+                health: LocalizationHealthState.Yellow, trustedVisual: true));
+            Require(Ready(age: 12, cooldown: 12, uncertainty: 0.8,
+                health: LocalizationHealthState.Yellow, trustedVisual: true));
+        }, failures);
+        Run("F8 adaptatif attend 8 s en incertitude intermédiaire", () =>
+        {
+            Require(!Ready(age: 7, cooldown: 7, uncertainty: 1.8,
+                health: LocalizationHealthState.Green, trustedVisual: true));
+            Require(Ready(age: 8, cooldown: 8, uncertainty: 1.8,
+                health: LocalizationHealthState.Green, trustedVisual: true));
+        }, failures);
+        Run("F8 adaptatif garde 4 s sans confirmation visuelle forte", () =>
+        {
+            Require(Ready(age: 4, cooldown: 4, uncertainty: 0.6,
+                health: LocalizationHealthState.Green, trustedVisual: false));
+        }, failures);
+        Run("F8 adaptatif reprend 4 s si cap orange ou incertitude élevée", () =>
+        {
+            Require(Ready(age: 4, cooldown: 4, uncertainty: 0.8,
+                health: LocalizationHealthState.Orange, trustedVisual: true));
+            Require(Ready(age: 4, cooldown: 4, uncertainty: 3.0,
+                health: LocalizationHealthState.Green, trustedVisual: true));
+        }, failures);
+        Run("F8 adaptatif refuse l'incertitude non finie", () =>
+        {
+            Require(!Ready(uncertainty: double.NaN, trustedVisual: true)
+                && !Ready(uncertainty: double.PositiveInfinity, trustedVisual: true)
+                && !Ready(uncertainty: -1, trustedVisual: true));
+        }, failures);
         Run("F8 mobile conserve le choix après redémarrage", () =>
         {
             var directory = Path.Combine(Path.GetTempPath(),

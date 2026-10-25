@@ -4,14 +4,58 @@ using System.Text.Json;
 namespace RaidPilot.Overlay;
 
 /// <summary>
-/// Opt-in periodic EFT screenshot anchors while the player is moving.
-/// Uses only the user's existing screenshot binding and EFT's own filename
-/// coordinates. Never reads EFT process memory or injects into its code.
-/// The fixed minimum interval limits screenshot overlays and file churn.
+/// Adaptive EFT screenshot anchors while the player is moving. Strong,
+/// independently confirmed silent visual corrections can postpone an F8;
+/// uncertainty or loss of confirmation restores the proven four-second
+/// recovery cadence. No process-memory access or code injection.
 /// </summary>
 internal static class MobileExactAnchorPolicy
 {
     internal const double MinimumIntervalSeconds = 4.0;
+    internal const double VerifiedVisualIntervalSeconds = 8.0;
+    internal const double StrongVisualIntervalSeconds = 12.0;
+
+    // Never trust motion estimates or screenshots alone as an absolute fix.
+    // Only recently APPLIED and independently corroborated visual keyframes
+    // can justify asking Tarkov for fewer disruptive absolute F8 samples.
+    // Invoke only after the correction has actually been applied. A lone
+    // keyframe or unverified teammate contribution cannot extend the F8
+    // interval, even if its matching confidence looks high.
+    internal static bool IsTrustedSilentCorrection(
+        VisualRelocalizationSource source,
+        bool sharedAtlasSource,
+        double confidence,
+        double positionResidualMeters,
+        double verticalResidualMeters,
+        double yawResidualDegrees) =>
+        !sharedAtlasSource
+        && source == VisualRelocalizationSource.Consensus
+        && double.IsFinite(confidence)
+        && confidence >= 0.90 && confidence <= 1.0
+        && double.IsFinite(positionResidualMeters)
+        && positionResidualMeters is >= 0 and <= 2.0
+        && double.IsFinite(verticalResidualMeters)
+        && verticalResidualMeters is >= 0 and <= 1.25
+        && double.IsFinite(yawResidualDegrees)
+        && yawResidualDegrees is >= 0 and <= 15.0;
+
+    internal static double RequiredIntervalSeconds(
+        double uncertaintyMeters,
+        LocalizationHealthState health,
+        bool recentTrustedVisualCorrection)
+    {
+        if (!double.IsFinite(uncertaintyMeters) || uncertaintyMeters < 0)
+            return double.PositiveInfinity;
+
+        if (!recentTrustedVisualCorrection
+            || health is LocalizationHealthState.Orange or LocalizationHealthState.Red
+            || uncertaintyMeters >= 2.25)
+            return MinimumIntervalSeconds;
+
+        return uncertaintyMeters < 1.25
+            ? StrongVisualIntervalSeconds
+            : VerifiedVisualIntervalSeconds;
+    }
 
     internal static bool ShouldCapture(
         bool enabled,
@@ -22,19 +66,26 @@ internal static class MobileExactAnchorPolicy
         bool hasScreenshotWatcher,
         bool hasExactAnchor,
         double secondsSinceExactAnchor,
-        double secondsSinceLastAttempt)
+        double secondsSinceLastAttempt,
+        double positionUncertaintyMeters = 4.0,
+        LocalizationHealthState health = LocalizationHealthState.Red,
+        bool recentTrustedVisualCorrection = false)
     {
         if (!double.IsFinite(secondsSinceExactAnchor)
             || double.IsNaN(secondsSinceLastAttempt)
+            || !double.IsFinite(positionUncertaintyMeters)
+            || positionUncertaintyMeters < 0
             || secondsSinceExactAnchor < 0
             || secondsSinceLastAttempt < 0)
             return false;
 
+        var interval = RequiredIntervalSeconds(positionUncertaintyMeters,
+            health, recentTrustedVisualCorrection);
         return enabled && controlsActive && movementActive
             && !aimingOrFiring && safeScreenshotBinding
             && hasScreenshotWatcher && hasExactAnchor
-            && secondsSinceExactAnchor >= MinimumIntervalSeconds
-            && secondsSinceLastAttempt >= MinimumIntervalSeconds;
+            && secondsSinceExactAnchor >= interval
+            && secondsSinceLastAttempt >= interval;
     }
 }
 
