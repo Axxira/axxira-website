@@ -5,7 +5,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionV2Tests
 {
-    internal const int TestCount = 38;
+    internal const int TestCount = 41;
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -291,6 +291,7 @@ internal static class PrecisionV2Tests
                 == RealtimeMotionEvidence.Unknown);
         }, failures);
         RunVisualReaderTests(failures);
+        RunIntelligenceTests(failures);
     }
 
 
@@ -387,6 +388,34 @@ internal static class PrecisionV2Tests
                 Egomotion=original.Visual.Egomotion with {EstimatedYawDeltaDegrees=-5}
             }};
             Require(!ReadReader(reader,keys,mouse,end,end,wrong));
+        },failures);
+    }
+
+    private static void RunIntelligenceTests(ICollection<string> failures)
+    {
+        Run("Intelligence: image ancienne conserve estimation de base",()=>{
+            var e=new RaidPilotIntelligenceEngine();
+            var t=Stopwatch.Frequency*10;
+            var old=Frame(t,VisualEgomotionState.Stationary);
+            Require(e.Evaluate(old,t+Stopwatch.Frequency,(nint)1,true,true,
+                RealtimeMotionEvidence.Moving,RealtimeMotionEvidence.Stationary)
+                ==RealtimeMotionEvidence.Moving);
+        },failures);
+        Run("Intelligence: mouvement visuel refuse faux arrêt",()=>{
+            var e=new RaidPilotIntelligenceEngine();
+            var t=Stopwatch.Frequency*10;
+            var moving=Frame(t,VisualEgomotionState.Tracking);
+            Require(e.Evaluate(moving,t,(nint)1,true,true,
+                RealtimeMotionEvidence.Unknown,RealtimeMotionEvidence.Stationary)
+                ==RealtimeMotionEvidence.Moving);
+        },failures);
+        Run("Intelligence: arrêt confirmé conserve veto",()=>{
+            var e=new RaidPilotIntelligenceEngine();
+            var t=Stopwatch.Frequency*10;
+            var still=Frame(t,VisualEgomotionState.Stationary);
+            Require(e.Evaluate(still,t,(nint)1,true,true,
+                RealtimeMotionEvidence.Unknown,RealtimeMotionEvidence.Stationary)
+                ==RealtimeMotionEvidence.Stationary);
         },failures);
     }
 

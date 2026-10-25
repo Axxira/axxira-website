@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.41",
+      "raidPilotVersion": "0.14.2.41",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Intelligence Engine — fusion prudente des capteurs et détection d'informations contradictoires",
+      "details": "Ajoute un moteur de décision déterministe après la fusion des capteurs visuels V2 et de mouvement. Les captures anciennes, lentes, non fiables ou contradictoires ne peuvent plus valider un faux arrêt; la couche conserve le modèle existant par défaut et journalise les décisions et compteurs fiables/rejetés dans le diagnostic de précision. Aucune lecture mémoire EFT, aucune coordonnée absolue inventée. L'amélioration du positionnement doit être mesurée par diagnostics F8 en situation réelle."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.40",
       "raidPilotVersion": "0.14.2.40",
       "beaconVersion": "0.3.9",
