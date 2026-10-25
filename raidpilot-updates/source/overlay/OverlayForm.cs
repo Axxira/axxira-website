@@ -15,6 +15,7 @@ internal sealed partial class OverlayForm : Form
     private const int ToggleInteractionHotkeyId = 0x5251;
     private const int ToggleGpsHotkeyId = 0x5252;
     private const int CycleExtractionHotkeyId = 0x5253;
+    private const int OpenStashPilotHotkeyId = 0x5254;
     private const double OverlayOpacity = 0.86;
     private const double CrouchedMovementScale = 0.55;
     private const double ProneMovementScale = 0.20;
@@ -106,6 +107,8 @@ internal sealed partial class OverlayForm : Form
     private bool _interactionHotkeyRegistered;
     private bool _gpsHotkeyRegistered;
     private bool _extractionHotkeyRegistered;
+    private bool _stashPilotHotkeyRegistered;
+    private StashPilotForm? _stashPilotWindow;
     private bool _rawMouseInputRegistered;
     private bool _rawKeyboardInputRegistered;
     private bool _gpsTransitionInProgress;
@@ -367,6 +370,10 @@ internal sealed partial class OverlayForm : Form
             CycleExtractionHotkeyId,
             NativeMethods.ModControl | NativeMethods.ModAlt | NativeMethods.ModNoRepeat,
             (uint)Keys.E);
+        _stashPilotHotkeyRegistered = NativeMethods.RegisterHotKey(
+            Handle, OpenStashPilotHotkeyId,
+            NativeMethods.ModControl | NativeMethods.ModAlt | NativeMethods.ModNoRepeat,
+            (uint)Keys.P);
         _rawMouseInputRegistered = RawMouseInput.Register(Handle);
         _rawKeyboardInputRegistered = RawMouseInput.KeyboardRegistered;
 
@@ -400,6 +407,11 @@ internal sealed partial class OverlayForm : Form
         if (_extractionHotkeyRegistered)
         {
             NativeMethods.UnregisterHotKey(Handle, CycleExtractionHotkeyId);
+        }
+        if (_stashPilotHotkeyRegistered)
+        {
+            NativeMethods.UnregisterHotKey(Handle, OpenStashPilotHotkeyId);
+            _stashPilotHotkeyRegistered = false;
         }
         if (_rawMouseInputRegistered)
         {
@@ -497,6 +509,9 @@ internal sealed partial class OverlayForm : Form
                 case CycleExtractionHotkeyId:
                     _ = CycleExtractionAsync();
                     return;
+                case OpenStashPilotHotkeyId:
+                    OpenStashPilot();
+                    return;
             }
         }
 
@@ -535,6 +550,20 @@ internal sealed partial class OverlayForm : Form
         Controls.Add(_webView);
     }
 
+    private void OpenStashPilot()
+    {
+        if (_stashPilotWindow is null || _stashPilotWindow.IsDisposed)
+        {
+            _stashPilotWindow = new StashPilotForm();
+            _stashPilotWindow.FormClosed += (_, _) => _stashPilotWindow = null;
+        }
+        if (!_stashPilotWindow.Visible) _stashPilotWindow.Show();
+        if (_stashPilotWindow.WindowState == FormWindowState.Minimized)
+            _stashPilotWindow.WindowState = FormWindowState.Normal;
+        _stashPilotWindow.Activate();
+        _stashPilotWindow.BringToFront();
+    }
+
     private void BuildTrayMenu()
     {
         var menu = new ContextMenuStrip();
@@ -549,9 +578,9 @@ internal sealed partial class OverlayForm : Form
         {
             OpenQuestInterface();
         });
-        menu.Items.Add("StashPilot — Inventaire, planque et quêtes", null, (_, _) =>
+        menu.Items.Add("StashPilot — ouvrir (Ctrl+Alt+P)", null, (_, _) =>
         {
-            new StashPilotForm().Show();
+            OpenStashPilot();
         });
         menu.Items.Add(
             "Masquer (Ctrl+Alt+M)",

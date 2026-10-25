@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.3.2",
+      "raidPilotVersion": "0.15.3.2",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — ouverture instantanée et interface plus rapide",
+      "details": "StashPilot s'ouvre désormais directement avec Ctrl+Alt+P, ou depuis le menu RaidPilot; une fenêtre déjà ouverte est ramenée au premier plan au lieu d'être dupliquée. Les actions suivent l'ordre Scanner PNG puis Analyser. Raccourcis Ctrl+Entrée pour analyser et Ctrl+S pour sauvegarder la progression localement. La reconnaissance OCR reste assistée et les objets doivent être confirmés manuellement."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.3.1",
       "raidPilotVersion": "0.15.3.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-22",
       "summary": "Precision V2 : capteur visuel 160×90 et fusion",
       "details": "Ajout d'une deuxième analyse visuelle en 160×90 hors du fil d'interface, en parallèle de la voie historique 64×36.\nLa fusion peut corriger certains faux déplacements si un arrêt est visuellement confirmé.\nMode expérimental désactivable; F8 conserve le rôle d'ancrage absolu et l'estimation de distance réelle demande encore des tests en jeu."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.13",
-      "raidPilotVersion": "0.14.2.13",
-      "beaconVersion": "0.3.2",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "HOTFIX13 : déplacements et postures Beacon fiabilisés",
-      "details": "Correction du sprint en bascule et des ralentissements du suivi, et meilleure gestion de la marche lente.\nBeacon tient compte des postures accroupie/couchée, des sauts et des interruptions temporaires.\nRéduction des faux arrêts visuels, sans modifier la connexion d'équipe Cloudflare."
     }
   ]
 }

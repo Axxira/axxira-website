@@ -43,6 +43,23 @@ internal sealed class StashPilotForm : Form
     internal StashPilotForm()
     {
         Text = "RaidPilot — StashPilot (conseiller d'inventaire)";
+        KeyPreview = true;
+        KeyDown += (_, e) =>
+        {
+            if (e.Control && e.KeyCode == Keys.Enter)
+            {
+                Analyze();
+                e.SuppressKeyPress = true;
+            }
+            else if (e.Control && e.KeyCode == Keys.S)
+            {
+                _status.Text = StashPilotWorkspace.TrySave(
+                    _inventory.Text, _requirements.Text)
+                    ? "Données enregistrées sur ce PC."
+                    : "Sauvegarde impossible.";
+                e.SuppressKeyPress = true;
+            }
+        };
         Size = new Size(1080, 740);
         MinimumSize = new Size(780, 580);
         StartPosition = FormStartPosition.CenterScreen;
@@ -65,7 +82,7 @@ internal sealed class StashPilotForm : Form
 
         var title = new Label
         {
-            Text = "STASHPILOT — Progression • Quêtes • Planque • Inventaire",
+            Text = "STASHPILOT — 1. Capture PNG  →  2. Vérifier  →  3. Analyser",
             Dock = DockStyle.Fill, Font = new Font("Segoe UI", 14, FontStyle.Bold),
             ForeColor = Color.FromArgb(104, 226, 212),
             TextAlign = ContentAlignment.MiddleLeft
@@ -83,7 +100,7 @@ internal sealed class StashPilotForm : Form
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight,
             AutoSize = false, WrapContents = false
         };
-        var calculate = new Button { Text = "Analyser les besoins", AutoSize = true, Height = 35 };
+        var calculate = new Button { Text = "Analyser (Ctrl+Entrée)", AutoSize = true, Height = 35 };
         calculate.Click += (_, _) => Analyze();
         var pasteInventory = new Button { Text = "Coller inventaire", AutoSize = true, Height = 35 };
         pasteInventory.Click += (_, _) => { if (Clipboard.ContainsText()) _inventory.Text = Clipboard.GetText(); };
@@ -117,7 +134,7 @@ internal sealed class StashPilotForm : Form
             _requirements.Text = needs;
             Analyze();
         };
-        var scan = new Button { Text = "Lire screenshot PNG", AutoSize = true, Height = 35 };
+        var scan = new Button { Text = "1. Scanner PNG", AutoSize = true, Height = 35 };
         scan.Click += async (_, _) =>
         {
             using var dialog = new OpenFileDialog
@@ -200,8 +217,8 @@ internal sealed class StashPilotForm : Form
             }
             finally { scan.Enabled = true; }
         };
-        actions.Controls.AddRange([calculate, pasteInventory, pasteNeeds,
-            scan, save, reload, copyResult]);
+        actions.Controls.AddRange([scan, calculate, pasteInventory, pasteNeeds,
+            save, reload, copyResult]);
         layout.Controls.Add(actions, 0, 2);
         layout.SetColumnSpan(actions, 2);
 
