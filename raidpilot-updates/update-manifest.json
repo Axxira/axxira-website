@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T14:14:14.7289428+00:00",
+  "publishedAt": "2026-10-25T14:27:34.8555295+00:00",
   "raidPilot": {
-    "version": "0.15.2.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.1-b0.3.10-l0.2.15-f749e617b194/RaidPilot-Overlay-v0.15.2.1-Windows-x64.zip",
-    "sha256": "888F42C9A9D4F152053C177AF9F39D1687C70C2C7349E52023F118EE0F170A0A",
-    "sizeBytes": 234496258,
-    "releaseNotes": "Le conseiller StashPilot possède maintenant une sauvegarde locale versionnée et atomique de l'inventaire et des objectifs saisis/confirmés. Boutons explicites Sauvegarder et Charger, restauration automatique au démarrage si le fichier est valide. Le fichier reste dans %LOCALAPPDATA%/RaidPilot, pas de transmission réseau, limites de taille et gestion des données corrompues. Le scan automatique d'inventaire, planque et quêtes n'est pas encore implémenté; aucune vente automatique n'est effectuée."
+    "version": "0.15.3.0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.0-b0.3.10-l0.2.15-bbaae42b09bc/RaidPilot-Overlay-v0.15.3.0-Windows-x64.zip",
+    "sha256": "B5B39BB516DE0EB9C90D80BFEDD8A3190DE5D7B35F1C94B4AF00F42809E8FCA6",
+    "sizeBytes": 234499289,
+    "releaseNotes": "Ajout d'un bouton de lecture OCR Windows pour captures PNG choisies par le joueur, sans transfert réseau. Les résultats sont affichés dans une fenêtre de revue et insérés comme notes non vérifiées. Aucun objet ou quantité n'est automatiquement confirmé ni conseillé à la vente. La reconnaissance fiable des icônes d'inventaire et la synchronisation de progression restent à développer."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.1-b0.3.10-l0.2.15-f749e617b194/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "714142E5FB65A8E5F240EE25BD3428E1116093FA2208BFA83CF92B1605EA1820",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.0-b0.3.10-l0.2.15-bbaae42b09bc/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "D11687EAC85BFAB5839DA6A2EAC7B2329BCBFA758A1C477989E43F163455BF97",
     "sizeBytes": 58332207,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.1-b0.3.10-l0.2.15-f749e617b194/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "2E48EAEF8A007BDBB46FF9A17E029AB9213C86879531D8D2D5558C60B018AF80",
-    "sizeBytes": 351085012,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.0-b0.3.10-l0.2.15-bbaae42b09bc/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "C2034FD98534D5D6F6FFF6801C9FA6FE2DED0A7BD90625DE65BCA416CBB653A1",
+    "sizeBytes": 351088100,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.3.0",
+      "raidPilotVersion": "0.15.3.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — OCR local de captures PNG avec revue manuelle",
+      "details": "Ajout d'un bouton de lecture OCR Windows pour captures PNG choisies par le joueur, sans transfert réseau. Les résultats sont affichés dans une fenêtre de revue et insérés comme notes non vérifiées. Aucun objet ou quantité n'est automatiquement confirmé ni conseillé à la vente. La reconnaissance fiable des icônes d'inventaire et la synchronisation de progression restent à développer."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.2.1",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot — partage en direct prêt côté client, opt-in et protection des plans d'escouade",
       "details": "Ajout d'une architecture de synchronisation de quêtes entre coéquipiers, toujours facultative et désactivée par défaut. Le menu Escouade propose « Partager mes quêtes » avec consentement explicite pour chaque connexion. Le logiciel interroge /health du relais Cloudflare officiel : aucun plan n'est transmis si le serveur n'annonce pas explicitement features.questplan=true. Les paquets contiennent uniquement les identifiants publics des quêtes et étapes cochées de l'utilisateur, séparés par mode PvE/PvP, jamais les captures, journaux EFT, identifiants de profil ou secrets de connexion. Les plans reçus sont éphémères, expirent après 90 secondes, sont effacés lors du départ du joueur/déconnexion et ne modifient jamais la progression locale. Numéros et couleurs des balises existantes conservés, étapes d'équipe étiquetées comme non vérifiées. Sécurisation de la validation des paquets et de leurs horodatages, limitation des échanges et anti-rejeu; tests du protocole WebSocket et de la carte locale. Un Worker Cloudflare v2 candidat, avec Durable Objects, protection des salles et compatibilité pose, est livré dans le dépôt UNIQUEMENT pour staging, sans être déployé sur le relais réel. Important : le relais Cloudflare actuellement en production n'a pas encore confirmé la prise en charge des quêtes; seul le partage manuel RPQ1 reste garanti tant que le Worker n'est pas migré et validé avec deux clients. Aucune mise à jour à distance de Cloudflare n'est revendiquée. Beacon 0.3.9 et Launcher 0.2.15 inchangés."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.27",
-      "raidPilotVersion": "0.14.2.27",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot : remise de quête reconnue dans les journaux EFT + plans d'équipe copiables",
-      "details": "QuestPilot améliore le suivi des objectifs et la coopération. Nouveau lecteur en lecture seule des journaux EFT push-notifications : il décode uniquement les événements de quête new_message, types 10 (acceptée), 11 (échouée), 12 (remise au marchand), identifiés par leur identifiant public 24 hex et une date de notification valide. Les autres messages sont rejetés, aucun chat ni identifiant de compte n'est conservé. Les notifications sont lues de manière bornée, par lignes et fragments JSON, sans rejouer les événements historiques au lancement et sans accès mémoire au jeu. Le mode PvE/PvP/PvP saison est déterminé explicitement depuis les logs d'application EFT; les événements dont le mode reste inconnu attendent une identification fiable, jamais de transfert implicite vers PvP. Dans QuestPilot, une quête remise est marquée « Journal EFT »; les étapes posées mais non confirmées dans les logs restent « faites selon toi ». Les exclusions manuelles des quêtes dominent l'OCR et les nouveaux événements; les profils restent locaux et séparés. En escouade, un nouveau partage MANUEL de plan par code RPQ1 permet de copier son plan, importer celui d'un ami sans modifier sa progression et afficher les balises des quêtes partagées avec un rendu distinct; le code ne contient que des identifiants publics de quêtes et les cases cochées, jamais les identifiants personnels ou les journaux. Le relais Cloudflare actuellement déployé ne retransmet pas encore les types de messages QuestPilot (test synthétique négatif le 24 octobre 2026) : le partage automatique en temps réel n'est PAS activé ni annoncé comme fonctionnel. Toutes les fonctions Overlay, Launcher, Beacon, GPS, quêtes numérotées, extractions et cartes sont conservées. Tests C#, JS, multi-étape, priorité manuelle, lecture des nouveaux logs, isolation PvE/PvP et import local."
     }
   ]
 }
