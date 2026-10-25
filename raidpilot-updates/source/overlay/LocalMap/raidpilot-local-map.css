@@ -268,3 +268,6 @@ html:not(.raidpilot-interactive) #calibration-panel{display:none}
 @media(max-height:560px){
  #questpilot-panel{height:clamp(110px,30vh,210px)}
 }
+
+/* QuestPilot remains present; no misleading close control. */
+#questpilot-close{display:none}
