@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.3.0",
+      "raidPilotVersion": "0.15.3.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — OCR local de captures PNG avec revue manuelle",
+      "details": "Ajout d'un bouton de lecture OCR Windows pour captures PNG choisies par le joueur, sans transfert réseau. Les résultats sont affichés dans une fenêtre de revue et insérés comme notes non vérifiées. Aucun objet ou quantité n'est automatiquement confirmé ni conseillé à la vente. La reconnaissance fiable des icônes d'inventaire et la synchronisation de progression restent à développer."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.2.1",
       "raidPilotVersion": "0.15.2.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-22",
       "summary": "HOTFIX12 : relais d'équipe Cloudflare bidirectionnel",
       "details": "L'échange des positions entre joueurs utilise désormais un Worker Cloudflare dédié à RaidPilot au lieu du WebSocket tarkov.dev.\nLe code d'escouade reste inchangé; une seule connexion bidirectionnelle par client, reconnexion et séparation des salles.\nLa précision individuelle reste estimée entre les F8."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.11",
-      "raidPilotVersion": "0.14.2.11",
-      "beaconVersion": "0.3.0",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "HOTFIX11 : coéquipiers et changements de carte",
-      "details": "Les positions de coéquipiers appartenant à une autre carte sont retirées immédiatement.\nLes alias de carte et les paquets reçus dans le désordre sont mieux gérés.\nLes changements de carte purgent les marqueurs obsolètes et le diagnostic indique le nombre de coéquipiers."
     }
   ]
 }

@@ -2,9 +2,21 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class StashPilotTests
 {
-    internal const int TestCount = 6;
+    internal const int TestCount = 8;
     internal static void RunAll(ICollection<string> failures)
     {
+        Run("StashPilot OCR rejette le bruit et les répétitions", () =>
+        {
+            var rows = StashPilotImageScanner.FilterCandidates(
+                [" Boulons ", "boulons", "", "X", new string('A', 181), "Ruban isolant"]);
+            Require(rows.Count == 2 && rows[0] == "Boulons" && rows[1] == "Ruban isolant");
+        }, failures);
+        Run("StashPilot OCR ne fabrique pas de quantités confirmées", () =>
+        {
+            var rows = StashPilotImageScanner.FilterCandidates(["Boulons x4"]);
+            Require(rows.Count == 1);
+            Require(StashPilotAdvisor.ParseInventory("# OCR : " + rows[0]).Count == 0);
+        }, failures);
         Run("StashPilot additionne besoins quêtes et planque", () =>
         {
             var a = StashPilotAdvisor.Analyze(
