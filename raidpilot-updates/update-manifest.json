@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T14:03:44.2691703+00:00",
+  "publishedAt": "2026-10-25T14:14:14.7289428+00:00",
   "raidPilot": {
-    "version": "0.15.2.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.0-b0.3.10-l0.2.15-39ef0b24d181/RaidPilot-Overlay-v0.15.2.0-Windows-x64.zip",
-    "sha256": "A9C488474A89D057C21D525EDC6EA52DB7C19101BCE91631C0A5E5892EA5AC1F",
-    "sizeBytes": 234495435,
-    "releaseNotes": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
+    "version": "0.15.2.1",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.1-b0.3.10-l0.2.15-f749e617b194/RaidPilot-Overlay-v0.15.2.1-Windows-x64.zip",
+    "sha256": "888F42C9A9D4F152053C177AF9F39D1687C70C2C7349E52023F118EE0F170A0A",
+    "sizeBytes": 234496258,
+    "releaseNotes": "Le conseiller StashPilot possède maintenant une sauvegarde locale versionnée et atomique de l'inventaire et des objectifs saisis/confirmés. Boutons explicites Sauvegarder et Charger, restauration automatique au démarrage si le fichier est valide. Le fichier reste dans %LOCALAPPDATA%/RaidPilot, pas de transmission réseau, limites de taille et gestion des données corrompues. Le scan automatique d'inventaire, planque et quêtes n'est pas encore implémenté; aucune vente automatique n'est effectuée."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.0-b0.3.10-l0.2.15-39ef0b24d181/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "8D945E96A2AC449F2E001852F3B1FC1DBBA5C9EDB3480332578F428C558A2327",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.1-b0.3.10-l0.2.15-f749e617b194/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "714142E5FB65A8E5F240EE25BD3428E1116093FA2208BFA83CF92B1605EA1820",
     "sizeBytes": 58332207,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.0-b0.3.10-l0.2.15-39ef0b24d181/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "CBF75F2B046394450C03149678077AF7946070C06C7A259B7148B658E36359AD",
-    "sizeBytes": 351084137,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.2.1-b0.3.10-l0.2.15-f749e617b194/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "2E48EAEF8A007BDBB46FF9A17E029AB9213C86879531D8D2D5558C60B018AF80",
+    "sizeBytes": 351085012,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.2.1",
+      "raidPilotVersion": "0.15.2.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — progression conservée localement entre les sessions",
+      "details": "Le conseiller StashPilot possède maintenant une sauvegarde locale versionnée et atomique de l'inventaire et des objectifs saisis/confirmés. Boutons explicites Sauvegarder et Charger, restauration automatique au démarrage si le fichier est valide. Le fichier reste dans %LOCALAPPDATA%/RaidPilot, pas de transmission réseau, limites de taille et gestion des données corrompues. Le scan automatique d'inventaire, planque et quêtes n'est pas encore implémenté; aucune vente automatique n'est effectuée."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.2.0",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot : remise de quête reconnue dans les journaux EFT + plans d'équipe copiables",
       "details": "QuestPilot améliore le suivi des objectifs et la coopération. Nouveau lecteur en lecture seule des journaux EFT push-notifications : il décode uniquement les événements de quête new_message, types 10 (acceptée), 11 (échouée), 12 (remise au marchand), identifiés par leur identifiant public 24 hex et une date de notification valide. Les autres messages sont rejetés, aucun chat ni identifiant de compte n'est conservé. Les notifications sont lues de manière bornée, par lignes et fragments JSON, sans rejouer les événements historiques au lancement et sans accès mémoire au jeu. Le mode PvE/PvP/PvP saison est déterminé explicitement depuis les logs d'application EFT; les événements dont le mode reste inconnu attendent une identification fiable, jamais de transfert implicite vers PvP. Dans QuestPilot, une quête remise est marquée « Journal EFT »; les étapes posées mais non confirmées dans les logs restent « faites selon toi ». Les exclusions manuelles des quêtes dominent l'OCR et les nouveaux événements; les profils restent locaux et séparés. En escouade, un nouveau partage MANUEL de plan par code RPQ1 permet de copier son plan, importer celui d'un ami sans modifier sa progression et afficher les balises des quêtes partagées avec un rendu distinct; le code ne contient que des identifiants publics de quêtes et les cases cochées, jamais les identifiants personnels ou les journaux. Le relais Cloudflare actuellement déployé ne retransmet pas encore les types de messages QuestPilot (test synthétique négatif le 24 octobre 2026) : le partage automatique en temps réel n'est PAS activé ni annoncé comme fonctionnel. Toutes les fonctions Overlay, Launcher, Beacon, GPS, quêtes numérotées, extractions et cartes sont conservées. Tests C#, JS, multi-étape, priorité manuelle, lecture des nouveaux logs, isolation PvE/PvP et import local."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.26",
-      "raidPilotVersion": "0.14.2.26",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot v1 : quêtes personnelles, balises colorées 1→2→3 et préparation de raid",
-      "details": "Nouveau QuestPilot intégré à la carte locale RaidPilot : un bouton « Mes quêtes » ouvre une liste persistante de quêtes actives et permet de sélectionner ou retirer manuellement des missions en PvE et PvP (profils indépendants). Les quêtes reconnues par TAB → TÂCHES → F8 sont ajoutées à la sélection sans supprimer les quêtes précédentes; un retrait manuel reste prioritaire sur un nouveau scan OCR. Toutes les étapes géolocalisées d'une quête utilisent la même couleur, y compris les repères SVG sur la carte et les entrées de liste. Chaque objectif distinct du catalogue public reçoit un numéro stable dans l'ordre de ses objectifs : pour trois balises avec trois objectifs distincts, marqueurs 1, 2 et 3. Plusieurs positions possibles d'une seule étape gardent le même numéro avec avertissement de localisation incertaine; aucune fausse validation. Le joueur peut cocher une étape faite manuellement et les conditions de préparation (balise, clé, objet, arme/équipement), conservées dans le profil WebView2 entre raids et mises à jour Launcher. Un bandeau compact montre le prochain objectif et sa distance seulement lorsque le suivi est assez fiable. L'ordre suggéré tient compte de la proximité euclidienne seulement; ce n'est pas un chemin navigable garanti ni une affirmation que la quête est accomplie dans EFT. Les 13 cartes, l'overlay, le GPS V4, les F8 mobiles, les extractions et le relais d'équipe restent inchangés. Tests nouveaux de tâches multi-étapes, correspondance de couleur, états persistants, OCR, PvE/PvP, emplacements possibles et carte réelle. Partage d'objectifs par coéquipier et détection certifiée de l'inventaire EFT non annoncés; aucune donnée personnelle transmise."
     }
   ]
 }
