@@ -71,6 +71,7 @@ internal static class ScreenshotNameParserTests
         ScreenshotHotkeySenderTests.RunAll(failures);
         AutomaticReanchorRequestTests.RunAll(failures);
         MobileExactAnchorPolicyTests.RunAll(failures);
+        CortexNavigationTests.RunAll(failures);
         RaidTimerTests.RunAll(failures);
         LearnedRouteGraphTests.RunAll(failures);
         LearnedRouteGraphStoreAsyncTests.RunAll(failures);
@@ -124,6 +125,7 @@ internal static class ScreenshotNameParserTests
             + ScreenshotHotkeySenderTests.TestCount
             + AutomaticReanchorRequestTests.TestCount
             + MobileExactAnchorPolicyTests.TestCount
+            + CortexNavigationTests.TestCount
             + RaidTimerTests.TestCount
             + LearnedRouteGraphTests.TestCount
             + LearnedRouteGraphStoreAsyncTests.TestCount

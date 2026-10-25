@@ -42,7 +42,8 @@ internal static class MobileExactAnchorPolicy
     internal static double RequiredIntervalSeconds(
         double uncertaintyMeters,
         LocalizationHealthState health,
-        bool recentTrustedVisualCorrection)
+        bool recentTrustedVisualCorrection,
+        bool strongVisualCorroboration = true)
     {
         if (!double.IsFinite(uncertaintyMeters) || uncertaintyMeters < 0)
             return double.PositiveInfinity;
@@ -52,7 +53,7 @@ internal static class MobileExactAnchorPolicy
             || uncertaintyMeters >= 2.25)
             return MinimumIntervalSeconds;
 
-        return uncertaintyMeters < 1.25
+        return uncertaintyMeters < 1.25 && strongVisualCorroboration
             ? StrongVisualIntervalSeconds
             : VerifiedVisualIntervalSeconds;
     }
@@ -69,7 +70,8 @@ internal static class MobileExactAnchorPolicy
         double secondsSinceLastAttempt,
         double positionUncertaintyMeters = 4.0,
         LocalizationHealthState health = LocalizationHealthState.Red,
-        bool recentTrustedVisualCorrection = false)
+        bool recentTrustedVisualCorrection = false,
+        bool strongVisualCorroboration = true)
     {
         if (!double.IsFinite(secondsSinceExactAnchor)
             || double.IsNaN(secondsSinceLastAttempt)
@@ -80,7 +82,7 @@ internal static class MobileExactAnchorPolicy
             return false;
 
         var interval = RequiredIntervalSeconds(positionUncertaintyMeters,
-            health, recentTrustedVisualCorrection);
+            health, recentTrustedVisualCorrection, strongVisualCorroboration);
         return enabled && controlsActive && movementActive
             && !aimingOrFiring && safeScreenshotBinding
             && hasScreenshotWatcher && hasExactAnchor

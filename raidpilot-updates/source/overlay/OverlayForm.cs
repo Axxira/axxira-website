@@ -1585,6 +1585,8 @@ internal sealed partial class OverlayForm : Form
                 decision.YawGain,
                 decision.MaximumTranslationStepMeters,
                 decision.MaximumYawStepDegrees);
+            CortexObserveAppliedVisual(
+                now, decision, visualDecisionFromCollectiveAtlas);
 
             if (_precisionV4Menu.Checked)
             {
@@ -1657,6 +1659,7 @@ internal sealed partial class OverlayForm : Form
         }
 
         _visualRelocalization.ObserveTracking(pose, now);
+        CortexObservePose(now, pose, movementInputActive, motionEvidence);
         UpdateMineProximity(pose);
         UpdateBoundaryProximity(pose);
         _realtimePoseHistory.Add(now, pose);
@@ -1836,6 +1839,18 @@ internal sealed partial class OverlayForm : Form
         var recentlyVerifiedBySilentVision = _lastTrustedSilentVisualAt > 0
             && now >= _lastTrustedSilentVisualAt
             && (now - _lastTrustedSilentVisualAt) / (double)Stopwatch.Frequency <= 5.0;
+        // CORTEX validates the visual evidence against real F8 residuals,
+        // raid/window identity, discontinuities and sensor contradictions.
+        // Turning it off restores the 0.14.2.45 cadence for quick comparison.
+        var cortexAssessment = _cortexMenu.Checked
+            && _realtimeEstimator.CurrentPose is { } trackedPose
+                ? CortexAssess(now, trackedPose)
+                : default;
+        var visualTrust = _cortexMenu.Checked
+            ? cortexAssessment.AllowExtendedF8
+            : recentlyVerifiedBySilentVision;
+        var strongVisualTrust = !_cortexMenu.Checked
+            || cortexAssessment.AllowStrongExtension;
         var mobileRequest = MobileExactAnchorPolicy.ShouldCapture(
             _mobileExactAnchorEnabled,
             _liveTrackingEnabled && _tarkovIsForeground && _controlTrackingActive && _raidActive,
@@ -1850,7 +1865,8 @@ internal sealed partial class OverlayForm : Form
             secondsSinceLastAttempt,
             uncertaintyMeters,
             _visualRelocalization.Health,
-            recentlyVerifiedBySilentVision);
+            visualTrust,
+            strongVisualTrust);
 
         if (actionInProgress)
         {
@@ -3489,11 +3505,12 @@ internal sealed partial class OverlayForm : Form
                     diagnosticSettings.HipYawDegreesPerMouseCount,
                     diagnosticSettings.AdsYawDegreesPerMouseCount,
                     allowCalibration, hasCaptureTimestamp));
-            _precisionV2DriftAudit.ObserveExactAnchor(
+            var comparableF8 = _precisionV2DriftAudit.ObserveExactAnchor(
                 observation, estimatedPoseAtCapture,
                 hasCaptureTimestamp ? captureTimestamp : 0,
                 _precisionV2ToggleMenuItem.Checked,
                 _precisionV4Menu.Checked);
+            CortexObserveNativeF8(now, comparableF8, _precisionV2DriftAudit.Last);
             CalibrateRealtimeEstimator(observation, estimatedPoseAtCapture, allowCalibration);
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;
@@ -4307,6 +4324,7 @@ internal sealed partial class OverlayForm : Form
         _learnedRouteGraph.BeginSession(mapId);
         _precisionV2DriftAudit.Reset();
         _precisionV4Fusion.Reset();
+        _cortex.Reset();
         ResetPrecisionV2();
         _visualKeyframeRecognizer.ResetSession();
         _superKeyframeRecognizer.ResetSession();
