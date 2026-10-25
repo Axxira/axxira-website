@@ -291,3 +291,6 @@ html:not(.raidpilot-interactive) #calibration-panel{display:none}
 #questpilot-panel details.qp-advanced summary{font-size:13px;font-weight:600;
   cursor:pointer;color:#b5d5ea}
 @media(max-height:600px){#questpilot-panel{height:clamp(130px,35vh,265px)}}
+
+.floor-coverage{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b8dbea;font-size:11px}
+.floor-coverage:empty{display:none}
