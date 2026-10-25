@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.4.0",
+      "raidPilotVersion": "0.15.4.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — scan direct F8 depuis l'inventaire Tarkov",
+      "details": "Ouverture rapide StashPilot par Ctrl+Alt+P. Le scanner est armé pour 90 secondes dès l'ouverture ou par le bouton « Scanner avec F8 » : le prochain screenshot manuel F8 créé dans le dossier EFT est lu avec l'OCR local et présenté dans une fenêtre de validation. Les captures F8 du recalage automatique RaidPilot ne sont pas utilisées pour ce scan. Bouton Annuler F8, fallback Choisir PNG, aucune reconnaissance d'icônes ni validation automatique des objets/quantités. Le menu de stash doit être visible lors de F8. Les besoins quêtes/planque restent soumis aux données confirmées."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.3.2",
       "raidPilotVersion": "0.15.3.2",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Precision V2.1 : mesure de la dérive avant F8",
       "details": "Comparaison des écarts en mètres et en degrés avant chaque nouveau recalage F8, avec statistiques médianes et P90 pour les modes V1 et V2.\nLes séquences interrompues ou incertaines sont exclues et les statistiques restent uniquement en mémoire.\nProtection supplémentaire contre les faux arrêts après une rotation ou un changement d'état."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.14",
-      "raidPilotVersion": "0.14.2.14",
-      "beaconVersion": "0.3.3",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "Precision V2 : capteur visuel 160×90 et fusion",
-      "details": "Ajout d'une deuxième analyse visuelle en 160×90 hors du fil d'interface, en parallèle de la voie historique 64×36.\nLa fusion peut corriger certains faux déplacements si un arrêt est visuellement confirmé.\nMode expérimental désactivable; F8 conserve le rôle d'ancrage absolu et l'estimation de distance réelle demande encore des tests en jeu."
     }
   ]
 }
