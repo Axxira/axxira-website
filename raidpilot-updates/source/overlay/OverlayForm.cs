@@ -1189,6 +1189,8 @@ internal sealed partial class OverlayForm : Form
         VisualRelocalizationDecision? visualRelocalizationDecision = null;
         RealtimePose? visualRelocalizationPoseAtCapture = null;
         var visualDecisionFromCollectiveAtlas = false;
+        long? cortexLowLandmarkId = null;
+        long? cortexSuperLandmarkId = null;
         // Visual motion cannot produce an absolute position before the first
         // exact anchor. Delay GDI capture/feature work until it can actually
         // protect or correct a live estimate.
@@ -1391,6 +1393,17 @@ internal sealed partial class OverlayForm : Form
                                         evaluatedRelocalization;
                                     visualRelocalizationPoseAtCapture =
                                         estimatedVisualPose;
+                                    // Preserve the recognizers' actual local
+                                    // keyframe identities through fusion.
+                                    // Never borrow shared-atlas identifiers.
+                                    if (lowRecognition.IsConfirmed
+                                        && superRecognition.IsConfirmed)
+                                    {
+                                        cortexLowLandmarkId =
+                                            lowRecognition.KeyframeId;
+                                        cortexSuperLandmarkId =
+                                            superRecognition.KeyframeId;
+                                    }
                                 }
                                 else if (collectiveLowRecognition.IsConfirmed
                                     || collectiveSuperRecognition.IsConfirmed)
@@ -1586,7 +1599,8 @@ internal sealed partial class OverlayForm : Form
                 decision.MaximumTranslationStepMeters,
                 decision.MaximumYawStepDegrees);
             CortexObserveAppliedVisual(
-                now, decision, visualDecisionFromCollectiveAtlas);
+                now, decision, visualDecisionFromCollectiveAtlas,
+                cortexLowLandmarkId, cortexSuperLandmarkId);
 
             if (_precisionV4Menu.Checked)
             {
@@ -1659,7 +1673,8 @@ internal sealed partial class OverlayForm : Form
         }
 
         _visualRelocalization.ObserveTracking(pose, now);
-        CortexObservePose(now, pose, movementInputActive, motionEvidence);
+        CortexObservePose(now, pose, movementInputActive,
+            motionEvidence, visualCorrectionApplied);
         UpdateMineProximity(pose);
         UpdateBoundaryProximity(pose);
         _realtimePoseHistory.Add(now, pose);

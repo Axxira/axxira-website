@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.1.0",
+      "raidPilotVersion": "0.15.1.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "CORTEX V2 — mémoire visuelle des lieux et contrôle d'identité des repères",
+      "details": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.0.1",
       "raidPilotVersion": "0.15.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-21",
       "summary": "Cartes et localisation : série d'améliorations intermédiaires",
       "details": "Mise à jour intermédiaire de RaidPilot et Beacon dans la série 0.14.\nLes anciens correctifs sont conservés dans les archives GitHub; les informations détaillées de cette publication ne sont pas disponibles dans le registre actuel."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.11.0",
-      "raidPilotVersion": "0.11.0",
-      "beaconVersion": "0.1.0",
-      "launcherVersion": "0.2.3",
-      "date": "2026-10-19",
-      "summary": "Escouade temps réel, Beacon et interface actualisée",
-      "details": "Premières fonctionnalités de groupe, Beacon pour partager sa position et nouvelle présentation du Launcher.\nCette entrée correspond aux anciennes notes déjà affichées par le programme."
     }
   ]
 }

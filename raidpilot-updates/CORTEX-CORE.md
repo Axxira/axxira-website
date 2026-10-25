@@ -42,6 +42,21 @@ Les seuils sont **conservateurs** et sujets à validation avec données de test,
 5. Dans « GPS estimé · diagnostic », consulter « Navigation CORTEX »; exporter aussi le rapport F8 V4 si utile.
 6. Ne pas affirmer de performance supérieure tant que la comparaison F8 et FPS n'est pas mesurée.
 
+## Phase 2 — CORTEX V2 : mémoire des repères visuels (0.15.1.0)
+
+CORTEX conserve maintenant un **registre borné à 48 lieux** corroborés par les deux reconnaisseurs locaux. Il stocke en RAM les identifiants de keyframes et leur pose de référence (jamais de screenshot); cette mémoire est effacée au recalage F8, en cas de contradiction et à chaque changement de session.
+
+### Indépendance des observations
+
+- Les mêmes identifiants 64×36 + 160×90 retrouvés sur plusieurs trames constituent une **revisite**, pas un nouveau lieu.
+- Des identifiants différents au même endroit ne représentent pas non plus deux références géographiques indépendantes.
+- La cadence de 12 s n'est possible qu'après deux lieux réellement distincts, séparés horizontalement d'au moins **3 m**, sur un étage compatible et observés dans la fenêtre récente de **5 s**.
+- Un repère associé soudainement à des coordonnées ou une orientation incohérentes entraîne une perte de confiance et le repli vers la cadence conservatrice.
+- Une correction de position explicitement **appliquée** ne compte pas comme une téléportation physique du joueur; elle reste évaluée par les garde-fous du moteur de relocalisation.
+- Les repères de l'atlas collectif et les correspondances non corroborées ne permettent pas d'augmenter l'intervalle F8.
+
+Cette mémoire constitue une **vérification d'identité spatiale**, pas un SLAM 3D ni une localisation métrique absolue. Les anciens algorithmes restent disponibles si CORTEX est désactivé. Les tests automatisés valident la logique; la baisse effective du nombre de notifications et les erreurs GPS doivent être mesurées sur de vraies parties.
+
 ## Développement suivant (non livré dans Core 1)
 
 - Intégration d'un suivi de caractéristiques visuelles robuste sur plusieurs frames, mesuré sur des parties EFT réelles

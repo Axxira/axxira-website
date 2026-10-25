@@ -11,7 +11,7 @@ internal sealed partial class OverlayForm
 {
     private readonly CortexNavigationEngine _cortex = new();
     private readonly ToolStripMenuItem _cortexMenu = new(
-        "CORTEX — fiabilité GPS apprise des F8 (expérimental)")
+        "CORTEX V2 — mémoire visuelle vérifiée (expérimental)")
     {
         Checked = true,
         CheckOnClick = true,
@@ -26,7 +26,7 @@ internal sealed partial class OverlayForm
             _trayIcon.ShowBalloonTip(3200,
                 "RaidPilot CORTEX",
                 _cortexMenu.Checked
-                    ? "CORTEX actif. Les erreurs F8 et confirmations visuelles guideront le recalage. Un F8 réel initial est nécessaire."
+                    ? "CORTEX V2 actif. Deux repères différents et corroborés sont requis pour le recalage le plus discret. F8 initial nécessaire."
                     : "CORTEX désactivé. Politique de recalage précédente conservée.",
                 ToolTipIcon.Info);
         };
@@ -36,21 +36,26 @@ internal sealed partial class OverlayForm
         long now,
         RealtimePose pose,
         bool movementCommanded,
-        RealtimeMotionEvidence visualEvidence)
+        RealtimeMotionEvidence visualEvidence,
+        bool correctionAppliedThisTick)
     {
         if (!_cortexMenu.Checked) return;
         _cortex.ObservePose(now, _currentMap, _raidGeneration,
-            _lastForegroundWindow, pose, movementCommanded, visualEvidence);
+            _lastForegroundWindow, pose, movementCommanded,
+            visualEvidence, correctionAppliedThisTick);
     }
 
     private void CortexObserveAppliedVisual(
         long now,
         VisualRelocalizationDecision applied,
-        bool fromCollectiveAtlas)
+        bool fromCollectiveAtlas,
+        long? lowLandmarkId,
+        long? superLandmarkId)
     {
         if (!_cortexMenu.Checked) return;
         _cortex.NoteAppliedVisual(now, _currentMap, _raidGeneration,
-            _lastForegroundWindow, applied, fromCollectiveAtlas);
+            _lastForegroundWindow, applied, fromCollectiveAtlas,
+            lowLandmarkId, superLandmarkId);
     }
 
     private void CortexObserveNativeF8(
