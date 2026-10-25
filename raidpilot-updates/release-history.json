@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.45",
+      "raidPilotVersion": "0.14.2.45",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "F8 adaptatif silencieux — 4 à 12 s selon les repères visuels fiables",
+      "details": "Le recalage exact pendant la marche conserve 4 s lorsque la vision manque, que la position devient incertaine ou que la santé GPS est orange/rouge. Des corrections visuelles locales, indépendantes et réellement appliquées (consensus de repères, confiance ≥ 0,90 et faible résidu) permettent d'espacer les F8 à 8 ou 12 s, réduisant sons et notifications du jeu. F, tir, visée et rechargement bloquent toujours les captures. Le suivi par images reste local, sans coordonnées inventées; les tests en raid doivent vérifier l'équilibre précision/discrétion."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.44",
       "raidPilotVersion": "0.14.2.44",
       "beaconVersion": "0.3.10",
