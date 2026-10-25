@@ -61,7 +61,7 @@ internal sealed partial class OverlayForm : Form
         CheckOnClick = true,
     };
     private readonly ToolStripMenuItem _mobileExactAnchorMenuItem = new(
-        "Recalage F8 pendant déplacement · 4 s (expérimental)")
+        "Recalage F8 en déplacement · intelligent 4–12 s")
     {
         Checked = false,
         CheckOnClick = true,
@@ -165,6 +165,7 @@ internal sealed partial class OverlayForm : Form
     private long _lastVisualMotionSample;
     private long _lastSuperKeyframeSample;
     private long _lastExactAnchorAt;
+    private long _lastTrustedSilentVisualAt;
     private long _lastAutoReanchorAttempt;
     private long _lastManualScreenshotPressAt;
     private long _raidStartReplayCaptureTimestamp;
@@ -597,7 +598,7 @@ internal sealed partial class OverlayForm : Form
                 4200,
                 "RaidPilot — recalage en marche",
                 _mobileExactAnchorEnabled
-                    ? "Recalage F8 périodique actif pendant les déplacements, sous réserve de la touche Screenshot d'EFT (F6-F12 seule). Les captures peuvent afficher une notification en jeu."
+                    ? "Recalage F8 adaptatif (4–12 s) : plus espacé lorsque des repères visuels indépendants confirment la position. La touche Screenshot EFT doit être F6–F12 seule; les captures F8 affichent la notification du jeu."
                     : "Recalage pendant les déplacements arrêté. F8 manuel et recalage au repos restent disponibles."
                     + (saved ? "" : " Préférence non enregistrée."),
                 saved ? ToolTipIcon.Info : ToolTipIcon.Warning);
@@ -1600,6 +1601,22 @@ internal sealed partial class OverlayForm : Form
                 decision.Mode is VisualCorrectionMode.Medium
                     or VisualCorrectionMode.HardSnap;
 
+            // Silent image matching can defer an audible in-game F8 ONLY
+            // after a high-confidence independent local keyframe consensus.
+            // A single low-resolution match or unverified shared atlas data
+            // cannot earn a longer interval.
+            if (!visualDecisionFromCollectiveAtlas
+                && decision.Confidence >= 0.90
+                && decision.PositionResidualMeters <= 2.0
+                && decision.VerticalResidualMeters <= 1.25
+                && decision.YawResidualDegrees <= 15.0
+                && (decision.Source == VisualRelocalizationSource.Consensus
+                    || (decision.Source == VisualRelocalizationSource.SuperKeyframe
+                        && decision.GlobalLoopClosure)))
+            {
+                _lastTrustedSilentVisualAt = now;
+            }
+
             // Une correction moyenne ou un loop-closure change suffisamment
             // le repÃƒÂ¨re pour casser la continuitÃƒÂ© d'une route apprise. Une
             // micro-correction reste au contraire sous le bruit normal du
@@ -1817,6 +1834,9 @@ internal sealed partial class OverlayForm : Form
         var secondsSinceExactAnchor = _lastExactAnchorAt <= 0
             ? 0.0
             : (now - _lastExactAnchorAt) / (double)Stopwatch.Frequency;
+        var recentlyVerifiedBySilentVision = _lastTrustedSilentVisualAt > 0
+            && now >= _lastTrustedSilentVisualAt
+            && (now - _lastTrustedSilentVisualAt) / (double)Stopwatch.Frequency <= 5.0;
         var mobileRequest = MobileExactAnchorPolicy.ShouldCapture(
             _mobileExactAnchorEnabled,
             _liveTrackingEnabled && _tarkovIsForeground && _controlTrackingActive && _raidActive,
@@ -1828,7 +1848,10 @@ internal sealed partial class OverlayForm : Form
             _screenshotWatcher is not null,
             _lastExactObservation is not null,
             secondsSinceExactAnchor,
-            secondsSinceLastAttempt);
+            secondsSinceLastAttempt,
+            uncertaintyMeters,
+            _visualRelocalization.Health,
+            recentlyVerifiedBySilentVision);
 
         if (actionInProgress)
         {
@@ -5592,6 +5615,7 @@ internal sealed partial class OverlayForm : Form
             _automaticReanchorRequest = null;
             Interlocked.Exchange(ref _autoReanchorRequestedAt, 0);
             _lastExactAnchorAt = 0;
+            _lastTrustedSilentVisualAt = 0;
             _lastAutoReanchorAttempt = 0;
             _lastManualScreenshotPressAt = 0;
             _screenshotBindingWasDown = false;
