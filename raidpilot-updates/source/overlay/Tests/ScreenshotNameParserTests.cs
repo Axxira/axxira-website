@@ -74,6 +74,7 @@ internal static class ScreenshotNameParserTests
         CortexNavigationTests.RunAll(failures);
         CortexLandmarkMemoryTests.RunAll(failures);
         StashPilotTests.RunAll(failures);
+        StashPilotF8GateTests.RunAll(failures);
         StashPilotWorkspaceTests.RunAll(failures);
         RaidTimerTests.RunAll(failures);
         LearnedRouteGraphTests.RunAll(failures);
@@ -131,6 +132,7 @@ internal static class ScreenshotNameParserTests
             + CortexNavigationTests.TestCount
             + CortexLandmarkMemoryTests.TestCount
             + StashPilotTests.TestCount
+            + StashPilotF8GateTests.TestCount
             + StashPilotWorkspaceTests.TestCount
             + RaidTimerTests.TestCount
             + LearnedRouteGraphTests.TestCount
