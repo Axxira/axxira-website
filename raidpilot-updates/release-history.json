@@ -2,6 +2,26 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "component": "beacon",
+      "version": "0.3.10",
+      "raidPilotVersion": "0.14.2.43",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Beacon — captures F8 au repos hors interaction et combat",
+      "details": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.43",
+      "raidPilotVersion": "0.14.2.43",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Intelligence V2 — repli sur les entrées lors de captures visuelles répétées",
+      "details": "Corrige la fusion de mouvement : une même trame visuelle ne conserve plus une décision de mouvement antérieure lorsque les entrées de déplacement ont évolué. Le moteur se replie sur les entrées actuelles et journalise le refus. Aucune coordonnée absolue n'est inventée; la précision doit être validée dans un raid réel."
+    },
+    {
       "component": "raidpilot",
       "version": "0.14.2.42",
       "raidPilotVersion": "0.14.2.42",
