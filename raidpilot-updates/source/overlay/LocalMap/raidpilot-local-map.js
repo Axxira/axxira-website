@@ -1224,7 +1224,8 @@ function initializeFloorCatalogue(){
 function setFloorPose(p){
   if(canonicalMapKey(p.map)!==state.mapKey)return {status:"loading"};
   const result=floorTracker.update({...p,map:state.mapKey});state.automaticFloor=result;
-  if(p.enabled&&!state.manualFloor&&state.floor!=="AUTO")setFloor("AUTO",true);
+  if(p.enabled&&!state.manualFloor&&floorCatalogCoverage(state.mapMeta).total>0
+    &&state.floor!=="AUTO")setFloor("AUTO",true);
   render();return result;
 }
 function clearFloorPose(){state.automaticFloor=null;if(state.mapMeta)initializeFloorCatalogue();render();}
@@ -1242,15 +1243,38 @@ function applyProfile(id) {
   savePreferences(); renderFilterPanel(); render();
 }
 
+function floorCatalogCoverage(meta) {
+  const floors=Array.isArray(meta?.floors)?meta.floors:[];
+  const valid=floors.filter(f=>typeof f.name==="string"
+    && RaidPilotFloors.regions(f.extents).length>0);
+  const local=valid.filter(f=>RaidPilotFloors.regions(f.extents)
+    .some(region=>Array.isArray(region.boxes)&&region.boxes.length>0));
+  return {total:valid.length,localized:local.length,
+    uncovered:valid.length===0,
+    description:valid.length===0
+      ?"Aucun étage documenté : affichage BASE, sans position verticale inventée."
+      :valid.length+" niveaux documentés · "+local.length
+        +" avec limites de bâtiment · sélection manuelle disponible"};
+}
 function updateFloorOptions() {
   refs.floor.replaceChildren();
-  for (const [value,label] of [["BASE","Base / RDC"],["AUTO","AUTO (moteur RaidPilot)"]]) {
-    const o = document.createElement("option"); o.value=value; o.textContent=label; refs.floor.appendChild(o);
+  const coverage=floorCatalogCoverage(state.mapMeta);
+  const options=[["BASE","Base / RDC"]];
+  if(!coverage.uncovered)options.push(["AUTO","AUTO (hauteur vérifiée)"]);
+  for(const [value,label] of options){
+    const o=document.createElement("option");o.value=value;o.textContent=label;
+    refs.floor.appendChild(o);
   }
-  for (const f of state.mapMeta?.floors || []) {
-    const o = document.createElement("option"); o.value=f.name; o.textContent=f.name; refs.floor.appendChild(o);
+  for(const f of state.mapMeta?.floors||[]){
+    if(!RaidPilotFloors.regions(f.extents).length)continue;
+    const o=document.createElement("option");o.value=f.name;o.textContent=f.name;
+    refs.floor.appendChild(o);
   }
-  refs.floor.value = [...refs.floor.options].some(o => o.value === state.floor) ? state.floor : "BASE";
+  refs.floor.value=[...refs.floor.options].some(o=>o.value===state.floor)?state.floor:"BASE";
+  if(refs.floorCoverage){
+    refs.floorCoverage.textContent=coverage.description;
+    refs.floorCoverage.title=coverage.description;
+  }
 }
 
 function resolveAssetForMap(key) {
@@ -1611,7 +1635,7 @@ async function init() {
     questTeamPlans:$("#questpilot-team-plans"),
     questHud:$("#questpilot-hud"),questHudColor:$("#questpilot-hud-color"),
     questHudTitle:$("#questpilot-hud-title"),questHudDetail:$("#questpilot-hud-detail"),
-    profile:$("#profile"),floor:$("#floor"),zoomIn:$("#zoom-in"),zoomOut:$("#zoom-out"),
+    profile:$("#profile"),floor:$("#floor"),floorCoverage:$("#floor-coverage"),zoomIn:$("#zoom-in"),zoomOut:$("#zoom-out"),
     fit:$("#fit"),center:$("#center-player"),zoomValue:$("#zoom-value"),mapName:$("#map-name"),
     markerCount:$("#marker-count"),health:$("#health"),details:$("#details"),tacticalWarning:$("#tactical-warning"),missingAsset:$("#missing-asset"),labels:$("#label-mode"),mapStyle:$("#map-style"),credit:$("#map-credit"),calibrate:$("#calibrate"),
     calibrationPanel:$("#calibration-panel"),calibrationMap:$("#calibration-map"),calibrationStatus:$("#calibration-status"),calibrationLandmark:$("#calibration-landmark"),calibrationReference:$("#calibration-reference"),calibrationPosition:$("#calibration-position"),calibrationOffset:$("#calibration-offset"),calibrationSave:$("#calibration-save"),calibrationReset:$("#calibration-reset"),calibrationClose:$("#calibration-close")
