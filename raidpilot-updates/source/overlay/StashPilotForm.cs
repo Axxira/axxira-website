@@ -27,18 +27,24 @@ internal sealed class StashPilotForm : Form
             _status.Text = "F8 détecté dans le menu — lecture de l'inventaire...";
             // FileSystemWatcher often signals Created before Tarkov has
             // finished flushing the PNG. Wait briefly; never delete it.
-            for (var attempt = 0; attempt < 15; attempt++)
+            long previousLength = -1;
+            var stableProbes = 0;
+            for (var attempt = 0; attempt < 20; attempt++)
             {
                 try
                 {
                     var info = new FileInfo(path);
-                    if (info.Exists && info.Length > 4096)
+                    var length = info.Exists ? info.Length : 0;
+                    stableProbes = length > 4096 && length == previousLength
+                        ? stableProbes + 1 : 0;
+                    previousLength = length;
+                    if (stableProbes >= 2)
                     {
                         await ScanAndReviewAsync(path);
                         return;
                     }
                 }
-                catch (IOException) { }
+                catch (IOException) { stableProbes = 0; }
                 await Task.Delay(150);
             }
             _status.Text = "Capture F8 incomplète — relance le scan.";
