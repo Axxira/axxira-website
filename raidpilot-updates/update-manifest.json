@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T15:40:01.2159528+00:00",
+  "publishedAt": "2026-10-25T16:43:56.1748581+00:00",
   "raidPilot": {
-    "version": "0.15.4.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.0-b0.3.10-l0.2.15-aa106045956f/RaidPilot-Overlay-v0.15.4.0-Windows-x64.zip",
-    "sha256": "FD5977E4F4022DD06F2BD50F11F7B865E8AA4E1BCC87AF7F590B06C3E8EB68D1",
-    "sizeBytes": 234512102,
-    "releaseNotes": "Ouverture rapide StashPilot par Ctrl+Alt+P. Le scanner est armé pour 90 secondes dès l'ouverture ou par le bouton « Scanner avec F8 » : le prochain screenshot manuel F8 créé dans le dossier EFT est lu avec l'OCR local et présenté dans une fenêtre de validation. Les captures F8 du recalage automatique RaidPilot ne sont pas utilisées pour ce scan. Bouton Annuler F8, fallback Choisir PNG, aucune reconnaissance d'icônes ni validation automatique des objets/quantités. Le menu de stash doit être visible lors de F8. Les besoins quêtes/planque restent soumis aux données confirmées."
+    "version": "0.15.4.1",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.1-b0.3.10-l0.2.15-06dc46943277/RaidPilot-Overlay-v0.15.4.1-Windows-x64.zip",
+    "sha256": "D6BFDDE8E658D74076E93F58100EFBAC85576D83A1E77E05347BB046E2E1D362",
+    "sizeBytes": 234510112,
+    "releaseNotes": "StashPilot n'exige plus Ctrl+Alt+P ni d'armer le scan quand le joueur est hors raid. Le watcher RaidPilot détecte aussi les nouveaux screenshots du menu dont les noms ne portent pas de coordonnées GPS. Un F8 pris depuis le menu Tarkov ouvre automatiquement StashPilot et lance une lecture OCR locale quand le PNG a fini d'être écrit. Plusieurs scans successifs possibles, sans action en raid. Les résultats OCR restent à vérifier : les icônes seules et quantités incertaines ne sont pas déclarées comme confirmées."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.0-b0.3.10-l0.2.15-aa106045956f/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "1D6866A4B05220315F34FF5F282D689C2C50D97A83B418EB8DE59CC58FC63CD5",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.1-b0.3.10-l0.2.15-06dc46943277/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "5F87690359460771791132756E7936A3538BF19E3BF44FF7EBF82AD6EAE83B51",
     "sizeBytes": 58332207,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.0-b0.3.10-l0.2.15-aa106045956f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "0424D5041E1F0FC379936A2061163652948E686A28976957286ABCDE6ED8CDBF",
-    "sizeBytes": 351101048,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.1-b0.3.10-l0.2.15-06dc46943277/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "F9E6D1E6F69198A7A53DB5156ABA68E69A7101411DAC2E07B1197EC9C223587E",
+    "sizeBytes": 351099096,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.4.1",
+      "raidPilotVersion": "0.15.4.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — F8 seul dans le menu Tarkov ouvre le scan",
+      "details": "StashPilot n'exige plus Ctrl+Alt+P ni d'armer le scan quand le joueur est hors raid. Le watcher RaidPilot détecte aussi les nouveaux screenshots du menu dont les noms ne portent pas de coordonnées GPS. Un F8 pris depuis le menu Tarkov ouvre automatiquement StashPilot et lance une lecture OCR locale quand le PNG a fini d'être écrit. Plusieurs scans successifs possibles, sans action en raid. Les résultats OCR restent à vérifier : les icônes seules et quantités incertaines ne sont pas déclarées comme confirmées."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.4.0",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "Reader visuel 160×90 — fusion de rotation avec Raw Input, contrôles renforcés",
       "details": "Le capteur visuel 160×90 déjà présent peut désormais contribuer à la calibration de rotation (yaw) lorsqu'il observe une rotation pure confirmée par les mouvements de souris horodatés. Les images anciennes ou trop lentes, les changements de fenêtre, les déplacements même brefs entre captures, la visée ADS, les interactions (notamment le maintien de F) et les signaux contradictoires sont ignorés. Les corrections restent bornées par VisualYawCalibration et la capture 64×36 sert de repli lorsqu'aucun signal V2 fiable n'est récent. Capture Windows Graphics Capture toujours désactivée par défaut et uniquement activable par l'utilisateur; le mode visuel GDI reste local. Aucune lecture de la mémoire EFT, aucune injection et aucune collecte d'images sur disque. Les pixels ne donnent pas de distance absolue en mètres : le suivi des coordonnées reste estimé entre deux F8, à valider par le diagnostic CSV. Sept tests ajoutés pour vérifier la fraîcheur des images et le filtrage des actions."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.31",
-      "raidPilotVersion": "0.14.2.31",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Localisation — journal de dérive enrichi et mesures souris/ADS",
-      "details": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
     }
   ]
 }
