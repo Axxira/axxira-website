@@ -51,6 +51,7 @@ internal sealed partial class OverlayForm
                 + $"FOV visuel effectif : {_visualMotionGate.EgomotionHorizontalFieldOfViewDegrees:F1}°\n"
                 + $"Precision V2 : {PrecisionV2Diagnostic()}\n\n"
                 + $"Precision V4 : {PrecisionV4Diagnostic()}\n\n"
+                + $"Navigation CORTEX : {CortexDiagnostic()}\n\n"
                 + "Les écarts sont mesurés aux positions de référence reçues, pas en continu. "
                 + "Les sous-pas de 1 à 5 ms sont des calculs en mémoire, pas des captures. "
                 + "Le suivi ne connaît pas automatiquement chaque collision, épuisement ou changement d'étage.",
@@ -66,6 +67,7 @@ internal sealed partial class OverlayForm
         _precisionUiTimer.Start();
         InitializePrecisionV2();
         InitializePrecisionV4();
+        InitializeCortex();
     }
 
     private bool TryAdvancePrecision(long start, long end, bool sprint, bool slow, double scale,
@@ -147,6 +149,7 @@ internal sealed partial class OverlayForm
         _precisionResiduals.Reset();
         _precisionV2DriftAudit.Reset();
         _precisionV4Fusion.Reset();
+        _cortex.Reset();
         _visualYawCalibration.Reset();
         ResetPrecisionV2();
         _precisionSegmentClean = true; _precisionTicks = _precisionFallbacks = _precisionGaps = 0;
