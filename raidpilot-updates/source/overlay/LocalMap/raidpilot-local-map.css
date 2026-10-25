@@ -248,3 +248,23 @@ html:not(.raidpilot-interactive) #questpilot-panel {display:none}
 #questpilot-steps .qp-step .qp-done-action:hover{background:#226949}
 #questpilot-done .qp-step button {background:#233e54;border:1px solid #5a8ab0;
   padding:6px 10px;min-height:36px;font-size:12px}
+
+/* QuestPilot full planner stays BELOW the map, in document flow. */
+#questpilot-panel{
+ position:relative;left:auto;top:auto;bottom:auto;z-index:3;
+ width:100%;max-width:none;height:clamp(160px,35vh,330px);
+ flex:0 0 auto;overflow-y:auto;overflow-x:hidden;
+ border:0;border-top:2px solid #655b84;border-radius:0;
+ background:#0e1721;padding:10px 12px;box-shadow:none;
+}
+#questpilot-panel.hidden{display:none}
+#questpilot-panel .qp-panel-title{font-size:16px}
+#questpilot-panel .qp-step strong{font-size:13px}
+#questpilot-panel .qp-step small{font-size:12px}
+#questpilot-panel .qp-section-title{font-size:14px}
+#questpilot-panel .qp-task{min-height:39px}
+#questpilot-panel .qp-step{min-height:48px}
+#questpilot-panel .qp-done-action{min-height:36px}
+@media(max-height:560px){
+ #questpilot-panel{height:clamp(110px,30vh,210px)}
+}
