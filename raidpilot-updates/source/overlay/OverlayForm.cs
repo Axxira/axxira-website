@@ -3455,6 +3455,15 @@ internal sealed partial class OverlayForm : Form
                     + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
                 || !File.Exists(path))
                 return;
+            // Reject replayed startup/catch-up screenshots; the user just
+            // pressed F8, so the PNG must have a recent creation timestamp.
+            DateTime createdUtc;
+            try { createdUtc = File.GetCreationTimeUtc(path); }
+            catch (IOException) { return; }
+            var screenshotAge = DateTime.UtcNow - createdUtc;
+            if (screenshotAge < TimeSpan.FromSeconds(-5)
+                || screenshotAge > TimeSpan.FromSeconds(20))
+                return;
 
             OpenStashPilot();
             if (_stashPilotWindow is { IsDisposed: false } window)
