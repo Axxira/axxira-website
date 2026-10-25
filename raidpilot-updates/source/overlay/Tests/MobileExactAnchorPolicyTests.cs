@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MobileExactAnchorPolicyTests
 {
-    internal const int TestCount = 20;
+    internal const int TestCount = 22;
 
     private static bool Ready(
         bool enabled = true,
@@ -52,6 +52,27 @@ internal static class MobileExactAnchorPolicyTests
             Require(!Ready(age: double.NaN)
                 && !Ready(cooldown: double.NaN)
                 && !Ready(age: -1)), failures);
+        Run("F8 silencieux prolonge uniquement un consensus visuel local", () =>
+        {
+            Require(MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, false,
+                0.95, 1.0, 0.3, 8.0));
+        }, failures);
+        Run("F8 silencieux refuse image isolée, atlas partagé et mesure aberrante", () =>
+        {
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.SuperKeyframe, false,
+                0.98, 0.5, 0.2, 5.0));
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, true,
+                0.98, 0.5, 0.2, 5.0));
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, false,
+                0.98, 3.5, 0.2, 5.0));
+            Require(!MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                VisualRelocalizationSource.Consensus, false,
+                double.NaN, 0.5, 0.2, 5.0));
+        }, failures);
         Run("F8 adaptatif attend 12 s quand deux repères visuels sont corroborés", () =>
         {
             Require(!Ready(age: 10, cooldown: 10, uncertainty: 0.8,
