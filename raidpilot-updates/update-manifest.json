@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-24T23:49:30.2025510+00:00",
+  "publishedAt": "2026-10-25T00:08:59.7205294+00:00",
   "raidPilot": {
-    "version": "0.14.2.35",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.35-b0.3.9-l0.2.15-319a286f539f/RaidPilot-Overlay-v0.14.2.35-Windows-x64.zip",
-    "sha256": "7BCC692C95FFCCD9F6329E541869270FDE5A20C40ADF1654B93826A8C227912D",
-    "sizeBytes": 234481432,
-    "releaseNotes": "Sur la carte, chaque objectif personnel marqué terminé disparaît immédiatement; les autres points de la même quête restent affichés. Une section repliable « Étapes terminées » permet de réactiver en un clic un objectif coché manuellement. Les lieux alternatifs d'une seule étape partagent le même statut; les marqueurs des coéquipiers restent indépendants. Une quête entière remise et confirmée par les journaux EFT ne peut pas être remise en cours manuellement. Les journaux EFT disponibles confirment des quêtes entières, pas nécessairement chaque sous-objectif; la validation rapide des étapes se fait manuellement. Deux tests de non-régression ajoutés. Comprend également le correctif de priorité du suivi manuel et masque les distances quand la localisation est incertaine (PR #26 reprise dans cette version). Nouveau bandeau d'objectif placé sous la carte (texte plus grand) et raccourci global Ctrl+Alt+I pour cocher une seule étape ciblée pendant un raid, uniquement si Tarkov est au premier plan. Le raccourci Interagir est transféré à Ctrl+Alt+U pour éviter toute collision. Les étapes terminées sont restaurables manuellement."
+    "version": "0.14.2.36",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.36-b0.3.9-l0.2.15-1f8d65a7c873/RaidPilot-Overlay-v0.14.2.36-Windows-x64.zip",
+    "sha256": "19CD73BD3473281DFD5AD7802F48E585E8AB6F90F3FA22165D28E8FAC4259591",
+    "sizeBytes": 234478359,
+    "releaseNotes": "Ctrl+Alt+I ne coche plus aucun objectif. Ce raccourci ouvre la carte interactive et le panneau QuestPilot avec la liste des quêtes. Chaque objectif non terminé propose un bouton explicite « ✓ Fait »; les étapes cochées manuellement se restaurent via « Étapes terminées » → « Réactiver ce point ». Le bandeau sous la carte et le filtrage des points terminés restent disponibles. Les quêtes remises confirmées par les journaux EFT restent protégées contre une réactivation incorrecte."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.35-b0.3.9-l0.2.15-319a286f539f/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "188E50B812BCCF4EB3FA6B2BE96F828B267072F5E921A7512218CCAA82C1ED32",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.36-b0.3.9-l0.2.15-1f8d65a7c873/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "45FBD15F93F37FCCFD89958ACD0C1EB437F0185AA7799C828F7CE24E6054D769",
     "sizeBytes": 58332195,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.35-b0.3.9-l0.2.15-319a286f539f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "01A168BA5469A030EF9D0FD2FD6F1AE633D7499949015AA94B7682DF6AC1D30F",
-    "sizeBytes": 351067156,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.36-b0.3.9-l0.2.15-1f8d65a7c873/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "B4D1103D6CB9BEF6355D6380D76E9FAF0B4B1F8208E8AFADF9CAEDC6481ED783",
+    "sizeBytes": 351064252,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.36",
+      "raidPilotVersion": "0.14.2.36",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot — Ctrl+Alt+I ouvre carte et quêtes, validation par boutons",
+      "details": "Ctrl+Alt+I ne coche plus aucun objectif. Ce raccourci ouvre la carte interactive et le panneau QuestPilot avec la liste des quêtes. Chaque objectif non terminé propose un bouton explicite « ✓ Fait »; les étapes cochées manuellement se restaurent via « Étapes terminées » → « Réactiver ce point ». Le bandeau sous la carte et le filtrage des points terminés restent disponibles. Les quêtes remises confirmées par les journaux EFT restent protégées contre une réactivation incorrecte."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.35",
@@ -253,16 +263,6 @@
       "date": "2026-10-22",
       "summary": "HOTFIX12 : relais d'équipe Cloudflare bidirectionnel",
       "details": "L'échange des positions entre joueurs utilise désormais un Worker Cloudflare dédié à RaidPilot au lieu du WebSocket tarkov.dev.\nLe code d'escouade reste inchangé; une seule connexion bidirectionnelle par client, reconnexion et séparation des salles.\nLa précision individuelle reste estimée entre les F8."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.11",
-      "raidPilotVersion": "0.14.2.11",
-      "beaconVersion": "0.3.0",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "HOTFIX11 : coéquipiers et changements de carte",
-      "details": "Les positions de coéquipiers appartenant à une autre carte sont retirées immédiatement.\nLes alias de carte et les paquets reçus dans le désordre sont mieux gérés.\nLes changements de carte purgent les marqueurs obsolètes et le diagnostic indique le nombre de coéquipiers."
     }
   ]
 }
