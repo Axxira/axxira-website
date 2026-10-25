@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.4.2",
+      "raidPilotVersion": "0.15.4.2",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — interface minimale et validation de scan F8",
+      "details": "StashPilot montre désormais les objets et leurs décisions en quatre colonnes seulement : objet, quantité, décision, raison. Les réglages d'inventaire et de besoins sont déplacés dans une fenêtre secondaire. En menu Tarkov, F8 lance l'OCR local puis une seule fenêtre permet de corriger et confirmer les noms/quantités reconnus avant de remplacer la liste du dernier scan et de sauvegarder localement. Aucun objet sans besoin confirmé ne reçoit un conseil de vente. L'OCR ne reconnaît pas les icônes seules, et le scan doit être vérifié manuellement avant confirmation. Aucun achat ni vente automatique."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.4.1",
       "raidPilotVersion": "0.15.4.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Precision V3 : capture GPU WGC optionnelle",
       "details": "Ajout du capteur Windows.Graphics.Capture/Direct3D11 dans RaidPilot et Beacon.\nLe GPU est désactivé par défaut et peut être activé depuis l'icône de notification; le capteur GDI reprend automatiquement en cas d'échec.\nLa capture de luminance reste locale, sans accès à la mémoire du jeu. Compatibilité et précision réelle à vérifier en raid."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.16",
-      "raidPilotVersion": "0.14.2.16",
-      "beaconVersion": "0.3.5",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-23",
-      "summary": "Precision V2.2 : meilleure détection du mouvement",
-      "details": "La voie optique 160×90 suit un déplacement d'image plus étendu, avec une grille de points plus dense.\nDes statistiques distinguent les observations visuelles fiables des observations incertaines; la capture s'adapte aux ralentissements.\nLe capteur historique 64×36 et le relais Cloudflare sont conservés."
     }
   ]
 }
