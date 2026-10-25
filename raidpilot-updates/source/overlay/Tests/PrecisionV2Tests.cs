@@ -415,7 +415,17 @@ internal static class PrecisionV2Tests
             var still=Frame(t,VisualEgomotionState.Stationary);
             Require(e.Evaluate(still,t,(nint)1,true,true,
                 RealtimeMotionEvidence.Unknown,RealtimeMotionEvidence.Stationary)
-                ==RealtimeMotionEvidence.Stationary);
+                ==RealtimeMotionEvidence.Unknown);
+            Require(e.Evaluate(still,t,(nint)1,true,true,
+                RealtimeMotionEvidence.Unknown,RealtimeMotionEvidence.Stationary)
+                ==RealtimeMotionEvidence.Unknown);
+            for(var i=1;i<=2;i++){
+                var ts=t+i*Stopwatch.Frequency/5;
+                var observed=Frame(ts,VisualEgomotionState.Stationary);
+                var result=e.Evaluate(observed,ts,(nint)1,true,true,
+                    RealtimeMotionEvidence.Unknown,RealtimeMotionEvidence.Stationary);
+                Require(result==(i==2 ? RealtimeMotionEvidence.Stationary : RealtimeMotionEvidence.Unknown));
+            }
         },failures);
     }
 

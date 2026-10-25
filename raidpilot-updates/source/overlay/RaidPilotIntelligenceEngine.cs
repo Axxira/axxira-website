@@ -10,6 +10,9 @@ namespace RaidPilot.Overlay;
 internal sealed class RaidPilotIntelligenceEngine
 {
     private long _lastFrameAt;
+    private nint _lastWindow;
+    private int _stationaryFrames;
+    private RealtimeMotionEvidence _lastDecisionEvidence;
     private int _contradictions;
     internal long Accepted { get; private set; }
     internal long Rejected { get; private set; }
@@ -19,6 +22,9 @@ internal sealed class RaidPilotIntelligenceEngine
     internal void Reset()
     {
         _lastFrameAt = 0;
+        _lastWindow = nint.Zero;
+        _stationaryFrames = 0;
+        _lastDecisionEvidence = RealtimeMotionEvidence.Unknown;
         _contradictions = 0;
         LastDecision = "Nouvelle session";
     }
@@ -28,57 +34,72 @@ internal sealed class RaidPilotIntelligenceEngine
         bool commanded, bool stableDirection,
         RealtimeMotionEvidence baseline, RealtimeMotionEvidence proposed)
     {
+        if (gameWindow != _lastWindow)
+        {
+            Reset();
+            _lastWindow = gameWindow;
+        }
+        if (!commanded || !stableDirection)
+        {
+            _stationaryFrames = 0;
+            _lastDecisionEvidence = RealtimeMotionEvidence.Unknown;
+            return baseline == RealtimeMotionEvidence.Stationary
+                ? baseline : proposed == RealtimeMotionEvidence.Stationary
+                    ? baseline : proposed;
+        }
         if (frame is not { } f || now < f.CapturedAt
             || f.GameWindow != gameWindow || gameWindow == nint.Zero
             || (now-f.CapturedAt)/(double)Stopwatch.Frequency > 0.30)
         {
-            _contradictions=0;
-            LastDecision="Capture absente ou périmée : modèle de base";
+            _stationaryFrames = 0;
+            _lastDecisionEvidence = baseline;
+            LastDecision="Trame absente ou périmée : modèle de base";
             return baseline;
         }
-
+        // A worker frame is used at most once for fresh evidence. Never
+        // promote a repeated old frame into a stronger stop decision.
         if (f.CapturedAt <= _lastFrameAt)
-            return proposed == RealtimeMotionEvidence.Stationary && _contradictions >= 2
-                ? RealtimeMotionEvidence.Unknown : proposed;
+            return _lastDecisionEvidence;
+        if (_lastFrameAt > 0 &&
+            (f.CapturedAt - _lastFrameAt)/(double)Stopwatch.Frequency > 0.65)
+            _stationaryFrames = 0;
         _lastFrameAt=f.CapturedAt;
         var v=f.Visual;
         var flow=v.Egomotion;
         var reliable=v.CaptureSucceeded && v.CaptureProvenLive
             && flow.IsReliable && flow.Confidence >= 0.80
             && flow.InlierRatio >= 0.74 && flow.InlierFeatureCount >= 9
-            && flow.ResidualPixels <= 0.85
-            && f.ProcessingMilliseconds <= 90;
+            && double.IsFinite(flow.ResidualPixels) && flow.ResidualPixels <= 0.85
+            && double.IsFinite(f.ProcessingMilliseconds)
+            && f.ProcessingMilliseconds >= 0 && f.ProcessingMilliseconds <= 90;
         if (!reliable)
         {
-            _contradictions=0;Rejected++;
+            _stationaryFrames=0;Rejected++;
             LastDecision="Vision non fiable : modèle de base";
-            return baseline;
+            return _lastDecisionEvidence=baseline;
         }
-
-        if (commanded && stableDirection
-            && proposed==RealtimeMotionEvidence.Stationary
-            && flow.State==VisualEgomotionState.Stationary)
+        if (flow.State==VisualEgomotionState.Tracking)
         {
-            _contradictions=0;Accepted++;
-            LastDecision="Arrêt confirmé par plusieurs images";
-            return proposed;
-        }
-        if (commanded && flow.State==VisualEgomotionState.Tracking)
-        {
-            _contradictions=0;Accepted++;
+            _stationaryFrames=0;Accepted++;
             LastDecision="Déplacement visuel confirmé";
-            return proposed==RealtimeMotionEvidence.Stationary
+            return _lastDecisionEvidence=proposed==RealtimeMotionEvidence.Stationary
                 ? RealtimeMotionEvidence.Moving : proposed;
         }
-        if (commanded && proposed==RealtimeMotionEvidence.Stationary
-            && (flow.State!=VisualEgomotionState.Stationary || !stableDirection))
+        if (flow.State==VisualEgomotionState.Stationary
+            && v.State==VisualMotionState.Stationary)
         {
-            _contradictions++;Rejected++;
-            LastDecision="Capteurs contradictoires : arrêt refusé";
-            return RealtimeMotionEvidence.Unknown;
+            _stationaryFrames++;
+            if (_stationaryFrames>=3 && proposed==RealtimeMotionEvidence.Stationary)
+            {
+                Accepted++;
+                LastDecision="Arrêt corroboré par trois trames distinctes";
+                return _lastDecisionEvidence=RealtimeMotionEvidence.Stationary;
+            }
+            LastDecision="Confirmation arrêt "+_stationaryFrames+"/3";
+            return _lastDecisionEvidence=baseline;
         }
-        _contradictions=0;
-        LastDecision="Observations compatibles";
-        return proposed;
+        _stationaryFrames=0;Rejected++;_contradictions++;
+        LastDecision="Preuves contradictoires : repli prudent";
+        return _lastDecisionEvidence=baseline;
     }
 }
