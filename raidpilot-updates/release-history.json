@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.0.0",
+      "raidPilotVersion": "0.15.0.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "CORTEX Core — fusion de confiance, apprentissage des écarts F8 et navigation adaptive",
+      "details": "Première phase de CORTEX : superviseur local connecté aux mouvements, aux corrections visuelles réellement appliquées et à l'audit exact F8. Il suit la session carte/raid/fenêtre, rejette les observations périmées ou incohérentes, comptabilise les corrections visuelles corroborées et retient la dérive réelle observée aux F8 sans enregistrer de coordonnées. Une erreur F8 importante bloque temporairement l'espacement des captures; une nouvelle confiance exige deux mesures correctes. Deux corrections visuelles indépendantes sont nécessaires pour l'intervalle maximal de 12 s. Mode CORTEX désactivable depuis le menu pour comparer avec l'ancien moteur. Il ne s'agit pas encore d'un modèle neuronal ou d'un SLAM complet; précision à confirmer en raid."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.45",
       "raidPilotVersion": "0.14.2.45",
       "beaconVersion": "0.3.10",
