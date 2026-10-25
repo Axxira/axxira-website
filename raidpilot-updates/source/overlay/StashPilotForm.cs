@@ -247,6 +247,14 @@ internal sealed class StashPilotForm : Form
             var lines = await StashPilotImageScanner.ScanAsync(
                 screenshotPath, CancellationToken.None);
             var suggestions = StashPilotOcrProposals.Parse(lines);
+            // Cross-check OCR names against the current Tarkov item catalogue.
+            // Unknown/ambiguous labels are NOT silently mapped to an item ID.
+            var catalogue = await StashPilotItemCatalog.LoadAsync(CancellationToken.None);
+            var recognized = suggestions.Select(item =>
+            {
+                var match = StashPilotItemCatalog.Resolve(item.Item, catalogue);
+                return item with { Item = match.Known ? match.Name : item.Item };
+            }).ToArray();
             if (suggestions.Count == 0)
             {
                 _status.Text = "Aucun nom et quantité fiables détectés. Rien n'a été changé.";
@@ -275,7 +283,7 @@ internal sealed class StashPilotForm : Form
                 Multiline = true, ScrollBars = ScrollBars.Vertical,
                 Dock = DockStyle.Fill, Font = new Font("Consolas", 11),
                 Text = string.Join(Environment.NewLine,
-                    suggestions.Select(i => i.Item + " x" + i.Quantity))
+                    recognized.Select(i => i.Item + " x" + i.Quantity))
             };
             var confirm = new Button
             {
