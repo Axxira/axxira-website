@@ -1761,6 +1761,13 @@ internal sealed class BeaconForm : Form
             || string.IsNullOrWhiteSpace(_currentMap)
             || !_tarkovForeground
             || !CanTrackGameInput()
+            // We cannot prove that an area is enemy-free. Capture only in a
+            // conservative idle state, never while interacting, firing, ADS,
+            // or reloading. F is checked explicitly immediately before send.
+            || IsKeyDown(Keys.F)
+            || IsKeyDown(Keys.LButton)
+            || IsKeyDown(Keys.RButton)
+            || IsKeyDown(Keys.R)
             || !ScreenshotHotkeySender.CanSend(_screenshotBinding))
         {
             return;
