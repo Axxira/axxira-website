@@ -236,3 +236,15 @@ html:not(.raidpilot-interactive) #questpilot-panel {display:none}
 .qp-team-step small{display:block;color:#9fb4c6;font-size:11px}
 .qp-step input:disabled{opacity:.7;cursor:not-allowed}
 .qp-task .qp-count{max-width:140px}
+
+/* QuestPilot quick actions: accessible without accidental row activation. */
+#questpilot-steps .qp-step {align-items:center;gap:9px;min-height:50px}
+#questpilot-steps .qp-step .qp-done-action {
+  flex:0 0 auto;width:auto;min-width:76px;min-height:38px;
+  text-align:center;font-size:13px;font-weight:700;
+  background:#174a36;color:#ddffec;border:1px solid #379e70;
+  border-radius:7px;padding:6px 10px;
+}
+#questpilot-steps .qp-step .qp-done-action:hover{background:#226949}
+#questpilot-done .qp-step button {background:#233e54;border:1px solid #5a8ab0;
+  padding:6px 10px;min-height:36px;font-size:12px}
