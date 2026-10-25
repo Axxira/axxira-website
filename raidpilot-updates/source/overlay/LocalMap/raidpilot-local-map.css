@@ -270,7 +270,7 @@ html:not(.raidpilot-interactive) #calibration-panel{display:none}
 }
 
 /* QuestPilot remains present; no misleading close control. */
-#questpilot-close{display:none}
+#questpilot-close{display:inline-flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer}
 
 /* QuestPilot 2026 raid-only professional compact layout. */
 #questpilot-panel{height:clamp(215px,42vh,410px);padding:14px 18px;
