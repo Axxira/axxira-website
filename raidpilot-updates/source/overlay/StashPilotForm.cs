@@ -241,76 +241,83 @@ internal sealed class StashPilotForm : Form
 
     private async Task ScanAndReviewAsync(string screenshotPath)
     {
-            try
+        try
+        {
+            _status.Text = "Lecture de la capture F8...";
+            var lines = await StashPilotImageScanner.ScanAsync(
+                screenshotPath, CancellationToken.None);
+            var suggestions = StashPilotOcrProposals.Parse(lines);
+            if (suggestions.Count == 0)
             {
-                var lines = await StashPilotImageScanner.ScanAsync(
-                    screenshotPath, CancellationToken.None);
-                using var review = new Form
-                {
-                    Text = "StashPilot — lignes OCR à vérifier",
-                    Size = new Size(790, 570),
-                    StartPosition = FormStartPosition.CenterParent
-                };
-                var editor = new TextBox
-                {
-                    Multiline = true, ScrollBars = ScrollBars.Both,
-                    Dock = DockStyle.Fill,
-                    Text = string.Join(Environment.NewLine, lines),
-                    Font = new Font("Consolas", 10)
-                };
-                var footer = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48 };
-                var toInventory = new Button { Text = "Joindre à inventaire (non confirmé)", AutoSize = true };
-                var toObjectives = new Button { Text = "Joindre aux objectifs (non confirmé)", AutoSize = true };
-                var propose = new Button
-                {
-                    Text = "Proposer quantités (à confirmer)",
-                    AutoSize = true
-                };
-                footer.Controls.AddRange([toInventory, toObjectives, propose]);
-                propose.Click += (_, _) =>
-                {
-                    var candidates = StashPilotOcrProposals.Parse(editor.Lines);
-                    if (candidates.Count == 0)
-                    {
-                        MessageBox.Show(review,
-                            "Aucune ligne au format « Boulons x4 » ou « 4 x Boulons » reconnue.",
-                            "StashPilot", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        return;
-                    }
-                    _inventory.AppendText(Environment.NewLine
-                        + "# PROPOSITIONS OCR : vérifier identité, quantité et FIR."
-                        + Environment.NewLine
-                        + StashPilotOcrProposals.AsReviewLines(candidates));
-                    review.Close();
-                };
-                toInventory.Click += (_, _) =>
-                {
-                    _inventory.AppendText(Environment.NewLine + "# OCR non vérifié, corriger les quantités et le nom" +
-                        Environment.NewLine + string.Join(Environment.NewLine,
-                            StashPilotImageScanner.FilterCandidates(editor.Lines)
-                                .Select(line => "# OCR : " + line)));
-                    review.Close();
-                };
-                toObjectives.Click += (_, _) =>
-                {
-                    _requirements.AppendText(Environment.NewLine +
-                        string.Join(Environment.NewLine,
-                            StashPilotImageScanner.FilterCandidates(editor.Lines)
-                                .Select(line => "# OCR : " + line)));
-                    review.Close();
-                };
-                review.Controls.Add(editor);
-                review.Controls.Add(footer);
-                review.ShowDialog(this);
-                _status.Text = "OCR importé comme notes non vérifiées. Confirme manuellement chaque objet et quantité avant analyse.";
+                _status.Text = "Aucun nom et quantité fiables détectés. Rien n'a été changé.";
+                MessageBox.Show(this,
+                    "Le texte de cette capture ne permet pas d'identifier les objets. " +
+                    "Les icônes seules ne sont pas encore reconnues. " +
+                    "Essaie une capture avec les noms et quantités visibles.",
+                    "StashPilot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
             }
-            catch (Exception error) when (error is IOException or UnauthorizedAccessException
-                or ArgumentException or NotSupportedException
-                or System.Runtime.InteropServices.COMException)
+            using var review = new Form
             {
-                MessageBox.Show(this, "Lecture impossible : " + error.Message,
-                    "StashPilot OCR", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+                Text = "StashPilot — confirmer le scan",
+                Size = new Size(570, 460),
+                StartPosition = FormStartPosition.CenterParent,
+                BackColor = Color.FromArgb(17, 23, 30), ForeColor = Color.White
+            };
+            var heading = new Label
+            {
+                Text = "Vérifie les objets et quantités. Corrige les erreurs avant de confirmer.",
+                Dock = DockStyle.Top, Height = 56,
+                ForeColor = Color.White, Padding = new Padding(10)
+            };
+            var editor = new TextBox
+            {
+                Multiline = true, ScrollBars = ScrollBars.Vertical,
+                Dock = DockStyle.Fill, Font = new Font("Consolas", 11),
+                Text = string.Join(Environment.NewLine,
+                    suggestions.Select(i => i.Item + " x" + i.Quantity))
+            };
+            var confirm = new Button
+            {
+                Text = "Confirmer mon inventaire",
+                Dock = DockStyle.Bottom, Height = 48
+            };
+            confirm.Click += (_, _) =>
+            {
+                var verified = StashPilotOcrProposals.Parse(editor.Lines);
+                if (verified.Count == 0)
+                {
+                    MessageBox.Show(review, "Aucun objet valide à confirmer.",
+                        "StashPilot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                // The user explicitly checked names and quantities. Do not
+                // claim Found-in-Raid from OCR or mark a sale as safe.
+                var inventoryText = string.Join(Environment.NewLine,
+                    verified.Select(i => i.Item + ";" + i.Quantity + ";;CONFIRMÉ"));
+                if (!StashPilotWorkspace.TrySave(inventoryText, _requirements.Text))
+                {
+                    MessageBox.Show(review, "Impossible d'enregistrer le scan.",
+                        "StashPilot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                _inventory.Text = inventoryText;
+                Analyze();
+                review.Close();
+            };
+            review.Controls.Add(editor);
+            review.Controls.Add(confirm);
+            review.Controls.Add(heading);
+            review.ShowDialog(this);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException
+            or ArgumentException or NotSupportedException
+            or System.Runtime.InteropServices.COMException)
+        {
+            _status.Text = "Scan impossible. Aucun changement enregistré.";
+            MessageBox.Show(this, "Lecture impossible : " + error.Message,
+                "StashPilot OCR", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private static Control CreatePanel(string title, TextBox editor)
