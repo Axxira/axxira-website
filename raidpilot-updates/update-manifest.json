@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T03:08:58.9824937+00:00",
+  "publishedAt": "2026-10-25T03:36:11.6973267+00:00",
   "raidPilot": {
-    "version": "0.14.2.43",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.43-b0.3.10-l0.2.15-c1e749a348b6/RaidPilot-Overlay-v0.14.2.43-Windows-x64.zip",
-    "sha256": "71825AA0DB60D513EE79C9BBFCA39481DA7E0C07E82CCAC29DE65F753FDC7C1E",
-    "sizeBytes": 234484750,
-    "releaseNotes": "RaidPilot 0.14.2.43 reste inchangé dans cette publication."
+    "version": "0.14.2.44",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.44-b0.3.10-l0.2.15-369be1a35add/RaidPilot-Overlay-v0.14.2.44-Windows-x64.zip",
+    "sha256": "055C61CA8AD2567E8521C1A36B76805F0517C743A6AA8DB38B6287599C0AB3B5",
+    "sizeBytes": 234489147,
+    "releaseNotes": "Active par défaut les recalages F8 mobiles pour les installations sans préférence sauvegardée, avec intervalle minimal de quatre secondes, raccourci de capture dédié F6–F12 et première ancre exacte requise. Respecte le refus explicite déjà enregistré. Bloque toute capture automatique lorsque F, R, tir ou visée sont actifs. La précision reste à mesurer en raid; aucun ennemi n'est détecté directement."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.43-b0.3.10-l0.2.15-c1e749a348b6/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "065A13AAC9D2930AAD91ED9A6981D8C2C304A74E38915CA9D3CBDB0EB5A23B10",
-    "sizeBytes": 58332207,
-    "releaseNotes": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.44-b0.3.10-l0.2.15-369be1a35add/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "4A943178F6337F88A122492D6FA6807622CFE69550BB76DC9809C4AB6813E806",
+    "sizeBytes": 58332208,
+    "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.43-b0.3.10-l0.2.15-c1e749a348b6/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "A57A97EB1EBAF01A6B5797F9A221BA974872D679179C4FF8F4FCDF5733147CA7",
-    "sizeBytes": 351072159,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.44-b0.3.10-l0.2.15-369be1a35add/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "7A544478979FE00F74A2DB8942C9F5CF89233034C5527C91C1B27215F02CE9D3",
+    "sizeBytes": 351076738,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.44",
+      "raidPilotVersion": "0.14.2.44",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "F8 intelligent en mouvement activé au premier lancement",
+      "details": "Active par défaut les recalages F8 mobiles pour les installations sans préférence sauvegardée, avec intervalle minimal de quatre secondes, raccourci de capture dédié F6–F12 et première ancre exacte requise. Respecte le refus explicite déjà enregistré. Bloque toute capture automatique lorsque F, R, tir ou visée sont actifs. La précision reste à mesurer en raid; aucun ennemi n'est détecté directement."
+    },
     {
       "component": "beacon",
       "version": "0.3.10",
@@ -253,16 +263,6 @@
       "date": "2026-10-23",
       "summary": "Carte locale : avertissement quand le GPS cesse de recevoir des positions",
       "details": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.20",
-      "raidPilotVersion": "0.14.2.20",
-      "beaconVersion": "0.3.8",
-      "launcherVersion": "0.2.13",
-      "date": "2026-10-23",
-      "summary": "Precision V3.2 : écrans ultralarges et suivi GPU plus stable",
-      "details": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
     }
   ]
 }
