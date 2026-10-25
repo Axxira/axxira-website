@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.2.1",
+      "raidPilotVersion": "0.15.2.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — progression conservée localement entre les sessions",
+      "details": "Le conseiller StashPilot possède maintenant une sauvegarde locale versionnée et atomique de l'inventaire et des objectifs saisis/confirmés. Boutons explicites Sauvegarder et Charger, restauration automatique au démarrage si le fichier est valide. Le fichier reste dans %LOCALAPPDATA%/RaidPilot, pas de transmission réseau, limites de taille et gestion des données corrompues. Le scan automatique d'inventaire, planque et quêtes n'est pas encore implémenté; aucune vente automatique n'est effectuée."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.2.0",
       "raidPilotVersion": "0.15.2.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-22",
       "summary": "HOTFIX11 : coéquipiers et changements de carte",
       "details": "Les positions de coéquipiers appartenant à une autre carte sont retirées immédiatement.\nLes alias de carte et les paquets reçus dans le désordre sont mieux gérés.\nLes changements de carte purgent les marqueurs obsolètes et le diagnostic indique le nombre de coéquipiers."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.10",
-      "raidPilotVersion": "0.14.2.10",
-      "beaconVersion": "0.3.0",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "HOTFIX10 : cartes HD locales et profils préservés",
-      "details": "Intégration des cartes HD, des catalogues de quêtes et d'objets et des filtres de dangers.\nCorrection des changements de raid sur la même carte; prise en charge de plusieurs étages sur Factory et The Lab.\nLe Launcher conserve les préférences cartographiques et une version précédente pour retour arrière."
     }
   ]
 }
