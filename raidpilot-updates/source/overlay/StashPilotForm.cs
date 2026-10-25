@@ -9,6 +9,15 @@ namespace RaidPilot.Overlay;
 /// </summary>
 internal sealed class StashPilotForm : Form
 {
+    private readonly StashPilotF8Gate _f8Gate = new();
+    internal bool HasPendingF8Scan => _f8Gate.IsArmed;
+    internal bool TryReceiveF8(string path, long now, bool automatic, bool verified)
+    {
+        if (!_f8Gate.TryConsume(now, automatic, verified)) return false;
+        _ = ScanAndReviewAsync(path);
+        return true;
+    }
+
     private readonly TextBox _inventory = new()
     {
         Multiline = true, ScrollBars = ScrollBars.Vertical,
@@ -77,12 +86,12 @@ internal sealed class StashPilotForm : Form
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 170));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         var title = new Label
         {
-            Text = "STASHPILOT — 1. Capture PNG  →  2. Vérifier  →  3. Analyser",
+            Text = "STASHPILOT — F8 dans le stash  →  Vérifier  →  Analyser",
             Dock = DockStyle.Fill, Font = new Font("Segoe UI", 14, FontStyle.Bold),
             ForeColor = Color.FromArgb(104, 226, 212),
             TextAlign = ContentAlignment.MiddleLeft
@@ -98,7 +107,7 @@ internal sealed class StashPilotForm : Form
         var actions = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight,
-            AutoSize = false, WrapContents = false
+            AutoSize = false, WrapContents = true, AutoScroll = true
         };
         var calculate = new Button { Text = "Analyser (Ctrl+Entrée)", AutoSize = true, Height = 35 };
         calculate.Click += (_, _) => Analyze();
@@ -134,21 +143,68 @@ internal sealed class StashPilotForm : Form
             _requirements.Text = needs;
             Analyze();
         };
-        var scan = new Button { Text = "1. Scanner PNG", AutoSize = true, Height = 35 };
-        scan.Click += async (_, _) =>
+        var scan = new Button { Text = "1. Scanner avec F8", AutoSize = true, Height = 35 };
+        scan.Click += (_, _) =>
+        {
+            _f8Gate.Arm(System.Diagnostics.Stopwatch.GetTimestamp());
+            _status.Text = "Scan armé pour 90 secondes : ouvre ton inventaire dans Tarkov, puis appuie sur F8 une fois.";
+        };
+        var fromFile = new Button { Text = "Choisir PNG", AutoSize = true, Height = 35 };
+        fromFile.Click += async (_, _) =>
         {
             using var dialog = new OpenFileDialog
             {
                 Filter = "Capture Tarkov PNG (*.png)|*.png",
-                Title = "Choisir une capture — lecture locale uniquement",
+                Title = "Choisir une capture PNG",
                 CheckFileExists = true
             };
-            if (dialog.ShowDialog(this) != DialogResult.OK) return;
-            scan.Enabled = false;
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+                await ScanAndReviewAsync(dialog.FileName);
+        };
+        var cancel = new Button { Text = "Annuler F8", AutoSize = true, Height = 35 };
+        cancel.Click += (_, _) =>
+        {
+            _f8Gate.Cancel();
+            _status.Text = "Scan F8 annulé.";
+        };
+        actions.Controls.AddRange([scan, cancel, fromFile, calculate,
+            pasteInventory, pasteNeeds, save, reload, copyResult]);
+        layout.Controls.Add(actions, 0, 2);
+        layout.SetColumnSpan(actions, 2);
+
+        var bottom = new Panel { Dock = DockStyle.Fill };
+        bottom.Controls.Add(_results);
+        bottom.Controls.Add(_status);
+        layout.Controls.Add(bottom, 0, 3);
+        layout.SetColumnSpan(bottom, 2);
+        Controls.Add(layout);
+        _results.Columns.Add("item", "Objet");
+        _results.Columns.Add("owned", "Possédé");
+        _results.Columns.Add("status", "Conseil");
+        _results.Columns.Add("required", "Besoin vérifié");
+        _results.Columns.Add("keep", "Réserver");
+        _results.Columns.Add("surplus", "Excédent théorique");
+        _results.Columns.Add("fir", "FIR manquant");
+        _results.Columns.Add("why", "Pour");
+        if (StashPilotWorkspace.TryLoad(out var storedInventory, out var storedNeeds))
+        {
+            _inventory.Text = storedInventory;
+            _requirements.Text = storedNeeds;
+        }
+        Analyze();
+        Shown += (_, _) =>
+        {
+            _f8Gate.Arm(System.Diagnostics.Stopwatch.GetTimestamp());
+            _status.Text = "Scan prêt : ouvre l'inventaire Tarkov et appuie sur F8. Le prochain F8 manuel sera analysé (90 s).";
+        };
+    }
+
+    private async Task ScanAndReviewAsync(string screenshotPath)
+    {
             try
             {
                 var lines = await StashPilotImageScanner.ScanAsync(
-                    dialog.FileName, CancellationToken.None);
+                    screenshotPath, CancellationToken.None);
                 using var review = new Form
                 {
                     Text = "StashPilot — lignes OCR à vérifier",
@@ -215,33 +271,6 @@ internal sealed class StashPilotForm : Form
                 MessageBox.Show(this, "Lecture impossible : " + error.Message,
                     "StashPilot OCR", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            finally { scan.Enabled = true; }
-        };
-        actions.Controls.AddRange([scan, calculate, pasteInventory, pasteNeeds,
-            save, reload, copyResult]);
-        layout.Controls.Add(actions, 0, 2);
-        layout.SetColumnSpan(actions, 2);
-
-        var bottom = new Panel { Dock = DockStyle.Fill };
-        bottom.Controls.Add(_results);
-        bottom.Controls.Add(_status);
-        layout.Controls.Add(bottom, 0, 3);
-        layout.SetColumnSpan(bottom, 2);
-        Controls.Add(layout);
-        _results.Columns.Add("item", "Objet");
-        _results.Columns.Add("owned", "Possédé");
-        _results.Columns.Add("status", "Conseil");
-        _results.Columns.Add("required", "Besoin vérifié");
-        _results.Columns.Add("keep", "Réserver");
-        _results.Columns.Add("surplus", "Excédent théorique");
-        _results.Columns.Add("fir", "FIR manquant");
-        _results.Columns.Add("why", "Pour");
-        if (StashPilotWorkspace.TryLoad(out var storedInventory, out var storedNeeds))
-        {
-            _inventory.Text = storedInventory;
-            _requirements.Text = storedNeeds;
-        }
-        Analyze();
     }
 
     private static Control CreatePanel(string title, TextBox editor)
