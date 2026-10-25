@@ -1114,6 +1114,11 @@ function renderQuestPilotHud(){
     +(next.optional?" · facultatif":"");
 }
 
+function questPilotClosePanel(){
+  if(!refs.questPanel)return false;
+  refs.questPanel.classList.add("hidden");
+  return true;
+}
 function questPilotOpenPanel(){
   if(!refs.questPanel)return false;
   refs.questPanel.classList.remove("hidden");
@@ -1666,6 +1671,7 @@ const api = {
       renderQuestPilotPanel();render();return value;
     },
     questPilotOpenPanel,
+    questPilotClosePanel,
     questPilotCompleteFocused,
     questPilotStepDone:(id,done)=>{
       if(!state.questPilot)return false;
