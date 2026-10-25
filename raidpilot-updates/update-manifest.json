@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T14:54:12.0833511+00:00",
+  "publishedAt": "2026-10-25T15:24:12.4385944+00:00",
   "raidPilot": {
-    "version": "0.15.3.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.1-b0.3.10-l0.2.15-16347c07a38f/RaidPilot-Overlay-v0.15.3.1-Windows-x64.zip",
-    "sha256": "767A67AED326968855F6A8C90E6CB1245709657454CAE8502478E65310A74A9C",
-    "sizeBytes": 234510536,
-    "releaseNotes": "Le lecteur OCR propose maintenant les quantités au format « Boulons x4 » ou « 4 x Boulons » depuis des captures choisies par le joueur. L'import dans la liste d'inventaire reste non confirmé, sans statut FIR déduit, et exige de vérifier chaque ligne. Les inconnus ne sont jamais classés automatiquement comme objets à vendre. Trois tests de non-régression ajoutés; la reconnaissance des icônes et la synchronisation complète des quêtes et de la planque restent à développer."
+    "version": "0.15.3.2",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.2-b0.3.10-l0.2.15-1a8c145815ee/RaidPilot-Overlay-v0.15.3.2-Windows-x64.zip",
+    "sha256": "44D481444B74B332817960D3FE77588ED99B606B8B0A74BF6976F5DD5D7F67D8",
+    "sizeBytes": 234511283,
+    "releaseNotes": "StashPilot s'ouvre désormais directement avec Ctrl+Alt+P, ou depuis le menu RaidPilot; une fenêtre déjà ouverte est ramenée au premier plan au lieu d'être dupliquée. Les actions suivent l'ordre Scanner PNG puis Analyser. Raccourcis Ctrl+Entrée pour analyser et Ctrl+S pour sauvegarder la progression localement. La reconnaissance OCR reste assistée et les objets doivent être confirmés manuellement."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.1-b0.3.10-l0.2.15-16347c07a38f/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "29FA741D3F7D261F12B58175D8F67A77B1A35670734B5D9245FC3E15077FBBEA",
-    "sizeBytes": 58332207,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.2-b0.3.10-l0.2.15-1a8c145815ee/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "8B2B81E4A45466E79D2255D9BFA587CDB79585916C9746D7E8D2CFD894FBD31E",
+    "sizeBytes": 58332208,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.1-b0.3.10-l0.2.15-16347c07a38f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "E9C5A779BAC708C4030E5347BA4240458DB98D379B2B89F823106C246643EF89",
-    "sizeBytes": 351099403,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.2-b0.3.10-l0.2.15-1a8c145815ee/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "518F3286AD5FF900DDE10D23390B30CA7ADC607766332AD16DE8BEC05F17CDCD",
+    "sizeBytes": 351100174,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.3.2",
+      "raidPilotVersion": "0.15.3.2",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — ouverture instantanée et interface plus rapide",
+      "details": "StashPilot s'ouvre désormais directement avec Ctrl+Alt+P, ou depuis le menu RaidPilot; une fenêtre déjà ouverte est ramenée au premier plan au lieu d'être dupliquée. Les actions suivent l'ordre Scanner PNG puis Analyser. Raccourcis Ctrl+Entrée pour analyser et Ctrl+S pour sauvegarder la progression localement. La reconnaissance OCR reste assistée et les objets doivent être confirmés manuellement."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.3.1",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "Diagnostic localisation F8 — correction CSV et synchronisation privée",
       "details": "Correctif de génération du diagnostic-localisation.csv : les observations F8 acceptées sont désormais consignées même lorsqu'il n'existe pas d'historique de pose, avec statut no_historical_pose plutôt qu'une comparaison inventée. Conserve la mesure des écarts lorsque l'historique est disponible, et la copie opt-in vers un dossier privé synchronisé. Version augmentée pour garantir la détection de cette mise à jour par les launchers. La précision du suivi entre F8 reste à améliorer à partir de mesures réelles."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.29",
-      "raidPilotVersion": "0.14.2.29",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot pratique — toutes les quêtes recherchables, étapes sans GPS, équipe et HUD optimisé",
-      "details": "QuestPilot simplifie la préparation et le suivi des raids : la recherche dans « Mes quêtes » porte désormais sur toutes les cartes et sur le texte des objectifs, même sans coordonnées publiques. Les quêtes non géolocalisées restent sélectionnables et leurs étapes apparaissent dans « Autres étapes · sans lieu précis », avec des cases manuelles persistantes et une distinction claire entre la coche du joueur et la remise de quête confirmée par un journal EFT. Les marqueurs numérotés continuent d'utiliser la même couleur par quête; seuls les objectifs possédant une position fiable sont numérotés sur la carte 1/2/3, tandis que les autres sont conservés dans le suivi sans produire de faux points. Les préparatifs (clé, objet, balise, équipement) couvrent aussi les objectifs sans emplacement, sans prétendre lire l'inventaire. Nouvelle section « Objectifs communs à l'escouade » à l'intérieur de « Mes quêtes », distinguant la progression personnelle de la progression importée ou reçue en direct, avec mention explicite « coché par l'ami » vs « à faire ». Les repères appartenant seulement à l'équipe ne changent plus le focus de la propre quête du joueur. La boucle de HUD à 10Hz interroge seulement le prochain objectif pertinent en temps linéaire O(n), au lieu de recalculer toute la tournée de proximité O(n² log n) en permanence; la liste de planification détaillée reste dans le panneau. Tests de non-régression sur la recherche transcartes, les balises numérotées, les étapes non géolocalisées, les plans d'équipe et l'état de confiance. Aucun déploiement Cloudflare en production n'est effectué dans cette version : le partage manuel RPQ1 fonctionne, et le partage direct demeure bloqué tant que le relais n'annonce pas features.questplan=true et ne passe pas un test WebSocket bidirectionnel. L'ordre de visite n'est pas une route garantie entre bâtiments. Versions Beacon 0.3.9 et Launcher 0.2.15 inchangées."
     }
   ]
 }
