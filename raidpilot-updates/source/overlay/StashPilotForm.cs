@@ -118,126 +118,113 @@ internal sealed class StashPilotForm : Form
         FormBorderStyle = FormBorderStyle.Sizable;
         ShowInTaskbar = true;
 
-        var layout = new TableLayoutPanel
+        // Essential screen: one instruction, one results table, advanced data hidden.
+        var root = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 4,
-            Padding = new Padding(12)
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4,
+            Padding = new Padding(16)
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 170));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 84));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
 
-        var title = new Label
+        var heading = new Label
         {
-            Text = "STASHPILOT — F8 dans le stash  →  Vérifier  →  Analyser",
-            Dock = DockStyle.Fill, Font = new Font("Segoe UI", 14, FontStyle.Bold),
-            ForeColor = Color.FromArgb(104, 226, 212),
-            TextAlign = ContentAlignment.MiddleLeft
+            Text = "STASHPILOT  •  Ouvre ton inventaire dans Tarkov, puis F8",
+            Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
+            Font = new Font("Segoe UI", 16, FontStyle.Bold),
+            ForeColor = Color.FromArgb(104, 226, 212)
         };
-        layout.Controls.Add(title, 0, 0);
-        layout.SetColumnSpan(title, 2);
+        root.Controls.Add(heading, 0, 0);
 
-        var inventoryPanel = CreatePanel("INVENTAIRE — une ligne par objet", _inventory);
-        var needsPanel = CreatePanel("OBJECTIFS — quêtes et modules de planque", _requirements);
-        layout.Controls.Add(inventoryPanel, 0, 1);
-        layout.Controls.Add(needsPanel, 1, 1);
+        _results.Columns.Add("item", "Objet");
+        _results.Columns.Add("owned", "Quantité");
+        _results.Columns.Add("status", "Décision");
+        _results.Columns.Add("why", "Pourquoi");
+        _results.Columns["item"]!.FillWeight = 30;
+        _results.Columns["owned"]!.FillWeight = 12;
+        _results.Columns["status"]!.FillWeight = 20;
+        _results.Columns["why"]!.FillWeight = 38;
+        root.Controls.Add(_results, 0, 1);
 
         var actions = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight,
-            AutoSize = false, WrapContents = true, AutoScroll = true
+            Dock = DockStyle.Fill, WrapContents = false,
+            FlowDirection = FlowDirection.LeftToRight
         };
-        var calculate = new Button { Text = "Analyser (Ctrl+Entrée)", AutoSize = true, Height = 35 };
-        calculate.Click += (_, _) => Analyze();
-        var pasteInventory = new Button { Text = "Coller inventaire", AutoSize = true, Height = 35 };
-        pasteInventory.Click += (_, _) => { if (Clipboard.ContainsText()) _inventory.Text = Clipboard.GetText(); };
-        var pasteNeeds = new Button { Text = "Coller objectifs", AutoSize = true, Height = 35 };
-        pasteNeeds.Click += (_, _) => { if (Clipboard.ContainsText()) _requirements.Text = Clipboard.GetText(); };
-        var copyResult = new Button { Text = "Copier résultats", AutoSize = true, Height = 35 };
-        copyResult.Click += (_, _) =>
-        {
-            var rows = _results.Rows.Cast<DataGridViewRow>()
-                .Where(r => !r.IsNewRow)
-                .Select(r => string.Join("; ", r.Cells.Cast<DataGridViewCell>()
-                    .Select(c => Convert.ToString(c.Value) ?? "")));
-            Clipboard.SetText(string.Join(Environment.NewLine, rows));
-        };
-        var save = new Button { Text = "Sauvegarder sur ce PC", AutoSize = true, Height = 35 };
-        save.Click += (_, _) =>
-        {
-            _status.Text = StashPilotWorkspace.TrySave(_inventory.Text, _requirements.Text)
-                ? "Progression enregistrée localement. Aucune synchronisation réseau."
-                : "Sauvegarde impossible — aucune donnée modifiée.";
-        };
-        var reload = new Button { Text = "Charger ma progression", AutoSize = true, Height = 35 };
-        reload.Click += (_, _) =>
-        {
-            if (!StashPilotWorkspace.TryLoad(out var items, out var needs))
-            {
-                _status.Text = "Aucune progression locale valide trouvée.";
-                return;
-            }
-            _inventory.Text = items;
-            _requirements.Text = needs;
-            Analyze();
-        };
-        var scan = new Button { Text = "1. Scanner avec F8", AutoSize = true, Height = 35 };
-        scan.Click += (_, _) =>
-        {
-            _f8Gate.Arm(System.Diagnostics.Stopwatch.GetTimestamp());
-            _status.Text = "Scan armé pour 90 secondes : ouvre ton inventaire dans Tarkov, puis appuie sur F8 une fois.";
-        };
-        var fromFile = new Button { Text = "Choisir PNG", AutoSize = true, Height = 35 };
+        var details = new Button { Text = "Corriger mes données", AutoSize = true };
+        details.Click += (_, _) => OpenDetails();
+        var fromFile = new Button { Text = "Ouvrir une capture", AutoSize = true };
         fromFile.Click += async (_, _) =>
         {
             using var dialog = new OpenFileDialog
             {
                 Filter = "Capture Tarkov PNG (*.png)|*.png",
-                Title = "Choisir une capture PNG",
                 CheckFileExists = true
             };
             if (dialog.ShowDialog(this) == DialogResult.OK)
                 await ScanAndReviewAsync(dialog.FileName);
         };
-        var cancel = new Button { Text = "Annuler F8", AutoSize = true, Height = 35 };
-        cancel.Click += (_, _) =>
-        {
-            _f8Gate.Cancel();
-            _status.Text = "Scan F8 annulé.";
-        };
-        actions.Controls.AddRange([scan, cancel, fromFile, calculate,
-            pasteInventory, pasteNeeds, save, reload, copyResult]);
-        layout.Controls.Add(actions, 0, 2);
-        layout.SetColumnSpan(actions, 2);
+        actions.Controls.AddRange([details, fromFile]);
+        root.Controls.Add(actions, 0, 2);
+        root.Controls.Add(_status, 0, 3);
+        Controls.Add(root);
 
-        var bottom = new Panel { Dock = DockStyle.Fill };
-        bottom.Controls.Add(_results);
-        bottom.Controls.Add(_status);
-        layout.Controls.Add(bottom, 0, 3);
-        layout.SetColumnSpan(bottom, 2);
-        Controls.Add(layout);
-        _results.Columns.Add("item", "Objet");
-        _results.Columns.Add("owned", "Possédé");
-        _results.Columns.Add("status", "Conseil");
-        _results.Columns.Add("required", "Besoin vérifié");
-        _results.Columns.Add("keep", "Réserver");
-        _results.Columns.Add("surplus", "Excédent théorique");
-        _results.Columns.Add("fir", "FIR manquant");
-        _results.Columns.Add("why", "Pour");
         if (StashPilotWorkspace.TryLoad(out var storedInventory, out var storedNeeds))
         {
             _inventory.Text = storedInventory;
             _requirements.Text = storedNeeds;
         }
+        else
+        {
+            // Never present demonstration inventory as real player progress.
+            _inventory.Clear();
+            _requirements.Clear();
+        }
         Analyze();
         Shown += (_, _) =>
         {
             _f8Gate.Arm(System.Diagnostics.Stopwatch.GetTimestamp());
-            _status.Text = "Scan prêt : ouvre l'inventaire Tarkov et appuie sur F8. Le prochain F8 manuel sera analysé (90 s).";
+            _status.Text = "Prêt : F8 dans le menu Tarkov lance le scan. Les résultats incertains restent à vérifier.";
         };
+    }
+
+    private void OpenDetails()
+    {
+        using var dialog = new Form
+        {
+            Text = "StashPilot — corriger mes objets et objectifs",
+            Size = new Size(820, 540), StartPosition = FormStartPosition.CenterParent,
+            BackColor = Color.FromArgb(17, 23, 30), ForeColor = Color.White
+        };
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2,
+            Padding = new Padding(10)
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        layout.Controls.Add(CreatePanel("Mes objets : nom;quantité;FIR;CONFIRMÉ", _inventory), 0, 0);
+        layout.Controls.Add(CreatePanel("Mes besoins : nom;quantité;source;FIR;CONFIRMÉ", _requirements), 1, 0);
+        var save = new Button { Text = "Enregistrer et actualiser", AutoSize = true };
+        save.Click += (_, _) =>
+        {
+            if (StashPilotWorkspace.TrySave(_inventory.Text, _requirements.Text))
+            {
+                Analyze();
+                dialog.Close();
+            }
+            else
+                MessageBox.Show(dialog, "Sauvegarde impossible. Tes données restent affichées.",
+                    "StashPilot", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        };
+        layout.Controls.Add(save, 0, 1);
+        layout.SetColumnSpan(save, 2);
+        dialog.Controls.Add(layout);
+        dialog.ShowDialog(this);
     }
 
     private async Task ScanAndReviewAsync(string screenshotPath)
@@ -334,11 +321,13 @@ internal sealed class StashPilotForm : Form
         var advice = StashPilotAdvisor.Analyze(items, needs);
         _results.Rows.Clear();
         foreach (var row in advice)
-            _results.Rows.Add(row.Item, row.Quantity, row.Recommendation,
-                row.Required, row.ToKeep, row.Excess,
-                row.MissingFoundInRaid, row.Reasons);
-        _status.Text = $"{items.Count} lignes inventaire • {needs.Count} objectifs • "
-            + "EXCÉDENT = estimation, pas une autorisation de vendre. "
-            + "Aucune capture de Tarkov ni synchronisation automatique effectuée.";
+        {
+            var category = row.VerifiedNeed ? "À garder" : "À vérifier";
+            var why = row.VerifiedNeed ? row.Reasons
+                : "Utilité non confirmée — ne pas vendre sans vérifier";
+            _results.Rows.Add(row.Item, row.Quantity, category, why);
+        }
+        _status.Text = $"{items.Count} objets • {needs.Count} besoins confirmés • "
+            + "Aucune vente automatique. Les objets incertains restent à vérifier.";
     }
 }
