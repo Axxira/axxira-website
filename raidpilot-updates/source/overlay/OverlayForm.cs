@@ -1605,14 +1605,13 @@ internal sealed partial class OverlayForm : Form
             // after a high-confidence independent local keyframe consensus.
             // A single low-resolution match or unverified shared atlas data
             // cannot earn a longer interval.
-            if (!visualDecisionFromCollectiveAtlas
-                && decision.Confidence >= 0.90
-                && decision.PositionResidualMeters <= 2.0
-                && decision.VerticalResidualMeters <= 1.25
-                && decision.YawResidualDegrees <= 15.0
-                && (decision.Source == VisualRelocalizationSource.Consensus
-                    || (decision.Source == VisualRelocalizationSource.SuperKeyframe
-                        && decision.GlobalLoopClosure)))
+            if (MobileExactAnchorPolicy.IsTrustedSilentCorrection(
+                decision.Source,
+                visualDecisionFromCollectiveAtlas,
+                decision.Confidence,
+                decision.PositionResidualMeters,
+                decision.VerticalResidualMeters,
+                decision.YawResidualDegrees))
             {
                 _lastTrustedSilentVisualAt = now;
             }
