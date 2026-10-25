@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T02:11:00.0039029+00:00",
+  "publishedAt": "2026-10-25T02:20:51.3865494+00:00",
   "raidPilot": {
-    "version": "0.14.2.40",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.40-b0.3.9-l0.2.15-b0f01c22374e/RaidPilot-Overlay-v0.14.2.40-Windows-x64.zip",
-    "sha256": "17C9F129459726E50359EE2D910827C1681DFB91C1C4810B6DD33D8C9DC49C9B",
-    "sizeBytes": 234483652,
-    "releaseNotes": "Affiche la disponibilité des étages par carte, le nombre de niveaux présents et la couverture localisée aux bâtiments. Refuse le mode AUTO lorsqu'aucun niveau validé n'est fourni, et maintient le réglage BASE. Les niveaux explicitement documentés restent sélectionnables manuellement. Cette version ne prétend pas couvrir tous les bâtiments : les catalogues sans étages doivent être renseignés à partir de géométries sourcées et testées avant activation automatique."
+    "version": "0.14.2.41",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.41-b0.3.9-l0.2.15-89eaa1295721/RaidPilot-Overlay-v0.14.2.41-Windows-x64.zip",
+    "sha256": "3132799C02147789788B5720F1C70D78568AB44EB6CB5E0AF401428CFF97120F",
+    "sizeBytes": 234484463,
+    "releaseNotes": "Ajoute un moteur de décision déterministe après la fusion des capteurs visuels V2 et de mouvement. Les captures anciennes, lentes, non fiables ou contradictoires ne peuvent plus valider un faux arrêt; la couche conserve le modèle existant par défaut et journalise les décisions et compteurs fiables/rejetés dans le diagnostic de précision. Aucune lecture mémoire EFT, aucune coordonnée absolue inventée. L'amélioration du positionnement doit être mesurée par diagnostics F8 en situation réelle."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.40-b0.3.9-l0.2.15-b0f01c22374e/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "68DEFD2DE51EA6759A6303C2FF3A7A4C112D76BD5679A19150F35625E3DF7FC4",
-    "sizeBytes": 58332196,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.41-b0.3.9-l0.2.15-89eaa1295721/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "74468CFE0264A127B9F3E269A741BE1BF92CA4176FB93AAD012E097AE5905676",
+    "sizeBytes": 58332195,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.40-b0.3.9-l0.2.15-b0f01c22374e/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "049C45AAAC1921FC7AEFDE613EE657337EC5913B6590BAF9D96A1B7E7A76E0C0",
-    "sizeBytes": 351070377,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.41-b0.3.9-l0.2.15-89eaa1295721/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "C20887D766A616F93FFB37E6A3CF5FF35ACABDE33E398B7F508EBD05D85608FA",
+    "sizeBytes": 351071393,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.41",
+      "raidPilotVersion": "0.14.2.41",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Intelligence Engine — fusion prudente des capteurs et détection d'informations contradictoires",
+      "details": "Ajoute un moteur de décision déterministe après la fusion des capteurs visuels V2 et de mouvement. Les captures anciennes, lentes, non fiables ou contradictoires ne peuvent plus valider un faux arrêt; la couche conserve le modèle existant par défaut et journalise les décisions et compteurs fiables/rejetés dans le diagnostic de précision. Aucune lecture mémoire EFT, aucune coordonnée absolue inventée. L'amélioration du positionnement doit être mesurée par diagnostics F8 en situation réelle."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.40",
@@ -253,16 +263,6 @@
       "date": "2026-10-23",
       "summary": "Precision V3 : capture GPU WGC optionnelle",
       "details": "Ajout du capteur Windows.Graphics.Capture/Direct3D11 dans RaidPilot et Beacon.\nLe GPU est désactivé par défaut et peut être activé depuis l'icône de notification; le capteur GDI reprend automatiquement en cas d'échec.\nLa capture de luminance reste locale, sans accès à la mémoire du jeu. Compatibilité et précision réelle à vérifier en raid."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.16",
-      "raidPilotVersion": "0.14.2.16",
-      "beaconVersion": "0.3.5",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-23",
-      "summary": "Precision V2.2 : meilleure détection du mouvement",
-      "details": "La voie optique 160×90 suit un déplacement d'image plus étendu, avec une grille de points plus dense.\nDes statistiques distinguent les observations visuelles fiables des observations incertaines; la capture s'adapte aux ralentissements.\nLe capteur historique 64×36 et le relais Cloudflare sont conservés."
     }
   ]
 }
