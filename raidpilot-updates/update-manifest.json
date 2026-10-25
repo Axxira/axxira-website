@@ -1,29 +1,49 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T02:29:41.3228521+00:00",
+  "publishedAt": "2026-10-25T03:08:58.9824937+00:00",
   "raidPilot": {
-    "version": "0.14.2.42",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.42-b0.3.9-l0.2.15-97f30822ef3d/RaidPilot-Overlay-v0.14.2.42-Windows-x64.zip",
-    "sha256": "969E03F1614B5EC5FBB6F291FD1DC729DFBEAF65144A0F4D9829905312F47905",
-    "sizeBytes": 234484529,
-    "releaseNotes": "Le moteur de confiance exige trois images distinctes cohérentes avant de confirmer un arrêt. Il ne compte jamais deux fois une même image, réinitialise sa session lors du changement de fenêtre EFT, refuse les captures anciennes ou lentes et conserve le modèle de base en cas d'information non fiable. La localisation reste estimative entre les positions F8; le correctif nécessite une validation en jeu."
+    "version": "0.14.2.43",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.43-b0.3.10-l0.2.15-c1e749a348b6/RaidPilot-Overlay-v0.14.2.43-Windows-x64.zip",
+    "sha256": "71825AA0DB60D513EE79C9BBFCA39481DA7E0C07E82CCAC29DE65F753FDC7C1E",
+    "sizeBytes": 234484750,
+    "releaseNotes": "RaidPilot 0.14.2.43 reste inchangé dans cette publication."
   },
   "beacon": {
-    "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.42-b0.3.9-l0.2.15-97f30822ef3d/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "6D163FC7587F1AF3A56ECF35DCB9748F9F9346BD3FDF06D9BDB32C7F071580F1",
-    "sizeBytes": 58332195,
-    "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
+    "version": "0.3.10",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.43-b0.3.10-l0.2.15-c1e749a348b6/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "065A13AAC9D2930AAD91ED9A6981D8C2C304A74E38915CA9D3CBDB0EB5A23B10",
+    "sizeBytes": 58332207,
+    "releaseNotes": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.42-b0.3.9-l0.2.15-97f30822ef3d/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "88A014BA67FCB16915F1EDE561EAE31E2F477D71C8A4D07FA9BDBFD004AF2A81",
-    "sizeBytes": 351071614,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.43-b0.3.10-l0.2.15-c1e749a348b6/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "A57A97EB1EBAF01A6B5797F9A221BA974872D679179C4FF8F4FCDF5733147CA7",
+    "sizeBytes": 351072159,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "beacon",
+      "version": "0.3.10",
+      "raidPilotVersion": "0.14.2.43",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Beacon — captures F8 au repos hors interaction et combat",
+      "details": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
+    },
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.43",
+      "raidPilotVersion": "0.14.2.43",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Intelligence V2 — repli sur les entrées lors de captures visuelles répétées",
+      "details": "Corrige la fusion de mouvement : une même trame visuelle ne conserve plus une décision de mouvement antérieure lorsque les entrées de déplacement ont évolué. Le moteur se replie sur les entrées actuelles et journalise le refus. Aucune coordonnée absolue n'est inventée; la précision doit être validée dans un raid réel."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.42",
@@ -243,26 +263,6 @@
       "date": "2026-10-23",
       "summary": "Precision V3.2 : écrans ultralarges et suivi GPU plus stable",
       "details": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.13",
-      "raidPilotVersion": "0.14.2.18",
-      "beaconVersion": "0.3.6",
-      "launcherVersion": "0.2.13",
-      "date": "2026-10-23",
-      "summary": "Historique des mises à jour visible et automatique",
-      "details": "Le panneau « Dernières mises à jour » affiche les vraies versions publiées au lieu de trois anciennes lignes fixes.\nLe bouton « Voir les notes » ouvre les descriptions détaillées des versions précédentes.\nLe Launcher conserve un exemplaire de l'historique même hors connexion et rafraîchit les notes lors de la vérification du canal Stable.\nLa publication GitHub exige désormais une fiche de version correspondante, pour éviter d'oublier les prochaines notes."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.18",
-      "raidPilotVersion": "0.14.2.18",
-      "beaconVersion": "0.3.6",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-23",
-      "summary": "Zoom personnel conservé entre les cartes et les raids",
-      "details": "Le zoom réglé à la molette ou avec les boutons est mémorisé entre les parties et les changements de carte.\nLe facteur de zoom est adapté aux dimensions des différentes cartes locales et en ligne; le bouton Ajuster revient à 100 %.\nLes préférences de taille, de position et de filtres restent intactes; aucune modification de la localisation ou du relais d'équipe."
     }
   ]
 }
