@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.40",
+      "raidPilotVersion": "0.14.2.40",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Étages — état des catalogues vérifiés par carte et sélection de secours",
+      "details": "Affiche la disponibilité des étages par carte, le nombre de niveaux présents et la couverture localisée aux bâtiments. Refuse le mode AUTO lorsqu'aucun niveau validé n'est fourni, et maintient le réglage BASE. Les niveaux explicitement documentés restent sélectionnables manuellement. Cette version ne prétend pas couvrir tous les bâtiments : les catalogues sans étages doivent être renseignés à partir de géométries sourcées et testées avant activation automatique."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.39",
       "raidPilotVersion": "0.14.2.39",
       "beaconVersion": "0.3.9",
