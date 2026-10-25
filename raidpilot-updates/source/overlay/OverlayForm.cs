@@ -510,8 +510,12 @@ internal sealed partial class OverlayForm : Form
         if (_questInterfaceOpened && Visible)
         {
             _questInterfaceOpened = false;
+            // Return to the live click-through map; do NOT manually hide it.
+            // Automatic raid/loot/death visibility rules remain authoritative.
+            SetManualOverlayHidden(false);
             SetClickThrough(true, activateWhenInteractive: false);
-            SetManualOverlayHidden(true);
+            if (_webReady && _webView.CoreWebView2 is not null)
+                _ = CloseQuestPanelAsync();
             return;
         }
 
@@ -521,6 +525,17 @@ internal sealed partial class OverlayForm : Form
         ShowNoActivate(force: true);
         if (_webReady && _webView.CoreWebView2 is not null)
             _ = OpenQuestPanelAsync();
+    }
+
+    private async Task CloseQuestPanelAsync()
+    {
+        try
+        {
+            await _webView.CoreWebView2!.ExecuteScriptAsync(
+                "window.RaidPilotLocalMap?.questPilotClosePanel?.();");
+        }
+        catch (InvalidOperationException) { }
+        catch (System.Runtime.InteropServices.COMException) { }
     }
 
     private async Task OpenQuestPanelAsync()
