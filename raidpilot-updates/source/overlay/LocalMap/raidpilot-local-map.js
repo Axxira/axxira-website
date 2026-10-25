@@ -1534,12 +1534,16 @@ function wireUI() {
     refs.panel.classList.toggle("hidden");
     if(!refs.panel.className.includes("hidden"))refs.questPanel?.classList.add("hidden");
   });
-  refs.questsBtn?.addEventListener("click",()=>{
-    refs.panel.classList.add("hidden");
-    refs.questPanel?.classList.remove("hidden");
-    renderQuestPilotPanel();
-  });
-  refs.questClose?.addEventListener("click",()=>{ /* always-visible quest panel */ });
+  const toggleQuestPanel=force=>{
+    if(!refs.questPanel)return;
+    const show=typeof force==="boolean"?force:refs.questPanel.classList.contains("hidden");
+    refs.questPanel.classList.toggle("hidden",!show);
+    refs.questsBtn?.setAttribute("aria-expanded",show?"true":"false");
+    refs.questsBtn.textContent=show?"🎯 Masquer QuestPilot":"🎯 Afficher QuestPilot";
+    if(show){refs.panel.classList.add("hidden");renderQuestPilotPanel();}
+  };
+  refs.questsBtn?.addEventListener("click",()=>toggleQuestPanel());
+  refs.questClose?.addEventListener("click",()=>toggleQuestPanel(false));
   refs.questSearch?.addEventListener("input",()=>{
     state.questSearch=refs.questSearch.value.trim().toLowerCase();
     renderQuestPilotPanel();
@@ -1637,6 +1641,8 @@ async function init() {
   state.questPilot.state.focused="";
   // Quest list stays visible even when input is click-through.
   refs.questPanel?.classList.remove("hidden");
+  refs.questsBtn?.setAttribute("aria-expanded","true");
+  refs.questsBtn.textContent="🎯 Masquer QuestPilot";
   renderQuestPilotPanel();
   if($("#game-mode"))$("#game-mode").value=state.gameMode;
   state.initialized = true;
