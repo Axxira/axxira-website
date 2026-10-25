@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T14:27:34.8555295+00:00",
+  "publishedAt": "2026-10-25T14:54:12.0833511+00:00",
   "raidPilot": {
-    "version": "0.15.3.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.0-b0.3.10-l0.2.15-bbaae42b09bc/RaidPilot-Overlay-v0.15.3.0-Windows-x64.zip",
-    "sha256": "B5B39BB516DE0EB9C90D80BFEDD8A3190DE5D7B35F1C94B4AF00F42809E8FCA6",
-    "sizeBytes": 234499289,
-    "releaseNotes": "Ajout d'un bouton de lecture OCR Windows pour captures PNG choisies par le joueur, sans transfert réseau. Les résultats sont affichés dans une fenêtre de revue et insérés comme notes non vérifiées. Aucun objet ou quantité n'est automatiquement confirmé ni conseillé à la vente. La reconnaissance fiable des icônes d'inventaire et la synchronisation de progression restent à développer."
+    "version": "0.15.3.1",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.1-b0.3.10-l0.2.15-16347c07a38f/RaidPilot-Overlay-v0.15.3.1-Windows-x64.zip",
+    "sha256": "767A67AED326968855F6A8C90E6CB1245709657454CAE8502478E65310A74A9C",
+    "sizeBytes": 234510536,
+    "releaseNotes": "Le lecteur OCR propose maintenant les quantités au format « Boulons x4 » ou « 4 x Boulons » depuis des captures choisies par le joueur. L'import dans la liste d'inventaire reste non confirmé, sans statut FIR déduit, et exige de vérifier chaque ligne. Les inconnus ne sont jamais classés automatiquement comme objets à vendre. Trois tests de non-régression ajoutés; la reconnaissance des icônes et la synchronisation complète des quêtes et de la planque restent à développer."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.0-b0.3.10-l0.2.15-bbaae42b09bc/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "D11687EAC85BFAB5839DA6A2EAC7B2329BCBFA758A1C477989E43F163455BF97",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.1-b0.3.10-l0.2.15-16347c07a38f/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "29FA741D3F7D261F12B58175D8F67A77B1A35670734B5D9245FC3E15077FBBEA",
     "sizeBytes": 58332207,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.0-b0.3.10-l0.2.15-bbaae42b09bc/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "C2034FD98534D5D6F6FFF6801C9FA6FE2DED0A7BD90625DE65BCA416CBB653A1",
-    "sizeBytes": 351088100,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.1-b0.3.10-l0.2.15-16347c07a38f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "E9C5A779BAC708C4030E5347BA4240458DB98D379B2B89F823106C246643EF89",
+    "sizeBytes": 351099403,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.3.1",
+      "raidPilotVersion": "0.15.3.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — propositions d'objets et quantités à partir d'OCR",
+      "details": "Le lecteur OCR propose maintenant les quantités au format « Boulons x4 » ou « 4 x Boulons » depuis des captures choisies par le joueur. L'import dans la liste d'inventaire reste non confirmé, sans statut FIR déduit, et exige de vérifier chaque ligne. Les inconnus ne sont jamais classés automatiquement comme objets à vendre. Trois tests de non-régression ajoutés; la reconnaissance des icônes et la synchronisation complète des quêtes et de la planque restent à développer."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.3.0",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot pratique — toutes les quêtes recherchables, étapes sans GPS, équipe et HUD optimisé",
       "details": "QuestPilot simplifie la préparation et le suivi des raids : la recherche dans « Mes quêtes » porte désormais sur toutes les cartes et sur le texte des objectifs, même sans coordonnées publiques. Les quêtes non géolocalisées restent sélectionnables et leurs étapes apparaissent dans « Autres étapes · sans lieu précis », avec des cases manuelles persistantes et une distinction claire entre la coche du joueur et la remise de quête confirmée par un journal EFT. Les marqueurs numérotés continuent d'utiliser la même couleur par quête; seuls les objectifs possédant une position fiable sont numérotés sur la carte 1/2/3, tandis que les autres sont conservés dans le suivi sans produire de faux points. Les préparatifs (clé, objet, balise, équipement) couvrent aussi les objectifs sans emplacement, sans prétendre lire l'inventaire. Nouvelle section « Objectifs communs à l'escouade » à l'intérieur de « Mes quêtes », distinguant la progression personnelle de la progression importée ou reçue en direct, avec mention explicite « coché par l'ami » vs « à faire ». Les repères appartenant seulement à l'équipe ne changent plus le focus de la propre quête du joueur. La boucle de HUD à 10Hz interroge seulement le prochain objectif pertinent en temps linéaire O(n), au lieu de recalculer toute la tournée de proximité O(n² log n) en permanence; la liste de planification détaillée reste dans le panneau. Tests de non-régression sur la recherche transcartes, les balises numérotées, les étapes non géolocalisées, les plans d'équipe et l'état de confiance. Aucun déploiement Cloudflare en production n'est effectué dans cette version : le partage manuel RPQ1 fonctionne, et le partage direct demeure bloqué tant que le relais n'annonce pas features.questplan=true et ne passe pas un test WebSocket bidirectionnel. L'ordre de visite n'est pas une route garantie entre bâtiments. Versions Beacon 0.3.9 et Launcher 0.2.15 inchangées."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.28",
-      "raidPilotVersion": "0.14.2.28",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot — partage en direct prêt côté client, opt-in et protection des plans d'escouade",
-      "details": "Ajout d'une architecture de synchronisation de quêtes entre coéquipiers, toujours facultative et désactivée par défaut. Le menu Escouade propose « Partager mes quêtes » avec consentement explicite pour chaque connexion. Le logiciel interroge /health du relais Cloudflare officiel : aucun plan n'est transmis si le serveur n'annonce pas explicitement features.questplan=true. Les paquets contiennent uniquement les identifiants publics des quêtes et étapes cochées de l'utilisateur, séparés par mode PvE/PvP, jamais les captures, journaux EFT, identifiants de profil ou secrets de connexion. Les plans reçus sont éphémères, expirent après 90 secondes, sont effacés lors du départ du joueur/déconnexion et ne modifient jamais la progression locale. Numéros et couleurs des balises existantes conservés, étapes d'équipe étiquetées comme non vérifiées. Sécurisation de la validation des paquets et de leurs horodatages, limitation des échanges et anti-rejeu; tests du protocole WebSocket et de la carte locale. Un Worker Cloudflare v2 candidat, avec Durable Objects, protection des salles et compatibilité pose, est livré dans le dépôt UNIQUEMENT pour staging, sans être déployé sur le relais réel. Important : le relais Cloudflare actuellement en production n'a pas encore confirmé la prise en charge des quêtes; seul le partage manuel RPQ1 reste garanti tant que le Worker n'est pas migré et validé avec deux clients. Aucune mise à jour à distance de Cloudflare n'est revendiquée. Beacon 0.3.9 et Launcher 0.2.15 inchangés."
     }
   ]
 }
