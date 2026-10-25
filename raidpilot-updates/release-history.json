@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.3.1",
+      "raidPilotVersion": "0.15.3.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — propositions d'objets et quantités à partir d'OCR",
+      "details": "Le lecteur OCR propose maintenant les quantités au format « Boulons x4 » ou « 4 x Boulons » depuis des captures choisies par le joueur. L'import dans la liste d'inventaire reste non confirmé, sans statut FIR déduit, et exige de vérifier chaque ligne. Les inconnus ne sont jamais classés automatiquement comme objets à vendre. Trois tests de non-régression ajoutés; la reconnaissance des icônes et la synchronisation complète des quêtes et de la planque restent à développer."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.3.0",
       "raidPilotVersion": "0.15.3.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-22",
       "summary": "HOTFIX13 : déplacements et postures Beacon fiabilisés",
       "details": "Correction du sprint en bascule et des ralentissements du suivi, et meilleure gestion de la marche lente.\nBeacon tient compte des postures accroupie/couchée, des sauts et des interruptions temporaires.\nRéduction des faux arrêts visuels, sans modifier la connexion d'équipe Cloudflare."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.12",
-      "raidPilotVersion": "0.14.2.12",
-      "beaconVersion": "0.3.1",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-22",
-      "summary": "HOTFIX12 : relais d'équipe Cloudflare bidirectionnel",
-      "details": "L'échange des positions entre joueurs utilise désormais un Worker Cloudflare dédié à RaidPilot au lieu du WebSocket tarkov.dev.\nLe code d'escouade reste inchangé; une seule connexion bidirectionnelle par client, reconnexion et séparation des salles.\nLa précision individuelle reste estimée entre les F8."
     }
   ]
 }
