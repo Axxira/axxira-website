@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.4.1",
+      "raidPilotVersion": "0.15.4.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — F8 seul dans le menu Tarkov ouvre le scan",
+      "details": "StashPilot n'exige plus Ctrl+Alt+P ni d'armer le scan quand le joueur est hors raid. Le watcher RaidPilot détecte aussi les nouveaux screenshots du menu dont les noms ne portent pas de coordonnées GPS. Un F8 pris depuis le menu Tarkov ouvre automatiquement StashPilot et lance une lecture OCR locale quand le PNG a fini d'être écrit. Plusieurs scans successifs possibles, sans action en raid. Les résultats OCR restent à vérifier : les icônes seules et quantités incertaines ne sont pas déclarées comme confirmées."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.4.0",
       "raidPilotVersion": "0.15.4.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Precision V2.2 : meilleure détection du mouvement",
       "details": "La voie optique 160×90 suit un déplacement d'image plus étendu, avec une grille de points plus dense.\nDes statistiques distinguent les observations visuelles fiables des observations incertaines; la capture s'adapte aux ralentissements.\nLe capteur historique 64×36 et le relais Cloudflare sont conservés."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.15",
-      "raidPilotVersion": "0.14.2.15",
-      "beaconVersion": "0.3.4",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-23",
-      "summary": "Precision V2.1 : mesure de la dérive avant F8",
-      "details": "Comparaison des écarts en mètres et en degrés avant chaque nouveau recalage F8, avec statistiques médianes et P90 pour les modes V1 et V2.\nLes séquences interrompues ou incertaines sont exclues et les statistiques restent uniquement en mémoire.\nProtection supplémentaire contre les faux arrêts après une rotation ou un changement d'état."
     }
   ]
 }
