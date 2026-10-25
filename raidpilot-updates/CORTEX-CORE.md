@@ -1,4 +1,4 @@
-# RAIDPILOT CORTEX — V0.15.0.0 (Core 1)
+# RAIDPILOT CORTEX — V0.15.0.1 (Core 1 + F8 timing guard)
 
 CORTEX est un superviseur de localisation **exécuté en local**. Il complète les capteurs et estimateurs de RaidPilot; il n'est pas un modèle neuronal entraîné ni un moteur SLAM 3D complet.
 
@@ -21,6 +21,7 @@ Une capture Windows locale silencieuse n'apporte pas de coordonnées EFT absolue
 6. Les écarts réels F8 sont conservés sous forme de métriques bornées en mémoire (sans coordonnées). Une forte erreur bloque l'extension de cadence; 35 s et deux F8 de qualité sont nécessaires au rétablissement.
 7. Les protections d'interaction (F, R, tir/ADS), fenêtre Tarkov au premier plan et touche de screenshot dédiée demeurent en vigueur.
 8. Le joueur peut désactiver CORTEX dans le menu de l'overlay et revenir immédiatement à la politique pré-CORTEX.
+9. CORTEX mesure la cadence F8 uniquement depuis le **dernier fichier de screenshot EFT reçu**; une correction visuelle ne remet pas son horloge native à zéro.
 
 Les seuils sont **conservateurs** et sujets à validation avec données de test, pas des garanties de précision métrique.
 
@@ -30,7 +31,7 @@ Les seuils sont **conservateurs** et sujets à validation avec données de test,
 - `OverlayCortex.cs`: activation/désactivation, diagnostic, liaison à l'overlay
 - `OverlayForm.cs`: données de mouvement et visuelles réellement appliquées, F8 natifs et décision de cadence
 - `MobileExactAnchorPolicy.cs`: extension de 12 s conditionnée à deux preuves indépendantes
-- `Tests/CortexNavigationTests.cs`: 16 relectures déterministes, intégrées au harnais de tests Windows
+- `Tests/CortexNavigationTests.cs`: 17 relectures déterministes, intégrées au harnais de tests Windows
 
 ## Vérification terrain demandée — deux joueurs, même raid
 

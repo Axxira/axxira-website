@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexNavigationTests
 {
-    internal const int TestCount = 16;
+    internal const int TestCount = 17;
 
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
@@ -71,6 +71,17 @@ internal static class CortexNavigationTests
             Observe(e, 1);
             Require(Assess(e, 1.05).Quality == CortexTrackingQuality.WaitingForF8);
             Require(!Visual(e, 1.1));
+        }, failures);
+
+        Run("CORTEX ne confond pas temps F8 natif et recalage visuel", () =>
+        {
+            var e = Anchored();
+            Require(Visual(e, 0.55));
+            Observe(e, 0.8);
+            Require(e.SecondsSinceNativeF8(At(5), Map, 1, Window) >= 4.99);
+            Require(e.SecondsSinceNativeF8(At(5), "woods", 1, Window) == 0);
+            Require(e.SecondsSinceNativeF8(At(5), Map, 2, Window) == 0);
+            Require(e.SecondsSinceNativeF8(At(5), Map, 1, (nint)12) == 0);
         }, failures);
 
         Run("CORTEX conservateur après F8 sans reconnaissance visuelle", () =>

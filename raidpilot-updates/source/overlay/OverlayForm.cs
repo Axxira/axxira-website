@@ -1833,9 +1833,12 @@ internal sealed partial class OverlayForm : Form
         var secondsSinceLastAttempt = _lastAutoReanchorAttempt == 0
             ? double.PositiveInfinity
             : (now - _lastAutoReanchorAttempt) / (double)Stopwatch.Frequency;
-        var secondsSinceExactAnchor = _lastExactAnchorAt <= 0
-            ? 0.0
-            : (now - _lastExactAnchorAt) / (double)Stopwatch.Frequency;
+        var secondsSinceExactAnchor = _cortexMenu.Checked
+            ? _cortex.SecondsSinceNativeF8(
+                now, _currentMap, _raidGeneration, _lastForegroundWindow)
+            : _lastExactAnchorAt <= 0
+                ? 0.0
+                : (now - _lastExactAnchorAt) / (double)Stopwatch.Frequency;
         var recentlyVerifiedBySilentVision = _lastTrustedSilentVisualAt > 0
             && now >= _lastTrustedSilentVisualAt
             && (now - _lastTrustedSilentVisualAt) / (double)Stopwatch.Frequency <= 5.0;

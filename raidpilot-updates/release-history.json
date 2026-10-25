@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.0.1",
+      "raidPilotVersion": "0.15.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "CORTEX — différencie horodatage F8 réel et correction visuelle silencieuse",
+      "details": "Correctif de sûreté de la première version CORTEX : la fréquence des screenshots en mouvement utilise maintenant exclusivement le dernier F8 natif connu du superviseur. Une relocalisation visuelle, même confirmée, ne peut plus remettre à zéro l'horloge du vrai F8 dans la planification CORTEX. Le moteur reste désactivable pour comparaison. 17 tests de CORTEX couvrent notamment l'absence de fuite entre cartes/raids et cette distinction de temps."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.0.0",
       "raidPilotVersion": "0.15.0.0",
       "beaconVersion": "0.3.10",
