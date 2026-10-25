@@ -502,8 +502,20 @@ internal sealed partial class OverlayForm : Form
         base.WndProc(ref message);
     }
 
+    private bool _questInterfaceOpened;
+
     private void OpenQuestInterface()
     {
+        // Ctrl+Alt+I must be a true toggle, never a quest validation shortcut.
+        if (_questInterfaceOpened && Visible)
+        {
+            _questInterfaceOpened = false;
+            SetClickThrough(true, activateWhenInteractive: false);
+            SetManualOverlayHidden(true);
+            return;
+        }
+
+        _questInterfaceOpened = true;
         SetManualOverlayHidden(false);
         SetClickThrough(false, activateWhenInteractive: true);
         ShowNoActivate(force: true);

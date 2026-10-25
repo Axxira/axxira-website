@@ -40,33 +40,6 @@
         <div id="filters"></div>
       </aside>
 
-      <aside id="questpilot-panel" class="hidden" aria-label="QuestPilot — mes quêtes">
-        <div class="qp-panel-title"><strong>🎯 QuestPilot</strong><button id="questpilot-close" type="button" aria-label="Fermer les quêtes">✕</button></div>
-        <p class="qp-subtle">Choisis tes quêtes ou utilise TAB → TÂCHES → F8. Recherche aussi les missions d'autres cartes. Les numéros et couleurs restent stables entre les raids.</p>
-        <input id="questpilot-search" type="search" placeholder="Chercher une quête partout…" aria-label="Chercher une quête parmi toutes les cartes et objectifs">
-        <div id="questpilot-summary" class="qp-summary" role="status"></div>
-        <button id="questpilot-show-all" type="button" aria-pressed="false">Voir toutes les quêtes disponibles</button>
-        <div id="questpilot-list"></div>
-        <div class="qp-section-title">🎯 Mes prochains objectifs</div>
-        <div id="questpilot-steps"></div>
-        <details class="qp-advanced"><summary>✓ Étapes terminées · réactiver si erreur</summary><div id="questpilot-done"></div></details>
-        <details class="qp-advanced"><summary>Autres objectifs sans emplacement</summary>
-        <div id="questpilot-other"></div></details>
-        <details class="qp-advanced"><summary>Préparation · clés et objets</summary>
-        <div id="questpilot-prep"></div></details>
-        <details class="qp-advanced"><summary>Objectifs de mon équipe</summary>
-        <div id="questpilot-shared-steps"></div></details>
-        <details class="qp-advanced"><summary>Options avancées · partage d'escouade</summary>
-        <p class="qp-subtle">Crée ou rejoins une escouade. Si le relais prend en charge les quêtes, active « Escouade → Partager mes quêtes » depuis l'icône RaidPilot. Sinon, copie ton plan ci-dessous. Les progressions restent individuelles.</p>
-        <button id="questpilot-share" type="button">Copier mon plan</button>
-        <small id="questpilot-share-status" class="qp-subtle" role="status"></small>
-        <textarea id="questpilot-share-output" class="qp-share-code" rows="2" readonly aria-label="Code de partage à copier" hidden></textarea>
-        <input id="questpilot-peer-name" type="text" placeholder="Nom de l'ami" aria-label="Nom du coéquipier">
-        <textarea id="questpilot-peer-code" class="qp-share-code" rows="2" placeholder="Coller le code RPQ1 de l'ami…" aria-label="Code de partage d'un ami"></textarea>
-        <button id="questpilot-import" type="button">Ajouter le plan ami</button>
-        <div id="questpilot-team-plans"></div></details>
-      </aside>
-
       <section id="viewport" aria-label="Carte RaidPilot">
         <div id="stage">
           <img id="base-map" alt="">
@@ -98,6 +71,34 @@
         <div id="map-credit"></div>
       </section>
     </main>
+      <aside id="questpilot-panel" class="hidden" aria-label="QuestPilot — mes quêtes">
+        <div class="qp-panel-title"><strong>🎯 QuestPilot</strong><button id="questpilot-close" type="button" aria-label="Fermer les quêtes">✕</button></div>
+        <p class="qp-subtle">Choisis tes quêtes ou utilise TAB → TÂCHES → F8. Recherche aussi les missions d'autres cartes. Les numéros et couleurs restent stables entre les raids.</p>
+        <input id="questpilot-search" type="search" placeholder="Chercher une quête partout…" aria-label="Chercher une quête parmi toutes les cartes et objectifs">
+        <div id="questpilot-summary" class="qp-summary" role="status"></div>
+        <button id="questpilot-show-all" type="button" aria-pressed="false">Voir toutes les quêtes disponibles</button>
+        <div id="questpilot-list"></div>
+        <div class="qp-section-title">🎯 Mes prochains objectifs</div>
+        <div id="questpilot-steps"></div>
+        <details class="qp-advanced"><summary>✓ Étapes terminées · réactiver si erreur</summary><div id="questpilot-done"></div></details>
+        <details class="qp-advanced"><summary>Autres objectifs sans emplacement</summary>
+        <div id="questpilot-other"></div></details>
+        <details class="qp-advanced"><summary>Préparation · clés et objets</summary>
+        <div id="questpilot-prep"></div></details>
+        <details class="qp-advanced"><summary>Objectifs de mon équipe</summary>
+        <div id="questpilot-shared-steps"></div></details>
+        <details class="qp-advanced"><summary>Options avancées · partage d'escouade</summary>
+        <p class="qp-subtle">Crée ou rejoins une escouade. Si le relais prend en charge les quêtes, active « Escouade → Partager mes quêtes » depuis l'icône RaidPilot. Sinon, copie ton plan ci-dessous. Les progressions restent individuelles.</p>
+        <button id="questpilot-share" type="button">Copier mon plan</button>
+        <small id="questpilot-share-status" class="qp-subtle" role="status"></small>
+        <textarea id="questpilot-share-output" class="qp-share-code" rows="2" readonly aria-label="Code de partage à copier" hidden></textarea>
+        <input id="questpilot-peer-name" type="text" placeholder="Nom de l'ami" aria-label="Nom du coéquipier">
+        <textarea id="questpilot-peer-code" class="qp-share-code" rows="2" placeholder="Coller le code RPQ1 de l'ami…" aria-label="Code de partage d'un ami"></textarea>
+        <button id="questpilot-import" type="button">Ajouter le plan ami</button>
+        <div id="questpilot-team-plans"></div></details>
+      </aside>
+
+
     <section id="questpilot-hud" aria-live="off" aria-label="Prochain objectif QuestPilot" hidden>
       <span id="questpilot-hud-color" aria-hidden="true"></span>
       <div class="qp-current"><strong id="questpilot-hud-title"></strong><small id="questpilot-hud-detail"></small></div>
