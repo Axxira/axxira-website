@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T01:30:51.7327514+00:00",
+  "publishedAt": "2026-10-25T02:11:00.0039029+00:00",
   "raidPilot": {
-    "version": "0.14.2.39",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.39-b0.3.9-l0.2.15-f5e353bc45d8/RaidPilot-Overlay-v0.14.2.39-Windows-x64.zip",
-    "sha256": "56414F64DA55B40FF1723FA618FF8E7FC551EC75253CC981B354CD7F9ED3CE0B",
-    "sizeBytes": 234480020,
-    "releaseNotes": "QuestPilot affiche uniquement les quêtes signalées par le scan TAB → TÂCHES → F8 pour le raid courant. La sélection et les validations manuelles temporaires sont réinitialisées au début et à la fin d'un raid sans effacer les preuves de quête terminée issues des journaux EFT. Une nouvelle détection de liste remplace la sélection précédente. Le panneau sous la carte devient plus haut et présente des cartes lisibles, avec typographie agrandie, boutons Fait et restauration. Ctrl+Alt+I ne change que le mode interactif, pas la visibilité de la carte et du panneau. Le panneau QuestPilot dispose d'un bouton de barre d'outils Afficher/Masquer et d'un bouton Fermer; seul le panneau est masqué, jamais la carte. Ctrl+Alt+I continue de basculer les clics et ne force pas la réouverture du panneau caché."
+    "version": "0.14.2.40",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.40-b0.3.9-l0.2.15-b0f01c22374e/RaidPilot-Overlay-v0.14.2.40-Windows-x64.zip",
+    "sha256": "17C9F129459726E50359EE2D910827C1681DFB91C1C4810B6DD33D8C9DC49C9B",
+    "sizeBytes": 234483652,
+    "releaseNotes": "Affiche la disponibilité des étages par carte, le nombre de niveaux présents et la couverture localisée aux bâtiments. Refuse le mode AUTO lorsqu'aucun niveau validé n'est fourni, et maintient le réglage BASE. Les niveaux explicitement documentés restent sélectionnables manuellement. Cette version ne prétend pas couvrir tous les bâtiments : les catalogues sans étages doivent être renseignés à partir de géométries sourcées et testées avant activation automatique."
   },
   "beacon": {
     "version": "0.3.9",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.39-b0.3.9-l0.2.15-f5e353bc45d8/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
-    "sha256": "19CC5735DEA73FD6C844CAF898B5AE046D36B791B16B3FF198BD2FFA7331704E",
-    "sizeBytes": 58332195,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.40-b0.3.9-l0.2.15-b0f01c22374e/RaidPilot-Beacon-v0.3.9-Windows-x64.zip",
+    "sha256": "68DEFD2DE51EA6759A6303C2FF3A7A4C112D76BD5679A19150F35625E3DF7FC4",
+    "sizeBytes": 58332196,
     "releaseNotes": "Beacon 0.3.9 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.39-b0.3.9-l0.2.15-f5e353bc45d8/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "60A52378A9F90881FAB5D184303CA1082F110FF776F228FDB5919830A52A6AEC",
-    "sizeBytes": 351066520,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.40-b0.3.9-l0.2.15-b0f01c22374e/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "049C45AAAC1921FC7AEFDE613EE657337EC5913B6590BAF9D96A1B7E7A76E0C0",
+    "sizeBytes": 351070377,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.40",
+      "raidPilotVersion": "0.14.2.40",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "Étages — état des catalogues vérifiés par carte et sélection de secours",
+      "details": "Affiche la disponibilité des étages par carte, le nombre de niveaux présents et la couverture localisée aux bâtiments. Refuse le mode AUTO lorsqu'aucun niveau validé n'est fourni, et maintient le réglage BASE. Les niveaux explicitement documentés restent sélectionnables manuellement. Cette version ne prétend pas couvrir tous les bâtiments : les catalogues sans étages doivent être renseignés à partir de géométries sourcées et testées avant activation automatique."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.39",
@@ -253,16 +263,6 @@
       "date": "2026-10-23",
       "summary": "Precision V2.2 : meilleure détection du mouvement",
       "details": "La voie optique 160×90 suit un déplacement d'image plus étendu, avec une grille de points plus dense.\nDes statistiques distinguent les observations visuelles fiables des observations incertaines; la capture s'adapte aux ralentissements.\nLe capteur historique 64×36 et le relais Cloudflare sont conservés."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.15",
-      "raidPilotVersion": "0.14.2.15",
-      "beaconVersion": "0.3.4",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-23",
-      "summary": "Precision V2.1 : mesure de la dérive avant F8",
-      "details": "Comparaison des écarts en mètres et en degrés avant chaque nouveau recalage F8, avec statistiques médianes et P90 pour les modes V1 et V2.\nLes séquences interrompues ou incertaines sont exclues et les statistiques restent uniquement en mémoire.\nProtection supplémentaire contre les faux arrêts après une rotation ou un changement d'état."
     }
   ]
 }
