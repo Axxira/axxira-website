@@ -1179,7 +1179,8 @@ function setRaidQuests(p){
   const recognized=p.quests.map(q=>String(q.id||"").trim()).filter(Boolean);
   state.raidQuests={map:canonicalMapKey(p.map||state.mapKey),ids:new Set(recognized.map(s=>s.toLowerCase()))};
   if(state.questPilot){
-    state.questPilot.state.active=[...state.raidQuests.ids];
+    state.questPilot.state.active=[...state.raidQuests.ids].filter(id=>
+      !state.questPilot.state.excluded.includes(id));
     state.questPilot.state.done=[];
     state.questPilot.state.focused="";
   }
