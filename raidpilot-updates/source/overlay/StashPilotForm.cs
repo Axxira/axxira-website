@@ -148,7 +148,28 @@ internal sealed class StashPilotForm : Form
                 var footer = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48 };
                 var toInventory = new Button { Text = "Joindre à inventaire (non confirmé)", AutoSize = true };
                 var toObjectives = new Button { Text = "Joindre aux objectifs (non confirmé)", AutoSize = true };
-                footer.Controls.AddRange([toInventory, toObjectives]);
+                var propose = new Button
+                {
+                    Text = "Proposer quantités (à confirmer)",
+                    AutoSize = true
+                };
+                footer.Controls.AddRange([toInventory, toObjectives, propose]);
+                propose.Click += (_, _) =>
+                {
+                    var candidates = StashPilotOcrProposals.Parse(editor.Lines);
+                    if (candidates.Count == 0)
+                    {
+                        MessageBox.Show(review,
+                            "Aucune ligne au format « Boulons x4 » ou « 4 x Boulons » reconnue.",
+                            "StashPilot", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                    _inventory.AppendText(Environment.NewLine
+                        + "# PROPOSITIONS OCR : vérifier identité, quantité et FIR."
+                        + Environment.NewLine
+                        + StashPilotOcrProposals.AsReviewLines(candidates));
+                    review.Close();
+                };
                 toInventory.Click += (_, _) =>
                 {
                     _inventory.AppendText(Environment.NewLine + "# OCR non vérifié, corriger les quantités et le nom" +

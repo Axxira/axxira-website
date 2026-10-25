@@ -2,9 +2,30 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class StashPilotTests
 {
-    internal const int TestCount = 8;
+    internal const int TestCount = 11;
     internal static void RunAll(ICollection<string> failures)
     {
+        Run("StashPilot reconnaît quantité OCR suffixée mais refuse toute confirmation", () =>
+        {
+            var result = StashPilotOcrProposals.Parse(["Boulons x4"]);
+            Require(result.Count == 1 && result[0].Quantity == 4
+                && result[0].Item == "Boulons"
+                && !result[0].Confirmed && !result[0].FoundInRaid);
+        }, failures);
+        Run("StashPilot reconnaît quantité OCR préfixée et filtre les erreurs", () =>
+        {
+            var result = StashPilotOcrProposals.Parse(["3 x Ruban isolant", "Boulons x0",
+                "Ruban x9999", "Niveau 20", "Autres"]);
+            Require(result.Count == 1 && result[0].Quantity == 3);
+        }, failures);
+        Run("StashPilot proposition OCR n'autorise aucune vente", () =>
+        {
+            var r = StashPilotOcrProposals.Parse(["Boulons x4"]);
+            var advice = StashPilotAdvisor.Analyze(r,
+                [new("Boulons", 2, "Planque", false, true)]);
+            Require(advice.Count == 1 && advice[0].Recommendation == "À vérifier");
+            Require(!StashPilotOcrProposals.AsReviewLines(r).Contains("CONFIRMÉ"));
+        }, failures);
         Run("StashPilot OCR rejette le bruit et les répétitions", () =>
         {
             var rows = StashPilotImageScanner.FilterCandidates(
