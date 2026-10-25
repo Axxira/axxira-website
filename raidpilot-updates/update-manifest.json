@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T05:39:44.0655892+00:00",
+  "publishedAt": "2026-10-25T06:00:48.3278248+00:00",
   "raidPilot": {
-    "version": "0.15.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.0.1-b0.3.10-l0.2.15-2eff6a3643f4/RaidPilot-Overlay-v0.15.0.1-Windows-x64.zip",
-    "sha256": "0D538694C2927DC88128561D37DEC2176A14D36E1B0798CE71761709EFEC3594",
-    "sizeBytes": 234487420,
-    "releaseNotes": "Correctif de sûreté de la première version CORTEX : la fréquence des screenshots en mouvement utilise maintenant exclusivement le dernier F8 natif connu du superviseur. Une relocalisation visuelle, même confirmée, ne peut plus remettre à zéro l'horloge du vrai F8 dans la planification CORTEX. Le moteur reste désactivable pour comparaison. 17 tests de CORTEX couvrent notamment l'absence de fuite entre cartes/raids et cette distinction de temps."
+    "version": "0.15.1.0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.1.0-b0.3.10-l0.2.15-045a3c81261d/RaidPilot-Overlay-v0.15.1.0-Windows-x64.zip",
+    "sha256": "786AD3EF8D467D853907CD973F9C690241BA3E27E2BFEF4BFEEB6C75FC85847B",
+    "sizeBytes": 234488736,
+    "releaseNotes": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.0.1-b0.3.10-l0.2.15-2eff6a3643f4/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "0B03E249CF750404DB229882097F2288A055E6056FF69522A27627A0AF73CF12",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.1.0-b0.3.10-l0.2.15-045a3c81261d/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "0DA2816486AE1197856EBA3D4BDE03AA6CBCD08F68CA2E001AA202BAAF24DE59",
     "sizeBytes": 58332208,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.0.1-b0.3.10-l0.2.15-2eff6a3643f4/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "17B0F9FB5BB0612BD6A527DC07BB3E3232F1290EFF9AD117D56CE25718C2D1B7",
-    "sizeBytes": 351075795,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.1.0-b0.3.10-l0.2.15-045a3c81261d/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "8838DF88D14379FEC5F11EDC4E09D1C0135F54C2BFC42458750FD7FEFA40DA82",
+    "sizeBytes": 351077296,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.1.0",
+      "raidPilotVersion": "0.15.1.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "CORTEX V2 — mémoire visuelle des lieux et contrôle d'identité des repères",
+      "details": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.0.1",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "Recalage exact F8 facultatif pendant la marche — réduit la dérive prolongée",
       "details": "Nouveau mode expérimental facultatif « Recalage F8 pendant déplacement · 4 s » dans le menu de l’Overlay, désactivé par défaut et mémorisé localement. Tant que le raid est actif, le jeu au premier plan, que le joueur se déplace et n'est pas en train de viser/tirer, RaidPilot peut redemander toutes les quatre secondes au minimum une capture avec la touche Screenshot F6–F12 SEULE que le joueur a configurée dans EFT. Les coordonnées exactes lues dans les noms de captures corrigent alors la trajectoire à l'instant de prise de vue, en conservant le mouvement postérieur grâce à l'historique. Aucun accès mémoire ni injection dans le jeu; le mécanisme Win32 SendInput déjà utilisé pour le recalage au repos est réemployé, mais peut produire une notification de screenshot en jeu. Les captures prises pendant le mouvement ne calibrent PAS les vitesses et ne sont PAS enregistrées comme repères visuels stationnaires. Limite de cadence, exclusion des touches à modificateurs qui pourraient perturber le sprint, suppression prudente des seules captures automatiques et diagnostics des demandes/réceptions. Nouveaux tests comportementaux, de persistance, de touche F8, et simulation de dérive bornée (pas une mesure de performance réelle EFT). Les méthodes de suivi optique/Precision V4, l'équipe, Beacon 0.3.9 et Launcher 0.2.15 restent disponibles. Le joueur doit activer lui-même cette fonctionnalité expérimentale et vérifier la conformité aux règles EFT; son efficacité et l'acceptation des touches synthétiques sont à valider en raid."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.15",
-      "raidPilotVersion": "0.14.2.24",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-23",
-      "summary": "RaidPilot 0.14.2.24 / Launcher 0.2.15 — résilience et intégrité renforcées",
-      "details": "RaidPilot Precision V4 : les intervalles F8 qui traversent un changement de mode V2/V4 sont exclus de la comparaison, un recalage visuel partiel ne réinitialise plus artificiellement l'âge de l'ancre exacte F8, et les trajets corrigés en V4 restent des estimations plutôt que des ancres exactes dans l'atlas appris. Nouveaux tests de régression. Launcher 0.2.15 : journal de transaction local permettant de restaurer Overlay/Beacon après arrêt brutal de Windows entre deux mises à jour; restauration vérifiée par SHA-256 des binaires d'origine. Téléchargement HTTP résilient sur trois essais avec reprise Range sécurisée ou redémarrage propre si le serveur ignore Range, contrôle de blocage réseau de 60 secondes et vérification de la taille et de l'empreinte finale. Pour la source Stable intégrée, les archives doivent venir de la même publication officielle Axxira/axxira-website et la version déclarée doit correspondre aux exécutables Overlay/Beacon dans les ZIP. Le script de mise à jour du Launcher recalcule le SHA-256 après fermeture. Avant publication, Windows lance désormais le Launcher dans un mode de vérification non interactif pour confirmer les fichiers embarqués, versions, DLL GPU, notes et source Stable. Beacon 0.3.9, suivi équipe, zoom et cartes existantes conservés. Aucun test de jeu EFT réel ni droit commercial supplémentaire sur les images n'est prétendu. Code signing Authenticode dépend toujours d'un certificat de l'éditeur."
     }
   ]
 }
