@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T15:24:12.4385944+00:00",
+  "publishedAt": "2026-10-25T15:40:01.2159528+00:00",
   "raidPilot": {
-    "version": "0.15.3.2",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.2-b0.3.10-l0.2.15-1a8c145815ee/RaidPilot-Overlay-v0.15.3.2-Windows-x64.zip",
-    "sha256": "44D481444B74B332817960D3FE77588ED99B606B8B0A74BF6976F5DD5D7F67D8",
-    "sizeBytes": 234511283,
-    "releaseNotes": "StashPilot s'ouvre désormais directement avec Ctrl+Alt+P, ou depuis le menu RaidPilot; une fenêtre déjà ouverte est ramenée au premier plan au lieu d'être dupliquée. Les actions suivent l'ordre Scanner PNG puis Analyser. Raccourcis Ctrl+Entrée pour analyser et Ctrl+S pour sauvegarder la progression localement. La reconnaissance OCR reste assistée et les objets doivent être confirmés manuellement."
+    "version": "0.15.4.0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.0-b0.3.10-l0.2.15-aa106045956f/RaidPilot-Overlay-v0.15.4.0-Windows-x64.zip",
+    "sha256": "FD5977E4F4022DD06F2BD50F11F7B865E8AA4E1BCC87AF7F590B06C3E8EB68D1",
+    "sizeBytes": 234512102,
+    "releaseNotes": "Ouverture rapide StashPilot par Ctrl+Alt+P. Le scanner est armé pour 90 secondes dès l'ouverture ou par le bouton « Scanner avec F8 » : le prochain screenshot manuel F8 créé dans le dossier EFT est lu avec l'OCR local et présenté dans une fenêtre de validation. Les captures F8 du recalage automatique RaidPilot ne sont pas utilisées pour ce scan. Bouton Annuler F8, fallback Choisir PNG, aucune reconnaissance d'icônes ni validation automatique des objets/quantités. Le menu de stash doit être visible lors de F8. Les besoins quêtes/planque restent soumis aux données confirmées."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.2-b0.3.10-l0.2.15-1a8c145815ee/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "8B2B81E4A45466E79D2255D9BFA587CDB79585916C9746D7E8D2CFD894FBD31E",
-    "sizeBytes": 58332208,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.0-b0.3.10-l0.2.15-aa106045956f/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "1D6866A4B05220315F34FF5F282D689C2C50D97A83B418EB8DE59CC58FC63CD5",
+    "sizeBytes": 58332207,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.3.2-b0.3.10-l0.2.15-1a8c145815ee/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "518F3286AD5FF900DDE10D23390B30CA7ADC607766332AD16DE8BEC05F17CDCD",
-    "sizeBytes": 351100174,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.0-b0.3.10-l0.2.15-aa106045956f/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "0424D5041E1F0FC379936A2061163652948E686A28976957286ABCDE6ED8CDBF",
+    "sizeBytes": 351101048,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.4.0",
+      "raidPilotVersion": "0.15.4.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "StashPilot — scan direct F8 depuis l'inventaire Tarkov",
+      "details": "Ouverture rapide StashPilot par Ctrl+Alt+P. Le scanner est armé pour 90 secondes dès l'ouverture ou par le bouton « Scanner avec F8 » : le prochain screenshot manuel F8 créé dans le dossier EFT est lu avec l'OCR local et présenté dans une fenêtre de validation. Les captures F8 du recalage automatique RaidPilot ne sont pas utilisées pour ce scan. Bouton Annuler F8, fallback Choisir PNG, aucune reconnaissance d'icônes ni validation automatique des objets/quantités. Le menu de stash doit être visible lors de F8. Les besoins quêtes/planque restent soumis aux données confirmées."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.3.2",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "Localisation — journal de dérive enrichi et mesures souris/ADS",
       "details": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.30",
-      "raidPilotVersion": "0.14.2.30",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Diagnostic localisation F8 — correction CSV et synchronisation privée",
-      "details": "Correctif de génération du diagnostic-localisation.csv : les observations F8 acceptées sont désormais consignées même lorsqu'il n'existe pas d'historique de pose, avec statut no_historical_pose plutôt qu'une comparaison inventée. Conserve la mesure des écarts lorsque l'historique est disponible, et la copie opt-in vers un dossier privé synchronisé. Version augmentée pour garantir la détection de cette mise à jour par les launchers. La précision du suivi entre F8 reste à améliorer à partir de mesures réelles."
     }
   ]
 }
