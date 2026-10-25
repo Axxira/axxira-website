@@ -7,6 +7,7 @@ internal sealed partial class OverlayForm
 {
     private readonly PrecisionV2VisualSampler _precisionV2Vision = new();
     private readonly PrecisionV2MotionFusion _precisionV2Fusion = new();
+    private readonly RaidPilotIntelligenceEngine _intelligence = new();
     private readonly VisualReaderYawSync _precisionV2YawReader = new();
     private readonly PrecisionDriftAudit _precisionV2DriftAudit = new();
     private readonly ToolStripMenuItem _precisionV2ToggleMenuItem = new(
@@ -51,6 +52,7 @@ internal sealed partial class OverlayForm
     {
         _precisionV2Vision.Reset();
         _precisionV2Fusion.Reset();
+        _intelligence.Reset();
         _precisionV2YawReader.Reset();
         _precisionV2TrackingActive = false;
         _precisionV2LastTurnAt = 0;
@@ -104,8 +106,10 @@ internal sealed partial class OverlayForm
         var fused = _precisionV2Fusion.Fuse(
             observation, now, _lastForegroundWindow,
             movementInputActive, quietDirection, baseline);
+        var intelligent = _intelligence.Evaluate(observation, now,
+            _lastForegroundWindow, movementInputActive, quietDirection, baseline, fused);
         _precisionV2Vision.Request(_lastForegroundWindow, now);
-        return fused;
+        return intelligent;
     }
 
     private string PrecisionV2Diagnostic()
@@ -126,7 +130,8 @@ internal sealed partial class OverlayForm
                 + $"Reader 160×90 : yaw validés {_precisionV2YawReader.Accepted}, "
                 + $"rejetés {_precisionV2YawReader.Rejected} — {_precisionV2YawReader.LastStatus}\n"
                 + $"Géométrie : {_precisionV2Vision.CameraGeometryDiagnostic}\n"
-                + $"Arbitrage : {_precisionV2Fusion.LastDecision}";
+                + $"Arbitrage : {_precisionV2Fusion.LastDecision}\n"
+                + $"Intelligence : {_intelligence.LastDecision} · fiables {_intelligence.Accepted}, rejetés {_intelligence.Rejected}";
         return status + "\nContrôle format : " + _precisionV2Vision.GeometryWarning
             + "\nCapteur Windows : " + _precisionV2Vision.GpuStatus
             + "\n\n" + _precisionV2DriftAudit.Describe();
