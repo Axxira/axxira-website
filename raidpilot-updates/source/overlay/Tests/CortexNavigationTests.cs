@@ -95,6 +95,7 @@ internal static class CortexNavigationTests
             var e = Anchored();
             Require(Visual(e, 0.50));
             Require(!Visual(e, 0.61));
+            Observe(e, 0.78);
             Require(Visual(e, 1.0));
             Observe(e, 1.1);
             Require(Assess(e, 1.15).AllowStrongExtension);
