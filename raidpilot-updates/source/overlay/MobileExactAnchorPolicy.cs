@@ -50,7 +50,8 @@ internal static class MobileExactAnchorPreference
         {
             var location = path ?? DefaultPath;
             var info = new FileInfo(location);
-            if (!info.Exists || info.Length is <= 0 or > 4096) return false;
+            if (!info.Exists) return true; // Enable mobile reanchors on first launch; explicit opt-out persists.
+            if (info.Length is <= 0 or > 4096) return false;
             using var data = JsonDocument.Parse(File.ReadAllBytes(location));
             var root = data.RootElement;
             return root.ValueKind == JsonValueKind.Object
