@@ -20,9 +20,9 @@ internal static class MobileExactAnchorPolicyTests
 
     internal static void RunAll(ICollection<string> failures)
     {
-        Run("F8 mobile désactivé par défaut", () =>
+        Run("F8 mobile activé par défaut si aucune préférence", () =>
         {
-            Require(!MobileExactAnchorPreference.Load(Path.Combine(
+            Require(MobileExactAnchorPreference.Load(Path.Combine(
                 Path.GetTempPath(), Guid.NewGuid().ToString("N"))));
             Require(!Ready(enabled: false));
         }, failures);

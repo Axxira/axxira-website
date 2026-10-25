@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "component": "raidpilot",
+      "version": "0.14.2.44",
+      "raidPilotVersion": "0.14.2.44",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "F8 intelligent en mouvement activé au premier lancement",
+      "details": "Active par défaut les recalages F8 mobiles pour les installations sans préférence sauvegardée, avec intervalle minimal de quatre secondes, raccourci de capture dédié F6–F12 et première ancre exacte requise. Respecte le refus explicite déjà enregistré. Bloque toute capture automatique lorsque F, R, tir ou visée sont actifs. La précision reste à mesurer en raid; aucun ennemi n'est détecté directement."
+    },
+    {
       "component": "beacon",
       "version": "0.3.10",
       "raidPilotVersion": "0.14.2.43",
