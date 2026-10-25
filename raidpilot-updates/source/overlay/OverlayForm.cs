@@ -3457,6 +3457,16 @@ internal sealed partial class OverlayForm : Form
                     _raidGeneration,
                     now);
             var isAutomaticReanchor = matchesAutomaticRequest && !requestAlreadyHadCandidate;
+            // The separate StashPilot scan is armed by the user. Consume
+            // only a verified new screenshot, never an automatic reanchor.
+            // Do not interrupt the normal F8 localization processing.
+            if (_stashPilotWindow is { IsDisposed: false, HasPendingF8Scan: true }
+                && hasFileTimestamp)
+            {
+                _stashPilotWindow.TryReceiveF8(screenshotPath, now,
+                    automaticRequest is not null && matchesAutomaticRequest,
+                    verified: true);
+            }
             if (isAutomaticReanchor && automaticRequest is { RequestedWhileMoving: true })
                 _mobileExactAnchorConfirmed++;
             if (matchesAutomaticRequest && !automaticRequest!.CleanupScheduled)
