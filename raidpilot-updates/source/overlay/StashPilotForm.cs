@@ -86,7 +86,7 @@ internal sealed class StashPilotForm : Form
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 52));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 170));
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 94));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         var title = new Label
@@ -107,7 +107,7 @@ internal sealed class StashPilotForm : Form
         var actions = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight,
-            AutoSize = false, WrapContents = false
+            AutoSize = false, WrapContents = true, AutoScroll = true
         };
         var calculate = new Button { Text = "Analyser (Ctrl+Entrée)", AutoSize = true, Height = 35 };
         calculate.Click += (_, _) => Analyze();
@@ -192,6 +192,11 @@ internal sealed class StashPilotForm : Form
             _requirements.Text = storedNeeds;
         }
         Analyze();
+        Shown += (_, _) =>
+        {
+            _f8Gate.Arm(System.Diagnostics.Stopwatch.GetTimestamp());
+            _status.Text = "Scan prêt : ouvre l'inventaire Tarkov et appuie sur F8. Le prochain F8 manuel sera analysé (90 s).";
+        };
     }
 
     private async Task ScanAndReviewAsync(string screenshotPath)
