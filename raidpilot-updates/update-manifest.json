@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T03:36:11.6973267+00:00",
+  "publishedAt": "2026-10-25T05:09:50.4160520+00:00",
   "raidPilot": {
-    "version": "0.14.2.44",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.44-b0.3.10-l0.2.15-369be1a35add/RaidPilot-Overlay-v0.14.2.44-Windows-x64.zip",
-    "sha256": "055C61CA8AD2567E8521C1A36B76805F0517C743A6AA8DB38B6287599C0AB3B5",
-    "sizeBytes": 234489147,
-    "releaseNotes": "Active par défaut les recalages F8 mobiles pour les installations sans préférence sauvegardée, avec intervalle minimal de quatre secondes, raccourci de capture dédié F6–F12 et première ancre exacte requise. Respecte le refus explicite déjà enregistré. Bloque toute capture automatique lorsque F, R, tir ou visée sont actifs. La précision reste à mesurer en raid; aucun ennemi n'est détecté directement."
+    "version": "0.14.2.45",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.45-b0.3.10-l0.2.15-ba50b8e582d9/RaidPilot-Overlay-v0.14.2.45-Windows-x64.zip",
+    "sha256": "F84553B70CD221320E54A51F3B117B2C296152301D67499504F001A5838046E1",
+    "sizeBytes": 234481493,
+    "releaseNotes": "Le recalage exact pendant la marche conserve 4 s lorsque la vision manque, que la position devient incertaine ou que la santé GPS est orange/rouge. Des corrections visuelles locales, indépendantes et réellement appliquées (consensus de repères, confiance ≥ 0,90 et faible résidu) permettent d'espacer les F8 à 8 ou 12 s, réduisant sons et notifications du jeu. F, tir, visée et rechargement bloquent toujours les captures. Le suivi par images reste local, sans coordonnées inventées; les tests en raid doivent vérifier l'équilibre précision/discrétion."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.44-b0.3.10-l0.2.15-369be1a35add/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "4A943178F6337F88A122492D6FA6807622CFE69550BB76DC9809C4AB6813E806",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.45-b0.3.10-l0.2.15-ba50b8e582d9/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "9BF569FF1CFE8F2757B52EDF4F4D8A883757DD6DAF5FAE4FD7CDE5A7890BC913",
     "sizeBytes": 58332208,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.44-b0.3.10-l0.2.15-369be1a35add/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "7A544478979FE00F74A2DB8942C9F5CF89233034C5527C91C1B27215F02CE9D3",
-    "sizeBytes": 351076738,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.14.2.45-b0.3.10-l0.2.15-ba50b8e582d9/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "AD29D94B5B6980C75D844B15E268EDCDC181D9A31CF63533070597E6131B5A28",
+    "sizeBytes": 351069349,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.14.2.45",
+      "raidPilotVersion": "0.14.2.45",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-25",
+      "summary": "F8 adaptatif silencieux — 4 à 12 s selon les repères visuels fiables",
+      "details": "Le recalage exact pendant la marche conserve 4 s lorsque la vision manque, que la position devient incertaine ou que la santé GPS est orange/rouge. Des corrections visuelles locales, indépendantes et réellement appliquées (consensus de repères, confiance ≥ 0,90 et faible résidu) permettent d'espacer les F8 à 8 ou 12 s, réduisant sons et notifications du jeu. F, tir, visée et rechargement bloquent toujours les captures. Le suivi par images reste local, sans coordonnées inventées; les tests en raid doivent vérifier l'équilibre précision/discrétion."
+    },
     {
       "component": "raidpilot",
       "version": "0.14.2.44",
@@ -253,16 +263,6 @@
       "date": "2026-10-23",
       "summary": "Precision V4 expérimental : fusion visuelle prudente et audit F8",
       "details": "Nouveau mode Precision V4 facultatif dans l'icône de notification (désactivé par défaut avant validation en raid). Fusion des reconnaissances visuelles avec l'incertitude estimée, seuil d'innovation statistique, vérification de cohérence entre étages et limitation des grands snaps. Les recadrages forts nécessitent un consensus de reconnaisseurs ou une loop closure temporellement confirmée; un écart invraisemblable est refusé. Le moteur prévoit des zones navigables polygonales vérifiées, mais aucune paroi n'est inventée lorsque les données de géométrie sont absentes. Calibration F8 plus prudente après un écart anormal; audit V4 par intervalles environ 5-10, 10-20 et 20-30+ secondes et diagnostic enrichi. Le moteur visuel V2/V3, les keyframes, le suivi GPU facultatif, le relais d'équipe et le zoom sauvegardé sont conservés. Aucune promesse de GPS absolu ni de réduction de dérive n'est faite sans mesures EFT réelles. Export manuel d'un rapport JSON F8 ne contenant ni coordonnées ni captures; 32 échantillons maximum, aucune transmission réseau."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.21",
-      "raidPilotVersion": "0.14.2.21",
-      "beaconVersion": "0.3.8",
-      "launcherVersion": "0.2.13",
-      "date": "2026-10-23",
-      "summary": "Carte locale : avertissement quand le GPS cesse de recevoir des positions",
-      "details": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
     }
   ]
 }
