@@ -513,8 +513,7 @@ internal sealed partial class OverlayForm : Form
         SetManualOverlayHidden(false);
         SetClickThrough(!interactive, activateWhenInteractive: interactive);
         if (interactive) ShowNoActivate(force: true);
-        if (_webReady && _webView.CoreWebView2 is not null)
-            _ = KeepQuestPanelVisibleAsync();
+        // QuestPilot visibility is controlled independently by its toolbar button.
     }
 
     private async Task KeepQuestPanelVisibleAsync()

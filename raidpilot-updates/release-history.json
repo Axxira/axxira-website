@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.14.2.39",
+      "raidPilotVersion": "0.14.2.39",
+      "beaconVersion": "0.3.9",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-24",
+      "summary": "QuestPilot Pro — grandes cartes de quêtes scannées pour le raid en cours",
+      "details": "QuestPilot affiche uniquement les quêtes signalées par le scan TAB → TÂCHES → F8 pour le raid courant. La sélection et les validations manuelles temporaires sont réinitialisées au début et à la fin d'un raid sans effacer les preuves de quête terminée issues des journaux EFT. Une nouvelle détection de liste remplace la sélection précédente. Le panneau sous la carte devient plus haut et présente des cartes lisibles, avec typographie agrandie, boutons Fait et restauration. Ctrl+Alt+I ne change que le mode interactif, pas la visibilité de la carte et du panneau. Le panneau QuestPilot dispose d'un bouton de barre d'outils Afficher/Masquer et d'un bouton Fermer; seul le panneau est masqué, jamais la carte. Ctrl+Alt+I continue de basculer les clics et ne force pas la réouverture du panneau caché."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.14.2.38",
       "raidPilotVersion": "0.14.2.38",
       "beaconVersion": "0.3.9",

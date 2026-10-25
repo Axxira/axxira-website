@@ -440,7 +440,7 @@ function setHazards(p,kind){state[kind==="mine"?"minePayload":"boundaryPayload"]
 function clearHazards(kind){state[kind==="mine"?"minePayload":"boundaryPayload"]=null;state[kind==="mine"?"mineStatus":"boundaryStatus"]={};render();return true;}
 function setGuidanceTarget(p){state.guidance=p;state.guidanceTarget={map:canonicalMapKey(p.map||state.mapKey),entry:RPRaidTactics.extractionEntries([{id:p.id,labels:[p.name,...(p.aliases||[])]}])[0]||{id:"",labels:[]}};render();return state.markers.filter(isGuidanceTarget).length;}
 function clearGuidanceTarget(){state.guidance=null;state.guidanceTarget=null;render();}
-function resetRaid(){state.raidQuests=null;state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.mineStatus={};state.boundaryStatus={};state.player=null;state.lastPoseReceivedAt=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
+function resetRaid(){clearRaidQuests();state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.mineStatus={};state.boundaryStatus={};state.player=null;state.lastPoseReceivedAt=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
 
 function visibleMarkers() {
   const base = [...state.markers, ...state.runtimeMarkers];
@@ -878,10 +878,11 @@ function renderQuestPilotPanel(){
   refs.questList.replaceChildren();
   refs.questSteps.replaceChildren();
   refs.questPrep.replaceChildren();
-  const active=planner.countActive();
+  const scanned=state.raidQuests?.ids||new Set();
+  const active=[...scanned].filter(id=>planner.isActive(id)).length;
   const confirmed=Object.values(planner.state.evidence||{})
     .filter(e=>e.status==="completed").length;
-  refs.questSummary.textContent=active+" quête(s) choisie(s) · "
+  refs.questSummary.textContent=active+" quête(s) scannée(s) dans ce raid · "
     +confirmed+" remise(s) confirmée(s) par les journaux EFT · "
     +"balises cochées manuellement";
   const search=state.questSearch;
@@ -898,11 +899,11 @@ function renderQuestPilotPanel(){
   // Default to selected missions; explicitly searching or toggling discovery
   // reveals the wider catalogue without overwhelming the player.
   const candidates=planner.searchTasks(state.questMapIds,search)
-    .filter(q=>Boolean(search)||state.questShowAll||planner.isActive(q.id));
+    .filter(q=>scanned.has(String(q.id).toLowerCase()));
   const visible=candidates.slice(0,search?80:65);
   if(!visible.length)qpEmpty(refs.questList,
     search?"Aucune quête ne correspond à ta recherche."
-      :"Aucune quête suivie. Recherche une mission ou clique « Voir toutes les quêtes ».");
+      :"Aucune quête scannée pour ce raid. Lance TAB → TÂCHES → F8.");
   for(const quest of visible){
     const selected=planner.isActive(quest.id);
     const row=document.createElement("label");
@@ -948,7 +949,8 @@ function renderQuestPilotPanel(){
       row.appendChild(undo);refs.questDoneList.appendChild(row);
     }
   }
-  const selectedSteps=planner.suggested(state.questMapIds,state.player);
+  const selectedSteps=planner.suggested(state.questMapIds,state.player)
+    .filter(step=>scanned.has(String(step.questId).toLowerCase()));
   if(selectedSteps.length){
     const step=selectedSteps[0];
     const quick=document.createElement("div");quick.className="qp-step qp-quick-next";
@@ -1175,11 +1177,32 @@ function applyQuestLogEvents(events){
 function setRaidQuests(p){
   if(p.gameMode)setGameMode(p.gameMode);
   const recognized=p.quests.map(q=>String(q.id||"").trim()).filter(Boolean);
-  state.raidQuests={map:canonicalMapKey(p.map||state.mapKey),ids:new Set(recognized.map(s=>s.toLowerCase()))};
-  if(state.questPilot)state.questPilot.recognize(recognized);
+  const scannedMap=canonicalMapKey(p.map||state.mapKey);
+  const ids=new Set(recognized.map(s=>s.toLowerCase()));
+  const sameScan=state.raidQuests?.map===scannedMap
+    && ids.size===state.raidQuests.ids.size
+    && [...ids].every(id=>state.raidQuests.ids.has(id));
+  state.raidQuests={map:scannedMap,ids};
+  if(state.questPilot){
+    state.questPilot.state.active=[...ids].filter(id=>
+      !state.questPilot.state.excluded.includes(id));
+    // Re-reading the SAME quest scan must never uncheck completed steps.
+    if(!sameScan){
+      state.questPilot.state.done=[];
+      state.questPilot.state.focused="";
+    }
+  }
   renderQuestPilotPanel();render();return applyRaidQuests();
 }
-function clearRaidQuests(){state.raidQuests=null;render();}
+function clearRaidQuests(){
+  state.raidQuests=null;
+  if(state.questPilot){
+    state.questPilot.state.active=[];
+    state.questPilot.state.done=[];
+    state.questPilot.state.focused="";
+  }
+  renderQuestPilotPanel();render();
+}
 function setLearnedRoute(p){
   if(p.kind!=="learned"||!["high","medium"].includes(p.confidence)||!Array.isArray(p.points)||p.points.length<2||p.points.length>4096||p.points.some(q=>![q?.x,q?.y,q?.z].every(n=>typeof n==="number"&&Number.isFinite(n)&&Math.abs(n)<=20000)))return false;
   const next=p.nextIndex??0;if(!Number.isInteger(next)||next<0||next>=p.points.length)return false;
@@ -1519,12 +1542,16 @@ function wireUI() {
     refs.panel.classList.toggle("hidden");
     if(!refs.panel.className.includes("hidden"))refs.questPanel?.classList.add("hidden");
   });
-  refs.questsBtn?.addEventListener("click",()=>{
-    refs.panel.classList.add("hidden");
-    refs.questPanel?.classList.remove("hidden");
-    renderQuestPilotPanel();
-  });
-  refs.questClose?.addEventListener("click",()=>{ /* always-visible quest panel */ });
+  const toggleQuestPanel=force=>{
+    if(!refs.questPanel)return;
+    const show=typeof force==="boolean"?force:refs.questPanel.classList.contains("hidden");
+    refs.questPanel.classList.toggle("hidden",!show);
+    refs.questsBtn?.setAttribute("aria-expanded",show?"true":"false");
+    refs.questsBtn.textContent=show?"🎯 Masquer QuestPilot":"🎯 Afficher QuestPilot";
+    if(show){refs.panel.classList.add("hidden");renderQuestPilotPanel();}
+  };
+  refs.questsBtn?.addEventListener("click",()=>toggleQuestPanel());
+  refs.questClose?.addEventListener("click",()=>toggleQuestPanel(false));
   refs.questSearch?.addEventListener("input",()=>{
     state.questSearch=refs.questSearch.value.trim().toLowerCase();
     renderQuestPilotPanel();
@@ -1618,8 +1645,12 @@ async function init() {
   await loadCache();
   state.questPilot = new RPQuestPilot.Planner(window.localStorage,state.gameMode);
   refreshQuestPilotCatalogue();
+  state.questPilot.state.active=[];state.questPilot.state.done=[];
+  state.questPilot.state.focused="";
   // Quest list stays visible even when input is click-through.
   refs.questPanel?.classList.remove("hidden");
+  refs.questsBtn?.setAttribute("aria-expanded","true");
+  refs.questsBtn.textContent="🎯 Masquer QuestPilot";
   renderQuestPilotPanel();
   if($("#game-mode"))$("#game-mode").value=state.gameMode;
   state.initialized = true;
