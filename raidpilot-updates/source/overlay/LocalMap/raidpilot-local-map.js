@@ -1177,12 +1177,20 @@ function applyQuestLogEvents(events){
 function setRaidQuests(p){
   if(p.gameMode)setGameMode(p.gameMode);
   const recognized=p.quests.map(q=>String(q.id||"").trim()).filter(Boolean);
-  state.raidQuests={map:canonicalMapKey(p.map||state.mapKey),ids:new Set(recognized.map(s=>s.toLowerCase()))};
+  const scannedMap=canonicalMapKey(p.map||state.mapKey);
+  const ids=new Set(recognized.map(s=>s.toLowerCase()));
+  const sameScan=state.raidQuests?.map===scannedMap
+    && ids.size===state.raidQuests.ids.size
+    && [...ids].every(id=>state.raidQuests.ids.has(id));
+  state.raidQuests={map:scannedMap,ids};
   if(state.questPilot){
-    state.questPilot.state.active=[...state.raidQuests.ids].filter(id=>
+    state.questPilot.state.active=[...ids].filter(id=>
       !state.questPilot.state.excluded.includes(id));
-    state.questPilot.state.done=[];
-    state.questPilot.state.focused="";
+    // Re-reading the SAME quest scan must never uncheck completed steps.
+    if(!sameScan){
+      state.questPilot.state.done=[];
+      state.questPilot.state.focused="";
+    }
   }
   renderQuestPilotPanel();render();return applyRaidQuests();
 }
