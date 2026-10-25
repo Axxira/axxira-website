@@ -1821,7 +1821,8 @@ internal sealed partial class OverlayForm : Form
             _mobileExactAnchorEnabled,
             _liveTrackingEnabled && _tarkovIsForeground && _controlTrackingActive && _raidActive,
             inputMagnitude > 0.15,
-            aiming || _middleMouseDown || IsKeyDown(Keys.LButton)
+            aiming || _middleMouseDown || IsKeyDown(Keys.F)
+                || IsKeyDown(Keys.R) || IsKeyDown(Keys.LButton)
                 || IsKeyDown(Keys.RButton),
             ScreenshotHotkeySender.CanSendWhileMoving(_screenshotBinding),
             _screenshotWatcher is not null,
@@ -1848,6 +1849,8 @@ internal sealed partial class OverlayForm : Form
             return;
 
         if (_lastExactObservation is null
+            || IsKeyDown(Keys.F) || IsKeyDown(Keys.R)
+            || IsKeyDown(Keys.LButton) || IsKeyDown(Keys.RButton)
             || !ScreenshotHotkeySender.CanSend(_screenshotBinding)
             || _screenshotWatcher is null
             || secondsSinceExactAnchor < 1.5)
