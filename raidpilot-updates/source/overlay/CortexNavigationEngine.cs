@@ -12,6 +12,7 @@ namespace RaidPilot.Overlay;
 internal sealed class CortexNavigationEngine
 {
     private const double MaximumTrustedVisualAgeSeconds = 5.0;
+    private const double MaximumLearnedVisualGraceSeconds = 9.0;
     private const double MaximumPoseAgeSeconds = 0.75;
     private const double MinimumIndependentVisualGapSeconds = 0.20;
     private const double MaximumIndependentVisualGapSeconds = 5.0;
@@ -297,16 +298,29 @@ internal sealed class CortexNavigationEngine
             && (secondsSinceBad < BadAnchorRecoverySeconds
                 || _cleanAnchorsAfterBad < 2);
         var conflictsRecent = secondsSinceConflict < MotionConflictRecoverySeconds;
-        var visualFresh = SecondsSince(_lastTrustedVisualAt, timestamp)
-            <= MaximumTrustedVisualAgeSeconds;
+        var visualAge = SecondsSince(_lastTrustedVisualAt, timestamp);
+        var visualFresh = visualAge <= MaximumTrustedVisualAgeSeconds;
         var reliableHealth = health is LocalizationHealthState.Green
             or LocalizationHealthState.Yellow;
         var safeGeometry = pose.PositionUncertaintyMeters < 2.25
             && pose.YawUncertaintyDegrees < 20.0;
         var recentF8 = SecondsSince(_lastNativeAnchorAt, timestamp) <= 45.0;
-        var eligible = visualFresh && reliableHealth && safeGeometry
-            && recentF8 && !badF8NotRecovered && !conflictsRecent;
-        var strong = eligible &&
+        // A brief extension from 5 to at most 9 seconds WITHOUT a new visual
+        // hit is permissible only after native-F8 risk calibration has learned
+        // low drift. The original visual proof must still be from this raid.
+        // Never grant the 12 s tier from this learned grace period.
+        var risk = _driftRisk.Current;
+        var learnedGrace = !visualFresh
+            && visualAge <= MaximumLearnedVisualGraceSeconds
+            && risk.Calibrated && risk.MaxIntervalSeconds >= 8
+            && _landmarks.Count > 0
+            && health == LocalizationHealthState.Green
+            && pose.PositionUncertaintyMeters < 1.25
+            && pose.YawUncertaintyDegrees < 10.0;
+        var eligible = (visualFresh || learnedGrace) && reliableHealth
+            && safeGeometry && recentF8
+            && !badF8NotRecovered && !conflictsRecent;
+        var strong = eligible && visualFresh &&
             _landmarks.CountRecentDistinct(timestamp, MaximumIndependentVisualGapSeconds) >= 2;
 
         // This number is a transparent *quality indicator*, not a statistical
@@ -337,8 +351,9 @@ internal sealed class CortexNavigationEngine
             return new(CortexTrackingQuality.Predicted, false, false,
                 score, reason);
         }
-        var risk = _driftRisk.Current;
-        // The learned empirical error ceiling can only veto an extension.
+        // The learned empirical error ceiling vetoes unsafe extensions.
+        // The short grace requires an already-accepted local visual anchor, a
+        // sufficiently healthy current pose, and six genuine F8 comparisons.
         // It never promotes an unverified visual correction or replaces a F8.
         if (risk.Calibrated && risk.MaxIntervalSeconds <= 4)
             return new(CortexTrackingQuality.Predicted, false, false,
@@ -346,10 +361,12 @@ internal sealed class CortexNavigationEngine
         if (risk.Calibrated && risk.MaxIntervalSeconds <= 8)
             strong = false;
         return new(CortexTrackingQuality.VisuallySupported, true, strong,
-            score, risk.Calibrated && risk.MaxIntervalSeconds <= 8
-                ? risk.Reason
-                : strong ? "Deux corrections visuelles locales concordantes"
-                    : "Correction visuelle locale validée");
+            score, learnedGrace
+                ? "Grâce adaptative de 8 s : repère local et dérive F8 maîtrisée"
+                : risk.Calibrated && risk.MaxIntervalSeconds <= 8
+                    ? risk.Reason
+                    : strong ? "Deux corrections visuelles locales concordantes"
+                        : "Correction visuelle locale validée");
     }
 
     internal string Diagnostic(CortexNavigationAssessment assessment)
