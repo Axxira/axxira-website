@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexV4Tests
 {
-    internal const int TestCount = 21;
+    internal const int TestCount = 33;
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
     private static readonly DateTimeOffset Today =
@@ -68,7 +68,11 @@ internal static class CortexV4Tests
             Require(accepted is { } d
                 && d.MaximumTranslationStepMeters <= 0.75
                 && d.MaximumYawStepDegrees <= 6
-                && e.VerifiedLoopClosures == 1);
+                && e.VerifiedLoopClosures == 0);
+            e.NoteApplied();
+            Require(e.VerifiedLoopClosures == 0);
+            e.NoteApplied();
+            Require(e.VerifiedLoopClosures == 1);
         }, failures);
 
         Run("V4 rejette une boucle sans consensus basse et haute résolution", () =>
@@ -273,6 +277,191 @@ internal static class CortexV4Tests
                 && report.Contains("\"localCoarseRiskSectors\"")
                 && !report.Contains("customs")
                 && !report.Contains("screenshotPath"));
+        }, failures);
+
+        Run("V4.1 boucle refuse deux trames visuelles quasi simultanées", () =>
+        {
+            var e = new CortexVisualIntelligence();
+            e.OnNativeF8(Map, 1, Window);
+            var p = Proposed(x: 9, loop: true);
+            Require(Filter(e, 1, p) is null);
+            Require(Filter(e, 1.05, p) is null);
+            Require(e.HasPendingLoopEvidence);
+            Require(Filter(e, 1.30, p) is not null);
+            Require(e.VerifiedLoopClosures == 0);
+            e.NoteApplied();
+            Require(e.VerifiedLoopClosures == 1);
+        }, failures);
+
+        Run("V4.1 la boucle n'est comptée que si la correction est appliquée", () =>
+        {
+            var e = new CortexVisualIntelligence();
+            e.OnNativeF8(Map, 1, Window);
+            var p = Proposed(x: 9, loop: true);
+            Require(Filter(e, 1, p) is null);
+            Require(Filter(e, 1.5, p) is not null);
+            Require(e.VerifiedLoopClosures == 0);
+            e.OnNativeF8(Map, 1, Window);
+            Require(e.VerifiedLoopClosures == 0
+                && e.Mode == CortexRecoveryMode.Tracking);
+        }, failures);
+
+        Run("V4.1 récupération confirmée avance par étapes mesurées", () =>
+        {
+            var e = new CortexVisualIntelligence();
+            e.OnNativeF8(Map, 1, Window);
+            var p = Proposed(x: 9, loop: true);
+            Require(Filter(e, 1, p) is null);
+            Require(Filter(e, 1.5, p) is { } accepted
+                && accepted.MaximumTranslationStepMeters <= 0.75);
+            e.NoteApplied();
+            for (var k = 0; k < 4; k++)
+            {
+                Require(Filter(e, 2 + k * 0.5, p) is { } next
+                    && next.MaximumTranslationStepMeters <= 0.75);
+                e.NoteApplied();
+            }
+            Require(e.VerifiedLoopClosures == 1
+                && e.VerifiedRecoverySteps == 5
+                && e.Mode == CortexRecoveryMode.Recovering);
+        }, failures);
+
+        Run("V4.1 récupération limitée demande F8 après six étapes", () =>
+        {
+            var e = new CortexVisualIntelligence();
+            e.OnNativeF8(Map, 1, Window);
+            var p = Proposed(x: 9, loop: true);
+            Require(Filter(e, 1, p) is null);
+            Require(Filter(e, 1.5, p) is not null);
+            e.NoteApplied();
+            for (var k = 0; k < 5; k++)
+            {
+                Require(Filter(e, 2 + k * 0.5, p) is not null);
+                e.NoteApplied();
+            }
+            Require(e.VerifiedRecoverySteps == 6
+                && e.Mode == CortexRecoveryMode.NeedsNativeF8);
+            Require(Filter(e, 4.75, p) is null);
+            e.OnNativeF8(Map, 1, Window);
+            Require(e.Mode == CortexRecoveryMode.Tracking);
+        }, failures);
+
+        Run("V4.1 répétitions trop rapprochées ne détruisent pas le suivi", () =>
+        {
+            var e = new CortexVisualIntelligence();
+            e.OnNativeF8(Map, 1, Window);
+            var p = Proposed(x: 9, loop: true);
+            Require(Filter(e, 1, p) is null);
+            Require(Filter(e, 1.5, p) is not null);
+            e.NoteApplied();
+            Require(Filter(e, 1.51, p) is null);
+            Require(e.Mode == CortexRecoveryMode.Recovering);
+            Require(Filter(e, 1.90, p) is not null);
+            e.NoteApplied();
+            Require(e.VerifiedRecoverySteps == 2);
+        }, failures);
+
+        Run("V4.1 preuve d'un nouveau lieu invalide une boucle précédente", () =>
+        {
+            var e = new CortexVisualIntelligence();
+            e.OnNativeF8(Map, 1, Window);
+            var p = Proposed(x: 9, loop: true);
+            Require(Filter(e, 1, p) is null);
+            Require(Filter(e, 1.5, p) is not null);
+            e.NoteApplied();
+            Require(Filter(e, 2, p, high: 9) is null);
+            Require(e.Mode == CortexRecoveryMode.NeedsNativeF8);
+        }, failures);
+
+        Run("V4.1 retour F8 supprime la mémoire de récupération", () =>
+        {
+            var e = new CortexVisualIntelligence();
+            e.OnNativeF8(Map, 1, Window);
+            var p = Proposed(x: 9, loop: true);
+            Require(Filter(e, 1, p) is null);
+            Require(Filter(e, 1.5, p) is not null);
+            e.NoteApplied();
+            e.OnNativeF8(Map, 1, Window);
+            Require(Filter(e, 2, p) is null
+                && e.Mode == CortexRecoveryMode.AwaitingVisualConsensus);
+        }, failures);
+
+        Run("V4.1 retour visuel/F8 apprend seulement les F8 comparables", () =>
+        {
+            var g = new CortexVisualFeedbackGate();
+            g.OnNativeF8(At(0), Map, 1, Window, null);
+            g.OnVisualApplied(At(1), Map, 1, Window, Proposed(), false);
+            g.OnNativeF8(At(8), Map, 1, Window, Drift(0.1));
+            Require(g.SampleCount == 1 && !g.Calibrated);
+            g.OnVisualApplied(At(9), Map, 1, Window, Proposed(), true);
+            g.OnNativeF8(At(16), Map, 1, Window, Drift(4.0));
+            Require(g.SampleCount == 1);
+            g.OnVisualApplied(At(17), Map, 1, Window, Proposed(), false);
+            g.OnNativeF8(At(24), Map, 1, Window, null);
+            Require(g.SampleCount == 1 && g.Ignored == 1);
+        }, failures);
+
+        Run("V4.1 F8 invalides, doubles et désynchronisés sont ignorés", () =>
+        {
+            var g = new CortexVisualFeedbackGate();
+            g.OnNativeF8(At(0), Map, 1, Window, null);
+            g.OnVisualApplied(At(1), Map, 1, Window, Proposed(), false);
+            g.OnNativeF8(At(8), Map, 1, Window, Drift(0.4));
+            g.OnNativeF8(At(8), Map, 1, Window, Drift(5));
+            g.OnVisualApplied(At(9), Map, 1, Window, Proposed(), false);
+            g.OnNativeF8(At(16), Map, 1, Window,
+                new PrecisionDriftSample(true, 0.4, 1, 19, 0.8));
+            Require(g.SampleCount == 1 && g.Comparisons == 1
+                && g.Ignored == 1);
+        }, failures);
+
+        Run("V4.1 confiance F8 faible borne les captures à 4 secondes", () =>
+        {
+            var g = new CortexVisualFeedbackGate();
+            g.OnNativeF8(At(0), Map, 1, Window, null);
+            for (var i = 0; i < 4; i++)
+            {
+                g.OnVisualApplied(At(i * 8 + 1), Map, 1, Window,
+                    Proposed(), false);
+                g.OnNativeF8(At((i + 1) * 8), Map, 1, Window,
+                    Drift(i < 2 ? 4 : 0.2));
+            }
+            Require(g.Calibrated && g.SampleCount == 4
+                && g.MaximumIntervalSecondsAllowed == 4
+                && g.Diagnostic.Contains("plafond 4 s"));
+        }, failures);
+
+        Run("V4.1 bonnes corrections successives rétablissent le plafond 12 s", () =>
+        {
+            var g = new CortexVisualFeedbackGate();
+            g.OnNativeF8(At(0), Map, 1, Window, null);
+            for (var i = 0; i < 28; i++)
+            {
+                g.OnVisualApplied(At(i * 8 + 1), Map, 1, Window,
+                    Proposed(), false);
+                g.OnNativeF8(At((i + 1) * 8), Map, 1, Window,
+                    Drift(i < 4 ? 4 : 0.1));
+            }
+            Require(g.SampleCount == CortexVisualFeedbackGate.Capacity
+                && g.MaximumIntervalSecondsAllowed == 12);
+        }, failures);
+
+        Run("V4.1 rétroaction visuelle isolée entre parties et fenêtres", () =>
+        {
+            var g = new CortexVisualFeedbackGate();
+            g.OnNativeF8(At(0), Map, 1, Window, null);
+            for (var i = 0; i < 4; i++)
+            {
+                g.OnVisualApplied(At(i * 8 + 1), Map, 1, Window,
+                    Proposed(), false);
+                g.OnNativeF8(At((i + 1) * 8), Map, 1, Window, Drift(4));
+            }
+            Require(g.MaximumIntervalSecondsAllowed == 4);
+            g.OnNativeF8(At(40), Map, 2, Window, null);
+            Require(g.SampleCount == 0
+                && g.MaximumIntervalSecondsAllowed == 12);
+            g.OnVisualApplied(At(41), Map, 2, (nint)99, Proposed(), false);
+            Require(g.SampleCount == 0);
         }, failures);
     }
 
