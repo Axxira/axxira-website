@@ -166,7 +166,9 @@ internal sealed class StashPilotForm : Form
             if (dialog.ShowDialog(this) == DialogResult.OK)
                 await ScanAndReviewAsync(dialog.FileName);
         };
-        actions.Controls.AddRange([details, fromFile]);
+        var catalogueButton = new Button { Text = "Liste des objets Tarkov", AutoSize = true };
+        catalogueButton.Click += async (_, _) => await ShowItemCatalogueAsync();
+        actions.Controls.AddRange([details, fromFile, catalogueButton]);
         root.Controls.Add(actions, 0, 2);
         root.Controls.Add(_status, 0, 3);
         Controls.Add(root);
@@ -236,6 +238,79 @@ internal sealed class StashPilotForm : Form
         layout.Controls.Add(save, 0, 1);
         layout.SetColumnSpan(save, 2);
         dialog.Controls.Add(layout);
+        dialog.ShowDialog(this);
+    }
+
+    private async Task ShowItemCatalogueAsync()
+    {
+        using var dialog = new Form
+        {
+            Text = "StashPilot — objets Tarkov",
+            Size = new Size(740, 620),
+            MinimumSize = new Size(480, 380),
+            StartPosition = FormStartPosition.CenterParent,
+            BackColor = Color.FromArgb(17, 23, 30),
+            ForeColor = Color.White
+        };
+        var search = new TextBox
+        {
+            Dock = DockStyle.Top,
+            PlaceholderText = "Rechercher un objet...",
+            Font = new Font("Segoe UI", 11)
+        };
+        var status = new Label
+        {
+            Text = "Chargement de la liste des objets...",
+            Dock = DockStyle.Bottom, Height = 28,
+            ForeColor = Color.FromArgb(185, 213, 223)
+        };
+        var table = new DataGridView
+        {
+            Dock = DockStyle.Fill, ReadOnly = true,
+            AllowUserToAddRows = false, AllowUserToDeleteRows = false,
+            RowHeadersVisible = false,
+            BackgroundColor = Color.FromArgb(22, 28, 33),
+            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            SelectionMode = DataGridViewSelectionMode.FullRowSelect
+        };
+        table.Columns.Add("name", "Nom");
+        table.Columns.Add("short", "Nom court");
+        table.Columns.Add("id", "Identifiant");
+        table.Columns["name"]!.FillWeight = 50;
+        table.Columns["short"]!.FillWeight = 25;
+        table.Columns["id"]!.FillWeight = 25;
+        dialog.Controls.Add(table);
+        dialog.Controls.Add(search);
+        dialog.Controls.Add(status);
+
+        IReadOnlyList<StashPilotItemCatalog.Item> items = [];
+        void Refresh()
+        {
+            var query = search.Text.Trim();
+            table.Rows.Clear();
+            foreach (var item in items.Where(i => query.Length == 0
+                || i.Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || i.ShortName.Contains(query, StringComparison.OrdinalIgnoreCase)
+                || i.Id.Contains(query, StringComparison.OrdinalIgnoreCase)).Take(500))
+                table.Rows.Add(item.Name, item.ShortName, item.Id);
+            status.Text = items.Count == 0
+                ? "Catalogue indisponible : vérifie la connexion et réessaie."
+                : $"{items.Count} objets chargés • {table.Rows.Count} affichés (maximum 500).";
+        }
+        search.TextChanged += (_, _) => Refresh();
+        dialog.Shown += async (_, _) =>
+        {
+            try
+            {
+                items = await StashPilotItemCatalog.LoadAsync(CancellationToken.None);
+                if (!dialog.IsDisposed) Refresh();
+            }
+            catch (Exception ex) when (ex is IOException or HttpRequestException
+                or UnauthorizedAccessException or System.Text.Json.JsonException)
+            {
+                if (!dialog.IsDisposed) status.Text = "Liste indisponible : " + ex.Message;
+            }
+        };
         dialog.ShowDialog(this);
     }
 
