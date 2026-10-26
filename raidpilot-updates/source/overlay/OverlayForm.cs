@@ -1946,7 +1946,8 @@ internal sealed partial class OverlayForm : Form
         // with an exact anchor and 12-second cooldown. All action guards below
         // still apply; CORTEX never injects an extra uncontrolled hotkey.
         var cortexRecoveryReady = CortexRecoveryPolicy.ShouldRequestNativeF8(
-            _cortexMenu.Checked, _autoReanchorEnabled,
+            _cortexMenu.Checked && _cortexV4Menu.Checked,
+            _autoReanchorEnabled,
             _liveTrackingEnabled && _tarkovIsForeground && _controlTrackingActive
                 && _raidActive && !actionInProgress,
             _cortexVision.Mode, uncertaintyMeters, _idleSeconds,
