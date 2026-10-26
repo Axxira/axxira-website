@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.4.3",
+      "raidPilotVersion": "0.15.4.3",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "StashPilot — catalogue et comparaison d'icônes en version test",
+      "details": "Ajoute un catalogue consultable d'objets Tarkov et une comparaison visuelle assistée depuis la capture F8. Les références sont téléchargées au besoin et conservées localement. Le prototype examine au maximum 120 premières références, et les suggestions doivent être confirmées par le joueur. La segmentation automatique de tout l'inventaire et la reconnaissance exhaustive ne sont pas disponibles. Aucun objet n'est vendu automatiquement."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.4.2",
       "raidPilotVersion": "0.15.4.2",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Zoom personnel conservé entre les cartes et les raids",
       "details": "Le zoom réglé à la molette ou avec les boutons est mémorisé entre les parties et les changements de carte.\nLe facteur de zoom est adapté aux dimensions des différentes cartes locales et en ligne; le bouton Ajuster revient à 100 %.\nLes préférences de taille, de position et de filtres restent intactes; aucune modification de la localisation ou du relais d'équipe."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.17",
-      "raidPilotVersion": "0.14.2.17",
-      "beaconVersion": "0.3.6",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-23",
-      "summary": "Precision V3 : capture GPU WGC optionnelle",
-      "details": "Ajout du capteur Windows.Graphics.Capture/Direct3D11 dans RaidPilot et Beacon.\nLe GPU est désactivé par défaut et peut être activé depuis l'icône de notification; le capteur GDI reprend automatiquement en cas d'échec.\nLa capture de luminance reste locale, sans accès à la mémoire du jeu. Compatibilité et précision réelle à vérifier en raid."
     }
   ]
 }
