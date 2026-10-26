@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexNavigationTests
 {
-    internal const int TestCount = 31;
+    internal const int TestCount = 33;
 
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
@@ -399,6 +399,37 @@ internal static class CortexNavigationTests
                 && !report.Contains("customs"));
             e.NoteNativeF8(At(50), "woods", 2, Window, null);
             Require(!e.DriftRisk.Calibrated);
+        }, failures);
+
+        Run("CORTEX prolonge brièvement un repère éprouvé quand les F8 sont stables", () =>
+        {
+            var e = Anchored();
+            for (var i = 1; i <= 6; i++)
+                e.NoteNativeF8(At(i * 8), Map, 1, Window, F8(0.3));
+            Observe(e, 48.2);
+            Require(Visual(e, 48.5));
+            for (var t = 48.75; t <= 54.75; t += 0.5)
+                Observe(e, t);
+            var a = Assess(e, 54.80);
+            Require(e.DriftRisk.Calibrated
+                && a.AllowExtendedF8 && !a.AllowStrongExtension
+                && a.Reason.Contains("Grâce adaptative"));
+            var yellow = e.Assess(At(54.80), Map, 1, Window,
+                Pose(), LocalizationHealthState.Yellow);
+            Require(!yellow.AllowExtendedF8);
+        }, failures);
+
+        Run("CORTEX expire sans exception la grâce visuelle au-delà de 9 s", () =>
+        {
+            var e = Anchored();
+            for (var i = 1; i <= 6; i++)
+                e.NoteNativeF8(At(i * 8), Map, 1, Window, F8(0.3));
+            Observe(e, 48.2);
+            Require(Visual(e, 48.5));
+            for (var t = 48.75; t <= 57.75; t += 0.5)
+                Observe(e, t);
+            var stale = Assess(e, 57.80);
+            Require(!stale.AllowExtendedF8 && !stale.AllowStrongExtension);
         }, failures);
     }
 
