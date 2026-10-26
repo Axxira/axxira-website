@@ -90,8 +90,8 @@ internal sealed class CortexVisualIntelligence
             return Reject("Preuve visuelle ou géométrie invalide");
 
         SetSession(map, raid, window);
-        var delta = Math.Hypot(target.X - predictedAtCapture.X,
-            target.Z - predictedAtCapture.Z);
+        var delta = Math.Sqrt(Math.Pow(target.X - predictedAtCapture.X, 2)
+            + Math.Pow(target.Z - predictedAtCapture.Z, 2));
         var vertical = Math.Abs(target.Y - predictedAtCapture.Y);
         var yaw = AngleDistance(target.YawDegrees,
             predictedAtCapture.YawDegrees);
@@ -122,7 +122,8 @@ internal sealed class CortexVisualIntelligence
                 || now <= prior.At
                 || (now - prior.At) / (double)Stopwatch.Frequency
                     > LoopVerificationWindowSeconds
-                || Math.Hypot(prior.Pose.X - target.X, prior.Pose.Z - target.Z)
+                || Math.Sqrt(Math.Pow(prior.Pose.X - target.X, 2)
+                    + Math.Pow(prior.Pose.Z - target.Z, 2))
                     > LoopMaximumPoseDisagreementMeters
                 || Math.Abs(prior.Pose.Y - target.Y) > 1.0
                 || AngleDistance(prior.Pose.YawDegrees, target.YawDegrees)
