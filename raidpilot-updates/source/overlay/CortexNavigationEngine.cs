@@ -53,6 +53,13 @@ internal sealed class CortexNavigationEngine
     internal int RememberedLandmarks => _landmarks.Count;
     internal long LandmarkIdentityConflicts => _landmarkConflicts;
     internal CortexDriftRiskSnapshot DriftRisk => _driftRisk.Current;
+    internal long MeasuredNativeF8Intervals => _nativeF8Intervals;
+    internal double AverageNativeF8IntervalSeconds =>
+        _nativeF8Intervals == 0 ? double.NaN
+            : _nativeF8IntervalSeconds / _nativeF8Intervals;
+    internal long ShortNativeF8Intervals => _nativeFastIntervals;
+    internal long MediumNativeF8Intervals => _nativeMediumIntervals;
+    internal long LongNativeF8Intervals => _nativeSlowIntervals;
 
     // Only a real EFT screenshot advances this clock. Visual keyframe
     // corrections may adjust the position, but cannot create a new F8.
