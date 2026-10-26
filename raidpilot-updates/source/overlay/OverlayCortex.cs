@@ -22,7 +22,7 @@ internal sealed partial class OverlayForm
         CheckOnClick = true,
     };
     private readonly ToolStripMenuItem _cortexV4Menu = new(
-        "CORTEX V4 — mémoire spatiale et fusion (test)")
+        "CORTEX V4.1 — fusion et récupération visuelle (test)")
     {
         Checked = false, // Explicit player opt-in until field comparison.
         CheckOnClick = true,
@@ -75,7 +75,7 @@ internal sealed partial class OverlayForm
             _cortexVisualFeedback.Reset();
             _trayIcon.ShowBalloonTip(2200, "CORTEX V4",
                 _cortexV4Menu.Checked
-                    ? "Fusion visuelle et mémoire locale V4 activées pour les tests."
+                    ? "CORTEX V4.1 actif : récupération progressive et retour F8 supervisé (test)."
                     : "V4 désactivé. CORTEX V3 reste disponible.",
                 ToolTipIcon.Info);
         };
