@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.5.0",
+      "raidPilotVersion": "0.15.5.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "CORTEX V3 expérimental — apprentissage de dérive et recalages F8 adaptatifs",
+      "details": "CORTEX V3 ajoute une calibration locale à partir des résidus réels de captures F8 comparables (24 mesures maximum en mémoire, activation de la calibration après 6 mesures). Le modèle estime de manière prudente la dérive à 8 et 12 secondes et peut limiter la cadence à 4 ou 8 secondes si l'écart augmente. Quand les mesures sont suffisamment fiables et un repère visuel local a réellement été appliqué, une courte grâce de 5 à 9 secondes peut maintenir un intervalle de 8 secondes, jamais 12 sans deux repères récents distincts. Le diagnostic indique les raisons de limitation, les risques empiriques et la cadence F8 réellement observée. Les protections de visée, action, changement de session et repli sont conservées. Aucun réseau neuronal, aucune garantie de précision absolue ni gain de captures mesuré en raid réel à ce stade."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.4.4",
       "raidPilotVersion": "0.15.4.4",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Precision V3.2 : écrans ultralarges et suivi GPU plus stable",
       "details": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.13",
-      "raidPilotVersion": "0.14.2.18",
-      "beaconVersion": "0.3.6",
-      "launcherVersion": "0.2.13",
-      "date": "2026-10-23",
-      "summary": "Historique des mises à jour visible et automatique",
-      "details": "Le panneau « Dernières mises à jour » affiche les vraies versions publiées au lieu de trois anciennes lignes fixes.\nLe bouton « Voir les notes » ouvre les descriptions détaillées des versions précédentes.\nLe Launcher conserve un exemplaire de l'historique même hors connexion et rafraîchit les notes lors de la vérification du canal Stable.\nLa publication GitHub exige désormais une fiche de version correspondante, pour éviter d'oublier les prochaines notes."
     }
   ]
 }
