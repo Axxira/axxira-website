@@ -56,6 +56,41 @@ boucles corroborées et le nombre de secteurs d'erreur.
 Cet export ne contient pas de coordonnées exactes, captures, chemins
 de fichiers, identifiants utilisateur ou descriptions de carte.
 
+## Complément V4.1 — récupération progressive et fiabilité visuelle
+
+La V4.1 complète le mode expérimental V4 avec deux sécurités et
+un retour d'expérience mesurable :
+
+- **Double trame réellement indépendante :** une grande relocalisation
+  demande désormais deux confirmations visuelles séparées d'au moins
+  250 millisecondes. Une répétition de la même trame trop rapide ne crée
+  pas une seconde preuve et ne détruit pas la preuve déjà acceptée.
+- **Récupération graduelle :** une boucle vérifiée autorise au maximum
+  six petites corrections successives de **0,75 m et 6° au plus chacune**,
+  dans les quatre secondes, uniquement en retrouvant à chaque fois
+  les mêmes repères locaux basse/haute résolution. La perte de cohérence
+  interrompt cette séquence et réclame un recalage F8 sûr.
+- **Comptabilisation honnête :** une boucle confirmée n'est comptée comme
+  validée que lorsque le déplacement a effectivement été appliqué par
+  l'estimateur, jamais lors de la seule suggestion visuelle.
+- **CORTEX Visual Feedback :** un évaluateur local sans images et sans
+  coordonnées mémorise au maximum 16 comparaisons de dérive natives F8
+  postérieures à une correction visuelle locale appliquée. Il exige
+  quatre intervalles indépendants avant de réduire, si nécessaire, la
+  cadence admise de 12 à 8 ou 4 secondes. Les comparaisons de captures
+  ambiguës, périmées ou de durées incompatibles sont ignorées. Il ne
+  peut **jamais augmenter** les intervalles autorisés par V3.
+- Le rapport V4 exporte le nombre de corrections visuelles réellement
+  comparables à des F8, leurs fortes dérives et le plafond de prudence.
+
+Ce n'est toujours pas un SLAM neuronal ou une estimation autonome de
+position : les banques visuelles V2 existantes, les observations de
+déplacement et les F8 exacts demeurent les sources de vérité.
+Les gains de précision et de nombre de captures restent à démontrer
+avec les rapports de vrais raids comparables. L'activation V4 reste
+volontaire, pour éviter de changer silencieusement la navigation des
+joueurs qui préfèrent l'ancienne politique.
+
 ## Activation
 
 Le comportement CORTEX V3 reste activé par défaut et inchangé.

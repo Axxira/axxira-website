@@ -15,6 +15,9 @@ internal sealed class CortexVisualIntelligence
     private const double MaximumFastRecoveryMeters = 6.0;
     private const double MaximumVisualJumpMeters = 18.0;
     private const double LoopVerificationWindowSeconds = 3.0;
+    private const double MinimumIndependentFrameGapSeconds = 0.25;
+    private const double MaximumVerifiedLoopLifetimeSeconds = 4.0;
+    private const int MaximumVerifiedLoopSteps = 6;
     private const double LoopMaximumPoseDisagreementMeters = 1.5;
     private const double LoopMaximumYawDisagreementDegrees = 12.0;
 
@@ -22,6 +25,10 @@ internal sealed class CortexVisualIntelligence
     private int _raid = -1;
     private nint _window;
     private LoopCandidate? _pending;
+    private VerifiedLoop? _verifiedLoop;
+    private bool _loopAwaitingApplication;
+    private bool _loopBudgetExhausted;
+    private long _loopCorrectionSteps;
     private long _accepted;
     private long _rejected;
     private long _loopsVerified;
@@ -31,13 +38,16 @@ internal sealed class CortexVisualIntelligence
     internal long Accepted => _accepted;
     internal long Rejected => _rejected;
     internal long VerifiedLoopClosures => _loopsVerified;
+    internal long VerifiedRecoverySteps => _loopCorrectionSteps;
+    internal bool HasPendingLoopEvidence => _pending is not null;
     internal CortexRecoveryMode Mode => _mode;
     internal string Reason => _lastReason;
 
     internal string Diagnostic =>
         $"V4 vision : {_mode} · {_lastReason}"
         + $"\nFusion acceptée {_accepted}, rejetée {_rejected}, "
-        + $"retours visuels corroborés {_loopsVerified}";
+        + $"retours visuels corroborés {_loopsVerified}, "
+        + $"étapes de récupération {_loopCorrectionSteps}";
 
     internal void Reset()
     {
@@ -45,6 +55,9 @@ internal sealed class CortexVisualIntelligence
         _raid = -1;
         _window = nint.Zero;
         _pending = null;
+        _verifiedLoop = null;
+        _loopAwaitingApplication = _loopBudgetExhausted = false;
+        _loopCorrectionSteps = 0;
         _accepted = _rejected = _loopsVerified = 0;
         _mode = CortexRecoveryMode.WaitingForAnchor;
         _lastReason = "Attente du premier F8 réel";
@@ -54,6 +67,8 @@ internal sealed class CortexVisualIntelligence
     {
         SetSession(map, raid, window);
         _pending = null;
+        _verifiedLoop = null;
+        _loopAwaitingApplication = _loopBudgetExhausted = false;
         _mode = CortexRecoveryMode.Tracking;
         _lastReason = "F8 réel confirmé";
     }
@@ -101,9 +116,10 @@ internal sealed class CortexVisualIntelligence
             return Reject("Écart visuel non corroboré : F8 réel préférable");
         }
 
-        // A very large pose change is not a safe single-frame correction.
-        // Require a repeated, source-independent local high/low landmark
-        // consensus before permitting a bounded loop recovery.
+        // Large corrections need independent frames and LOCAL low/high
+        // consensus. Once verified, permit at most six bounded recovery steps,
+        // each requiring a fresh matching frame. Never silently jump >0.75 m
+        // on one applied correction; otherwise request a native F8.
         var largeLoop = proposal.GlobalLoopClosure
             || delta > MaximumFastRecoveryMeters;
         if (largeLoop)
@@ -115,34 +131,83 @@ internal sealed class CortexVisualIntelligence
                 && yaw <= 40.0;
             if (!reliable)
                 return Reject("Récupération visuelle : double repère local nécessaire");
+            if (_loopBudgetExhausted)
+                return Reject("Limite de récupération atteinte : F8 réel requis");
 
-            if (_pending is not { } prior
-                || prior.LowId != lowKeyframeId.Value
-                || prior.SuperId != superKeyframeId.Value
-                || now <= prior.At
-                || (now - prior.At) / (double)Stopwatch.Frequency
-                    > LoopVerificationWindowSeconds
-                || Math.Sqrt(Math.Pow(prior.Pose.X - target.X, 2)
-                    + Math.Pow(prior.Pose.Z - target.Z, 2))
-                    > LoopMaximumPoseDisagreementMeters
-                || Math.Abs(prior.Pose.Y - target.Y) > 1.0
-                || AngleDistance(prior.Pose.YawDegrees, target.YawDegrees)
-                    > LoopMaximumYawDisagreementDegrees)
+            if (_loopAwaitingApplication)
+                return Reject("Correction en attente d'application",
+                    keepMode: true);
+
+            var low = lowKeyframeId!.Value;
+            var high = superKeyframeId!.Value;
+            if (_verifiedLoop is { } verified)
             {
-                _pending = new(lowKeyframeId.Value, superKeyframeId.Value,
-                    target, now);
+                var lifetime = (now - verified.StartedAt) /
+                    (double)Stopwatch.Frequency;
+                var frameGap = (now - verified.LastObservedAt) /
+                    (double)Stopwatch.Frequency;
+                if (frameGap >= 0
+                    && frameGap < MinimumIndependentFrameGapSeconds
+                    && verified.LowId == low && verified.HighId == high
+                    && SameVisualLocation(verified.Pose, target))
+                    return Reject("Trame trop proche : preuve non indépendante",
+                        keepMode: true);
+                if (verified.LowId != low || verified.HighId != high
+                    || lifetime > MaximumVerifiedLoopLifetimeSeconds
+                    || frameGap < 0
+                    || !SameVisualLocation(verified.Pose, target))
+                {
+                    _verifiedLoop = null;
+                    return Reject("Continuité visuelle perdue : F8 réel requis");
+                }
+
+                if (verified.Steps >= MaximumVerifiedLoopSteps)
+                {
+                    _verifiedLoop = null;
+                    _loopBudgetExhausted = true;
+                    return Reject("Limite de récupération atteinte : F8 réel requis");
+                }
+                _verifiedLoop = verified with { LastObservedAt = now };
+                _loopAwaitingApplication = true;
+                _mode = CortexRecoveryMode.Recovering;
+            }
+            else if (_pending is { } prior
+                && prior.LowId == low && prior.SuperId == high
+                && now > prior.At
+                && (now - prior.At) / (double)Stopwatch.Frequency
+                    >= MinimumIndependentFrameGapSeconds
+                && (now - prior.At) / (double)Stopwatch.Frequency
+                    <= LoopVerificationWindowSeconds
+                && SameVisualLocation(prior.Pose, target))
+            {
+                _pending = null;
+                _verifiedLoop = new(low, high, target, now, now, 0);
+                _loopAwaitingApplication = true;
+                _mode = CortexRecoveryMode.Recovering;
+            }
+            else
+            {
+                // Exact same frame / timestamp is not independent evidence.
+                // A too-fast second observation preserves the first candidate.
+                var tooSoon = _pending is { } first
+                    && first.LowId == low && first.SuperId == high
+                    && now > first.At
+                    && (now - first.At) / (double)Stopwatch.Frequency
+                        < MinimumIndependentFrameGapSeconds
+                    && SameVisualLocation(first.Pose, target);
+                if (!tooSoon)
+                    _pending = new(low, high, target, now);
                 _mode = CortexRecoveryMode.AwaitingVisualConsensus;
-                return Reject("Boucle candidate : seconde confirmation requise",
+                return Reject("Boucle candidate : seconde trame distincte requise",
                     keepMode: true);
             }
-
-            _pending = null;
-            _loopsVerified++;
-            _mode = CortexRecoveryMode.Recovering;
         }
         else
         {
             _pending = null;
+            _verifiedLoop = null;
+            _loopAwaitingApplication = false;
+            _loopBudgetExhausted = false;
         }
 
         // Scalar Kalman-like blend. Variances are heuristic conservative
@@ -181,13 +246,34 @@ internal sealed class CortexVisualIntelligence
     internal void NoteApplied()
     {
         _accepted++;
-        if (_mode != CortexRecoveryMode.Recovering)
+        if (_loopAwaitingApplication && _verifiedLoop is { } verified)
+        {
+            if (verified.Steps == 0) _loopsVerified++;
+            _loopCorrectionSteps++;
+            var steps = verified.Steps + 1;
+            _verifiedLoop = verified with { Steps = steps };
+            // A verified visual loop cannot silently move the player forever.
+            // Another local observation may allow a few small corrections;
+            // beyond the budget, a native F8 becomes mandatory.
+            if (steps >= MaximumVerifiedLoopSteps)
+            {
+                _loopBudgetExhausted = true;
+                _mode = CortexRecoveryMode.NeedsNativeF8;
+                _lastReason = "Récupération bornée : confirmer par F8 réel";
+            }
+            else
+                _mode = CortexRecoveryMode.Recovering;
+        }
+        else
             _mode = CortexRecoveryMode.Tracking;
+        _loopAwaitingApplication = false;
     }
 
     internal void OnTrackingUncertain()
     {
         _pending = null;
+        _verifiedLoop = null;
+        _loopAwaitingApplication = false;
         _mode = CortexRecoveryMode.NeedsNativeF8;
         _lastReason = "Localisation incertaine : requérir un F8 réel sûr";
     }
@@ -200,6 +286,8 @@ internal sealed class CortexVisualIntelligence
         if (!keepMode)
         {
             _pending = null;
+            _verifiedLoop = null;
+            _loopAwaitingApplication = false;
             _mode = CortexRecoveryMode.NeedsNativeF8;
         }
         return null;
@@ -213,8 +301,18 @@ internal sealed class CortexVisualIntelligence
         _raid = raid;
         _window = window;
         _pending = null;
+        _verifiedLoop = null;
+        _loopAwaitingApplication = _loopBudgetExhausted = false;
         _mode = CortexRecoveryMode.WaitingForAnchor;
     }
+
+    private static bool SameVisualLocation(
+        VisualKeyframePose a, VisualKeyframePose b) =>
+        Math.Sqrt(Math.Pow(a.X - b.X, 2)
+            + Math.Pow(a.Z - b.Z, 2)) <= LoopMaximumPoseDisagreementMeters
+        && Math.Abs(a.Y - b.Y) <= 1.0
+        && AngleDistance(a.YawDegrees, b.YawDegrees)
+            <= LoopMaximumYawDisagreementDegrees;
 
     private static bool Finite(RealtimePose p) =>
         double.IsFinite(p.X) && double.IsFinite(p.Y)
@@ -232,6 +330,10 @@ internal sealed class CortexVisualIntelligence
 
     private readonly record struct LoopCandidate(
         long LowId, long SuperId, VisualKeyframePose Pose, long At);
+
+    private readonly record struct VerifiedLoop(
+        long LowId, long HighId, VisualKeyframePose Pose,
+        long StartedAt, long LastObservedAt, int Steps);
 }
 
 internal enum CortexRecoveryMode
