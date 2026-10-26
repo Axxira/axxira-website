@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexNavigationTests
 {
-    internal const int TestCount = 23;
+    internal const int TestCount = 31;
 
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
@@ -308,6 +308,97 @@ internal static class CortexNavigationTests
             Require(diag.Contains("F8 comparables 30")
                 && !diag.Contains("customs")
                 && !diag.Contains("coordonnées"));
+        }, failures);
+
+        Run("CORTEX apprend seulement après six F8 comparables", () =>
+        {
+            var model = new CortexDriftRiskModel();
+            Require(model.Current.SampleCount == 0 && !model.Current.Calibrated);
+            for (var i = 0; i < 5; i++)
+                Require(model.Observe(F8(0.3)));
+            Require(!model.Current.Calibrated && model.Current.MaxIntervalSeconds == 12);
+            Require(model.Observe(F8(0.3)));
+            Require(model.Current.Calibrated
+                && model.Current.SampleCount == 6);
+        }, failures);
+
+        Run("CORTEX conserve 12 s quand les écarts F8 sont faibles", () =>
+        {
+            var model = new CortexDriftRiskModel();
+            for (var i = 0; i < 8; i++) model.Observe(F8(0.35));
+            Require(model.Current.MaxIntervalSeconds == 12
+                && model.Current.EstimatedErrorAt12Meters < 1.25);
+        }, failures);
+
+        Run("CORTEX restreint à 8 s après risque modéré mesuré", () =>
+        {
+            var model = new CortexDriftRiskModel();
+            for (var i = 0; i < 8; i++) model.Observe(F8(1.05));
+            Require(model.Current.MaxIntervalSeconds == 8
+                && model.Current.EstimatedErrorAt12Meters >= 1.25);
+        }, failures);
+
+        Run("CORTEX redevient 4 s si les erreurs F8 réelles augmentent", () =>
+        {
+            var model = new CortexDriftRiskModel();
+            for (var i = 0; i < 8; i++) model.Observe(F8(3.2, uncertainty: 4));
+            Require(model.Current.MaxIntervalSeconds == 4
+                && model.Current.EstimatedErrorAt8Meters >= 2.25);
+        }, failures);
+
+        Run("CORTEX apprend aussi les erreurs de cap", () =>
+        {
+            var model = new CortexDriftRiskModel();
+            for (var i = 0; i < 6; i++) model.Observe(F8(0.1, yaw: 14));
+            Require(model.Current.MaxIntervalSeconds == 4
+                && model.Current.EstimatedYawAt8Degrees >= 15);
+        }, failures);
+
+        Run("CORTEX écarte les échantillons invalides, reste borné et récupère", () =>
+        {
+            var model = new CortexDriftRiskModel();
+            Require(!model.Observe(F8(double.NaN)));
+            Require(!model.Observe(F8(0.2, seconds: 31)));
+            Require(!model.Observe(F8(0.2, yaw: double.PositiveInfinity)));
+            for (var i = 0; i < 8; i++) model.Observe(F8(3.2, uncertainty: 4));
+            Require(model.Current.MaxIntervalSeconds == 4);
+            for (var i = 0; i < 24; i++) model.Observe(F8(0.2));
+            Require(model.Current.SampleCount == CortexDriftRiskModel.Capacity
+                && model.Current.MaxIntervalSeconds == 12);
+            model.Reset();
+            Require(model.Current.SampleCount == 0 && !model.Current.Calibrated);
+        }, failures);
+
+        Run("CORTEX détecte un changement brutal avant une grande dérive", () =>
+        {
+            var model = new CortexDriftRiskModel();
+            for (var i = 0; i < 4; i++) model.Observe(F8(0.2));
+            for (var i = 0; i < 4; i++) model.Observe(F8(1.7));
+            Require(model.Current.MaxIntervalSeconds == 4
+                && model.Current.Reason.Contains("hausse rapide"));
+        }, failures);
+
+        Run("CORTEX ne laisse jamais un apprentissage optimiste remplacer F8", () =>
+        {
+            var e = Anchored();
+            for (var i = 1; i <= 6; i++)
+                e.NoteNativeF8(At(i * 8), Map, 1, Window,
+                    F8(3.2, uncertainty: 4));
+            Observe(e, 48.2);
+            Require(Visual(e, 48.50));
+            Observe(e, 48.7);
+            Require(Visual(e, 49.0, lowId: 2, superId: 2, landmarkX: 6));
+            Observe(e, 49.1);
+            Require(e.RememberedLandmarks == 2);
+            var assessment = Assess(e, 49.15);
+            Require(e.DriftRisk.Calibrated
+                && e.DriftRisk.MaxIntervalSeconds == 4
+                && !assessment.AllowExtendedF8);
+            var report = e.Diagnostic(assessment);
+            Require(report.Contains("F8 apprentissage 6")
+                && !report.Contains("customs"));
+            e.NoteNativeF8(At(50), "woods", 2, Window, null);
+            Require(!e.DriftRisk.Calibrated);
         }, failures);
     }
 
