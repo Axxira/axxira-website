@@ -1608,6 +1608,12 @@ internal sealed partial class OverlayForm : Form
             && visualRelocalizationPoseAtCapture is { } visualEstimate
                 ? FilterPrecisionV4(proposed, visualEstimate, now)
                 : null;
+        if (fusedVisualDecision is { } priorDecision
+            && visualRelocalizationPoseAtCapture is { } priorEstimate)
+            fusedVisualDecision = CortexFilterVisual(
+                priorDecision, priorEstimate, now,
+                visualDecisionFromCollectiveAtlas, cortexLowLandmarkId,
+                cortexSuperLandmarkId);
         if (fusedVisualDecision is { } decision
             && decision.ShouldCorrect
             && decision.TargetPose is { } visualAnchor
@@ -1631,6 +1637,7 @@ internal sealed partial class OverlayForm : Form
                 decision.YawGain,
                 decision.MaximumTranslationStepMeters,
                 decision.MaximumYawStepDegrees);
+            CortexNoteVisualApplied();
             CortexObserveAppliedVisual(
                 now, decision, visualDecisionFromCollectiveAtlas,
                 cortexLowLandmarkId, cortexSuperLandmarkId);
@@ -3613,7 +3620,8 @@ internal sealed partial class OverlayForm : Form
                 hasCaptureTimestamp ? captureTimestamp : 0,
                 _precisionV2ToggleMenuItem.Checked,
                 _precisionV4Menu.Checked);
-            CortexObserveNativeF8(now, comparableF8, _precisionV2DriftAudit.Last);
+            CortexObserveNativeF8(now, comparableF8, _precisionV2DriftAudit.Last,
+                observation);
             CalibrateRealtimeEstimator(observation, estimatedPoseAtCapture, allowCalibration);
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;
