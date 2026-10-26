@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexV4Tests
 {
-    internal const int TestCount = 17;
+    internal const int TestCount = 20;
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
     private static readonly DateTimeOffset Today =
@@ -223,6 +223,42 @@ internal static class CortexV4Tests
                 m.Observe(Map, i * CortexSpatialReliabilityAtlas.CellSizeMeters,
                     0, 0, Drift(0.2), Today.AddSeconds(i));
             Require(m.Count <= CortexSpatialReliabilityAtlas.MaximumCells);
+        }, failures);
+
+        Run("V4 déclenche la récupération F8 si immobile et incertain", () =>
+        {
+            Require(CortexRecoveryPolicy.ShouldRequestNativeF8(
+                true, true, true, CortexRecoveryMode.NeedsNativeF8,
+                2.5, 1.0, 12.5, 9.0));
+        }, failures);
+
+        Run("V4 n'interrompt pas une action ou un suivi fiable", () =>
+        {
+            Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
+                true, true, false, CortexRecoveryMode.NeedsNativeF8,
+                2.5, 1.0, 12.5, 9.0));
+            Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
+                true, true, true, CortexRecoveryMode.Tracking,
+                2.5, 1.0, 12.5, 9.0));
+            Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
+                true, true, true, CortexRecoveryMode.NeedsNativeF8,
+                1.0, 1.0, 12.5, 9.0));
+        }, failures);
+
+        Run("V4 le mode désactivé et les délais protègent la capture", () =>
+        {
+            Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
+                false, true, true, CortexRecoveryMode.NeedsNativeF8,
+                3.0, 1.0, 12.5, 9.0));
+            Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
+                true, false, true, CortexRecoveryMode.NeedsNativeF8,
+                3.0, 1.0, 12.5, 9.0));
+            Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
+                true, true, true, CortexRecoveryMode.NeedsNativeF8,
+                3.0, 1.0, 5.0, 9.0));
+            Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
+                true, true, true, CortexRecoveryMode.NeedsNativeF8,
+                3.0, 0.2, 12.5, 9.0));
         }, failures);
     }
 
