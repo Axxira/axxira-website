@@ -26,6 +26,8 @@ internal sealed partial class OverlayForm
         Checked = false, // Explicit player opt-in until field comparison.
         CheckOnClick = true,
     };
+    private readonly ToolStripMenuItem _cortexV4ReportMenu = new(
+        "CORTEX V4 — exporter mesures F8 (.json)");
 
     private void InitializeCortex()
     {
@@ -36,6 +38,34 @@ internal sealed partial class OverlayForm
         FormClosing += (_, _) => SaveCortexSpatialAtlas();
         _trayIcon.ContextMenuStrip?.Items.Insert(6, _cortexMenu);
         _trayIcon.ContextMenuStrip?.Items.Insert(7, _cortexV4Menu);
+        _trayIcon.ContextMenuStrip?.Items.Insert(8, _cortexV4ReportMenu);
+        _cortexV4ReportMenu.Click += (_, _) =>
+        {
+            using var dialog = new SaveFileDialog
+            {
+                Title = "Exporter les mesures CORTEX V4",
+                Filter = "JSON (*.json)|*.json",
+                FileName = "RaidPilot-CORTEX-V4-Report.json",
+                OverwritePrompt = true, RestoreDirectory = true
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK) return;
+            try
+            {
+                File.WriteAllText(dialog.FileName,
+                    CortexV4Report.Build(_precisionV2DriftAudit.Samples,
+                        _cortex, _cortexVision, _cortexSpatialAtlas,
+                        _cortexV4Menu.Checked),
+                    new System.Text.UTF8Encoding(false));
+            }
+            catch (Exception error) when (error is IOException
+                or UnauthorizedAccessException or ArgumentException
+                or NotSupportedException)
+            {
+                MessageBox.Show(this, error.Message,
+                    "Export CORTEX V4 impossible", MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+        };
         _cortexV4Menu.Click += (_, _) =>
         {
             if (_cortexV4Menu.Checked) _cortexMenu.Checked = true;
