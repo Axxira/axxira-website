@@ -45,10 +45,11 @@ internal sealed class CortexDriftRiskModel
             || sample.Seconds is < 4 or > 30)
             return false;
 
-        var squareRootTime = Math.Sqrt(sample.Seconds);
+        // Use a deliberately conservative linear extrapolation; systematic
+        // motion drift can grow faster than the square-root-of-time model.
         var observation = new Residual(
-            sample.ErrorMeters / squareRootTime,
-            sample.HeadingErrorDegrees / squareRootTime);
+            sample.ErrorMeters / sample.Seconds,
+            sample.HeadingErrorDegrees / sample.Seconds);
 
         if (_recent.Count == Capacity) _recent.Dequeue();
         _recent.Enqueue(observation);
@@ -68,12 +69,12 @@ internal sealed class CortexDriftRiskModel
         // Nearest-rank p90 is deliberately conservative for small samples.
         // These are empirical envelopes, NOT calibrated probabilities or
         // distribution-free prediction guarantees for a moving player.
-        var errorRate = UpperQuantile(_recent.Select(x => x.MetresPerRootSecond));
-        var yawRate = UpperQuantile(_recent.Select(x => x.DegreesPerRootSecond));
-        var at8 = errorRate * Math.Sqrt(8.0) + 0.20;
-        var at12 = errorRate * Math.Sqrt(12.0) + 0.20;
-        var yaw8 = yawRate * Math.Sqrt(8.0) + 1.0;
-        var yaw12 = yawRate * Math.Sqrt(12.0) + 1.0;
+        var errorRate = UpperQuantile(_recent.Select(x => x.MetresPerSecond));
+        var yawRate = UpperQuantile(_recent.Select(x => x.DegreesPerSecond));
+        var at8 = errorRate * 8.0 + 0.20;
+        var at12 = errorRate * 12.0 + 0.20;
+        var yaw8 = yawRate * 8.0 + 1.0;
+        var yaw12 = yawRate * 12.0 + 1.0;
 
         var ceiling = 12;
         var reason = "Historique F8 stable; limites habituelles préservées";
@@ -92,11 +93,11 @@ internal sealed class CortexDriftRiskModel
         // Do not wait for the rolling 24-sample window to fill up.
         if (n >= 8)
         {
-            var rates = _recent.Select(x => x.MetresPerRootSecond).ToArray();
+            var rates = _recent.Select(x => x.MetresPerSecond).ToArray();
             var previous = rates.Skip(n - 8).Take(4).Average();
             var latest = rates.Skip(n - 4).Average();
             if (latest > Math.Max(0.10, previous) * 2.5
-                && latest * Math.Sqrt(8.0) + 0.20 >= 1.5)
+                && latest * 8.0 + 0.20 >= 1.5)
             {
                 ceiling = 4;
                 reason = "Dérive en hausse rapide sur les derniers F8";
@@ -115,7 +116,7 @@ internal sealed class CortexDriftRiskModel
     }
 
     private readonly record struct Residual(
-        double MetresPerRootSecond, double DegreesPerRootSecond);
+        double MetresPerSecond, double DegreesPerSecond);
 }
 
 internal readonly record struct CortexDriftRiskSnapshot(
