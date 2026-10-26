@@ -18,8 +18,9 @@ un système SLAM complet ou une garantie de sûreté. Aucun accès mémoire Tark
 
 ## Politique de décision
 1. Avant six mesures comparables : règles d'origine à 4 / 8 / 12 secondes.
-2. Après six mesures : évaluer le quantile empirique P90 des résidus normalisés
-   par la racine du temps, puis estimer le risque à 8 et 12 secondes.
+2. Après six mesures : évaluer le quantile empirique P90 des résidus
+   par seconde et projeter prudemment une croissance linéaire de l'erreur
+   à 8 et 12 secondes, avec marges supplémentaires.
 3. Une forte erreur, une erreur de cap ou une augmentation soudaine limite
    l'intervalle à 4 ou 8 secondes.
 4. L'apprentissage ne peut jamais fabriquer un F8 exact, créer un repère
