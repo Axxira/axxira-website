@@ -15,9 +15,15 @@ internal sealed partial class OverlayForm
     private string? _cortexSpatialAtlasPath;
     private int _cortexSpatialAtlasUnsaved;
     private readonly ToolStripMenuItem _cortexMenu = new(
-        "CORTEX V4 — mémoire visuelle et fusion (expérimental)")
+        "CORTEX V3 — apprentissage F8")
     {
         Checked = true,
+        CheckOnClick = true,
+    };
+    private readonly ToolStripMenuItem _cortexV4Menu = new(
+        "CORTEX V4 — mémoire spatiale et fusion (test)")
+    {
+        Checked = false, // Explicit player opt-in until field comparison.
         CheckOnClick = true,
     };
 
@@ -29,14 +35,27 @@ internal sealed partial class OverlayForm
             _cortexSpatialAtlas, _cortexSpatialAtlasPath);
         FormClosing += (_, _) => SaveCortexSpatialAtlas();
         _trayIcon.ContextMenuStrip?.Items.Insert(6, _cortexMenu);
+        _trayIcon.ContextMenuStrip?.Items.Insert(7, _cortexV4Menu);
+        _cortexV4Menu.Click += (_, _) =>
+        {
+            if (_cortexV4Menu.Checked) _cortexMenu.Checked = true;
+            _cortex.Reset();
+            _cortexVision.Reset();
+            _trayIcon.ShowBalloonTip(2200, "CORTEX V4",
+                _cortexV4Menu.Checked
+                    ? "Fusion visuelle et mémoire locale V4 activées pour les tests."
+                    : "V4 désactivé. CORTEX V3 reste disponible.",
+                ToolTipIcon.Info);
+        };
         _cortexMenu.Click += (_, _) =>
         {
+            if (!_cortexMenu.Checked) _cortexV4Menu.Checked = false;
             _cortex.Reset();
             _cortexVision.Reset();
             _trayIcon.ShowBalloonTip(3200,
                 "RaidPilot CORTEX",
                 _cortexMenu.Checked
-                    ? "CORTEX V4 actif. Reconnaissance des lieux existants, fusion visuelle prudente, mémoire locale des erreurs et F8 adaptatifs. F8 initial nécessaire."
+                    ? "CORTEX V3 actif. Cadence F8 adaptative; V4 disponible séparément en mode test."
                     : "CORTEX désactivé. Politique de recalage précédente conservée.",
                 ToolTipIcon.Info);
         };
@@ -77,6 +96,7 @@ internal sealed partial class OverlayForm
         if (!_cortexMenu.Checked) return;
         _cortex.NoteNativeF8(now, _currentMap, _raidGeneration,
             _lastForegroundWindow, comparable ? measured : null);
+        if (!_cortexV4Menu.Checked) return;
         _cortexVision.OnNativeF8(_currentMap, _raidGeneration,
             _lastForegroundWindow);
         if (comparable && measured is { } sample
@@ -94,8 +114,10 @@ internal sealed partial class OverlayForm
     {
         var assessment = _cortex.Assess(now, _currentMap, _raidGeneration,
             _lastForegroundWindow, pose, _visualRelocalization.Health);
-        if (assessment.Quality == CortexTrackingQuality.Degraded)
+        if (_cortexV4Menu.Checked
+            && assessment.Quality == CortexTrackingQuality.Degraded)
             _cortexVision.OnTrackingUncertain();
+        if (!_cortexV4Menu.Checked) return assessment;
         var maximum = _cortexSpatialAtlas.MaximumIntervalSeconds(
             _currentMap, pose.X, pose.Y, pose.Z, DateTimeOffset.UtcNow);
         if (assessment.AllowExtendedF8 && maximum <= 4)
@@ -117,7 +139,7 @@ internal sealed partial class OverlayForm
         VisualRelocalizationDecision decision, RealtimePose estimate,
         long now, bool fromSharedAtlas, long? lowId, long? superId)
     {
-        if (!_cortexMenu.Checked) return decision;
+        if (!_cortexMenu.Checked || !_cortexV4Menu.Checked) return decision;
         return _cortexVision.Filter(decision, estimate, _currentMap,
             _raidGeneration, _lastForegroundWindow, now,
             fromSharedAtlas, lowId, superId);
@@ -125,7 +147,8 @@ internal sealed partial class OverlayForm
 
     private void CortexNoteVisualApplied()
     {
-        if (_cortexMenu.Checked) _cortexVision.NoteApplied();
+        if (_cortexMenu.Checked && _cortexV4Menu.Checked)
+            _cortexVision.NoteApplied();
     }
 
     private void SaveCortexSpatialAtlas()
@@ -141,7 +164,9 @@ internal sealed partial class OverlayForm
         if (!_cortexMenu.Checked) return "CORTEX désactivé — stratégie précédente";
         return _realtimeEstimator.CurrentPose is { } pose
             ? _cortex.Diagnostic(CortexAssess(Stopwatch.GetTimestamp(), pose))
-                + "\n" + _cortexVision.Diagnostic
+                + (_cortexV4Menu.Checked
+                    ? "\n" + _cortexVision.Diagnostic
+                    : "\nCORTEX V4 : désactivé (optionnel)")
                 + $"\nAtlas local : {_cortexSpatialAtlas.Count} secteurs"
                 + $"; observations apprises {_cortexSpatialAtlas.Observations}"
                 + $"\nRepères visuels persistants : "
