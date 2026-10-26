@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexV4Tests
 {
-    internal const int TestCount = 20;
+    internal const int TestCount = 21;
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
     private static readonly DateTimeOffset Today =
@@ -220,8 +220,9 @@ internal static class CortexV4Tests
             Require(!m.Observe(Map, double.NaN, 0, 0, Drift(4), Today));
             Require(!m.Observe(Map, 0, 0, 0, Drift(double.NaN), Today));
             for (var i = 0; i < 560; i++)
-                m.Observe(Map, i * CortexSpatialReliabilityAtlas.CellSizeMeters,
-                    0, 0, Drift(0.2), Today.AddSeconds(i));
+                m.Observe(Map, (i % 280) * CortexSpatialReliabilityAtlas.CellSizeMeters,
+                    0, (i / 280) * CortexSpatialReliabilityAtlas.CellSizeMeters,
+                    Drift(0.2), Today.AddSeconds(i));
             Require(m.Count <= CortexSpatialReliabilityAtlas.MaximumCells);
         }, failures);
 
@@ -259,6 +260,19 @@ internal static class CortexV4Tests
             Require(!CortexRecoveryPolicy.ShouldRequestNativeF8(
                 true, true, true, CortexRecoveryMode.NeedsNativeF8,
                 3.0, 0.2, 12.5, 9.0));
+        }, failures);
+
+        Run("V4 rapport exportable ne contient ni carte ni coordonnées", () =>
+        {
+            var report = CortexV4Report.Build([Drift(0.7)],
+                new CortexNavigationEngine(),
+                new CortexVisualIntelligence(),
+                new CortexSpatialReliabilityAtlas(), true);
+            Require(report.Contains("\"CORTEX V4\"")
+                && report.Contains("\"measuredP90ErrorMeters\"")
+                && report.Contains("\"localCoarseRiskSectors\"")
+                && !report.Contains("customs")
+                && !report.Contains("screenshotPath"));
         }, failures);
     }
 
