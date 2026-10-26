@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexNavigationTests
 {
-    internal const int TestCount = 33;
+    internal const int TestCount = 35;
 
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
@@ -430,6 +430,34 @@ internal static class CortexNavigationTests
                 Observe(e, t);
             var stale = Assess(e, 57.80);
             Require(!stale.AllowExtendedF8 && !stale.AllowStrongExtension);
+        }, failures);
+
+        Run("CORTEX mesure le rythme des captures natives, pas celui de l'écran", () =>
+        {
+            var e = Anchored();
+            e.NoteNativeF8(At(4), Map, 1, Window, null);
+            e.NoteNativeF8(At(12), Map, 1, Window, null);
+            e.NoteNativeF8(At(24), Map, 1, Window, null);
+            Observe(e, 24.25);
+            var diag = e.Diagnostic(Assess(e, 24.30));
+            Require(diag.Contains("F8 réels : 3 intervalles")
+                && diag.Contains("moins de 6 s : 1")
+                && diag.Contains("6 à 10 s : 1")
+                && diag.Contains("10 s et plus : 1"));
+        }, failures);
+
+        Run("CORTEX ne compte pas un doublon F8 et isole le raid suivant", () =>
+        {
+            var e = Anchored();
+            e.NoteNativeF8(At(4), Map, 1, Window, null);
+            e.NoteNativeF8(At(4), Map, 1, Window, null);
+            e.NoteNativeF8(At(12), Map, 1, Window, null);
+            Observe(e, 12.20);
+            Require(e.Diagnostic(Assess(e, 12.25)).Contains("2 intervalles"));
+            e.NoteNativeF8(At(14), "woods", 2, Window, null);
+            Observe(e, 14.20, map: "woods", raid: 2);
+            Require(e.Diagnostic(Assess(e, 14.25, map: "woods", raid: 2))
+                .Contains("cadence pas encore mesurée"));
         }, failures);
     }
 
