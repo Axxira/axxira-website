@@ -11,7 +11,7 @@ internal sealed partial class OverlayForm
 {
     private readonly CortexNavigationEngine _cortex = new();
     private readonly ToolStripMenuItem _cortexMenu = new(
-        "CORTEX V2 — mémoire visuelle vérifiée (expérimental)")
+        "CORTEX V3 — apprentissage F8 (expérimental)")
     {
         Checked = true,
         CheckOnClick = true,
@@ -26,7 +26,7 @@ internal sealed partial class OverlayForm
             _trayIcon.ShowBalloonTip(3200,
                 "RaidPilot CORTEX",
                 _cortexMenu.Checked
-                    ? "CORTEX V2 actif. Deux repères différents et corroborés sont requis pour le recalage le plus discret. F8 initial nécessaire."
+                    ? "CORTEX V3 actif. Apprentissage à partir des vrais F8, cadence 4/8/12 s, extension prudente si dérive faible. F8 initial nécessaire."
                     : "CORTEX désactivé. Politique de recalage précédente conservée.",
                 ToolTipIcon.Info);
         };
