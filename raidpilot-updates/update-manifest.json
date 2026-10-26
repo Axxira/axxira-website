@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-26T15:47:45.5514264+00:00",
+  "publishedAt": "2026-10-26T16:37:59.9873799+00:00",
   "raidPilot": {
-    "version": "0.15.6.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.0-b0.3.10-l0.2.15-6dab4132a820/RaidPilot-Overlay-v0.15.6.0-Windows-x64.zip",
-    "sha256": "DBFDCD48E94325467024E7D30EB2B997C7F6E795077A4A0E700AC91BEC2C18F2",
-    "sizeBytes": 234520300,
-    "releaseNotes": "V4 est un mode facultatif, désactivé par défaut dans le menu Windows, pour comparer sans perturber CORTEX V3. Réutilise les deux banques de repères visuels locaux et persistants (basse et haute résolution); confronte chaque proposition de relocalisation à l'incertitude du déplacement avant l'application et limite le gain. Les grands retours sur lieu connu requièrent deux corroborations locales séparées temporellement; les cas ambigus sollicitent un F8 natif via les garde-fous habituels. Un atlas local de secteurs d'erreurs F8 comparables est mémorisé pendant 30 jours et peut seulement réduire les intervalles admissibles. Rapport CORTEX V4 exportable contenant cadence native, erreurs F8 et mesures de récupération, sans capture ni coordonnées précises. Ne constitue pas un SLAM neuronal ni une garantie de localisation parfaite. Gains en raid non encore démontrés; voir CORTEX-V4.md."
+    "version": "0.15.6.1",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.1-b0.3.10-l0.2.15-9479f2923d5d/RaidPilot-Overlay-v0.15.6.1-Windows-x64.zip",
+    "sha256": "1B222DD693003EB69DD7B7D41EC4EEE30FAD75170042271F862BD7E904D07D5A",
+    "sizeBytes": 234524536,
+    "releaseNotes": "Améliore CORTEX V4 expérimental. Après deux images de repères locaux cohérentes, séparées d'au moins 250 ms, les corrections de récupération restent limitées à six petits pas d'au plus 0,75 m et 6° chacun; en cas de contradiction ou de dépassement, un recalage F8 natif est requis. Les boucles sont comptées seulement après correction effectivement appliquée. Nouveau contrôleur de fiabilité visuelle : apprend à partir d'intervalles F8 natifs comparables suivant des corrections locales appliquées (16 exemples maximum; calibration à partir de 4), et ne peut que réduire le plafond F8 vers 8 ou 4 secondes lorsque les erreurs sont élevées. Diagnostics et export F8 enrichis. CORTEX V4 reste une option de test, désactivée par défaut. Aucune revendication de SLAM neuronal, de précision absolue ou de gains mesurés en raid avant essais."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.0-b0.3.10-l0.2.15-6dab4132a820/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "7A21DE0A6694D672D32EC925CD4452C7BA0AB0B15C44B0313356B718AB68493F",
-    "sizeBytes": 58332718,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.1-b0.3.10-l0.2.15-9479f2923d5d/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "A1372258270213FDDDE0CD358EE80C82E4965A2EC33CFFE56EACBDAC59982B94",
+    "sizeBytes": 58332719,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.0-b0.3.10-l0.2.15-6dab4132a820/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "BC680A8F7DED0E6A1767200A62733689A273D771678E647F12C56C7DFF179DAF",
-    "sizeBytes": 351110611,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.1-b0.3.10-l0.2.15-9479f2923d5d/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "E28CC684F2F3E21784ADAAF781DCA89AF164E8CE2D78397C1A7BC9E01E5029E3",
+    "sizeBytes": 351114914,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.6.1",
+      "raidPilotVersion": "0.15.6.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "CORTEX V4.1 — récupération visuelle progressive et fiabilité F8 (test)",
+      "details": "Améliore CORTEX V4 expérimental. Après deux images de repères locaux cohérentes, séparées d'au moins 250 ms, les corrections de récupération restent limitées à six petits pas d'au plus 0,75 m et 6° chacun; en cas de contradiction ou de dépassement, un recalage F8 natif est requis. Les boucles sont comptées seulement après correction effectivement appliquée. Nouveau contrôleur de fiabilité visuelle : apprend à partir d'intervalles F8 natifs comparables suivant des corrections locales appliquées (16 exemples maximum; calibration à partir de 4), et ne peut que réduire le plafond F8 vers 8 ou 4 secondes lorsque les erreurs sont élevées. Diagnostics et export F8 enrichis. CORTEX V4 reste une option de test, désactivée par défaut. Aucune revendication de SLAM neuronal, de précision absolue ou de gains mesurés en raid avant essais."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.6.0",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot Pro — grandes cartes de quêtes scannées pour le raid en cours",
       "details": "QuestPilot affiche uniquement les quêtes signalées par le scan TAB → TÂCHES → F8 pour le raid courant. La sélection et les validations manuelles temporaires sont réinitialisées au début et à la fin d'un raid sans effacer les preuves de quête terminée issues des journaux EFT. Une nouvelle détection de liste remplace la sélection précédente. Le panneau sous la carte devient plus haut et présente des cartes lisibles, avec typographie agrandie, boutons Fait et restauration. Ctrl+Alt+I ne change que le mode interactif, pas la visibilité de la carte et du panneau. Le panneau QuestPilot dispose d'un bouton de barre d'outils Afficher/Masquer et d'un bouton Fermer; seul le panneau est masqué, jamais la carte. Ctrl+Alt+I continue de basculer les clics et ne force pas la réouverture du panneau caché."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.38",
-      "raidPilotVersion": "0.14.2.38",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Carte et QuestPilot toujours visibles — Ctrl+Alt+I active/désactive les clics",
-      "details": "Corrige la régression : carte et panneau QuestPilot restent visibles pendant le raid, y compris en mode clics désactivés. Ctrl+Alt+I active ou désactive seulement l'interaction (click-through) sans masquer la carte ni la liste des quêtes, et ne valide aucune étape. La liste QuestPilot s'affiche dès l'initialisation et reste positionnée sous la carte. Les règles existantes de visibilité automatique selon l'état du raid et le loot sont conservées."
     }
   ]
 }
