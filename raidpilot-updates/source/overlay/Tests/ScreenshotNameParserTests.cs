@@ -73,6 +73,7 @@ internal static class ScreenshotNameParserTests
         MobileExactAnchorPolicyTests.RunAll(failures);
         CortexNavigationTests.RunAll(failures);
         CortexLandmarkMemoryTests.RunAll(failures);
+        CortexV4Tests.RunAll(failures);
         StashPilotTests.RunAll(failures);
         StashPilotF8GateTests.RunAll(failures);
         StashPilotWorkspaceTests.RunAll(failures);
@@ -131,6 +132,7 @@ internal static class ScreenshotNameParserTests
             + MobileExactAnchorPolicyTests.TestCount
             + CortexNavigationTests.TestCount
             + CortexLandmarkMemoryTests.TestCount
+            + CortexV4Tests.TestCount
             + StashPilotTests.TestCount
             + StashPilotF8GateTests.TestCount
             + StashPilotWorkspaceTests.TestCount

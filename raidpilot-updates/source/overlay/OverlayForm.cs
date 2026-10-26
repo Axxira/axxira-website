@@ -1608,6 +1608,12 @@ internal sealed partial class OverlayForm : Form
             && visualRelocalizationPoseAtCapture is { } visualEstimate
                 ? FilterPrecisionV4(proposed, visualEstimate, now)
                 : null;
+        if (fusedVisualDecision is { } priorDecision
+            && visualRelocalizationPoseAtCapture is { } priorEstimate)
+            fusedVisualDecision = CortexFilterVisual(
+                priorDecision, priorEstimate, now,
+                visualDecisionFromCollectiveAtlas, cortexLowLandmarkId,
+                cortexSuperLandmarkId);
         if (fusedVisualDecision is { } decision
             && decision.ShouldCorrect
             && decision.TargetPose is { } visualAnchor
@@ -1631,6 +1637,7 @@ internal sealed partial class OverlayForm : Form
                 decision.YawGain,
                 decision.MaximumTranslationStepMeters,
                 decision.MaximumYawStepDegrees);
+            CortexNoteVisualApplied();
             CortexObserveAppliedVisual(
                 now, decision, visualDecisionFromCollectiveAtlas,
                 cortexLowLandmarkId, cortexSuperLandmarkId);
@@ -1934,7 +1941,18 @@ internal sealed partial class OverlayForm : Form
                 || LocalizationRecoveryPolicy.ShouldEscalateFromLocalizationHealth(
                     _visualRelocalization.Health == LocalizationHealthState.Red,
                     uncertaintyMeters, _idleSeconds, secondsSinceLastAttempt));
-        if (!mobileRequest && !stationaryRecoveryReady)
+        // V4 can use the existing safe screenshot path to recover from a
+        // visual contradiction, but only when idle, foreground, user-enabled,
+        // with an exact anchor and 12-second cooldown. All action guards below
+        // still apply; CORTEX never injects an extra uncontrolled hotkey.
+        var cortexRecoveryReady = CortexRecoveryPolicy.ShouldRequestNativeF8(
+            _cortexMenu.Checked && _cortexV4Menu.Checked,
+            _autoReanchorEnabled,
+            _liveTrackingEnabled && _tarkovIsForeground && _controlTrackingActive
+                && _raidActive && !actionInProgress,
+            _cortexVision.Mode, uncertaintyMeters, _idleSeconds,
+            secondsSinceLastAttempt, secondsSinceExactAnchor);
+        if (!mobileRequest && !stationaryRecoveryReady && !cortexRecoveryReady)
             return;
 
         if (_lastExactObservation is null
@@ -3613,7 +3631,8 @@ internal sealed partial class OverlayForm : Form
                 hasCaptureTimestamp ? captureTimestamp : 0,
                 _precisionV2ToggleMenuItem.Checked,
                 _precisionV4Menu.Checked);
-            CortexObserveNativeF8(now, comparableF8, _precisionV2DriftAudit.Last);
+            CortexObserveNativeF8(now, comparableF8, _precisionV2DriftAudit.Last,
+                observation);
             CalibrateRealtimeEstimator(observation, estimatedPoseAtCapture, allowCalibration);
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;

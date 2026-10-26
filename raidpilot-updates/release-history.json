@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.6.0",
+      "raidPilotVersion": "0.15.6.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "CORTEX V4 expérimental — fusion visuelle, récupération et mémoire spatiale",
+      "details": "V4 est un mode facultatif, désactivé par défaut dans le menu Windows, pour comparer sans perturber CORTEX V3. Réutilise les deux banques de repères visuels locaux et persistants (basse et haute résolution); confronte chaque proposition de relocalisation à l'incertitude du déplacement avant l'application et limite le gain. Les grands retours sur lieu connu requièrent deux corroborations locales séparées temporellement; les cas ambigus sollicitent un F8 natif via les garde-fous habituels. Un atlas local de secteurs d'erreurs F8 comparables est mémorisé pendant 30 jours et peut seulement réduire les intervalles admissibles. Rapport CORTEX V4 exportable contenant cadence native, erreurs F8 et mesures de récupération, sans capture ni coordonnées précises. Ne constitue pas un SLAM neuronal ni une garantie de localisation parfaite. Gains en raid non encore démontrés; voir CORTEX-V4.md."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.5.0",
       "raidPilotVersion": "0.15.5.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Carte locale : avertissement quand le GPS cesse de recevoir des positions",
       "details": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.20",
-      "raidPilotVersion": "0.14.2.20",
-      "beaconVersion": "0.3.8",
-      "launcherVersion": "0.2.13",
-      "date": "2026-10-23",
-      "summary": "Precision V3.2 : écrans ultralarges et suivi GPU plus stable",
-      "details": "Precision V3.1/V3.2 : la capture Windows WGC transmet les dimensions réelles de la fenêtre et recrée son buffer après redimensionnement. Le calcul du FOV visuel s'adapte à chaque joueur (16:9, 21:9, 32:9) et les anciennes observations sont annulées après un changement de résolution ou de FOV. Une capture au mauvais format est rejetée avec retour GDI. Le suivi GPU conserve maintenant ses repères lors de brèves interruptions plutôt que d'alterner immédiatement avec GDI. Après une longue pause, il reconstruit une référence neuve; une image stationnaire trop ancienne ne peut pas bloquer le déplacement du pion. Diagnostics des formats, du FOV et de ces protections ajoutés dans Overlay et Beacon. F8, zoom sauvegardé, relais Cloudflare et sélection GPU facultative inchangés. Bénéfice réel à mesurer entre deux F8 en raid."
     }
   ]
 }
