@@ -13,7 +13,8 @@ internal static class CortexV4Report
         CortexNavigationEngine navigation,
         CortexVisualIntelligence vision,
         CortexSpatialReliabilityAtlas atlas,
-        bool v4Enabled)
+        bool v4Enabled,
+        CortexVisualFeedbackGate? visualFeedback = null)
     {
         ArgumentNullException.ThrowIfNull(nativeF8Residuals);
         ArgumentNullException.ThrowIfNull(navigation);
@@ -66,6 +67,14 @@ internal static class CortexV4Report
             {
                 localCoarseRiskSectors = atlas.Count,
                 verifiedF8RiskObservations = atlas.Observations
+            },
+            feedback = new
+            {
+                measuredVisualF8Intervals = visualFeedback?.Comparisons ?? 0,
+                largeDriftAfterVisual = visualFeedback?.BadComparisons ?? 0,
+                ignoredAttribution = visualFeedback?.Ignored ?? 0,
+                empiricalF8CeilingSeconds =
+                    visualFeedback?.MaximumIntervalSecondsAllowed
             },
             learning = new
             {
