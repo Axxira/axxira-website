@@ -70,8 +70,6 @@ internal static class CortexV4Tests
                 && d.MaximumYawStepDegrees <= 6
                 && e.VerifiedLoopClosures == 0);
             e.NoteApplied();
-            Require(e.VerifiedLoopClosures == 0);
-            e.NoteApplied();
             Require(e.VerifiedLoopClosures == 1);
         }, failures);
 
@@ -104,6 +102,8 @@ internal static class CortexV4Tests
             Require(Filter(e, 1, Proposed(x: 9, loop: true)) is null);
             Require(Filter(e, 1.5, Proposed(x: 13, loop: true)) is null);
             Require(Filter(e, 1.9, Proposed(x: 13, loop: true)) is not null);
+            Require(e.VerifiedLoopClosures == 0);
+            e.NoteApplied();
             Require(e.VerifiedLoopClosures == 1);
         }, failures);
 
