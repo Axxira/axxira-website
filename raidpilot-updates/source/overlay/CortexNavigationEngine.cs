@@ -30,6 +30,7 @@ internal sealed class CortexNavigationEngine
     private RealtimePose? _lastPose;
     private readonly Queue<double> _f8Errors = new(ErrorSampleCapacity);
     private readonly CortexLandmarkMemory _landmarks = new();
+    private readonly CortexDriftRiskModel _driftRisk = new();
     private int _cleanAnchorsAfterBad;
     private long _landmarkConflicts;
     private long _visualAccepted;
@@ -45,6 +46,7 @@ internal sealed class CortexNavigationEngine
     internal long SuspiciousF8Anchors => _f8Bad;
     internal int RememberedLandmarks => _landmarks.Count;
     internal long LandmarkIdentityConflicts => _landmarkConflicts;
+    internal CortexDriftRiskSnapshot DriftRisk => _driftRisk.Current;
 
     // Only a real EFT screenshot advances this clock. Visual keyframe
     // corrections may adjust the position, but cannot create a new F8.
@@ -72,6 +74,7 @@ internal sealed class CortexNavigationEngine
         _lastBadAnchorAt = 0;
         _lastPose = null;
         _f8Errors.Clear();
+        _driftRisk.Reset();
         _landmarks.Reset();
         _landmarkConflicts = 0;
         _cleanAnchorsAfterBad = 0;
@@ -245,6 +248,9 @@ internal sealed class CortexNavigationEngine
         if (_f8Errors.Count == ErrorSampleCapacity) _f8Errors.Dequeue();
         _f8Errors.Enqueue(sample.ErrorMeters);
         _f8Compared++;
+        // Only comparable NATIVE F8 residuals train the on-device risk model.
+        // It never receives visual-only synthetic anchors or absolute positions.
+        _driftRisk.Observe(sample);
 
         // Large actual residuals override optimistic estimator uncertainty.
         // Record the error, but do NOT change the estimator's F8 position.
@@ -331,9 +337,19 @@ internal sealed class CortexNavigationEngine
             return new(CortexTrackingQuality.Predicted, false, false,
                 score, reason);
         }
+        var risk = _driftRisk.Current;
+        // The learned empirical error ceiling can only veto an extension.
+        // It never promotes an unverified visual correction or replaces a F8.
+        if (risk.Calibrated && risk.MaxIntervalSeconds <= 4)
+            return new(CortexTrackingQuality.Predicted, false, false,
+                score, risk.Reason);
+        if (risk.Calibrated && risk.MaxIntervalSeconds <= 8)
+            strong = false;
         return new(CortexTrackingQuality.VisuallySupported, true, strong,
-            score, strong ? "Deux corrections visuelles locales concordantes"
-                : "Correction visuelle locale validée");
+            score, risk.Calibrated && risk.MaxIntervalSeconds <= 8
+                ? risk.Reason
+                : strong ? "Deux corrections visuelles locales concordantes"
+                    : "Correction visuelle locale validée");
     }
 
     internal string Diagnostic(CortexNavigationAssessment assessment)
@@ -341,10 +357,17 @@ internal sealed class CortexNavigationEngine
         var median = MedianF8ErrorMeters is { } error
             ? error.ToString("F2") + " m"
             : "non mesurée";
+        var risk = _driftRisk.Current;
+        var riskText = risk.Calibrated
+            ? $"F8 apprentissage {risk.SampleCount} : écart empirique P90 à 8 s {risk.EstimatedErrorAt8Meters:F2} m"
+                + $", à 12 s {risk.EstimatedErrorAt12Meters:F2} m; plafond {risk.MaxIntervalSeconds} s"
+            : $"F8 apprentissage {risk.SampleCount}/{CortexDriftRiskModel.MinimumSamples} échantillons"
+                + " (pas encore calibré)";
         return "CORTEX : " + assessment.Quality
             + $" · indice {assessment.QualityIndicator:F2} (non métrique)"
             + " · " + assessment.Reason
             + $"\nF8 comparables {_f8Compared}, dérives fortes {_f8Bad}, médiane {median}"
+            + "\n" + riskText
             + $"\nVision locale acceptée {_visualAccepted}, refusée {_visualRejected}, "
             + $"poses refusées {_poseRejected}"
             + $"\nMémoire CORTEX : {_landmarks.Count} repères, "
