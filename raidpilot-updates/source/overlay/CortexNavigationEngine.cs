@@ -316,8 +316,21 @@ internal sealed class CortexNavigationEngine
             return new(CortexTrackingQuality.Degraded, false, false,
                 score, "Mouvement et capteurs contradictoires");
         if (!eligible)
+        {
+            // Report the first actionable gating reason, rather than hiding
+            // every failure behind the generic "predicted" label.
+            var reason = !visualFresh
+                ? "Aucune correction visuelle locale récente validée"
+                : !reliableHealth
+                    ? "Santé GPS orange/rouge — intervalle F8 réduit"
+                    : !safeGeometry
+                        ? $"Incertitude élevée : {pose.PositionUncertaintyMeters:F2} m / {pose.YawUncertaintyDegrees:F1}°"
+                        : !recentF8
+                            ? "Ancre F8 réelle trop ancienne"
+                            : "Confiance de localisation insuffisante";
             return new(CortexTrackingQuality.Predicted, false, false,
-                score, "Position prédite; recalage F8 conservateur");
+                score, reason);
+        }
         return new(CortexTrackingQuality.VisuallySupported, true, strong,
             score, strong ? "Deux corrections visuelles locales concordantes"
                 : "Correction visuelle locale validée");
@@ -336,6 +349,8 @@ internal sealed class CortexNavigationEngine
             + $"poses refusées {_poseRejected}"
             + $"\nMémoire CORTEX : {_landmarks.Count} repères, "
             + $"{_landmarks.Repeated} revisites, {_landmarkConflicts} conflits d'identité"
+            + "\nCadence F8 cible : " + (assessment.AllowStrongExtension
+                ? "12 s" : assessment.AllowExtendedF8 ? "8 s" : "4 s")
             + "\nExtension F8 : " + (assessment.AllowExtendedF8
                 ? assessment.AllowStrongExtension ? "forte" : "modérée"
                 : "désactivée");
