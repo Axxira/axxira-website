@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-26T14:00:46.1783251+00:00",
+  "publishedAt": "2026-10-26T15:17:23.2111568+00:00",
   "raidPilot": {
-    "version": "0.15.4.4",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.4-b0.3.10-l0.2.15-f6c591eeaffe/RaidPilot-Overlay-v0.15.4.4-Windows-x64.zip",
-    "sha256": "FA78140EA8B6B16C6F16CC22ED8DB912FFC84E2A610F5270ADE1DAF26A5C1F41",
-    "sizeBytes": 234508612,
-    "releaseNotes": "Première amélioration visuelle inspirée par la lisibilité de Tarkov Navigator : indicateur d'étage plus lisible et infobulle des niveaux réellement présents dans le catalogue local. Cartes actuelles et coordonnées conservées; aucun fond cartographique tiers copié ou remplacé. CORTEX, QuestPilot et le repérage ne sont pas modifiés. Les nouveaux fonds d'étages restent à préparer et tester."
+    "version": "0.15.5.0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.5.0-b0.3.10-l0.2.15-3dc84d6102a4/RaidPilot-Overlay-v0.15.5.0-Windows-x64.zip",
+    "sha256": "1835B8C3CA9EABDA924B3D1243D953081C33CA023A8A3D1857FC58699E8805F9",
+    "sizeBytes": 234521525,
+    "releaseNotes": "CORTEX V3 ajoute une calibration locale à partir des résidus réels de captures F8 comparables (24 mesures maximum en mémoire, activation de la calibration après 6 mesures). Le modèle estime de manière prudente la dérive à 8 et 12 secondes et peut limiter la cadence à 4 ou 8 secondes si l'écart augmente. Quand les mesures sont suffisamment fiables et un repère visuel local a réellement été appliqué, une courte grâce de 5 à 9 secondes peut maintenir un intervalle de 8 secondes, jamais 12 sans deux repères récents distincts. Le diagnostic indique les raisons de limitation, les risques empiriques et la cadence F8 réellement observée. Les protections de visée, action, changement de session et repli sont conservées. Aucun réseau neuronal, aucune garantie de précision absolue ni gain de captures mesuré en raid réel à ce stade."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.4-b0.3.10-l0.2.15-f6c591eeaffe/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "D0F4F7CECF197E7D36E137D492920BCD8B414E3A7F30601854CD5CC0EC31992C",
-    "sizeBytes": 58332718,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.5.0-b0.3.10-l0.2.15-3dc84d6102a4/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "64C11AA3EADE212BF6A4C55A44B6FF605906B58368D2179A991AD24FBD6475BE",
+    "sizeBytes": 58332719,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.4-b0.3.10-l0.2.15-f6c591eeaffe/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "FF179CB90C3389C986862CA929C8FEB60EA308539584EAEDD2272F81C78B49B5",
-    "sizeBytes": 351098732,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.5.0-b0.3.10-l0.2.15-3dc84d6102a4/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "68451ACB76966BF8016DE1AE405F6B49C38F260C2472E63899EEC8EA1C85D3B7",
+    "sizeBytes": 351111789,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.5.0",
+      "raidPilotVersion": "0.15.5.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "CORTEX V3 expérimental — apprentissage de dérive et recalages F8 adaptatifs",
+      "details": "CORTEX V3 ajoute une calibration locale à partir des résidus réels de captures F8 comparables (24 mesures maximum en mémoire, activation de la calibration après 6 mesures). Le modèle estime de manière prudente la dérive à 8 et 12 secondes et peut limiter la cadence à 4 ou 8 secondes si l'écart augmente. Quand les mesures sont suffisamment fiables et un repère visuel local a réellement été appliqué, une courte grâce de 5 à 9 secondes peut maintenir un intervalle de 8 secondes, jamais 12 sans deux repères récents distincts. Le diagnostic indique les raisons de limitation, les risques empiriques et la cadence F8 réellement observée. Les protections de visée, action, changement de session et repli sont conservées. Aucun réseau neuronal, aucune garantie de précision absolue ni gain de captures mesuré en raid réel à ce stade."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.4.4",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot sous la carte et Ctrl+Alt+I ouvre/ferme",
       "details": "Le panneau complet QuestPilot (liste des quêtes, étapes, bouton Fait, restauration et options) a été déplacé hors de la zone de carte dans une section défilante sous la carte, avec texte agrandi. Le raccourci global Ctrl+Alt+I bascule entre l'ouverture interactive carte+quêtes et la fermeture de l'interface, sans cocher d'étape. Les marqueurs des étapes terminées restent masqués, sauf objectifs encore à faire; les anciens contrôles restent accessibles."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.36",
-      "raidPilotVersion": "0.14.2.36",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot — Ctrl+Alt+I ouvre carte et quêtes, validation par boutons",
-      "details": "Ctrl+Alt+I ne coche plus aucun objectif. Ce raccourci ouvre la carte interactive et le panneau QuestPilot avec la liste des quêtes. Chaque objectif non terminé propose un bouton explicite « ✓ Fait »; les étapes cochées manuellement se restaurent via « Étapes terminées » → « Réactiver ce point ». Le bandeau sous la carte et le filtrage des points terminés restent disponibles. Les quêtes remises confirmées par les journaux EFT restent protégées contre une réactivation incorrecte."
     }
   ]
 }
