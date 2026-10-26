@@ -146,9 +146,15 @@ internal sealed class CortexVisualIntelligence
                     (double)Stopwatch.Frequency;
                 var frameGap = (now - verified.LastObservedAt) /
                     (double)Stopwatch.Frequency;
+                if (frameGap >= 0
+                    && frameGap < MinimumIndependentFrameGapSeconds
+                    && verified.LowId == low && verified.HighId == high
+                    && SameVisualLocation(verified.Pose, target))
+                    return Reject("Trame trop proche : preuve non indépendante",
+                        keepMode: true);
                 if (verified.LowId != low || verified.HighId != high
                     || lifetime > MaximumVerifiedLoopLifetimeSeconds
-                    || frameGap < MinimumIndependentFrameGapSeconds
+                    || frameGap < 0
                     || !SameVisualLocation(verified.Pose, target))
                 {
                     _verifiedLoop = null;
