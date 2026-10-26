@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-25T18:48:10.5851487+00:00",
+  "publishedAt": "2026-10-26T12:54:48.3848872+00:00",
   "raidPilot": {
-    "version": "0.15.4.2",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.2-b0.3.10-l0.2.15-e141e136f563/RaidPilot-Overlay-v0.15.4.2-Windows-x64.zip",
-    "sha256": "9FCD06FBCB7BA4298611A46E1E773971C86A8B8A1DBC9A0EB6BEC394CE9E6465",
-    "sizeBytes": 234501402,
-    "releaseNotes": "StashPilot montre désormais les objets et leurs décisions en quatre colonnes seulement : objet, quantité, décision, raison. Les réglages d'inventaire et de besoins sont déplacés dans une fenêtre secondaire. En menu Tarkov, F8 lance l'OCR local puis une seule fenêtre permet de corriger et confirmer les noms/quantités reconnus avant de remplacer la liste du dernier scan et de sauvegarder localement. Aucun objet sans besoin confirmé ne reçoit un conseil de vente. L'OCR ne reconnaît pas les icônes seules, et le scan doit être vérifié manuellement avant confirmation. Aucun achat ni vente automatique."
+    "version": "0.15.4.3",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.3-b0.3.10-l0.2.15-3bb0bab0c111/RaidPilot-Overlay-v0.15.4.3-Windows-x64.zip",
+    "sha256": "79639D2A723066B664F9A541C95658E168961E422DE026912447F91D933F53CB",
+    "sizeBytes": 234511744,
+    "releaseNotes": "Ajoute un catalogue consultable d'objets Tarkov et une comparaison visuelle assistée depuis la capture F8. Les références sont téléchargées au besoin et conservées localement. Le prototype examine au maximum 120 premières références, et les suggestions doivent être confirmées par le joueur. La segmentation automatique de tout l'inventaire et la reconnaissance exhaustive ne sont pas disponibles. Aucun objet n'est vendu automatiquement."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.2-b0.3.10-l0.2.15-e141e136f563/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "508AD5B0FD39A6BACB6F8F0BB7138157D850EE78E6295762A44427B4C52E7130",
-    "sizeBytes": 58332208,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.3-b0.3.10-l0.2.15-3bb0bab0c111/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "470D8D676A2D286C3F864461DCFD02078F487330A2F69A1DF25A87D5342FA116",
+    "sizeBytes": 58332718,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.2-b0.3.10-l0.2.15-e141e136f563/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "45AF213C6BD5B21A375EC0E2E71EDB3F6666F8237BB1691D0BE89C3F7A5F2B45",
-    "sizeBytes": 351090456,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.3-b0.3.10-l0.2.15-3bb0bab0c111/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "336686C3E78B4B90BA0233CBE51A1AA56583430A29EFBD153F794491110934E8",
+    "sizeBytes": 351101853,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.4.3",
+      "raidPilotVersion": "0.15.4.3",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "StashPilot — catalogue et comparaison d'icônes en version test",
+      "details": "Ajoute un catalogue consultable d'objets Tarkov et une comparaison visuelle assistée depuis la capture F8. Les références sont téléchargées au besoin et conservées localement. Le prototype examine au maximum 120 premières références, et les suggestions doivent être confirmées par le joueur. La segmentation automatique de tout l'inventaire et la reconnaissance exhaustive ne sont pas disponibles. Aucun objet n'est vendu automatiquement."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.4.2",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot — objectifs terminés masqués, bandeau lisible, Ctrl+Alt+I",
       "details": "Sur la carte, chaque objectif personnel marqué terminé disparaît immédiatement; les autres points de la même quête restent affichés. Une section repliable « Étapes terminées » permet de réactiver en un clic un objectif coché manuellement. Les lieux alternatifs d'une seule étape partagent le même statut; les marqueurs des coéquipiers restent indépendants. Une quête entière remise et confirmée par les journaux EFT ne peut pas être remise en cours manuellement. Les journaux EFT disponibles confirment des quêtes entières, pas nécessairement chaque sous-objectif; la validation rapide des étapes se fait manuellement. Deux tests de non-régression ajoutés. Comprend également le correctif de priorité du suivi manuel et masque les distances quand la localisation est incertaine (PR #26 reprise dans cette version). Nouveau bandeau d'objectif placé sous la carte (texte plus grand) et raccourci global Ctrl+Alt+I pour cocher une seule étape ciblée pendant un raid, uniquement si Tarkov est au premier plan. Le raccourci Interagir est transféré à Ctrl+Alt+U pour éviter toute collision. Les étapes terminées sont restaurables manuellement."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.33",
-      "raidPilotVersion": "0.14.2.33",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot simplifié — prochain objectif, suivi rapide, options avancées repliées",
-      "details": "La liste QuestPilot montre par défaut uniquement les quêtes suivies, avec un bouton pour afficher le catalogue complet. La recherche révèle aussi les missions non suivies. Un encart Prochain objectif permet de suivre une étape sur la carte ou de la cocher d'un seul clic. L'affichage principal est limité à dix étapes et les préparatifs, objectifs sans GPS et options d'escouade sont regroupés dans des sections dépliables. Les marqueurs numérotés, couleurs, statuts personnels et d'équipe restent disponibles. Aucune quête n'est cochée automatiquement sans action du joueur ou preuve EFT."
     }
   ]
 }
