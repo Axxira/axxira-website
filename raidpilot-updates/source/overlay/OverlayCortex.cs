@@ -94,6 +94,8 @@ internal sealed partial class OverlayForm
     {
         var assessment = _cortex.Assess(now, _currentMap, _raidGeneration,
             _lastForegroundWindow, pose, _visualRelocalization.Health);
+        if (assessment.Quality == CortexTrackingQuality.Degraded)
+            _cortexVision.OnTrackingUncertain();
         var maximum = _cortexSpatialAtlas.MaximumIntervalSeconds(
             _currentMap, pose.X, pose.Y, pose.Z, DateTimeOffset.UtcNow);
         if (assessment.AllowExtendedF8 && maximum <= 4)
