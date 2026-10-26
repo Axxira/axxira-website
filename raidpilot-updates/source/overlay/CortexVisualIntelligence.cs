@@ -241,3 +241,30 @@ internal enum CortexRecoveryMode
     Recovering,
     NeedsNativeF8,
 }
+
+/// <summary>
+/// An extra conservative recovery opportunity only while the player is truly
+/// idle and ordinary safe screenshot guards are still enforced by OverlayForm.
+/// Never bypasses the user's auto-reanchor preference, action/aim/fire checks,
+/// foreground window or native screenshot hotkey availability.
+/// </summary>
+internal static class CortexRecoveryPolicy
+{
+    internal static bool ShouldRequestNativeF8(
+        bool cortexEnabled, bool autoRecoveryEnabled,
+        bool activeGameplay, CortexRecoveryMode mode,
+        double uncertaintyMeters, double idleSeconds,
+        double secondsSinceLastAttempt, double secondsSinceNativeF8)
+    {
+        return cortexEnabled && autoRecoveryEnabled && activeGameplay
+            && mode == CortexRecoveryMode.NeedsNativeF8
+            && double.IsFinite(uncertaintyMeters)
+            && double.IsFinite(idleSeconds)
+            && !double.IsNaN(secondsSinceLastAttempt)
+            && double.IsFinite(secondsSinceNativeF8)
+            && uncertaintyMeters >= 1.5 && uncertaintyMeters <= 200
+            && idleSeconds >= 0.90
+            && secondsSinceLastAttempt >= 12.0
+            && secondsSinceNativeF8 >= 8.0;
+    }
+}
