@@ -96,7 +96,7 @@ internal sealed class CortexDriftRiskModel
             var rates = _recent.Select(x => x.MetresPerSecond).ToArray();
             var previous = rates.Skip(n - 8).Take(4).Average();
             var latest = rates.Skip(n - 4).Average();
-            if (latest > Math.Max(0.10, previous) * 2.5
+            if (latest > Math.Max(0.05, previous) * 2.5
                 && latest * 8.0 + 0.20 >= 1.5)
             {
                 ceiling = 4;
