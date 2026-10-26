@@ -127,11 +127,15 @@
             let el=document.getElementById("raidpilot-auto-floor");
             if(!el){el=document.createElement("div");el.id="raidpilot-auto-floor";
                 const title=document.createElement("strong"),detail=document.createElement("span");el.append(title,detail);document.body?.appendChild(el);}
-            const title=state.status==="single_map"?"AUTO · Vue unique":"AUTO · "+state.name;
-            const detail=state.status==="disabled"?"Désactivé":state.detail;
+            // Compact floor navigator: list only levels actually published in the
+            // active local map catalogue. Never fabricate a basement or floor.
+            const title=state.status==="single_map"?"CARTE · Vue générale":"ÉTAGE · "+state.name;
+            const detail=state.status==="disabled"?"Auto désactivé":state.detail;
+            const knownLevels=(catalog?.levels??[]).map(l=>label(l.name));
+            el.dataset.levelCount=String(knownLevels.length);
             if(el.children[0].textContent!==title)el.children[0].textContent=title;
             if(el.children[1].textContent!==detail)el.children[1].textContent=detail;
-            el.dataset.state=state.status;el.title=title+"\n"+detail+"\nLes changements de hauteur dépendent des observations reçues; aucun recalage supplémentaire n'est déclenché.";
+            el.dataset.state=state.status;el.title=title+"\n"+detail+"\nÉtages disponibles : "+(knownLevels.join(" · ")||"Vue unique")+"\nLe changement automatique dépend d'une altitude fiable.";
         }
         const isLevel=l=>l?.options?.type==="map-layer"&&l.options.layerType==="level";
         function clearFilter(){

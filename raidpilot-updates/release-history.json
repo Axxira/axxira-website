@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.4.4",
+      "raidPilotVersion": "0.15.4.4",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "Carte — affichage des étages plus clair (test)",
+      "details": "Première amélioration visuelle inspirée par la lisibilité de Tarkov Navigator : indicateur d'étage plus lisible et infobulle des niveaux réellement présents dans le catalogue local. Cartes actuelles et coordonnées conservées; aucun fond cartographique tiers copié ou remplacé. CORTEX, QuestPilot et le repérage ne sont pas modifiés. Les nouveaux fonds d'étages restent à préparer et tester."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.4.3",
       "raidPilotVersion": "0.15.4.3",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Historique des mises à jour visible et automatique",
       "details": "Le panneau « Dernières mises à jour » affiche les vraies versions publiées au lieu de trois anciennes lignes fixes.\nLe bouton « Voir les notes » ouvre les descriptions détaillées des versions précédentes.\nLe Launcher conserve un exemplaire de l'historique même hors connexion et rafraîchit les notes lors de la vérification du canal Stable.\nLa publication GitHub exige désormais une fiche de version correspondante, pour éviter d'oublier les prochaines notes."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.18",
-      "raidPilotVersion": "0.14.2.18",
-      "beaconVersion": "0.3.6",
-      "launcherVersion": "0.2.12",
-      "date": "2026-10-23",
-      "summary": "Zoom personnel conservé entre les cartes et les raids",
-      "details": "Le zoom réglé à la molette ou avec les boutons est mémorisé entre les parties et les changements de carte.\nLe facteur de zoom est adapté aux dimensions des différentes cartes locales et en ligne; le bouton Ajuster revient à 100 %.\nLes préférences de taille, de position et de filtres restent intactes; aucune modification de la localisation ou du relais d'équipe."
     }
   ]
 }

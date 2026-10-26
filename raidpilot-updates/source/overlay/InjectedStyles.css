@@ -1249,13 +1249,14 @@ html.raidpilot-raid-extractions-confirmed #leaflet-map .extract-icon:not(.raidpi
     width: calc(var(--raidpilot-floor-width) - 18px) !important; height: 54px !important;
     display: flex !important; flex-direction: column !important; justify-content: center !important;
     padding: 5px 7px !important; gap: 3px !important;
-    border: 1px solid rgb(135 175 204 / 32%) !important; border-radius: 5px !important;
-    color: #c8e5f4 !important; background: rgb(16 25 29 / 90%) !important;
+    border: 1px solid rgb(135 175 204 / 32%) !important; border-radius: 11px !important;
+    color: #e7f2f5 !important; background: rgb(11 20 25 / 94%) !important;
+    box-shadow: 0 4px 18px rgb(0 0 0 / 28%) !important;
     font: 10px/12px "Segoe UI", sans-serif !important;
     z-index: 2147483647 !important; pointer-events: none !important; user-select: none !important;
     overflow: hidden !important;
 }
-#raidpilot-auto-floor strong { font-size: 11px !important; line-height: 13px !important; }
+#raidpilot-auto-floor strong { font-size: 12px !important; line-height: 15px !important; letter-spacing: 0.1px !important; }
 #raidpilot-auto-floor strong, #raidpilot-auto-floor span {
     display: block !important; overflow: hidden !important; text-overflow: ellipsis !important;
     white-space: nowrap !important;
