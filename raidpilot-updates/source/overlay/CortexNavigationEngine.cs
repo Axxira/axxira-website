@@ -39,6 +39,11 @@ internal sealed class CortexNavigationEngine
     private long _poseRejected;
     private long _f8Compared;
     private long _f8Bad;
+    private long _nativeF8Intervals;
+    private double _nativeF8IntervalSeconds;
+    private long _nativeFastIntervals;
+    private long _nativeMediumIntervals;
+    private long _nativeSlowIntervals;
 
     internal long AcceptedVisualCorrections => _visualAccepted;
     internal long RejectedVisualCorrections => _visualRejected;
@@ -81,6 +86,9 @@ internal sealed class CortexNavigationEngine
         _cleanAnchorsAfterBad = 0;
         _visualAccepted = _visualRejected = _poseRejected = 0;
         _f8Compared = _f8Bad = 0;
+        _nativeF8Intervals = 0;
+        _nativeF8IntervalSeconds = 0;
+        _nativeFastIntervals = _nativeMediumIntervals = _nativeSlowIntervals = 0;
     }
 
     internal void ObservePose(
@@ -228,6 +236,20 @@ internal sealed class CortexNavigationEngine
             return;
         EnsureSession(mapId, raidGeneration, gameWindow);
         if (timestamp <= _lastNativeAnchorAt) return;
+        if (_lastNativeAnchorAt > 0)
+        {
+            var gap = (timestamp - _lastNativeAnchorAt) / (double)Stopwatch.Frequency;
+            // A real measured cadence, independent from CORTEX assessments
+            // and without storing screenshot paths, location or player inputs.
+            if (gap is >= 2 and <= 60)
+            {
+                _nativeF8Intervals++;
+                _nativeF8IntervalSeconds += gap;
+                if (gap < 6) _nativeFastIntervals++;
+                else if (gap < 10) _nativeMediumIntervals++;
+                else _nativeSlowIntervals++;
+            }
+        }
 
         _lastNativeAnchorAt = timestamp;
         _lastPoseAt = 0;
@@ -375,6 +397,12 @@ internal sealed class CortexNavigationEngine
             ? error.ToString("F2") + " m"
             : "non mesurée";
         var risk = _driftRisk.Current;
+        var cadenceText = _nativeF8Intervals > 0
+            ? $"F8 réels : {_nativeF8Intervals} intervalles, moyenne "
+                + $"{_nativeF8IntervalSeconds / _nativeF8Intervals:F1} s"
+                + $" (moins de 6 s : {_nativeFastIntervals}; 6 à 10 s : {_nativeMediumIntervals};"
+                + $" 10 s et plus : {_nativeSlowIntervals})"
+            : "F8 réels : cadence pas encore mesurée";
         var riskText = risk.Calibrated
             ? $"F8 apprentissage {risk.SampleCount} : écart empirique P90 à 8 s {risk.EstimatedErrorAt8Meters:F2} m"
                 + $", à 12 s {risk.EstimatedErrorAt12Meters:F2} m; plafond {risk.MaxIntervalSeconds} s"
@@ -385,6 +413,7 @@ internal sealed class CortexNavigationEngine
             + " · " + assessment.Reason
             + $"\nF8 comparables {_f8Compared}, dérives fortes {_f8Bad}, médiane {median}"
             + "\n" + riskText
+            + "\n" + cadenceText
             + $"\nVision locale acceptée {_visualAccepted}, refusée {_visualRejected}, "
             + $"poses refusées {_poseRejected}"
             + $"\nMémoire CORTEX : {_landmarks.Count} repères, "
