@@ -331,15 +331,7 @@ internal sealed class StashPilotForm : Form
                 return item with { Item = match.Known ? match.Name : item.Item };
             }).ToArray();
             if (suggestions.Count == 0)
-            {
-                _status.Text = "Aucun nom et quantité fiables détectés. Rien n'a été changé.";
-                MessageBox.Show(this,
-                    "Le texte de cette capture ne permet pas d'identifier les objets. " +
-                    "Les icônes seules ne sont pas encore reconnues. " +
-                    "Essaie une capture avec les noms et quantités visibles.",
-                    "StashPilot", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
+                _status.Text = "Aucun texte fiable : tu peux comparer une icône manuellement.";
             using var review = new Form
             {
                 Text = "StashPilot — confirmer le scan",
@@ -359,6 +351,24 @@ internal sealed class StashPilotForm : Form
                 Dock = DockStyle.Fill, Font = new Font("Consolas", 11),
                 Text = string.Join(Environment.NewLine,
                     recognized.Select(i => i.Item + " x" + i.Quantity))
+            };
+            var visual = new Button
+            {
+                Text = "Comparer une icône sur la capture",
+                Dock = DockStyle.Bottom, Height = 40
+            };
+            visual.Click += async (_, _) =>
+            {
+                visual.Enabled = false;
+                try
+                {
+                    var itemName = await StashPilotIconReview.ReviewAsync(
+                        review, screenshotPath, catalogue);
+                    if (!string.IsNullOrWhiteSpace(itemName))
+                        editor.AppendText((editor.TextLength > 0 ? Environment.NewLine : "")
+                            + itemName + " x1");
+                }
+                finally { visual.Enabled = true; }
             };
             var confirm = new Button
             {
@@ -389,6 +399,7 @@ internal sealed class StashPilotForm : Form
                 review.Close();
             };
             review.Controls.Add(editor);
+            review.Controls.Add(visual);
             review.Controls.Add(confirm);
             review.Controls.Add(heading);
             review.ShowDialog(this);
