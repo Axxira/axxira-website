@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.6.1",
+      "raidPilotVersion": "0.15.6.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "CORTEX V4.1 — récupération visuelle progressive et fiabilité F8 (test)",
+      "details": "Améliore CORTEX V4 expérimental. Après deux images de repères locaux cohérentes, séparées d'au moins 250 ms, les corrections de récupération restent limitées à six petits pas d'au plus 0,75 m et 6° chacun; en cas de contradiction ou de dépassement, un recalage F8 natif est requis. Les boucles sont comptées seulement après correction effectivement appliquée. Nouveau contrôleur de fiabilité visuelle : apprend à partir d'intervalles F8 natifs comparables suivant des corrections locales appliquées (16 exemples maximum; calibration à partir de 4), et ne peut que réduire le plafond F8 vers 8 ou 4 secondes lorsque les erreurs sont élevées. Diagnostics et export F8 enrichis. CORTEX V4 reste une option de test, désactivée par défaut. Aucune revendication de SLAM neuronal, de précision absolue ou de gains mesurés en raid avant essais."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.6.0",
       "raidPilotVersion": "0.15.6.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-23",
       "summary": "Precision V4 expérimental : fusion visuelle prudente et audit F8",
       "details": "Nouveau mode Precision V4 facultatif dans l'icône de notification (désactivé par défaut avant validation en raid). Fusion des reconnaissances visuelles avec l'incertitude estimée, seuil d'innovation statistique, vérification de cohérence entre étages et limitation des grands snaps. Les recadrages forts nécessitent un consensus de reconnaisseurs ou une loop closure temporellement confirmée; un écart invraisemblable est refusé. Le moteur prévoit des zones navigables polygonales vérifiées, mais aucune paroi n'est inventée lorsque les données de géométrie sont absentes. Calibration F8 plus prudente après un écart anormal; audit V4 par intervalles environ 5-10, 10-20 et 20-30+ secondes et diagnostic enrichi. Le moteur visuel V2/V3, les keyframes, le suivi GPU facultatif, le relais d'équipe et le zoom sauvegardé sont conservés. Aucune promesse de GPS absolu ni de réduction de dérive n'est faite sans mesures EFT réelles. Export manuel d'un rapport JSON F8 ne contenant ni coordonnées ni captures; 32 échantillons maximum, aucune transmission réseau."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.21",
-      "raidPilotVersion": "0.14.2.21",
-      "beaconVersion": "0.3.8",
-      "launcherVersion": "0.2.13",
-      "date": "2026-10-23",
-      "summary": "Carte locale : avertissement quand le GPS cesse de recevoir des positions",
-      "details": "La carte locale signale maintenant une position périmée après plus de trois secondes sans nouvelle donnée de localisation. Le pion conservé à sa dernière position devient translucide et un avertissement visible en jeu apparaît, y compris lorsque l'interface interactive est masquée. Dès qu'une nouvelle position valide est reçue, l'affichage retrouve immédiatement son état normal. L'avertissement se réinitialise au changement de carte, à la sortie du raid et lors de la disparition du pion. Les coordonnées, le yaw, le moteur F8, le relais d'équipe, le zoom enregistré et Beacon restent inchangés. Ceci détecte une interruption du suivi, mais ne réduit pas la dérive de position entre deux F8."
     }
   ]
 }
