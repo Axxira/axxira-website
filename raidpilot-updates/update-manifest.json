@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-26T12:54:48.3848872+00:00",
+  "publishedAt": "2026-10-26T14:00:46.1783251+00:00",
   "raidPilot": {
-    "version": "0.15.4.3",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.3-b0.3.10-l0.2.15-3bb0bab0c111/RaidPilot-Overlay-v0.15.4.3-Windows-x64.zip",
-    "sha256": "79639D2A723066B664F9A541C95658E168961E422DE026912447F91D933F53CB",
-    "sizeBytes": 234511744,
-    "releaseNotes": "Ajoute un catalogue consultable d'objets Tarkov et une comparaison visuelle assistée depuis la capture F8. Les références sont téléchargées au besoin et conservées localement. Le prototype examine au maximum 120 premières références, et les suggestions doivent être confirmées par le joueur. La segmentation automatique de tout l'inventaire et la reconnaissance exhaustive ne sont pas disponibles. Aucun objet n'est vendu automatiquement."
+    "version": "0.15.4.4",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.4-b0.3.10-l0.2.15-f6c591eeaffe/RaidPilot-Overlay-v0.15.4.4-Windows-x64.zip",
+    "sha256": "FA78140EA8B6B16C6F16CC22ED8DB912FFC84E2A610F5270ADE1DAF26A5C1F41",
+    "sizeBytes": 234508612,
+    "releaseNotes": "Première amélioration visuelle inspirée par la lisibilité de Tarkov Navigator : indicateur d'étage plus lisible et infobulle des niveaux réellement présents dans le catalogue local. Cartes actuelles et coordonnées conservées; aucun fond cartographique tiers copié ou remplacé. CORTEX, QuestPilot et le repérage ne sont pas modifiés. Les nouveaux fonds d'étages restent à préparer et tester."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.3-b0.3.10-l0.2.15-3bb0bab0c111/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "470D8D676A2D286C3F864461DCFD02078F487330A2F69A1DF25A87D5342FA116",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.4-b0.3.10-l0.2.15-f6c591eeaffe/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "D0F4F7CECF197E7D36E137D492920BCD8B414E3A7F30601854CD5CC0EC31992C",
     "sizeBytes": 58332718,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.3-b0.3.10-l0.2.15-3bb0bab0c111/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "336686C3E78B4B90BA0233CBE51A1AA56583430A29EFBD153F794491110934E8",
-    "sizeBytes": 351101853,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.4.4-b0.3.10-l0.2.15-f6c591eeaffe/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "FF179CB90C3389C986862CA929C8FEB60EA308539584EAEDD2272F81C78B49B5",
+    "sizeBytes": 351098732,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.4.4",
+      "raidPilotVersion": "0.15.4.4",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-26",
+      "summary": "Carte — affichage des étages plus clair (test)",
+      "details": "Première amélioration visuelle inspirée par la lisibilité de Tarkov Navigator : indicateur d'étage plus lisible et infobulle des niveaux réellement présents dans le catalogue local. Cartes actuelles et coordonnées conservées; aucun fond cartographique tiers copié ou remplacé. CORTEX, QuestPilot et le repérage ne sont pas modifiés. Les nouveaux fonds d'étages restent à préparer et tester."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.4.3",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot — Ctrl+Alt+I ouvre carte et quêtes, validation par boutons",
       "details": "Ctrl+Alt+I ne coche plus aucun objectif. Ce raccourci ouvre la carte interactive et le panneau QuestPilot avec la liste des quêtes. Chaque objectif non terminé propose un bouton explicite « ✓ Fait »; les étapes cochées manuellement se restaurent via « Étapes terminées » → « Réactiver ce point ». Le bandeau sous la carte et le filtrage des points terminés restent disponibles. Les quêtes remises confirmées par les journaux EFT restent protégées contre une réactivation incorrecte."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.35",
-      "raidPilotVersion": "0.14.2.35",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot — objectifs terminés masqués, bandeau lisible, Ctrl+Alt+I",
-      "details": "Sur la carte, chaque objectif personnel marqué terminé disparaît immédiatement; les autres points de la même quête restent affichés. Une section repliable « Étapes terminées » permet de réactiver en un clic un objectif coché manuellement. Les lieux alternatifs d'une seule étape partagent le même statut; les marqueurs des coéquipiers restent indépendants. Une quête entière remise et confirmée par les journaux EFT ne peut pas être remise en cours manuellement. Les journaux EFT disponibles confirment des quêtes entières, pas nécessairement chaque sous-objectif; la validation rapide des étapes se fait manuellement. Deux tests de non-régression ajoutés. Comprend également le correctif de priorité du suivi manuel et masque les distances quand la localisation est incertaine (PR #26 reprise dans cette version). Nouveau bandeau d'objectif placé sous la carte (texte plus grand) et raccourci global Ctrl+Alt+I pour cocher une seule étape ciblée pendant un raid, uniquement si Tarkov est au premier plan. Le raccourci Interagir est transféré à Ctrl+Alt+U pour éviter toute collision. Les étapes terminées sont restaurables manuellement."
     }
   ]
 }
