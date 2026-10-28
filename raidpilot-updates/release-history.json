@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.7.2",
+      "raidPilotVersion": "0.15.7.2",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-28",
+      "summary": "Interface — correction du menu Options masqué derrière la carte",
+      "details": "Corrige l'ouverture du menu ⚙ Options lorsque la barre de commandes RaidPilot se répartit sur deux lignes : le panneau flottant débordait à gauche ou devenait partiellement caché par la carte et QuestPilot. Options s'ouvre maintenant dans un panneau de réglages dédié, défilable, directement sous la carte, sans superposition et avec disposition responsive. Le bouton reste accessible sur la première ligne près de Clés. Les fenêtres Options, QuestPilot et Clés sont exclusives : ouvrir l'une ferme les autres. Le bouton Fermer et la touche Échap fonctionnent, y compris lors des changements du mode interactif. Les réglages existants, la carte, les coordonnées, les clés, QuestPilot et CORTEX ne changent pas. Des tests automatisés vérifient la nouvelle hiérarchie DOM, l'ouverture/fermeture, le panneau sous la carte et l'absence de conflits de fenêtres."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.7.1",
       "raidPilotVersion": "0.15.7.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot v1 : quêtes personnelles, balises colorées 1→2→3 et préparation de raid",
       "details": "Nouveau QuestPilot intégré à la carte locale RaidPilot : un bouton « Mes quêtes » ouvre une liste persistante de quêtes actives et permet de sélectionner ou retirer manuellement des missions en PvE et PvP (profils indépendants). Les quêtes reconnues par TAB → TÂCHES → F8 sont ajoutées à la sélection sans supprimer les quêtes précédentes; un retrait manuel reste prioritaire sur un nouveau scan OCR. Toutes les étapes géolocalisées d'une quête utilisent la même couleur, y compris les repères SVG sur la carte et les entrées de liste. Chaque objectif distinct du catalogue public reçoit un numéro stable dans l'ordre de ses objectifs : pour trois balises avec trois objectifs distincts, marqueurs 1, 2 et 3. Plusieurs positions possibles d'une seule étape gardent le même numéro avec avertissement de localisation incertaine; aucune fausse validation. Le joueur peut cocher une étape faite manuellement et les conditions de préparation (balise, clé, objet, arme/équipement), conservées dans le profil WebView2 entre raids et mises à jour Launcher. Un bandeau compact montre le prochain objectif et sa distance seulement lorsque le suivi est assez fiable. L'ordre suggéré tient compte de la proximité euclidienne seulement; ce n'est pas un chemin navigable garanti ni une affirmation que la quête est accomplie dans EFT. Les 13 cartes, l'overlay, le GPS V4, les F8 mobiles, les extractions et le relais d'équipe restent inchangés. Tests nouveaux de tâches multi-étapes, correspondance de couleur, états persistants, OCR, PvE/PvP, emplacements possibles et carte réelle. Partage d'objectifs par coéquipier et détection certifiée de l'inventaire EFT non annoncés; aucune donnée personnelle transmise."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.25",
-      "raidPilotVersion": "0.14.2.25",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Recalage exact F8 facultatif pendant la marche — réduit la dérive prolongée",
-      "details": "Nouveau mode expérimental facultatif « Recalage F8 pendant déplacement · 4 s » dans le menu de l’Overlay, désactivé par défaut et mémorisé localement. Tant que le raid est actif, le jeu au premier plan, que le joueur se déplace et n'est pas en train de viser/tirer, RaidPilot peut redemander toutes les quatre secondes au minimum une capture avec la touche Screenshot F6–F12 SEULE que le joueur a configurée dans EFT. Les coordonnées exactes lues dans les noms de captures corrigent alors la trajectoire à l'instant de prise de vue, en conservant le mouvement postérieur grâce à l'historique. Aucun accès mémoire ni injection dans le jeu; le mécanisme Win32 SendInput déjà utilisé pour le recalage au repos est réemployé, mais peut produire une notification de screenshot en jeu. Les captures prises pendant le mouvement ne calibrent PAS les vitesses et ne sont PAS enregistrées comme repères visuels stationnaires. Limite de cadence, exclusion des touches à modificateurs qui pourraient perturber le sprint, suppression prudente des seules captures automatiques et diagnostics des demandes/réceptions. Nouveaux tests comportementaux, de persistance, de touche F8, et simulation de dérive bornée (pas une mesure de performance réelle EFT). Les méthodes de suivi optique/Precision V4, l'équipe, Beacon 0.3.9 et Launcher 0.2.15 restent disponibles. Le joueur doit activer lui-même cette fonctionnalité expérimentale et vérifier la conformité aux règles EFT; son efficacité et l'acceptation des touches synthétiques sont à valider en raid."
     }
   ]
 }
