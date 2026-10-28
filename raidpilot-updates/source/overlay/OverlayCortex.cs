@@ -13,6 +13,9 @@ internal sealed partial class OverlayForm
     private readonly CortexVisualIntelligence _cortexVision = new();
     private readonly CortexSpatialReliabilityAtlas _cortexSpatialAtlas = new();
     private readonly CortexVisualFeedbackGate _cortexVisualFeedback = new();
+    private readonly CortexNativeCadenceMemory _cortexNativeCadence = new();
+    private string? _cortexNativeCadencePath;
+    private int _cortexNativeCadenceUnsaved;
     private string? _cortexSpatialAtlasPath;
     private int _cortexSpatialAtlasUnsaved;
     private readonly ToolStripMenuItem _cortexMenu = new(
@@ -36,7 +39,15 @@ internal sealed partial class OverlayForm
             CortexSpatialReliabilityStore.GetPath(_squadProfile.MemberId);
         _ = CortexSpatialReliabilityStore.TryLoad(
             _cortexSpatialAtlas, _cortexSpatialAtlasPath);
-        FormClosing += (_, _) => SaveCortexSpatialAtlas();
+        _cortexNativeCadencePath =
+            CortexNativeCadenceStore.GetPath(_squadProfile.MemberId);
+        _ = CortexNativeCadenceStore.TryLoad(
+            _cortexNativeCadence, _cortexNativeCadencePath);
+        FormClosing += (_, _) =>
+        {
+            SaveCortexSpatialAtlas();
+            SaveCortexNativeCadence();
+        };
         _trayIcon.ContextMenuStrip?.Items.Insert(6, _cortexMenu);
         _trayIcon.ContextMenuStrip?.Items.Insert(7, _cortexV4Menu);
         _trayIcon.ContextMenuStrip?.Items.Insert(8, _cortexV4ReportMenu);
@@ -55,7 +66,8 @@ internal sealed partial class OverlayForm
                 File.WriteAllText(dialog.FileName,
                     CortexV4Report.Build(_precisionV2DriftAudit.Samples,
                         _cortex, _cortexVision, _cortexSpatialAtlas,
-                        _cortexV4Menu.Checked, _cortexVisualFeedback),
+                        _cortexV4Menu.Checked, _cortexVisualFeedback,
+                        _cortexNativeCadence),
                     new System.Text.UTF8Encoding(false));
             }
             catch (Exception error) when (error is IOException
@@ -73,6 +85,7 @@ internal sealed partial class OverlayForm
             _cortex.Reset();
             _cortexVision.Reset();
             _cortexVisualFeedback.Reset();
+            _cortexNativeCadence.ResetSession();
             _trayIcon.ShowBalloonTip(2200, "CORTEX V4",
                 _cortexV4Menu.Checked
                     ? "CORTEX V4.1 actif : récupération progressive et retour F8 supervisé (test)."
@@ -85,6 +98,7 @@ internal sealed partial class OverlayForm
             _cortex.Reset();
             _cortexVision.Reset();
             _cortexVisualFeedback.Reset();
+            _cortexNativeCadence.ResetSession();
             _trayIcon.ShowBalloonTip(3200,
                 "RaidPilot CORTEX",
                 _cortexMenu.Checked
@@ -139,6 +153,13 @@ internal sealed partial class OverlayForm
         _cortexVisualFeedback.OnNativeF8(now, _currentMap,
             _raidGeneration, _lastForegroundWindow,
             comparable ? measured : null);
+        if (_cortexNativeCadence.ObserveNative(
+            _currentMap, _raidGeneration, _lastForegroundWindow,
+            comparable ? measured : null, DateTimeOffset.UtcNow))
+        {
+            if (++_cortexNativeCadenceUnsaved >= 4)
+                SaveCortexNativeCadence();
+        }
         if (comparable && measured is { } sample
             && nativeObservation is { } anchor
             && _cortexSpatialAtlas.Observe(
@@ -181,6 +202,31 @@ internal sealed partial class OverlayForm
         return assessment;
     }
 
+    private double CortexNativeAdaptiveIntervalSeconds(
+        long now, RealtimePose? pose,
+        CortexNavigationAssessment assessment)
+    {
+        // Enabled only in the explicit CORTEX V4 test mode. On every live
+        // tick the native tier is re-evaluated: loss of accuracy restores 4 s.
+        if (!_cortexMenu.Checked || !_cortexV4Menu.Checked
+            || pose is not { } current
+            || _cortex.SecondsSinceNativeF8(
+                now, _currentMap, _raidGeneration, _lastForegroundWindow) > 9)
+            return MobileExactAnchorPolicy.MinimumIntervalSeconds;
+
+        var tier = _cortexNativeCadence.EligibleNativeIntervalSeconds(
+            _currentMap, _raidGeneration, _lastForegroundWindow,
+            current, _visualRelocalization.Health, assessment,
+            _cortex.DriftRisk, DateTimeOffset.UtcNow);
+
+        // Existing V4 risk-atlas and visual-feedback vetoes apply to the
+        // historical evidence too; one local bad sector cannot be ignored.
+        var spatialLimit = _cortexSpatialAtlas.MaximumIntervalSeconds(
+            _currentMap, current.X, current.Y, current.Z, DateTimeOffset.UtcNow);
+        return Math.Min(tier, Math.Min(
+            spatialLimit, _cortexVisualFeedback.MaximumIntervalSecondsAllowed));
+    }
+
     private VisualRelocalizationDecision? CortexFilterVisual(
         VisualRelocalizationDecision decision, RealtimePose estimate,
         long now, bool fromSharedAtlas, long? lowId, long? superId)
@@ -195,6 +241,14 @@ internal sealed partial class OverlayForm
     {
         if (_cortexMenu.Checked && _cortexV4Menu.Checked)
             _cortexVision.NoteApplied();
+    }
+
+    private void SaveCortexNativeCadence()
+    {
+        if (_cortexNativeCadencePath is { } path
+            && CortexNativeCadenceStore.TrySave(
+                _cortexNativeCadence, path))
+            _cortexNativeCadenceUnsaved = 0;
     }
 
     private void SaveCortexSpatialAtlas()
@@ -213,6 +267,13 @@ internal sealed partial class OverlayForm
                 + (_cortexV4Menu.Checked
                     ? "\n" + _cortexVision.Diagnostic
                         + "\n" + _cortexVisualFeedback.Diagnostic
+                        + "\n" + _cortexNativeCadence.Diagnostic(
+                            _currentMap, DateTimeOffset.UtcNow)
+                        + $"\nF8 natif recommandé : "
+                        + CortexNativeAdaptiveIntervalSeconds(
+                            Stopwatch.GetTimestamp(), pose,
+                            CortexAssess(Stopwatch.GetTimestamp(), pose))
+                            .ToString("F0") + " s (palier prudent)"
                     : "\nCORTEX V4 : désactivé (optionnel)")
                 + $"\nAtlas local : {_cortexSpatialAtlas.Count} secteurs"
                 + $"; observations apprises {_cortexSpatialAtlas.Observations}"
