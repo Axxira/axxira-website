@@ -1737,6 +1737,15 @@ const api = {
   ,setRaidQuests,clearRaidQuests,applyRaidQuests,applyQuestLogEvents,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
   ,setLiveTeamQuestPlan,clearLiveTeamQuestPlan,clearAllLiveTeamQuestPlans,
     questPilotLiveSnapshot:()=>state.questPilot?.liveSnapshot()||null
+  ,questPilotContextProgress:()=>({
+      // Native nearby hint must respect the same manually checked
+      // objectives/quests and verified EFT completions as QuestPilot.
+      done:[...(state.questPilot?.state.done||[])].slice(0,240),
+      completedQuests:[...(state.questPilot?.state.completedQuests||[]),
+        ...Object.entries(state.questPilot?.state.evidence||{})
+          .filter(([,e])=>e?.status==="completed").map(([id])=>id)
+      ].slice(0,240)
+    })
   ,questPilotSnapshot:()=>({
       mode:state.questPilot?.mode,
       active:[...(state.questPilot?.state.active||[])],
