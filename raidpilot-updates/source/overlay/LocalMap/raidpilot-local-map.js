@@ -52,6 +52,7 @@ state.catalogues = {};
 state.raidQuests = null;
 state.questPilot = null;
 state.questHudTarget = "";
+state.questZoneGate = null;
 state.questMapIds = new Set();
 state.questSearch = "";
 state.learnedRoute = null;
@@ -441,7 +442,7 @@ function setHazards(p,kind){state[kind==="mine"?"minePayload":"boundaryPayload"]
 function clearHazards(kind){state[kind==="mine"?"minePayload":"boundaryPayload"]=null;state[kind==="mine"?"mineStatus":"boundaryStatus"]={};render();return true;}
 function setGuidanceTarget(p){state.guidance=p;state.guidanceTarget={map:canonicalMapKey(p.map||state.mapKey),entry:RPRaidTactics.extractionEntries([{id:p.id,labels:[p.name,...(p.aliases||[])]}])[0]||{id:"",labels:[]}};render();return state.markers.filter(isGuidanceTarget).length;}
 function clearGuidanceTarget(){state.guidance=null;state.guidanceTarget=null;render();}
-function resetRaid(){clearRaidQuests();state.questHudTarget="";state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.mineStatus={};state.boundaryStatus={};state.player=null;state.lastPoseReceivedAt=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
+function resetRaid(){clearRaidQuests();state.questHudTarget="";state.questZoneGate?.reset();state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.mineStatus={};state.boundaryStatus={};state.player=null;state.lastPoseReceivedAt=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
 
 function visibleMarkers() {
   const base = [...state.markers, ...state.runtimeMarkers];
@@ -833,7 +834,7 @@ function updateCatalogueStatus(){
 }
 function setGameMode(mode){
   if(!["regular","pve","pvp-season"].includes(mode))return false;
-  if(state.gameMode!==mode){state.gameMode=mode;state.raidQuests=null;state.questHudTarget="";state.learnedRoute=null;
+  if(state.gameMode!==mode){state.gameMode=mode;state.raidQuests=null;state.questHudTarget="";state.questZoneGate?.reset();state.learnedRoute=null;
     if(state.questPilot){ state.questPilot.setMode(mode); refreshQuestPilotCatalogue(); }
     window.RaidPilotFeatures?.clearQuest();if(state.mapKey){
     state.markers=buildMarkersForMap(state.mapKey);
@@ -1122,10 +1123,14 @@ function nearbyQuestStep() {
   const uncertainty=Number(state.player?.uncertainty);
   const reliable=!!fresh && Number.isFinite(uncertainty)
     && uncertainty>=0 && uncertainty<=6;
-  if(!planner||!reliable)return null;
-  return planner.nearbyForMap(state.questMapIds,{
+  if(!planner||!reliable){
+    state.questZoneGate?.reset();
+    return null;
+  }
+  const candidate=planner.nearbyForMap(state.questMapIds,{
     ...state.player,positionReliable:true
   },state.questHudTarget);
+  return state.questZoneGate?.observe(candidate,state.lastPoseReceivedAt)||null;
 }
 function renderQuestPilotHud(){
   if(!refs.questHud)return;
@@ -1221,6 +1226,7 @@ function clearRaidQuests(){
   // Raid lifecycle is transient; persistent planning and completion are not.
   state.raidQuests=null;
   state.questHudTarget="";
+  state.questZoneGate?.reset();
   renderQuestPilotPanel();render();
 }
 
@@ -1313,6 +1319,7 @@ function setMap(key, { allowUncalibratedForge = false } = {}) {
   if (state.mapKey !== k) { state.player = null; state.lastPoseReceivedAt = null; state.teammates = []; state.runtimeMarkers = []; state.selectedId = null; refs.details.hidden = true; }
   if(state.mapKey!==k){
     state.questHudTarget="";
+    state.questZoneGate?.reset();
     if(state.raidQuests?.map!==k)state.raidQuests=null;state.learnedRoute=null;state.guidance=null;window.RaidPilotFeatures?.reset();
     if(state.raidExtractions?.map!==k)state.raidExtractions=null;
     if(state.guidanceTarget?.map!==k)state.guidanceTarget=null;
@@ -1690,6 +1697,7 @@ async function init() {
   wireUI();
   await loadCache();
   state.questPilot = new RPQuestPilot.Planner(window.localStorage,state.gameMode);
+  state.questZoneGate = new RPQuestPilot.ZoneGate();
   refreshQuestPilotCatalogue();
   // Keep the planner's loaded progress. No automatic quest overlay away
   // from objectives; players can open their saved checklist manually.
