@@ -131,7 +131,7 @@ internal sealed class StashPilotForm : Form
 
         var heading = new Label
         {
-            Text = "STASHPILOT  •  Ouvre ton inventaire dans Tarkov, puis F8",
+            Text = "STASHPILOT   ·   Inventaire  →  F8  →  Décision",
             Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
             Font = new Font("Segoe UI", 16, FontStyle.Bold),
             ForeColor = Color.FromArgb(104, 226, 212)
@@ -146,6 +146,43 @@ internal sealed class StashPilotForm : Form
         _results.Columns["owned"]!.FillWeight = 12;
         _results.Columns["status"]!.FillWeight = 20;
         _results.Columns["why"]!.FillWeight = 38;
+        // Harmonized with RaidPilot's map UI: high-contrast dark rows, clear
+        // selected states and readable headings instead of black cell text.
+        _results.EnableHeadersVisualStyles = false;
+        _results.BorderStyle = BorderStyle.None;
+        _results.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+        _results.GridColor = Color.FromArgb(49, 68, 83);
+        _results.BackgroundColor = Color.FromArgb(17, 30, 42);
+        _results.ColumnHeadersHeight = 39;
+        _results.ColumnHeadersHeightSizeMode =
+            DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        _results.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
+        {
+            BackColor = Color.FromArgb(24, 48, 64),
+            ForeColor = Color.FromArgb(222, 239, 247),
+            SelectionBackColor = Color.FromArgb(24, 48, 64),
+            SelectionForeColor = Color.White,
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            Padding = new Padding(7, 4, 7, 4)
+        };
+        _results.DefaultCellStyle = new DataGridViewCellStyle
+        {
+            BackColor = Color.FromArgb(20, 36, 49),
+            ForeColor = Color.FromArgb(236, 245, 249),
+            SelectionBackColor = Color.FromArgb(36, 90, 112),
+            SelectionForeColor = Color.White,
+            Font = new Font("Segoe UI", 10),
+            Padding = new Padding(7, 4, 7, 4)
+        };
+        _results.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
+        {
+            BackColor = Color.FromArgb(25, 44, 58),
+            ForeColor = Color.FromArgb(236, 245, 249),
+            SelectionBackColor = Color.FromArgb(36, 90, 112),
+            SelectionForeColor = Color.White
+        };
+        _results.RowTemplate.Height = 36;
+        _results.BackgroundColor = Color.FromArgb(17, 30, 42);
         root.Controls.Add(_results, 0, 1);
 
         var actions = new FlowLayoutPanel
@@ -168,6 +205,29 @@ internal sealed class StashPilotForm : Form
         };
         var catalogueButton = new Button { Text = "Liste des objets Tarkov", AutoSize = true };
         catalogueButton.Click += async (_, _) => await ShowItemCatalogueAsync();
+        // Three clearly grouped actions; only the capture action is primary.
+        foreach (var button in new[] { details, fromFile, catalogueButton })
+        {
+            button.FlatStyle = FlatStyle.Flat;
+            button.Font = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+            button.FlatAppearance.BorderSize = 1;
+            button.Padding = new Padding(9, 4, 9, 4);
+            button.Margin = new Padding(4);
+            button.MinimumSize = new Size(130, 34);
+            var primary = ReferenceEquals(button, fromFile);
+            button.BackColor = primary
+                ? Color.FromArgb(30, 83, 105)
+                : Color.FromArgb(31, 50, 65);
+            button.ForeColor = primary
+                ? Color.FromArgb(225, 248, 255)
+                : Color.FromArgb(222, 235, 244);
+            button.FlatAppearance.BorderColor = primary
+                ? Color.FromArgb(88, 168, 195)
+                : Color.FromArgb(67, 91, 107);
+            button.FlatAppearance.MouseOverBackColor = primary
+                ? Color.FromArgb(42, 108, 132)
+                : Color.FromArgb(40, 67, 84);
+        }
         actions.Controls.AddRange([details, fromFile, catalogueButton]);
         root.Controls.Add(actions, 0, 2);
         root.Controls.Add(_status, 0, 3);

@@ -298,6 +298,9 @@ internal sealed partial class OverlayForm : Form
         InitializeAutomaticFloors();
         InitializeRaidClockUi();
         InitializePrecision();
+        // Do this AFTER all partial modules have installed their menu items.
+        // Only re-parent existing controls; no tracking behavior is changed.
+        PolishTrayMenu();
         PositionOverlay();
 
         _realtimeTimer.Tick += OnRealtimeTimerTick;

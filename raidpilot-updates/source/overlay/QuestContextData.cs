@@ -140,9 +140,9 @@ public sealed record QuestContextHint(string Key, string QuestId, string Name, s
 /// <summary>Conservative proximity selector; its distance is never proof of objective completion.</summary>
 internal sealed class QuestContextAdvisor
 {
-    internal const double EnterDistance = 55.0;
-    internal const double LeaveDistance = 75.0;
-    internal const double MaximumUncertainty = 8.0;
+    internal const double EnterDistance = 30.0;
+    internal const double LeaveDistance = 45.0;
+    internal const double MaximumUncertainty = 6.0;
     private string? _previous;
     private string? _map;
     private int _generation = -1;
@@ -198,6 +198,11 @@ internal sealed class QuestContextAdvisor
 
     private static double DistanceTo(RealtimePose p, QuestContextLocation location)
     {
+        // Contextual quest popups must not appear on the wrong measured floor.
+        // Unknown or contradictory elevations do not prove presence in a zone.
+        if (location.Position.Y is { } height &&
+            Math.Abs(height - p.Y) > 7.0)
+            return double.PositiveInfinity;
         var outline = location.Outline;
         if (outline.Count < 3) return Math.Sqrt(Math.Pow(p.X - location.Position.X, 2) + Math.Pow(p.Z - location.Position.Z, 2));
         var inside = false;

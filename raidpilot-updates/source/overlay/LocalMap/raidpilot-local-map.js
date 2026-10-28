@@ -51,6 +51,8 @@ state.gameMode = "regular";
 state.catalogues = {};
 state.raidQuests = null;
 state.questPilot = null;
+state.questHudTarget = "";
+state.questZoneGate = null;
 state.questMapIds = new Set();
 state.questSearch = "";
 state.learnedRoute = null;
@@ -440,7 +442,7 @@ function setHazards(p,kind){state[kind==="mine"?"minePayload":"boundaryPayload"]
 function clearHazards(kind){state[kind==="mine"?"minePayload":"boundaryPayload"]=null;state[kind==="mine"?"mineStatus":"boundaryStatus"]={};render();return true;}
 function setGuidanceTarget(p){state.guidance=p;state.guidanceTarget={map:canonicalMapKey(p.map||state.mapKey),entry:RPRaidTactics.extractionEntries([{id:p.id,labels:[p.name,...(p.aliases||[])]}])[0]||{id:"",labels:[]}};render();return state.markers.filter(isGuidanceTarget).length;}
 function clearGuidanceTarget(){state.guidance=null;state.guidanceTarget=null;render();}
-function resetRaid(){clearRaidQuests();state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.mineStatus={};state.boundaryStatus={};state.player=null;state.lastPoseReceivedAt=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
+function resetRaid(){clearRaidQuests();state.questHudTarget="";state.questZoneGate?.reset();state.learnedRoute=null;state.guidance=null;state.raidExtractions=null;state.guidanceTarget=null;state.boundaryPayload=null;state.mineStatus={};state.boundaryStatus={};state.player=null;state.lastPoseReceivedAt=null;state.teammates=[];clearFloorPose();window.RaidPilotFeatures?.reset();render();}
 
 function visibleMarkers() {
   const base = [...state.markers, ...state.runtimeMarkers];
@@ -832,7 +834,7 @@ function updateCatalogueStatus(){
 }
 function setGameMode(mode){
   if(!["regular","pve","pvp-season"].includes(mode))return false;
-  if(state.gameMode!==mode){state.gameMode=mode;state.raidQuests=null;state.learnedRoute=null;
+  if(state.gameMode!==mode){state.gameMode=mode;state.raidQuests=null;state.questHudTarget="";state.questZoneGate?.reset();state.learnedRoute=null;
     if(state.questPilot){ state.questPilot.setMode(mode); refreshQuestPilotCatalogue(); }
     window.RaidPilotFeatures?.clearQuest();if(state.mapKey){
     state.markers=buildMarkersForMap(state.mapKey);
@@ -880,11 +882,14 @@ function renderQuestPilotPanel(){
   refs.questPrep.replaceChildren();
   const scanned=state.raidQuests?.ids||new Set();
   const active=[...scanned].filter(id=>planner.isActive(id)).length;
+  const persistent=planner.state.active.length;
+  const manualCompleted=planner.state.completedQuests.length;
   const confirmed=Object.values(planner.state.evidence||{})
     .filter(e=>e.status==="completed").length;
-  refs.questSummary.textContent=active+" quête(s) scannée(s) dans ce raid · "
-    +confirmed+" remise(s) confirmée(s) par les journaux EFT · "
-    +"balises cochées manuellement";
+  refs.questSummary.textContent=persistent+" quête(s) sauvegardée(s) · "
+    +active+" retrouvée(s) dans le scan du raid · "
+    +manualCompleted+" marquée(s) faite(s) · "
+    +confirmed+" confirmée(s) par le journal EFT";
   const search=state.questSearch;
   const showAllButton=document.getElementById("questpilot-show-all");
   if(showAllButton){
@@ -898,16 +903,19 @@ function renderQuestPilotPanel(){
   }
   // Default to selected missions; explicitly searching or toggling discovery
   // reveals the wider catalogue without overwhelming the player.
-  const candidates=planner.searchTasks(state.questMapIds,search)
-    .filter(q=>scanned.has(String(q.id).toLowerCase()));
+  const candidates=(state.questShowAll&&!search
+    ?planner.tasks.slice():planner.searchTasks(state.questMapIds,search))
+    .filter(q=>!!search||state.questShowAll
+      ||scanned.has(String(q.id).toLowerCase())||planner.isActive(q.id));
   const visible=candidates.slice(0,search?80:65);
   if(!visible.length)qpEmpty(refs.questList,
     search?"Aucune quête ne correspond à ta recherche."
-      :"Aucune quête scannée pour ce raid. Lance TAB → TÂCHES → F8.");
+      :"Aucune quête suivie. Active une quête ou lance TAB → TÂCHES → F8.");
   for(const quest of visible){
     const selected=planner.isActive(quest.id);
-    const row=document.createElement("label");
-    row.className="qp-task"+(selected?"":" inactive");
+    const row=document.createElement("div");
+    row.className="qp-task"+(selected?"":" inactive")
+      +(planner.isQuestMarkedDone(quest.id)?" completed":"");
     const tick=document.createElement("input");tick.type="checkbox";tick.checked=selected;
     tick.setAttribute("aria-label","Activer "+quest.name);
     tick.addEventListener("change",()=>{
@@ -926,7 +934,24 @@ function renderQuestPilotPanel(){
       :logStatus?.status==="active"?"Acceptée · journal":null;
     const countLabel=count?count+" étape(s) · "+(quest.mappedCount||0)+" repère(s)"
       :"aucun objectif public";
-    qpText(row,"small",statusLabel||countLabel,"qp-count");
+    qpText(row,"small",planner.isQuestMarkedDone(quest.id)
+      ?"✓ Faite selon toi":statusLabel||countLabel,"qp-count");
+    // Full-quest completion is ALWAYS a manual decision, distinct from
+    // an unverified location/position and from EFT's authoritative log.
+    const finish=document.createElement("button");finish.type="button";
+    finish.className="qp-quest-finish";
+    const isDone=planner.isQuestMarkedDone(quest.id);
+    finish.textContent=logStatus?.status==="completed"?"✓ Journal EFT"
+      :isDone?"↶ Réactiver":"✓ Fait";
+    finish.disabled=logStatus?.status==="completed";
+    finish.setAttribute("aria-label",(isDone?"Réactiver ":"Marquer la quête faite : ")+quest.name);
+    finish.setAttribute("aria-pressed",isDone?"true":"false");
+    finish.addEventListener("click",()=>{
+      planner.toggleQuestCompleted(quest.id,!planner.isQuestMarkedDone(quest.id));
+      state.questHudTarget="";
+      renderQuestPilotPanel();render();
+    });
+    row.appendChild(finish);
     refs.questList.appendChild(row);
   }
   if(candidates.length>visible.length)
@@ -949,8 +974,7 @@ function renderQuestPilotPanel(){
       row.appendChild(undo);refs.questDoneList.appendChild(row);
     }
   }
-  const selectedSteps=planner.suggested(state.questMapIds,state.player)
-    .filter(step=>scanned.has(String(step.questId).toLowerCase()));
+  const selectedSteps=planner.suggested(state.questMapIds,state.player);
   if(selectedSteps.length){
     const step=selectedSteps[0];
     const quick=document.createElement("div");quick.className="qp-step qp-quick-next";
@@ -1092,56 +1116,69 @@ function renderQuestPilotSharedSteps(planner){
   if(steps.length>18)qpText(root,"small",
     String(steps.length-18)+" autres étapes d'escouade","qp-empty");
 }
+function nearbyQuestStep() {
+  const planner=state.questPilot;
+  const fresh=state.player&&Number.isFinite(state.lastPoseReceivedAt)
+    && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
+  const rawUncertainty=state.player?.uncertainty;
+  const uncertainty=rawUncertainty==null?NaN:Number(rawUncertainty);
+  const reliable=!!fresh && Number.isFinite(uncertainty)
+    && uncertainty>=0 && uncertainty<=6
+    && state.player?.locationUncertain!==true
+    && state.player?.quality!=="lost";
+  if(!planner||!reliable){
+    state.questZoneGate?.reset();
+    return null;
+  }
+  const candidate=planner.nearbyForMap(state.questMapIds,{
+    ...state.player,positionReliable:true
+  },state.questHudTarget);
+  return state.questZoneGate?.observe(candidate,state.lastPoseReceivedAt)||null;
+}
 function renderQuestPilotHud(){
   if(!refs.questHud)return;
-  const planner=state.questPilot;
-  // A linear best-next lookup replaces full-route sorting on every 10Hz pose tick.
-  const fresh=state.player && Number.isFinite(state.lastPoseReceivedAt)
-    && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
-  const uncertainty=Number(state.player?.uncertainty);
-  const reliable=fresh && Number.isFinite(uncertainty) && uncertainty>=0 && uncertainty<=8;
-  const next=planner?.nextForMap(state.questMapIds,{
-    ...state.player,positionReliable:!!reliable
-  });
-  if(!next){refs.questHud.hidden=true;return;}
+  // QuestPilot is contextual: show ONLY once the player's fresh, reliable
+  // position is within a published objective zone (or its small perimeter).
+  const next=nearbyQuestStep();
+  if(!next){state.questHudTarget="";refs.questHud.hidden=true;return;}
+  state.questHudTarget=next.id;
   refs.questHud.hidden=false;
   refs.questHudColor.style.backgroundColor=next.color;
-  refs.questHudTitle.textContent=next.questName+" · Étape "+next.number+"/"+next.objectiveCount;
-
-  const located=reliable && !next.locationUncertain && Number.isFinite(next.distance);
-  const distance=located?" ≈"+(Math.round(next.distance/5)*5)+" m (estimé)"
-    :" distance non fiable · recalage F8";
+  refs.questHudTitle.textContent=next.questName+" · Étape "
+    +next.number+"/"+next.objectiveCount;
+  const estimate=" ≈"+(Math.round(next.distance/5)*5)+" m de la zone";
   refs.questHudDetail.textContent=next.name
-    +(next.alternative?" · lieu possible":" · "+(located?distance.trim():"position à vérifier"))
+    +(next.alternative?" · emplacement possible":" · "+estimate)
     +(next.optional?" · facultatif":"");
 }
 
 function questPilotClosePanel(){
   if(!refs.questPanel)return false;
   refs.questPanel.classList.add("hidden");
+  refs.questsBtn?.setAttribute("aria-expanded","false");
+  if(refs.questsBtn)refs.questsBtn.textContent="🎯 Afficher QuestPilot";
   return true;
 }
 function questPilotOpenPanel(){
   if(!refs.questPanel)return false;
   refs.questPanel.classList.remove("hidden");
+  refs.questsBtn?.setAttribute("aria-expanded","true");
+  if(refs.questsBtn)refs.questsBtn.textContent="🎯 Masquer QuestPilot";
   renderQuestPilotPanel();
   return true;
 }
 function questPilotCompleteFocused(){
   const planner=state.questPilot;
-  if(!planner || !state.raidQuests && !state.player)return false;
-  const fresh=state.player && Number.isFinite(state.lastPoseReceivedAt)
-    && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
-  const uncertainty=Number(state.player?.uncertainty);
-  const reliable=!!fresh && Number.isFinite(uncertainty) && uncertainty<=8;
-  const next=planner.nextForMap(state.questMapIds,{
-    ...state.player,positionReliable:reliable
-  });
-  if(!next || next.done || next.doneSource==="eft-local-log")return false;
+  const next=nearbyQuestStep();
+  // No blind completion of a far-away quest from the HUD shortcut.
+  // Being nearby alone never marks anything done.
+  if(!planner||!next||next.done||next.doneSource==="eft-local-log")return false;
   planner.toggleDone(next.id,true);
+  state.questHudTarget="";
   renderQuestPilotPanel();render();
   return true;
 }
+
 function setLiveTeamQuestPlan(payload){
   if(!state.questPilot)return false;
   if(!state.questPilot.setLivePlan(payload))return false;
@@ -1175,34 +1212,27 @@ function applyQuestLogEvents(events){
   return accepted;
 }
 function setRaidQuests(p){
+  if(!p||!Array.isArray(p.quests))return 0;
   if(p.gameMode)setGameMode(p.gameMode);
-  const recognized=p.quests.map(q=>String(q.id||"").trim()).filter(Boolean);
+  const recognized=p.quests.map(q=>String(q.id||"").trim().toLowerCase()).filter(Boolean);
   const scannedMap=canonicalMapKey(p.map||state.mapKey);
-  const ids=new Set(recognized.map(s=>s.toLowerCase()));
-  const sameScan=state.raidQuests?.map===scannedMap
-    && ids.size===state.raidQuests.ids.size
-    && [...ids].every(id=>state.raidQuests.ids.has(id));
+  const ids=new Set(recognized);
   state.raidQuests={map:scannedMap,ids};
   if(state.questPilot){
-    state.questPilot.state.active=[...ids].filter(id=>
-      !state.questPilot.state.excluded.includes(id));
-    // Re-reading the SAME quest scan must never uncheck completed steps.
-    if(!sameScan){
-      state.questPilot.state.done=[];
-      state.questPilot.state.focused="";
-    }
+    // OCR is discovery, NOT a new quest profile. Never reset manually
+    // completed steps, completed quests or previously selected missions.
+    state.questPilot.recognize([...ids]);
   }
   renderQuestPilotPanel();render();return applyRaidQuests();
 }
 function clearRaidQuests(){
+  // Raid lifecycle is transient; persistent planning and completion are not.
   state.raidQuests=null;
-  if(state.questPilot){
-    state.questPilot.state.active=[];
-    state.questPilot.state.done=[];
-    state.questPilot.state.focused="";
-  }
+  state.questHudTarget="";
+  state.questZoneGate?.reset();
   renderQuestPilotPanel();render();
 }
+
 function setLearnedRoute(p){
   if(p.kind!=="learned"||!["high","medium"].includes(p.confidence)||!Array.isArray(p.points)||p.points.length<2||p.points.length>4096||p.points.some(q=>![q?.x,q?.y,q?.z].every(n=>typeof n==="number"&&Number.isFinite(n)&&Math.abs(n)<=20000)))return false;
   const next=p.nextIndex??0;if(!Number.isInteger(next)||next<0||next>=p.points.length)return false;
@@ -1291,6 +1321,8 @@ function setMap(key, { allowUncalibratedForge = false } = {}) {
   }
   if (state.mapKey !== k) { state.player = null; state.lastPoseReceivedAt = null; state.teammates = []; state.runtimeMarkers = []; state.selectedId = null; refs.details.hidden = true; }
   if(state.mapKey!==k){
+    state.questHudTarget="";
+    state.questZoneGate?.reset();
     if(state.raidQuests?.map!==k)state.raidQuests=null;state.learnedRoute=null;state.guidance=null;window.RaidPilotFeatures?.reset();
     if(state.raidExtractions?.map!==k)state.raidExtractions=null;
     if(state.guidanceTarget?.map!==k)state.guidanceTarget=null;
@@ -1333,7 +1365,11 @@ function setPlayer(p) {
   if (p.map && canonicalMapKey(p.map) !== state.mapKey) setMap(p.map);
   const previousCalibrationKey=calibrationKey();
   state.player = { map: state.mapKey, position: {x:Number(pos.x),y:pos.y,z:Number(pos.z)}, rotation:p.rotation ?? p.yaw ?? p.heading,
-    uncertainty:p.uncertainty,boundaryWarning:p.boundaryWarning,boundaryCritical:p.boundaryCritical,boundaryDistance:p.boundaryDistance,mineAlert:p.mineAlert,mineDistance:p.mineDistance };
+    uncertainty:p.uncertainty,
+    locationUncertain:p.locationUncertain===true,
+    quality:p.quality,
+    boundaryWarning:p.boundaryWarning,boundaryCritical:p.boundaryCritical,
+    boundaryDistance:p.boundaryDistance,mineAlert:p.mineAlert,mineDistance:p.mineDistance };
   state.lastPoseReceivedAt = Date.now();
   if(calibrationKey()!==previousCalibrationKey)loadCalibration();
   updateTacticalProximity();
@@ -1668,13 +1704,13 @@ async function init() {
   wireUI();
   await loadCache();
   state.questPilot = new RPQuestPilot.Planner(window.localStorage,state.gameMode);
+  state.questZoneGate = new RPQuestPilot.ZoneGate();
   refreshQuestPilotCatalogue();
-  state.questPilot.state.active=[];state.questPilot.state.done=[];
-  state.questPilot.state.focused="";
-  // Quest list stays visible even when input is click-through.
-  refs.questPanel?.classList.remove("hidden");
-  refs.questsBtn?.setAttribute("aria-expanded","true");
-  refs.questsBtn.textContent="🎯 Masquer QuestPilot";
+  // Keep the planner's loaded progress. No automatic quest overlay away
+  // from objectives; players can open their saved checklist manually.
+  refs.questPanel?.classList.add("hidden");
+  refs.questsBtn?.setAttribute("aria-expanded","false");
+  refs.questsBtn.textContent="🎯 Afficher QuestPilot";
   renderQuestPilotPanel();
   if($("#game-mode"))$("#game-mode").value=state.gameMode;
   state.initialized = true;
@@ -1687,6 +1723,9 @@ async function init() {
   if (typeof setInterval === "function") {
     const poseHealthTimer = setInterval(() => {
       if (state.initialized && state.player) updateHealth();
+      // A stale GPS feed must hide the zone HUD even without a new map
+      // frame from the host; do not leave old objectives floating on screen.
+      if (state.initialized) renderQuestPilotHud();
       if (state.questPilot?.pruneLivePlans()) {
         renderQuestPilotPanel();
         render();
@@ -1713,10 +1752,23 @@ const api = {
   ,setRaidQuests,clearRaidQuests,applyRaidQuests,applyQuestLogEvents,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
   ,setLiveTeamQuestPlan,clearLiveTeamQuestPlan,clearAllLiveTeamQuestPlans,
     questPilotLiveSnapshot:()=>state.questPilot?.liveSnapshot()||null
+  ,questPilotContextProgress:()=>({
+      // Prevent two overlapping cards for the same quest zone. QuestPilot's
+      // contextual HUD has priority when it is visible.
+      hudVisible:!!refs.questHud && !refs.questHud.hidden,
+      // Native nearby hint must respect the same manually checked
+      // objectives/quests and verified EFT completions as QuestPilot.
+      done:[...(state.questPilot?.state.done||[])].slice(0,240),
+      completedQuests:[...(state.questPilot?.state.completedQuests||[]),
+        ...Object.entries(state.questPilot?.state.evidence||{})
+          .filter(([,e])=>e?.status==="completed").map(([id])=>id)
+      ].slice(0,240)
+    })
   ,questPilotSnapshot:()=>({
       mode:state.questPilot?.mode,
       active:[...(state.questPilot?.state.active||[])],
       done:[...(state.questPilot?.state.done||[])],
+      completedQuests:[...(state.questPilot?.state.completedQuests||[])],
       evidence:{...(state.questPilot?.state.evidence||{})},
       focused:state.questPilot?.state.focused||"",
       mapSteps:state.questPilot?.stepsForMap(state.questMapIds).map(s=>({

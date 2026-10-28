@@ -294,3 +294,244 @@ html:not(.raidpilot-interactive) #calibration-panel{display:none}
 
 .floor-coverage{max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#b8dbea;font-size:11px}
 .floor-coverage:empty{display:none}
+
+/* QuestPilot persistent manual completion: small, unambiguous action rather
+   than turning the quest selection checkbox into a completion claim. */
+#questpilot-list .qp-task{flex-wrap:wrap;align-content:center;gap:6px}
+#questpilot-list .qp-task .qp-name{min-width:110px;flex:1 1 130px;white-space:normal}
+#questpilot-list .qp-task .qp-count{min-width:65px;max-width:100%;white-space:normal}
+#questpilot-list .qp-task .qp-quest-finish{
+  flex:0 0 auto;min-width:68px;min-height:32px;padding:6px 9px;
+  color:#baf7d4;background:#173d31;border:1px solid #337961;
+  border-radius:7px;font:700 12px/1.3 "Segoe UI",sans-serif;
+  text-align:center;white-space:nowrap;cursor:pointer
+}
+#questpilot-list .qp-task .qp-quest-finish[aria-pressed="true"]{
+  color:#f9e2b7;background:#584523;border-color:#98703e
+}
+#questpilot-list .qp-task .qp-quest-finish:disabled{
+  opacity:.8;cursor:default;background:#243b4a;color:#c5e2e8
+}
+#questpilot-list .qp-task.completed .qp-name{
+  opacity:.70;text-decoration:line-through
+}
+
+
+/* RaidPilot UI refresh — consistent matte surfaces, compact hierarchy,
+   accessible focus and controlled overlay dimensions. No new image assets. */
+:root{
+  --bg:#0b121b;
+  --panel:#111e2a;
+  --panel2:#182737;
+  --line:#304354;
+  --text:#f2f6f9;
+  --muted:#b2c3d0;
+  --accent:#71d6ed;
+  --rp-radius:11px;
+  --rp-border:#354b5e;
+  --rp-hover:#233a4a;
+}
+#rp-root{background:#0b121b}
+#toolbar{
+  position:relative;z-index:12;
+  min-height:50px;display:flex;align-items:center;
+  padding:7px 10px;border-bottom:1px solid var(--rp-border);
+  background:#101d29;
+  box-shadow:0 2px 12px #0004;
+}
+.rp-toolbar-main{
+  display:flex;align-items:center;flex-wrap:wrap;
+  width:100%;min-width:0;gap:8px;
+}
+#toolbar button,#toolbar select,#toolbar input,
+.rp-toolbar-more>summary{
+  min-height:36px;padding:7px 11px;
+  border:1px solid var(--rp-border);border-radius:9px;
+  background:#192936;color:#edf5f8;font-weight:550;
+  transition:background .12s ease,border-color .12s ease;
+}
+#toolbar button:hover,#toolbar select:hover,
+.rp-toolbar-more>summary:hover{
+  background:var(--rp-hover);border-color:#56849c;
+}
+button:focus-visible,input:focus-visible,select:focus-visible,
+summary:focus-visible{
+  outline:2px solid #9ce9f7;outline-offset:2px;
+}
+#toolbar button:disabled{opacity:.55;cursor:default}
+#toolbar #quests-btn{
+  background:#193542;border-color:#317b8c;
+  color:#d7f9ff;font-weight:700;
+}
+#toolbar #quests-btn[aria-expanded="true"]{
+  background:#1c4c5e;border-color:#74d6ec;
+}
+.rp-toolbar-field{
+  display:flex;align-items:center;gap:7px;
+  color:var(--muted);font-size:12px;
+}
+.rp-toolbar-field select{min-width:105px;max-width:145px}
+#toolbar #search{
+  flex:1 1 175px;min-width:130px;max-width:360px;
+  background:#0d1823;color:#e8f3f8;
+}
+#toolbar #search::placeholder{color:#91aabe}
+.rp-zoom-controls{
+  display:flex;align-items:center;gap:0;overflow:hidden;
+  border:1px solid var(--rp-border);border-radius:9px;
+  background:#111d29;
+}
+#toolbar .rp-zoom-controls button{
+  min-width:36px;border:none;border-radius:0;
+  background:transparent;font-size:18px;
+}
+#toolbar .rp-zoom-controls button:hover{background:#254354}
+#zoom-value{min-width:52px;font-weight:700;font-size:12px}
+.rp-toolbar-more{position:relative;flex:0 0 auto;z-index:13}
+.rp-toolbar-more>summary{
+  display:flex;align-items:center;justify-content:center;
+  list-style:none;cursor:pointer;user-select:none;
+}
+.rp-toolbar-more>summary::-webkit-details-marker{display:none}
+.rp-toolbar-more[open]>summary{
+  border-color:#71d6ed;color:#d8f6ff;background:#254153
+}
+.rp-more-content{
+  position:absolute;top:calc(100% + 8px);right:0;
+  width:min(310px,calc(100vw - 20px));
+  padding:15px;display:flex;flex-direction:column;gap:8px;
+  border:1px solid #426074;border-radius:12px;
+  background:#111f2c;box-shadow:0 12px 32px #000b;
+  white-space:normal;
+}
+.rp-more-content strong{
+  font-size:14px;line-height:1.4;color:#d2edf6;margin-bottom:4px
+}
+.rp-more-content label{color:#adc3d1;font-size:12px;font-weight:600}
+.rp-more-content select{width:100%;max-width:100%!important}
+.rp-more-content .rp-more-actions{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px
+}
+.rp-more-content .rp-more-actions button{font-size:12px}
+.rp-more-content .floor-coverage{
+  max-width:100%;white-space:normal;
+  padding-top:8px;border-top:1px solid #32485a;line-height:1.5
+}
+.rp-more-content .stat{display:block;font-size:11px}
+#panel,#calibration-panel{
+  background:#101f2c;border:1px solid #39596a;
+  border-radius:12px;box-shadow:0 10px 28px #0009;
+}
+#panel{padding:15px;width:270px}
+.panel-title{font-size:16px;letter-spacing:.01em}
+.panel-subtitle{font-size:12px;line-height:1.5;color:#b2c6d2}
+.filter-group{padding-top:8px;margin-top:8px}
+.filter-group-title{font-size:12px;padding:8px 4px;border-radius:6px}
+.filter-group-title:hover{background:#213645}
+.filter-row{min-height:32px;padding:5px 3px}
+#viewport{background:#162a34}
+#details,#missing-asset{
+  background:#101d2b;border-color:#385265;
+  border-radius:10px;box-shadow:0 5px 18px #0007;
+}
+#questpilot-panel{
+  height:clamp(210px,37vh,365px);
+  padding:15px 18px 17px;
+  border-top:2px solid #4596ad;background:#0f1e2b;
+  scrollbar-color:#506e81 #142434;
+}
+#questpilot-panel .qp-panel-title{
+  position:sticky;top:-15px;z-index:2;
+  padding:6px 0 12px;margin:0 0 8px;
+  background:#0f1e2b;font-size:17px;
+  border-bottom:1px solid #2c4254;
+}
+#questpilot-close{
+  border:1px solid #385164;background:#1a2d3c;
+  border-radius:8px;min-width:34px;min-height:34px
+}
+#questpilot-close:hover{background:#2c4656}
+#questpilot-panel .qp-subtle{
+  line-height:1.5;color:#aebfcb;font-size:12px
+}
+#questpilot-panel #questpilot-search{
+  min-height:38px;padding:8px 11px;
+  width:100%;background:#0b1924;border:1px solid #3b5365;
+  border-radius:9px;
+}
+#questpilot-show-all{
+  padding:7px 11px;min-height:36px;
+  border-radius:8px;background:#203747;
+  border:1px solid #426078;color:#e3f1f8
+}
+#questpilot-show-all:hover{background:#294e60}
+#questpilot-panel .qp-section-title{
+  margin-top:12px;padding:10px 0 7px;
+  color:#bbe8f2;font-weight:700;letter-spacing:.01em;
+}
+#questpilot-panel .qp-task,#questpilot-panel .qp-step{
+  background:#172938;border:1px solid #304759;
+  border-radius:10px;box-shadow:none;
+}
+#questpilot-panel .qp-task{
+  margin:6px 0;padding:9px 11px;min-height:51px
+}
+#questpilot-panel .qp-step{
+  padding:10px 12px;margin:7px 0;min-height:56px
+}
+#questpilot-panel .qp-task:hover,
+#questpilot-panel .qp-step:hover{border-color:#51778c;background:#1b3041}
+#questpilot-panel .qp-task .qp-name{
+  font-size:13px;line-height:1.35;font-weight:700;
+}
+#questpilot-list .qp-task .qp-quest-finish{
+  min-height:34px;border-radius:8px
+}
+#questpilot-list .qp-task .qp-quest-finish:hover{
+  background:#245945
+}
+#questpilot-panel details.qp-advanced{
+  border-top:1px solid #2d4355;margin-top:9px;padding:10px 2px
+}
+#questpilot-panel details.qp-advanced summary{
+  padding:7px 4px;border-radius:7px;list-style-position:inside;
+  font-weight:650;color:#c0dce9
+}
+#questpilot-panel details.qp-advanced summary:hover{background:#203749}
+#questpilot-hud{
+  min-height:62px;padding:9px 13px;gap:10px;
+  background:#0d202e;border-top:2px solid #60bcd0
+}
+#questpilot-hud strong{font-size:14px;line-height:1.35}
+#questpilot-hud small{font-size:12px;color:#c5d6df}
+#questpilot-hud .qp-hotkey-label{
+  min-width:108px;font-size:11px;color:#badde9;
+  border-color:#3f6878;background:#1a3644
+}
+#quest-context{
+  background:#10242d;border-top:2px solid #608c99;
+  padding:9px 13px;line-height:1.4
+}
+#quest-context strong{color:#e6f4f7}
+#feature-hud #raid-timer,#feature-hud #guidance-hud{
+  background:#10202b;border-color:#456476;border-radius:9px
+}
+@media(max-width:870px){
+  #toolbar{padding:6px}
+  .rp-toolbar-main{gap:6px}
+  .rp-toolbar-field>span{display:none}
+  .rp-toolbar-field select{min-width:88px}
+  #toolbar #search{flex:1 1 130px;min-width:100px}
+  #toolbar #center-player{padding:7px 8px}
+}
+@media(max-width:600px){
+  #toolbar #search{order:10;flex-basis:100%;max-width:none}
+  .rp-more-content{right:-3px}
+  #questpilot-panel{height:clamp(155px,34vh,260px);padding:10px}
+  #questpilot-panel .qp-panel-title{top:-10px;padding:5px 0 9px}
+  #questpilot-hud .qp-hotkey-label{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  #toolbar button,#toolbar select,#toolbar input,
+  .rp-toolbar-more>summary{transition:none}
+}
