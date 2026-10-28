@@ -79,9 +79,17 @@ internal sealed partial class OverlayForm
                 ? (now - _questContextPoseTimestamp) / (double)Stopwatch.Frequency
                 : double.PositiveInfinity;
             var active = _questContextMenuItem.Checked && _webReady && !_navigationInProgress
-                && !_navigationStartPending && _controlTrackingActive && _tarkovIsForeground
+                && !_navigationStartPending && _raidActive
+                && _controlTrackingActive && _tarkovIsForeground
                 && _liveTrackingEnabled && _questsMap == _currentMap
                 && _questsGameMode == _raidQuestGameMode;
+            if (active && _cortexMenu.Checked
+                && _realtimeEstimator.CurrentPose is { } trackedPose)
+            {
+                var tracking = CortexAssess(now, trackedPose).Quality;
+                active = tracking != CortexTrackingQuality.Degraded
+                    && tracking != CortexTrackingQuality.WaitingForF8;
+            }
             var core = _webView.CoreWebView2;
             if (core is null) { SetQuestContextVisible(false); return; }
             var done = new HashSet<string>(_ignoredContextObjectives,
