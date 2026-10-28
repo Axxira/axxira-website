@@ -12,6 +12,7 @@
       <div class="rp-toolbar-main">
         <button id="layers-btn" type="button" title="Afficher les filtres de carte">☰ Filtres</button>
         <button id="quests-btn" type="button" title="Ouvrir mes quêtes et ma progression sauvegardée" aria-expanded="false">🎯 Mes quêtes</button>
+        <button id="keys-btn" type="button" title="Chercher une clé et retrouver la porte correspondante" aria-expanded="false">🔑 Clés</button>
         <label class="rp-toolbar-field rp-floor-field" for="floor"><span>Étage</span><select id="floor" aria-label="Étage de la carte"></select></label>
         <input id="search" type="search" placeholder="Rechercher sur la carte…" aria-label="Rechercher un lieu ou un objet sur la carte">
         <div class="rp-zoom-controls" role="group" aria-label="Zoom de la carte">
@@ -112,6 +113,17 @@
       </aside>
 
 
+    <aside id="keyguide-panel" class="hidden" aria-label="Guide des clés et des portes">
+      <div class="kg-panel-title"><strong>🔑 Clés et portes</strong><button id="keyguide-close" type="button" aria-label="Fermer le guide des clés">✕</button></div>
+      <p id="keyguide-intro" class="kg-subtle">Chaque clé est reliée aux serrures publiées pour cette carte. Les lieux sans coordonnées ne sont pas inventés.</p>
+      <input id="keyguide-search" type="search" placeholder="Nom de clé, RB-, salle, coffre…" aria-label="Rechercher une clé ou une porte sur la carte">
+      <div id="keyguide-summary" class="kg-summary" role="status"></div>
+      <button id="keyguide-show-locks" type="button">📍 Afficher les portes sur la carte</button>
+      <div id="keyguide-list" aria-label="Correspondances clés et portes"></div>
+      <div id="keyguide-access" aria-label="Clés d'accès à la carte"></div>
+      <p id="keyguide-note" class="kg-subtle">Source : données ouvertes tarkov.dev conservées localement. Les portes peuvent changer après une mise à jour de Tarkov; vérifie en jeu.</p>
+    </aside>
+
     <section id="questpilot-hud" aria-live="off" aria-label="Prochain objectif QuestPilot" hidden>
       <span id="questpilot-hud-color" aria-hidden="true"></span>
       <div class="qp-current"><strong id="questpilot-hud-title"></strong><small id="questpilot-hud-detail"></small></div>
@@ -125,6 +137,7 @@
   <script src="raid-tactics.js"></script>
   <script src="automatic-floors.js"></script>
   <script src="quest-pilot.js"></script>
+  <script src="key-guide.js"></script>
   <script src="raidpilot-local-map.js"></script>
   <script src="map-features.js"></script>
   <script src="legacy-bridge.js"></script>
