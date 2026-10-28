@@ -1120,7 +1120,8 @@ function nearbyQuestStep() {
   const planner=state.questPilot;
   const fresh=state.player&&Number.isFinite(state.lastPoseReceivedAt)
     && Date.now()-state.lastPoseReceivedAt<=poseStaleAfterMs;
-  const uncertainty=Number(state.player?.uncertainty);
+  const rawUncertainty=state.player?.uncertainty;
+  const uncertainty=rawUncertainty==null?NaN:Number(rawUncertainty);
   const reliable=!!fresh && Number.isFinite(uncertainty)
     && uncertainty>=0 && uncertainty<=6;
   if(!planner||!reliable){
@@ -1746,6 +1747,9 @@ const api = {
   ,setLiveTeamQuestPlan,clearLiveTeamQuestPlan,clearAllLiveTeamQuestPlans,
     questPilotLiveSnapshot:()=>state.questPilot?.liveSnapshot()||null
   ,questPilotContextProgress:()=>({
+      // Prevent two overlapping cards for the same quest zone. QuestPilot's
+      // contextual HUD has priority when it is visible.
+      hudVisible:!!refs.questHud && !refs.questHud.hidden,
       // Native nearby hint must respect the same manually checked
       // objectives/quests and verified EFT completions as QuestPilot.
       done:[...(state.questPilot?.state.done||[])].slice(0,240),
