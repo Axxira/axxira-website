@@ -909,6 +909,30 @@ function refreshKeyGuide(){
   state.keyGuideMessage="";
   renderKeyGuide();
 }
+// Options occupy a dedicated docked row BELOW the map. The old absolute
+// dropdown used to overflow the left window edge whenever the toolbar
+// wrapped and then appeared hidden behind the map/other panels.
+function setOptionsVisible(show){
+  if(!refs.optionsPanel||!refs.toolbarMore)return false;
+  const visible=show===true;
+  const wasVisible=!refs.optionsPanel.hidden;
+  refs.optionsPanel.hidden=!visible;
+  refs.optionsPanel.classList.toggle("hidden",!visible);
+  refs.toolbarMore.open=visible;
+  refs.optionsTrigger?.setAttribute("aria-expanded",visible?"true":"false");
+  if(visible&&!wasVisible){
+    questPilotClosePanel();
+    keyGuideVisible(false);
+    refs.panel?.classList.add("hidden");
+    refs.optionsPanel.scrollTop=0;
+  }
+  // Recenter or preserve the world center after the flex viewport changes;
+  // requestAnimationFrame observes final layout, not the old map size.
+  if(visible!==wasVisible && state.initialized
+      && typeof window.requestAnimationFrame==="function")
+    window.requestAnimationFrame(()=>resizeViewport());
+  return visible;
+}
 function keyGuideVisible(show){
   if(!refs.keyPanel||!refs.keyButton)return false;
   const visible=typeof show==="boolean"?show:refs.keyPanel.classList.contains("hidden");
@@ -916,6 +940,7 @@ function keyGuideVisible(show){
   refs.keyButton.setAttribute("aria-expanded",visible?"true":"false");
   refs.keyButton.textContent=visible?"🔑 Masquer les clés":"🔑 Clés";
   if(visible){
+    setOptionsVisible(false);
     refs.panel?.classList.add("hidden");
     refs.questPanel?.classList.add("hidden");
     refs.questsBtn?.setAttribute("aria-expanded","false");
@@ -1296,6 +1321,8 @@ function questPilotClosePanel(){
 }
 function questPilotOpenPanel(){
   if(!refs.questPanel)return false;
+  setOptionsVisible(false);
+  keyGuideVisible(false);
   refs.questPanel.classList.remove("hidden");
   refs.questsBtn?.setAttribute("aria-expanded","true");
   if(refs.questsBtn)refs.questsBtn.textContent="🎯 Masquer QuestPilot";
@@ -1675,11 +1702,27 @@ async function loadCache() {
 
 function wireUI() {
   $("#game-mode")?.addEventListener("change",e=>setGameMode(e.target.value));
+  // Keep native keyboard/summary activation, but manage the drawer with a
+  // single source of truth. Details' delayed toggle event is idempotent.
+  refs.optionsTrigger?.addEventListener("click",e=>{
+    e.preventDefault();
+    setOptionsVisible(!refs.toolbarMore?.open);
+  });
+  refs.toolbarMore?.addEventListener("toggle",()=>{
+    setOptionsVisible(!!refs.toolbarMore.open);
+  });
+  refs.optionsClose?.addEventListener("click",()=>{
+    setOptionsVisible(false);
+    refs.optionsTrigger?.focus?.();
+  });
   let lastInteractive=interactive();
   const syncMode=()=>{
     const current=interactive();if(current===lastInteractive)return;lastInteractive=current;
     state.followPlayer=!current;refs.center.classList.toggle("following",!current);
-    if(!current){keyGuideVisible(false);cancelCalibration();refs.calibrationPanel.hidden=true;centerPlayer();}
+    if(!current){
+    setOptionsVisible(false);keyGuideVisible(false);
+    cancelCalibration();refs.calibrationPanel.hidden=true;centerPlayer();
+  }
   };
   if(typeof MutationObserver==="function")new MutationObserver(syncMode).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
   refs.viewport.addEventListener("wheel", e => {
@@ -1733,10 +1776,21 @@ function wireUI() {
   refs.calibrationSave.addEventListener("click",saveCalibrationPoints);
   refs.calibrationReset.addEventListener("click",()=>{try{localStorage.removeItem(calibrationKey());state.calibrationPoints=[];loadCalibration();showCalibration();render();}catch(_){refs.calibrationStatus.textContent="Impossible d'effacer le calage de cette vue.";}});
   refs.calibrationClose.addEventListener("click",()=>{cancelCalibration();refs.calibrationPanel.hidden=true;});
-  window.addEventListener("keydown",e=>{if(e.key==="Escape" && state.pendingCalibration)showCalibration();});
+  window.addEventListener("keydown",e=>{
+    if(e.key!=="Escape")return;
+    if(refs.toolbarMore?.open){
+      setOptionsVisible(false);
+      e.preventDefault?.();
+    }
+    if(state.pendingCalibration)showCalibration();
+  });
   refs.layersBtn.addEventListener("click",()=>{
     refs.panel.classList.toggle("hidden");
-    if(!refs.panel.className.includes("hidden"))refs.questPanel?.classList.add("hidden");
+    if(!refs.panel.className.includes("hidden")){
+      setOptionsVisible(false);
+      questPilotClosePanel();
+      keyGuideVisible(false);
+    }
   });
   const toggleQuestPanel=force=>{
     if(!refs.questPanel)return;
@@ -1744,7 +1798,11 @@ function wireUI() {
     refs.questPanel.classList.toggle("hidden",!show);
     refs.questsBtn?.setAttribute("aria-expanded",show?"true":"false");
     refs.questsBtn.textContent=show?"🎯 Masquer QuestPilot":"🎯 Afficher QuestPilot";
-    if(show){refs.panel.classList.add("hidden");renderQuestPilotPanel();}
+    if(show){
+      setOptionsVisible(false);
+      refs.panel.classList.add("hidden");
+      renderQuestPilotPanel();
+    }
   };
   refs.questsBtn?.addEventListener("click",()=>{
     const now=toggleQuestPanel();
@@ -1810,6 +1868,8 @@ async function init() {
   Object.assign(refs, {
     viewport:$("#viewport"),stage:$("#stage"),baseMap:$("#base-map"),overlay:$("#overlay"),
     panel:$("#panel"),filters:$("#filters"),layersBtn:$("#layers-btn"),search:$("#search"),
+    toolbarMore:$("#toolbar-more"),optionsTrigger:$("#options-trigger"),
+    optionsPanel:$("#options-panel"),optionsClose:$("#options-close"),
     questPanel:$("#questpilot-panel"),questsBtn:$("#quests-btn"),questClose:$("#questpilot-close"),
     keyPanel:$("#keyguide-panel"),keyButton:$("#keys-btn"),keyClose:$("#keyguide-close"),
     keyList:$("#keyguide-list"),keyAccess:$("#keyguide-access"),
@@ -1830,6 +1890,9 @@ async function init() {
     calibrationPanel:$("#calibration-panel"),calibrationMap:$("#calibration-map"),calibrationStatus:$("#calibration-status"),calibrationLandmark:$("#calibration-landmark"),calibrationReference:$("#calibration-reference"),calibrationPosition:$("#calibration-position"),calibrationOffset:$("#calibration-offset"),calibrationSave:$("#calibration-save"),calibrationReset:$("#calibration-reset"),calibrationClose:$("#calibration-close")
   });
 
+  // Starts hidden even if the native host reuses the document.
+  if(refs.optionsPanel)refs.optionsPanel.hidden=true;
+  if(refs.toolbarMore)refs.toolbarMore.open=false;
   state.meta = await fetchJsonSafe("map-meta.json");
   state.catalog = await fetchJsonSafe("filter-catalog.json");
   state.assets = await fetchJsonSafe("assets/forge-manifest.json") || await fetchJsonSafe("assets/manifest.json") || {maps:{}};
