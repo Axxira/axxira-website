@@ -386,7 +386,7 @@ test("préparation : exclut quêtes remises, conserve exigences sans GPS",()=>{
  assert.equal(p.unmappedSteps()[0].doneSource,"eft-local-log");
 });
 
-console.log(JSON.stringify({status:"PASS",checks}));
+
 
 test("une dependance explicite bloque une etape avant la premiere",()=>{
  const p=new QuestPilot.Planner(null,"pve");
@@ -484,3 +484,140 @@ test("le plan n'affiche aucune distance issue d'une position incertaine",()=>{
  assert.ok(p.suggested(new Set(["customs"]),{positionReliable:false})
    .every(step=>step.distance===null && step.locationUncertain===true));
 });
+
+test("progression QuestPilot sauvegardée entre plusieurs raids et redémarrages",()=>{
+ const memory=new Map();
+ const store={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
+ const a=new QuestPilot.Planner(store,"pve");
+ a.setCatalog([task],translated);
+ a.recognize(["quest-a"]);
+ a.toggleDone("quest-a:first",true);
+ a.focus("quest-a:second");
+ const b=new QuestPilot.Planner(store,"pve");
+ b.setCatalog([task],translated);
+ assert.equal(b.isActive("quest-a"),true);
+ assert.equal(b.isDone("quest-a:first"),true);
+ assert.equal(b.state.focused,"quest-a:second");
+ b.recognize(["quest-a"]);
+ const c=new QuestPilot.Planner(store,"pve");
+ c.setCatalog([task],translated);
+ assert.equal(c.isDone("quest-a:first"),true);
+ assert.equal(c.isDone("quest-a:second"),false);
+});
+test("quête entière marquée faite manuellement, réactivable sans perdre les étapes",()=>{
+ const memory=new Map(),store={
+  getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};
+ const p=new QuestPilot.Planner(store,"pve");
+ p.setCatalog([task],translated);p.toggle("quest-a",true);
+ p.toggleDone("quest-a:first",true);
+ assert.equal(p.toggleQuestCompleted("quest-a",true),true);
+ assert.equal(p.isQuestCompleted("quest-a"),false);
+ assert.equal(p.isQuestMarkedDone("quest-a"),true);
+ assert.equal(p.stepsForMap(map).every(s=>s.done),true);
+ assert.equal(p.nextForMap(map,{position:{x:0,y:1,z:0}}),null);
+ const restored=new QuestPilot.Planner(store,"pve");
+ restored.setCatalog([task],translated);
+ assert.equal(restored.isQuestMarkedDone("quest-a"),true);
+ assert.equal(restored.toggleQuestCompleted("quest-a",false),false);
+ assert.deepEqual(restored.stepsForMap(map).map(s=>s.done),[true,false,false]);
+ assert.equal(restored.isDone("quest-a:first"),true);
+});
+test("mission confirmée EFT ne peut pas être annulée manuellement",()=>{
+ const id="a".repeat(24);
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([{id,name:"Confirmée",objectives:[
+  objective("step","end","customs",10,10)]}]);
+ p.toggle(id,true);
+ p.recordEvidence({mode:"pve",taskId:id,status:"completed",
+  source:"eft-local-log",at:1792828800});
+ assert.equal(p.isQuestCompleted(id),true);
+ assert.equal(p.toggleQuestCompleted(id,false),false);
+ assert.equal(p.stepsForMap(map)[0].doneSource,"eft-local-log");
+});
+test("HUD zone seulement à moins de 30 mètres avec GPS fiable",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);p.toggle("quest-a",true);
+ const pos=(x,uncertainty=1)=>({
+  position:{x,y:1,z:10},uncertainty,positionReliable:true});
+ assert.equal(p.nearbyForMap(map,pos(12))?.id,"quest-a:first");
+ assert.equal(p.nearbyForMap(map,pos(45)),null);
+ assert.equal(p.nearbyForMap(map,pos(12,7)),null);
+ assert.equal(p.nearbyForMap(map,{...pos(12),positionReliable:false}),null);
+});
+test("HUD choisit le bon objectif voisin, pas une priorité lointaine",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);p.toggle("quest-a",true);
+ p.focus("quest-a:third");
+ const v=p.nearbyForMap(map,{
+  position:{x:10,y:1,z:10},uncertainty:1,positionReliable:true});
+ assert.equal(v.id,"quest-a:first");
+ p.toggleDone("quest-a:first",true);
+ assert.equal(p.nearbyForMap(map,{
+  position:{x:10,y:1,z:10},uncertainty:1,positionReliable:true}),null);
+});
+test("HUD retient l'objectif dans la bande 30–45m puis le masque",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);p.toggle("quest-a",true);
+ const pos=x=>({position:{x,y:1,z:10},uncertainty:1,positionReliable:true});
+ assert.equal(p.nearbyForMap(map,pos(10))?.id,"quest-a:first");
+ assert.equal(p.nearbyForMap(map,pos(50)),null);
+ assert.equal(p.nearbyForMap(map,pos(50),"quest-a:first")?.id,"quest-a:first");
+ assert.equal(p.nearbyForMap(map,pos(70),"quest-a:first"),null);
+});
+test("HUD ne confond pas deux étages et ne fabrique pas une altitude",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);p.toggle("quest-a",true);
+ const near=(y)=>({position:{x:10,y,z:10},uncertainty:1,positionReliable:true});
+ assert.equal(p.nearbyForMap(map,near(13)),null);
+ assert.equal(p.nearbyForMap(map,near(undefined)),null);
+ assert.equal(p.nearbyForMap(map,near(1))?.objectiveId,"first");
+});
+test("zone polygonale remplace la distance trompeuse au centre",()=>{
+ const zone={id:"poly",name:"Polygon",objectives:[{
+  id:"inside",description:"Place",type:"visit",zones:[{
+   map:{id:"customs"},position:{x:300,y:1,z:300},
+   outline:[{x:-5,z:-5},{x:5,z:-5},{x:5,z:5},{x:-5,z:5}]
+  }]
+ }]};
+ const p=new QuestPilot.Planner(null,"pve");p.setCatalog([zone]);
+ p.toggle("poly",true);
+ assert.equal(p.nearbyForMap(map,{
+  position:{x:0,y:1,z:0},uncertainty:1,positionReliable:true})?.objectiveId,"inside");
+ assert.equal(p.nearbyForMap(map,{
+  position:{x:300,y:1,z:300},uncertainty:1,positionReliable:true}),null);
+});
+test("la proximité n'est jamais une preuve de mission accomplie",()=>{
+ const p=new QuestPilot.Planner(null,"pve");p.setCatalog([task],translated);
+ p.toggle("quest-a",true);
+ for(let i=0;i<5;i++)p.nearbyForMap(map,{
+  position:{x:10,y:1,z:10},uncertainty:0.5,positionReliable:true});
+ assert.equal(p.isDone("quest-a:first"),false);
+ assert.equal(p.isQuestMarkedDone("quest-a"),false);
+});
+test("les quêtes sauvegardées restent séparées entre PvE et PvP",()=>{
+ const data=new Map(),store={
+  getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)};
+ const p=new QuestPilot.Planner(store,"pve");
+ p.setCatalog([task],translated);p.toggle("quest-a",true);
+ p.toggleQuestCompleted("quest-a",true);
+ p.setMode("regular");p.setCatalog([task],translated);
+ assert.equal(p.isActive("quest-a"),false);
+ assert.equal(p.isQuestMarkedDone("quest-a"),false);
+ p.setMode("pve");p.setCatalog([task],translated);
+ assert.equal(p.isQuestMarkedDone("quest-a"),true);
+});
+test("intégration locale : OCR ne réinitialise jamais les coches sauvegardées",()=>{
+ const fs=require("node:fs");
+ const source=fs.readFileSync(require("node:path").join(__dirname,
+  "../LocalMap/raidpilot-local-map.js"),"utf8");
+ const ocr=source.slice(source.indexOf("function setRaidQuests(p){"),
+  source.indexOf("function setLearnedRoute(p){"));
+ assert.match(ocr,/questPilot\.recognize\(\[\.\.\.ids\]\)/);
+ assert.doesNotMatch(ocr,/state\.done\s*=\s*\[\]/);
+ assert.doesNotMatch(ocr,/state\.active\s*=\s*\[\]/);
+ assert.match(source,/function nearbyQuestStep\(\)/);
+ assert.match(source,/planner\.nearbyForMap/);
+ assert.match(source,/questPilotContextProgress/);
+});
+
+console.log(JSON.stringify({status:"PASS",checks}));
