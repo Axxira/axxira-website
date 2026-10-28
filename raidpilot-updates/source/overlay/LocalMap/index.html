@@ -13,6 +13,9 @@
         <button id="layers-btn" type="button" title="Afficher les filtres de carte">☰ Filtres</button>
         <button id="quests-btn" type="button" title="Ouvrir mes quêtes et ma progression sauvegardée" aria-expanded="false">🎯 Mes quêtes</button>
         <button id="keys-btn" type="button" title="Chercher une clé et retrouver la porte correspondante" aria-expanded="false">🔑 Clés</button>
+        <details id="toolbar-more" class="rp-toolbar-more">
+          <summary id="options-trigger" aria-label="Paramètres avancés de la carte" aria-controls="options-panel" aria-expanded="false">⚙ Options</summary>
+        </details>
         <label class="rp-toolbar-field rp-floor-field" for="floor"><span>Étage</span><select id="floor" aria-label="Étage de la carte"></select></label>
         <input id="search" type="search" placeholder="Rechercher sur la carte…" aria-label="Rechercher un lieu ou un objet sur la carte">
         <div class="rp-zoom-controls" role="group" aria-label="Zoom de la carte">
@@ -21,24 +24,6 @@
           <button id="zoom-in" type="button" title="Zoomer" aria-label="Zoomer">+</button>
         </div>
         <button id="center-player" type="button" title="Centrer sur ma position">◎ Centrer</button>
-        <details id="toolbar-more" class="rp-toolbar-more">
-          <summary aria-label="Paramètres avancés de la carte">⚙ Options</summary>
-          <div class="rp-more-content">
-            <strong>Apparence et réglages</strong>
-            <label for="map-style">Style de carte</label>
-            <select id="map-style" aria-label="Fond de carte"><option value="forge">Illustration HD</option><option value="tactical">Carte tactique</option></select>
-            <label for="profile">Repères affichés</label>
-            <select id="profile" aria-label="Profil d'affichage"></select>
-            <label for="label-mode">Noms des repères</label>
-            <select id="label-mode" aria-label="Affichage des noms"><option value="auto">Automatique</option><option value="hover">Au survol</option></select>
-            <div class="rp-more-actions">
-              <button id="fit" type="button" title="Ajuster la carte à l'écran">Ajuster la carte</button>
-              <button id="calibrate" type="button" title="Configurer le positionnement du pion">Caler le pion</button>
-            </div>
-            <span id="floor-coverage" class="floor-coverage" role="status" aria-live="polite"></span>
-            <span class="stat"><span id="map-name">—</span> · <span id="marker-count">0/0</span> repères</span>
-          </div>
-        </details>
       </div>
     </header>
 
@@ -85,6 +70,34 @@
         <div id="map-credit"></div>
       </section>
     </main>
+    <aside id="options-panel" class="hidden" aria-label="Options de la carte" hidden>
+      <div class="rp-options-heading">
+        <strong>⚙ Options de la carte</strong>
+        <button id="options-close" type="button" aria-label="Fermer les options">✕</button>
+      </div>
+      <div class="rp-more-content">
+        <div class="rp-options-field">
+          <label for="map-style">Style de carte</label>
+          <select id="map-style" aria-label="Fond de carte"><option value="forge">Illustration HD</option><option value="tactical">Carte tactique</option></select>
+        </div>
+        <div class="rp-options-field">
+          <label for="profile">Repères affichés</label>
+          <select id="profile" aria-label="Profil d'affichage"></select>
+        </div>
+        <div class="rp-options-field">
+          <label for="label-mode">Noms des repères</label>
+          <select id="label-mode" aria-label="Affichage des noms"><option value="auto">Automatique</option><option value="hover">Au survol</option></select>
+        </div>
+        <div class="rp-more-actions">
+          <button id="fit" type="button" title="Ajuster la carte à l'écran">Ajuster la carte</button>
+          <button id="calibrate" type="button" title="Configurer le positionnement du pion">Caler le pion</button>
+        </div>
+        <div class="rp-options-status">
+          <span id="floor-coverage" class="floor-coverage" role="status" aria-live="polite"></span>
+          <span class="stat"><span id="map-name">—</span> · <span id="marker-count">0/0</span> repères</span>
+        </div>
+      </div>
+    </aside>
       <aside id="questpilot-panel" class="hidden" aria-label="QuestPilot — mes quêtes">
         <div class="qp-panel-title"><strong>🎯 QuestPilot</strong><button id="questpilot-close" type="button" aria-label="Fermer les quêtes">✕</button></div>
         <p class="qp-subtle">Tes quêtes et étapes cochées restent sauvegardées entre les raids. TAB → TÂCHES → F8 ajoute les missions détectées sans effacer ton progrès. Clique sur « ✓ Fait » pour terminer manuellement une quête entière.</p>

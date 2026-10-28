@@ -15,7 +15,8 @@ class Element {
  getBoundingClientRect(){return {width:1200,height:700,left:0,top:0};}
  setPointerCapture(){} get options(){return this.children;}
 }
-const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale',
+const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search',
+  'toolbar-more','options-trigger','options-panel','options-close','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale',
   'quests-btn','questpilot-panel','questpilot-close','questpilot-search','questpilot-summary',
   'questpilot-list','questpilot-steps','questpilot-other','questpilot-shared-steps','questpilot-prep','questpilot-hud',
   'questpilot-hud-color','questpilot-hud-title','questpilot-hud-detail',
@@ -45,6 +46,42 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
 (async()=>{
  await Promise.race([ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Renderer did not initialize')),5000))]);
  const api=context.RaidPilotLocalMap;
+ // Regression: at the 840px width shown by the player the old Options popup
+ // was cut off at the left edge / obscured by the end of the map.
+ const optionsHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const optionsCss=fs.readFileSync(path.join(root,'raidpilot-local-map.css'),'utf8');
+ const workspaceEnd=optionsHtml.indexOf('</main>');
+ const optionsStart=optionsHtml.indexOf('<aside id="options-panel"');
+ const questsStart=optionsHtml.indexOf('<aside id="questpilot-panel"');
+ check(optionsStart>workspaceEnd && optionsStart<questsStart,
+   'Options must be a docked sibling BELOW the map, never clipped by its viewport');
+ check(optionsCss.includes('#options-panel .rp-more-content{')
+   && optionsCss.includes('position:static;inset:auto')
+   && optionsCss.includes('flex:0 0 auto;overflow:auto'),
+   'Options should take its own scrollable flex row, not absolute-position over the map');
+ check(ids['options-panel'].hidden===true && ids['toolbar-more'].open===false,
+   'Options must remain closed until explicitly opened');
+ ids['options-trigger'].dispatchEvent({type:'click',preventDefault(){}});
+ check(ids['options-panel'].hidden===false && ids['toolbar-more'].open===true
+   && ids['options-trigger'].attrs['aria-expanded']==='true',
+   'Clicking Options must show an accessible docked panel');
+ context.dispatchEvent({type:'keydown',key:'Escape',preventDefault(){}});
+ check(ids['options-panel'].hidden===true && ids['toolbar-more'].open===false,
+   'Escape must close both the settings panel and its summary state');
+ ids['options-trigger'].dispatchEvent({type:'click',preventDefault(){}});
+ ids['options-close'].dispatchEvent(new context.Event('click'));
+ check(ids['options-panel'].hidden===true,
+   'The dedicated Close control must hide Options');
+ ids['options-trigger'].dispatchEvent({type:'click',preventDefault(){}});
+ api.openKeyGuide();
+ check(ids['options-panel'].hidden===true,
+   'Opening the Key guide must close Options instead of stacking two panels');
+ api.closeKeyGuide();
+ ids['options-trigger'].dispatchEvent({type:'click',preventDefault(){}});
+ api.questPilotOpenPanel();
+ check(ids['options-panel'].hidden===true,
+   'Opening QuestPilot must close Options and leave map usable');
+ api.questPilotClosePanel();
  check(api.health().markerCount>100,'Real cached POI missing');
  check(ids.overlay.children.filter(e=>e.dataset.markerId).length===1,'Illustrated default duplicates baked POI');
  check(!!marker('__player'),'Pose received before data readiness was lost');
