@@ -92,6 +92,19 @@ internal sealed partial class OverlayForm
                     update.BoundaryDistanceMeters)
                 ? Math.Clamp(update.BoundaryDistanceMeters, 0.0, 10_000.0)
                 : null;
+            // CORTEX is a second independent check on top of the numeric
+            // uncertainty. A recent sensor contradiction or missing real F8
+            // must suppress contextual quest popups; it cannot mark progress.
+            var cortexUnsafe = false;
+            if (_cortexMenu.Checked
+                && _realtimeEstimator.CurrentPose is { } currentPose)
+            {
+                var assessment = CortexAssess(
+                    System.Diagnostics.Stopwatch.GetTimestamp(), currentPose);
+                cortexUnsafe = assessment.Quality is
+                    CortexTrackingQuality.Degraded
+                    or CortexTrackingQuality.WaitingForF8;
+            }
             var payload = JsonSerializer.Serialize(new
             {
                 generation = update.RaidGeneration,
@@ -101,6 +114,8 @@ internal sealed partial class OverlayForm
                 z = update.Observation.Z,
                 yaw = update.Observation.YawDegrees,
                 uncertainty,
+                locationUncertain = cortexUnsafe,
+                quality = cortexUnsafe ? "lost" : "estimated",
                 snap = update.Snap,
                 mineAlert = update.MineAlert,
                 mineDistance,
