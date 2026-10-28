@@ -71,6 +71,7 @@ internal static class ScreenshotNameParserTests
         ScreenshotHotkeySenderTests.RunAll(failures);
         AutomaticReanchorRequestTests.RunAll(failures);
         MobileExactAnchorPolicyTests.RunAll(failures);
+        CortexNativeCadenceTests.RunAll(failures);
         CortexNavigationTests.RunAll(failures);
         CortexLandmarkMemoryTests.RunAll(failures);
         CortexV4Tests.RunAll(failures);
@@ -130,6 +131,7 @@ internal static class ScreenshotNameParserTests
             + ScreenshotHotkeySenderTests.TestCount
             + AutomaticReanchorRequestTests.TestCount
             + MobileExactAnchorPolicyTests.TestCount
+            + CortexNativeCadenceTests.TestCount
             + CortexNavigationTests.TestCount
             + CortexLandmarkMemoryTests.TestCount
             + CortexV4Tests.TestCount
