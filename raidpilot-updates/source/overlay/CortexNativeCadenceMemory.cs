@@ -209,7 +209,8 @@ internal sealed class CortexNativeCadenceMemory
         && map.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_');
 
     private static bool ValidSample(PrecisionDriftSample s) =>
-        double.IsFinite(s.ErrorMeters) && double.IsFinite(s.HeadingErrorDegrees)
+        s.PrecisionV2Enabled
+        && double.IsFinite(s.ErrorMeters) && double.IsFinite(s.HeadingErrorDegrees)
         && double.IsFinite(s.Seconds) && double.IsFinite(s.ModelUncertaintyMeters)
         && s.ErrorMeters is >= 0 and <= 200
         && s.HeadingErrorDegrees is >= 0 and <= 180
