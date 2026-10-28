@@ -1,5 +1,7 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
 const root=path.resolve(__dirname,'../LocalMap');
+// Pure key/door data-model coverage is also part of this Windows suite.
+require('./test-key-guide.cjs');
 // Minimal DOM model: runs the delivered renderer and real cached geometry
 // without a browser, network, WebView2, or game process.
 class Element {
@@ -17,6 +19,9 @@ const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','f
   'quests-btn','questpilot-panel','questpilot-close','questpilot-search','questpilot-summary',
   'questpilot-list','questpilot-steps','questpilot-other','questpilot-shared-steps','questpilot-prep','questpilot-hud',
   'questpilot-hud-color','questpilot-hud-title','questpilot-hud-detail',
+  'keys-btn','keyguide-panel','keyguide-close','keyguide-search',
+  'keyguide-summary','keyguide-list','keyguide-access','keyguide-show-locks',
+  'keyguide-map',
   'questpilot-share','questpilot-share-status','questpilot-share-output',
   'questpilot-peer-name','questpilot-peer-code','questpilot-import','questpilot-team-plans'])ids[id]=new Element('div');
 const listeners={}, messages=[], storage=new Map();
@@ -35,7 +40,7 @@ const context={console,URLSearchParams,Event:class{constructor(type){this.type=t
 let checks=0;function check(ok,label){assert.ok(ok,label);checks++;}
 function marker(id){return ids.overlay.children.find(e=>e.dataset.markerId===id);}
 const ready=new Promise(resolve=>context.addEventListener('raidpilot-local-initialized',resolve));
-for(const f of ['projection.js','map-calibration.js','map-display.js','raid-tactics.js','automatic-floors.js','quest-pilot.js','raidpilot-local-map.js','map-features.js','legacy-bridge.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+for(const f of ['projection.js','map-calibration.js','map-display.js','raid-tactics.js','automatic-floors.js','quest-pilot.js','key-guide.js','raidpilot-local-map.js','map-features.js','legacy-bridge.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
 context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90});
 (async()=>{
  await Promise.race([ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Renderer did not initialize')),5000))]);
@@ -171,6 +176,25 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
  const taskValues=tasksDocument.data?.tasks||tasksDocument.tasks||[];
  const realMaps=Array.isArray(mapValues)?mapValues:Object.values(mapValues);
  const realTasks=Array.isArray(taskValues)?taskValues:Object.values(taskValues);
+ // Actual immutable tarkov.dev snapshot, not fabricated demo keys.
+ const customsMap=realMaps.find(m=>m.normalizedName==='customs');
+ const guide=api.keyGuideSnapshot();
+ check(guide.map==='customs'&&guide.locks>0,
+   'Real cached Customs locks not available in the key guide');
+ check(guide.located>0&&guide.identified>0,
+   'Real local key/door associations were not resolved');
+ check(guide.keys>0,'No verified key references in cached Customs');
+ check(api.keyGuideFind('porte').locks.length>0,
+   'French door search did not include published locks');
+ check(api.openKeyGuide()===true,'Guide does not open from the local map');
+ check(ids['keyguide-list'].children.length>0,
+   'Key guide did not render entries for the selected map');
+ check(ids['keyguide-summary'].textContent.includes('serrures répertoriées'),
+   'Key guide lacks a clear sourced map summary');
+ ids['keyguide-show-locks'].dispatchEvent(new context.Event('click'));
+ check(api.health().markerCount>0,
+   'Displaying the locked-door layer broke the map');
+ api.closeKeyGuide();
  const customsIds=new Set(realMaps.filter(m=>m.normalizedName==='customs').map(m=>m.id));
  const locatable=realTasks.filter(task=>(task.objectives||[]).some(o=>
    (o.zones||[]).some(z=>customsIds.has(z.map?.id||z.map)&&z.position) ||
