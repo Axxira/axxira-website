@@ -620,4 +620,40 @@ test("intégration locale : OCR ne réinitialise jamais les coches sauvegardées
  assert.match(source,/questPilotContextProgress/);
 });
 
+
+test("CORTEX zone : ne s'active qu'après deux observations GPS distinctes",()=>{
+ const gate=new QuestPilot.ZoneGate();
+ const step={id:"q:step"};
+ assert.equal(gate.observe(step,1000),null);
+ assert.equal(gate.observe(step,1000),null);
+ assert.equal(gate.observe(step,1120),null);
+ assert.equal(gate.observe(step,1210)?.id,step.id);
+ assert.equal(gate.observe(step,1210)?.id,step.id);
+});
+test("CORTEX zone : disparaît instantanément si GPS absent ou cible terminée",()=>{
+ const gate=new QuestPilot.ZoneGate();
+ const step={id:"q:step"};
+ gate.observe(step,1000);gate.observe(step,1200);
+ assert.equal(gate.observe(null,1300),null);
+ assert.equal(gate.observe(step,1350),null);
+ assert.equal(gate.observe(step,1560)?.id,step.id);
+});
+test("CORTEX zone : jamais de confirmation réutilisée sur une autre étape",()=>{
+ const gate=new QuestPilot.ZoneGate();
+ const a={id:"q:one"},b={id:"q:two"};
+ gate.observe(a,1000);gate.observe(a,1250);
+ assert.equal(gate.observe(b,1400),null);
+ assert.equal(gate.observe(a,1450),null);
+ assert.equal(gate.observe(a,1600),null);
+ assert.equal(gate.observe(a,1660)?.id,a.id);
+});
+test("CORTEX zone : une observation GPS hors ordre réinitialise l'indice",()=>{
+ const gate=new QuestPilot.ZoneGate();
+ const a={id:"q:step"};
+ gate.observe(a,1000);
+ assert.equal(gate.observe(a,900),null);
+ assert.equal(gate.observe(a,1100),null);
+ assert.equal(gate.observe(a,1350)?.id,a.id);
+});
+
 console.log(JSON.stringify({status:"PASS",checks}));
