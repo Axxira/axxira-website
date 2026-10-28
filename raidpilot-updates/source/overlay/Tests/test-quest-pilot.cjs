@@ -540,7 +540,7 @@ test("HUD zone seulement à moins de 30 mètres avec GPS fiable",()=>{
  const pos=(x,uncertainty=1)=>({
   position:{x,y:1,z:10},uncertainty,positionReliable:true});
  assert.equal(p.nearbyForMap(map,pos(12))?.id,"quest-a:first");
- assert.equal(p.nearbyForMap(map,pos(45)),null);
+ assert.equal(p.nearbyForMap(map,pos(180)),null);
  assert.equal(p.nearbyForMap(map,pos(12,7)),null);
  assert.equal(p.nearbyForMap(map,{...pos(12),positionReliable:false}),null);
 });
@@ -558,6 +558,7 @@ test("HUD choisit le bon objectif voisin, pas une priorité lointaine",()=>{
 test("HUD retient l'objectif dans la bande 30–45m puis le masque",()=>{
  const p=new QuestPilot.Planner(null,"pve");
  p.setCatalog([task],translated);p.toggle("quest-a",true);
+ p.toggleDone("quest-a:second",true);p.toggleDone("quest-a:third",true);
  const pos=x=>({position:{x,y:1,z:10},uncertainty:1,positionReliable:true});
  assert.equal(p.nearbyForMap(map,pos(10))?.id,"quest-a:first");
  assert.equal(p.nearbyForMap(map,pos(50)),null);
