@@ -16,6 +16,10 @@
   const LIMIT_TASKS = 3000;
   const LIMIT_OBJECTIVES = 80;
   const LIMIT_LOCATIONS = 200;
+  const HUD_ENTER_METERS = 30;
+  const HUD_EXIT_METERS = 45;
+  const HUD_MAX_UNCERTAINTY_METERS = 6;
+  const HUD_FLOOR_TOLERANCE_METERS = 7;
 
   function identifier(value) {
     const s = String(value ?? "").trim();
@@ -51,17 +55,19 @@
   }
   function objectiveLocations(obj) {
     const out = [], seen = new Set();
-    const append = (map, p, choice, place) => {
+    const append = (map, p, choice, place, rawOutline) => {
       const pos = point(p), id = mapId(map);
       if (!id || !pos || out.length >= LIMIT_LOCATIONS) return;
       const signature = id + "|" + pos.x.toFixed(3) + "|" + pos.z.toFixed(3)
         + "|" + String(pos.y) + "|" + choice;
       if (seen.has(signature)) return;
       seen.add(signature);
-      out.push({map:id, position:pos, possible:choice, place:String(place || "").slice(0,160)});
+      const outline = asArray(rawOutline).slice(0,128).map(point).filter(Boolean);
+      out.push({map:id, position:pos, outline:outline.length>=3?outline:[],
+        possible:choice, place:String(place || "").slice(0,160)});
     };
     for (const z of asArray(obj?.zones).slice(0,LIMIT_LOCATIONS)) {
-      append(z.map, z.position, false, z.name);
+      append(z.map, z.position, false, z.name, z.outline);
     }
     for (const option of asArray(obj?.possibleLocations).slice(0,LIMIT_LOCATIONS)) {
       for (const p of asArray(option.positions).slice(0,LIMIT_LOCATIONS)) {
@@ -169,13 +175,14 @@
     }
     return result;
   }
-  function defaultState() { return {schemaVersion:1,active:[],excluded:[],done:[],packed:[],focused:"",
+  function defaultState() { return {schemaVersion:1,active:[],excluded:[],done:[],completedQuests:[],packed:[],focused:"",
     evidence:Object.create(null),sharedPlans:Object.create(null)}; }
   function normalizeState(input) {
     if (!input || typeof input !== "object" || input.schemaVersion !== 1) return defaultState();
     return {
       schemaVersion:1,active:sanitizeArray(input.active), excluded:sanitizeArray(input.excluded),
-      done:sanitizeArray(input.done), packed:sanitizeArray(input.packed),
+      done:sanitizeArray(input.done), completedQuests:sanitizeArray(input.completedQuests),
+      packed:sanitizeArray(input.packed),
       focused:identifier(input.focused), evidence:safeEvidence(input.evidence),
       sharedPlans:safePeerPlans(input.sharedPlans)
     };
@@ -186,6 +193,35 @@
     const x = Number(p.x), z = Number(p.z);
     return Number.isFinite(x)&&Number.isFinite(z)
       ? Math.hypot(x-location.position.x,z-location.position.z) : Infinity;
+  }
+  // Quest-zone distances: polygon edges are authoritative when the public
+  // objective publishes an outline. A lone point is only an approximate zone,
+  // not a claim about collision meshes or an exact EFT completion trigger.
+  function segmentDistance(x,z,a,b) {
+    const dx=b.x-a.x,dz=b.z-a.z,denom=dx*dx+dz*dz;
+    const t=denom>0?Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/denom)):0;
+    return Math.hypot(x-a.x-t*dx,z-a.z-t*dz);
+  }
+  function distanceToQuestZone(player,location) {
+    if(!player||!location?.position)return Infinity;
+    const p=point(player.position||player);
+    if(!p)return Infinity;
+    const target=location.position;
+    // When altitude is known, do not show a second-floor quest on the ground
+    // floor. A missing altitude must not masquerade as a verified floor.
+    if(target.y!==null && (p.y===null||Math.abs(p.y-target.y)>HUD_FLOOR_TOLERANCE_METERS))
+      return Infinity;
+    const outline=location.outline;
+    if(!Array.isArray(outline)||outline.length<3)
+      return Math.hypot(p.x-target.x,p.z-target.z);
+    let inside=false,minimum=Infinity;
+    for(let i=0,j=outline.length-1;i<outline.length;j=i++){
+      const a=outline[j],b=outline[i];
+      minimum=Math.min(minimum,segmentDistance(p.x,p.z,a,b));
+      if((a.z>p.z)!==(b.z>p.z)
+          && p.x<(b.x-a.x)*(p.z-a.z)/(b.z-a.z)+a.x)inside=!inside;
+    }
+    return inside?0:minimum;
   }
   class Planner {
     constructor(storage, mode) {
@@ -312,9 +348,22 @@
     }
     isDone(id) { return this.state.done.includes(String(id)); }
     isQuestCompleted(id) { return this.state.evidence?.[String(id)]?.status==="completed"; }
+    isQuestMarkedDone(id) { return this.state.completedQuests.includes(String(id)); }
+    isQuestFinished(id) { return this.isQuestCompleted(id)||this.isQuestMarkedDone(id); }
+    toggleQuestCompleted(id,force) {
+      const valid=identifier(id);
+      if(!valid||this.isQuestCompleted(valid))return false;
+      const yes=typeof force==="boolean"?force:!this.isQuestMarkedDone(valid);
+      this.state.completedQuests=this.state.completedQuests.filter(x=>x!==valid);
+      if(yes)this.state.completedQuests.push(valid);
+      this.state.completedQuests=sanitizeArray(this.state.completedQuests);
+      this.save();
+      return yes;
+    }
     statusFor(id) { return this.state.evidence?.[String(id)]||null; }
     stageStatus(stepId,questId) {
       if(this.isQuestCompleted(questId))return {done:true,source:"eft-local-log"};
+      if(this.isQuestMarkedDone(questId))return {done:true,source:"manual-quest"};
       if(this.isDone(stepId))return {done:true,source:"manual"};
       return {done:false,source:"unknown"};
     }
@@ -404,7 +453,7 @@
     preparationForMap(mapIds) {
       const ids=mapIds instanceof Set?mapIds:new Set(mapIds||[]),out=[],seen=new Set();
       for(const id of this.state.active){
-        const quest=this.byId.get(id);if(!quest||this.isQuestCompleted(id))continue;
+        const quest=this.byId.get(id);if(!quest||this.isQuestFinished(id))continue;
         for(const step of quest.objectives){
           if(step.locations.length&&!step.locations.some(l=>ids.has(l.map)))continue;
           for(const need of step.needs){
@@ -487,6 +536,34 @@
       const confidence=player?.positionConfidence;
       return confidence==null || (Number.isFinite(Number(confidence))&&Number(confidence)>=0.5);
     }
+    nearbyForMap(mapIds,player,previousId="") {
+      // Contextual, confidence-aware quest-zone HUD. No completion is inferred.
+      if(!this.positionReliable(player))return null;
+      const uncertainty=Number(player?.uncertainty);
+      if(!Number.isFinite(uncertainty)||uncertainty<0
+          ||uncertainty>HUD_MAX_UNCERTAINTY_METERS)return null;
+      const steps=this.stepsForMap(mapIds).filter(s=>!s.done&&this.isStepUnlocked(s));
+      let chosen=null,closest=Infinity,remembered=null;
+      for(const step of steps) {
+        for(const loc of step.locations) {
+          const distance=distanceToQuestZone(player,loc);
+          const threshold=(step.id===previousId?HUD_EXIT_METERS:HUD_ENTER_METERS);
+          if(!Number.isFinite(distance)||distance+uncertainty>threshold)continue;
+          const item={...step,nearest:loc,distance,locationUncertain:false};
+          if(step.id===previousId && (!remembered||distance<remembered.distance))
+            remembered=item;
+          if(!chosen||distance<closest
+              ||(distance===closest&&step.id.localeCompare(chosen.id)<0)){
+            chosen=item;closest=distance;
+          }
+        }
+      }
+      // Hysteresis prevents flicker and switches only when another objective
+      // is appreciably closer, never to an out-of-zone pinned/focused target.
+      if(remembered && (!chosen||remembered.distance<=chosen.distance+10))
+        return remembered;
+      return chosen;
+    }
     nextForMap(mapIds,player) {
       // UI HUD runs at up to 10Hz. Only ONE next step is needed,
       // so avoid O(n² log n) full-route sorting on every pose update.
@@ -543,5 +620,6 @@
     }
     countActive(){return this.state.active.filter(id=>this.byId.has(id)).length;}
   }
-  return {Planner,COLORS,colorFor,objectiveLocations,makeTask,normalizeState,distanceTo};
+  return {Planner,COLORS,colorFor,objectiveLocations,makeTask,normalizeState,
+    distanceTo,distanceToQuestZone,HUD_ENTER_METERS,HUD_EXIT_METERS};
 });
