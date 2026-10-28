@@ -1123,7 +1123,9 @@ function nearbyQuestStep() {
   const rawUncertainty=state.player?.uncertainty;
   const uncertainty=rawUncertainty==null?NaN:Number(rawUncertainty);
   const reliable=!!fresh && Number.isFinite(uncertainty)
-    && uncertainty>=0 && uncertainty<=6;
+    && uncertainty>=0 && uncertainty<=6
+    && state.player?.locationUncertain!==true
+    && state.player?.quality!=="lost";
   if(!planner||!reliable){
     state.questZoneGate?.reset();
     return null;
@@ -1363,7 +1365,11 @@ function setPlayer(p) {
   if (p.map && canonicalMapKey(p.map) !== state.mapKey) setMap(p.map);
   const previousCalibrationKey=calibrationKey();
   state.player = { map: state.mapKey, position: {x:Number(pos.x),y:pos.y,z:Number(pos.z)}, rotation:p.rotation ?? p.yaw ?? p.heading,
-    uncertainty:p.uncertainty,boundaryWarning:p.boundaryWarning,boundaryCritical:p.boundaryCritical,boundaryDistance:p.boundaryDistance,mineAlert:p.mineAlert,mineDistance:p.mineDistance };
+    uncertainty:p.uncertainty,
+    locationUncertain:p.locationUncertain===true,
+    quality:p.quality,
+    boundaryWarning:p.boundaryWarning,boundaryCritical:p.boundaryCritical,
+    boundaryDistance:p.boundaryDistance,mineAlert:p.mineAlert,mineDistance:p.mineDistance };
   state.lastPoseReceivedAt = Date.now();
   if(calibrationKey()!==previousCalibrationKey)loadCalibration();
   updateTacticalProximity();
