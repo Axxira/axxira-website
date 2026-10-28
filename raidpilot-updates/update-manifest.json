@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-28T13:41:55.3285687+00:00",
+  "publishedAt": "2026-10-28T19:24:28.7344838+00:00",
   "raidPilot": {
-    "version": "0.15.6.2",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.2-b0.3.10-l0.2.15-050a88523fcb/RaidPilot-Overlay-v0.15.6.2-Windows-x64.zip",
-    "sha256": "6834F99F3703B776F41F5D416542DAD2317D88939245ED324BB583D2D64B7ED0",
-    "sizeBytes": 234528530,
-    "releaseNotes": "Corrige la situation où les F8 restent autour de 4 secondes même après plusieurs raids : l'apprentissage V3 redémarre à chaque session et la mémoire V4 ne conservait que les mauvaises zones. V4.2 mémorise désormais de façon bornée, localement et pendant 7 jours, des comptes de F8 natifs comparables Precision V2 faibles/forts par carte (sans coordonnées ni images). Après au moins 6 bonnes comparaisons historiques et 2 de la session, il peut choisir prudemment 6 s; après 14 bonnes et 4 récentes, jusqu'à 8 s. Les 12 s nécessitent toujours des repères visuels indépendants. Mauvaise santé GPS, forte incertitude, mauvais écart F8, secteur risqué ou action dangereuse annulent immédiatement l'extension. Le diagnostic et l'export indiquent les comparaisons acceptées/rejetées. Le mode CORTEX V4 reste expérimental, activable manuellement. Aucune amélioration réelle en raid n'est affirmée sans mesures."
+    "version": "0.15.7.0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.7.0-b0.3.10-l0.2.15-efe4801ac650/RaidPilot-Overlay-v0.15.7.0-Windows-x64.zip",
+    "sha256": "155DAF3098207689414A8183771FDFE33361F72AABB8DDB398296C11E4628140",
+    "sizeBytes": 234536818,
+    "releaseNotes": "QuestPilot sauvegarde désormais les missions suivies et les étapes cochées entre les raids et les redémarrages, séparément pour PvE/PvP. Les scans F8 ajoutent les nouvelles quêtes sans effacer la progression. Chaque quête possède une action manuelle « Fait » et « Réactiver », distincte des confirmations officielles du journal EFT. Le HUD de quête apparaît uniquement près d'un objectif géolocalisé non terminé et sur un étage cohérent, avec position fraîche, incertitude faible et deux mesures GPS distinctes. Hystérésis 30 m à l'entrée / 45 m à la sortie pour éviter les clignotements; aucun objectif n'est déclaré terminé par simple proximité. Le panneau détaillé reste ouvrable à la demande et l'aide native évite les doublons. Interface redessinée : carte aux commandes simplifiées, options avancées regroupées, menu Windows par catégories, fonds et tableaux QuestPilot/StashPilot harmonisés, disposition adaptée aux petits écrans. CORTEX V4.2 reste disponible; aucune amélioration de précision en raid n'est revendiquée sans mesures."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.2-b0.3.10-l0.2.15-050a88523fcb/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "C64601BE4CFA9048095FA7B0325A4C32157AD4249B5CE5017BFCE35E1168500D",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.7.0-b0.3.10-l0.2.15-efe4801ac650/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "4305300E9F08F29B79C20F6CB3D3209207C2DA4A81CA327E0F9A92694BE689C1",
     "sizeBytes": 58332719,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.2-b0.3.10-l0.2.15-050a88523fcb/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "79AB246DBD30DE288616C46F7F5F7E3FAC26D2504D9DB09D5E6966EB49DCB9FF",
-    "sizeBytes": 351118849,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.7.0-b0.3.10-l0.2.15-efe4801ac650/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "AED2E06269B3D6416FF3ED1AA8B74A146A25CB09CBA9B6016558AE88C3669B42",
+    "sizeBytes": 351127102,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.15.7.0",
+      "raidPilotVersion": "0.15.7.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-28",
+      "summary": "QuestPilot durable et contextuel — interface RaidPilot simplifiée",
+      "details": "QuestPilot sauvegarde désormais les missions suivies et les étapes cochées entre les raids et les redémarrages, séparément pour PvE/PvP. Les scans F8 ajoutent les nouvelles quêtes sans effacer la progression. Chaque quête possède une action manuelle « Fait » et « Réactiver », distincte des confirmations officielles du journal EFT. Le HUD de quête apparaît uniquement près d'un objectif géolocalisé non terminé et sur un étage cohérent, avec position fraîche, incertitude faible et deux mesures GPS distinctes. Hystérésis 30 m à l'entrée / 45 m à la sortie pour éviter les clignotements; aucun objectif n'est déclaré terminé par simple proximité. Le panneau détaillé reste ouvrable à la demande et l'aide native évite les doublons. Interface redessinée : carte aux commandes simplifiées, options avancées regroupées, menu Windows par catégories, fonds et tableaux QuestPilot/StashPilot harmonisés, disposition adaptée aux petits écrans. CORTEX V4.2 reste disponible; aucune amélioration de précision en raid n'est revendiquée sans mesures."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.6.2",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "Intelligence Engine — fusion prudente des capteurs et détection d'informations contradictoires",
       "details": "Ajoute un moteur de décision déterministe après la fusion des capteurs visuels V2 et de mouvement. Les captures anciennes, lentes, non fiables ou contradictoires ne peuvent plus valider un faux arrêt; la couche conserve le modèle existant par défaut et journalise les décisions et compteurs fiables/rejetés dans le diagnostic de précision. Aucune lecture mémoire EFT, aucune coordonnée absolue inventée. L'amélioration du positionnement doit être mesurée par diagnostics F8 en situation réelle."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.40",
-      "raidPilotVersion": "0.14.2.40",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Étages — état des catalogues vérifiés par carte et sélection de secours",
-      "details": "Affiche la disponibilité des étages par carte, le nombre de niveaux présents et la couverture localisée aux bâtiments. Refuse le mode AUTO lorsqu'aucun niveau validé n'est fourni, et maintient le réglage BASE. Les niveaux explicitement documentés restent sélectionnables manuellement. Cette version ne prétend pas couvrir tous les bâtiments : les catalogues sans étages doivent être renseignés à partir de géométries sourcées et testées avant activation automatique."
     }
   ]
 }
