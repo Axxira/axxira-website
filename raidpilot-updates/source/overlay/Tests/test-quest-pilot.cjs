@@ -680,4 +680,20 @@ test("interface : une grille de quêtes sobre avec boutons faits accessibles",()
  assert.match(css,/@media\(max-width:600px\)/);
  assert.match(css,/#questpilot-hud\[hidden\]\s*\{display:none\}/);
 });
+test("CORTEX protège les objectifs contre un GPS dégradé",()=>{
+ const p=new QuestPilot.Planner(null,"pve");
+ p.setCatalog([task],translated);
+ p.toggle("quest-a",true);
+ const pose={position:{x:10,y:1,z:10},uncertainty:1};
+ assert.equal(p.nearbyForMap(map,{...pose,quality:"lost"}),null);
+ assert.equal(p.nearbyForMap(map,{...pose,locationUncertain:true}),null);
+ assert.equal(p.nearbyForMap(map,{...pose,positionReliable:false}),null);
+ assert.equal(p.nearbyForMap(map,{...pose,quality:"estimated"})?.id,"quest-a:first");
+ const fs=require("node:fs"),path=require("node:path");
+ const script=fs.readFileSync(path.join(__dirname,
+  "../LocalMap/raidpilot-local-map.js"),"utf8");
+ assert.match(script,/locationUncertain:p\.locationUncertain===true/);
+ assert.match(script,/state\.player\?\.quality!=="lost"/);
+});
+
 console.log(JSON.stringify({status:"PASS",checks}));
