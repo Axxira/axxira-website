@@ -82,9 +82,41 @@ internal sealed partial class OverlayForm
                 && !_navigationStartPending && _controlTrackingActive && _tarkovIsForeground
                 && _liveTrackingEnabled && _questsMap == _currentMap
                 && _questsGameMode == _raidQuestGameMode;
-            var quests = _ignoredContextObjectives.Count == 0 ? _quests : _quests.Select(q => q with
+            var core = _webView.CoreWebView2;
+            if (core is null) { SetQuestContextVisible(false); return; }
+            var done = new HashSet<string>(_ignoredContextObjectives,
+                StringComparer.OrdinalIgnoreCase);
+            var completedQuests = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (active && _quests.Count > 0)
             {
-                Objectives = q.Objectives.Where(o => !_ignoredContextObjectives.Contains(q.Id + ":" + o.Id)).ToArray()
+                // The native nearby panel must respect the same manual ticks
+                // and EFT-confirmed quest status as QuestPilot's saved plan.
+                // This is a READ of local public quest IDs, never a completion
+                // decision or relay transmission.
+                var navigationBefore = _navigationSequence;
+                var raidBefore = _raidGeneration;
+                var result = await core.ExecuteScriptAsync(
+                    "window.RaidPilotLocalMap?.questPilotContextProgress?.() ?? null");
+                if (navigationBefore != _navigationSequence
+                    || raidBefore != _raidGeneration) return;
+                if (result is not ("null" or "undefined" or ""))
+                {
+                    var progress = JsonSerializer.Deserialize<QuestPilotContextProgress>(
+                        result, new JsonSerializerOptions
+                        { PropertyNameCaseInsensitive = true });
+                    foreach (var id in (progress?.Done ?? Array.Empty<string>())
+                        .Where(v => v is { Length: > 0 and <= 256 }).Take(240))
+                        done.Add(id);
+                    foreach (var id in (progress?.CompletedQuests ?? Array.Empty<string>())
+                        .Where(v => v is { Length: > 0 and <= 128 }).Take(240))
+                        completedQuests.Add(id);
+                }
+            }
+            var quests = _quests.Select(q => q with
+            {
+                Objectives = completedQuests.Contains(q.Id)
+                    ? Array.Empty<QuestContextObjective>()
+                    : q.Objectives.Where(o => !done.Contains(q.Id + ":" + o.Id)).ToArray()
             }).ToArray();
             var hint = _questContextAdvisor.Select(quests, _confirmedQuestIds, _currentMap,
                 _raidGeneration, _realtimeEstimator.CurrentPose, age, active);
@@ -92,8 +124,6 @@ internal sealed partial class OverlayForm
             _ignoreQuestObjectiveMenuItem.Enabled = hint is not null;
             var signature = _navigationSequence + "|" + JsonSerializer.Serialize(hint);
             if (signature == _questContextRenderedSignature) return;
-            var core = _webView.CoreWebView2;
-            if (core is null) { SetQuestContextVisible(false); return; }
             var sequence = ++_questContextSequence;
             var navigation = _navigationSequence;
             var generation = _raidGeneration;
@@ -134,6 +164,9 @@ internal sealed partial class OverlayForm
         _questContextVisible = visible;
         SetBounds(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height + delta);
     }
+
+    private sealed record QuestPilotContextProgress(
+        string[] Done, string[] CompletedQuests);
 
     private void DisposeQuestContext()
     {
