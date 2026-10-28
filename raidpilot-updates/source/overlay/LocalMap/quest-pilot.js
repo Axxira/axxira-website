@@ -223,6 +223,40 @@
     }
     return inside?0:minimum;
   }
+  // Temporal evidence gate: a player must remain in the published zone over
+  // at least two DIFFERENT fresh position updates. Re-rendering the same
+  // sample cannot manufacture a confirmation or keep a stale HUD alive.
+  class ZoneGate {
+    constructor(){this.reset();}
+    reset(){
+      this.confirmedId="";
+      this.candidateId="";
+      this.firstAt=null;
+      this.lastAt=null;
+    }
+    observe(candidate,receivedAt) {
+      if(!candidate||!Number.isFinite(receivedAt)||receivedAt<0){
+        this.reset();return null;
+      }
+      if(this.lastAt!==null&&receivedAt<this.lastAt){
+        this.reset();return null;
+      }
+      if(this.lastAt===receivedAt)
+        return candidate.id===this.confirmedId?candidate:null;
+      this.lastAt=receivedAt;
+      if(candidate.id===this.confirmedId)return candidate;
+      if(candidate.id!==this.candidateId){
+        this.candidateId=candidate.id;
+        this.firstAt=receivedAt;
+        return null;
+      }
+      if(receivedAt-this.firstAt<180)return null;
+      this.confirmedId=candidate.id;
+      this.candidateId="";
+      this.firstAt=null;
+      return candidate;
+    }
+  }
   class Planner {
     constructor(storage, mode) {
       this.storage=storage || null;
@@ -621,5 +655,5 @@
     countActive(){return this.state.active.filter(id=>this.byId.has(id)).length;}
   }
   return {Planner,COLORS,colorFor,objectiveLocations,makeTask,normalizeState,
-    distanceTo,distanceToQuestZone,HUD_ENTER_METERS,HUD_EXIT_METERS};
+    distanceTo,distanceToQuestZone,ZoneGate,HUD_ENTER_METERS,HUD_EXIT_METERS};
 });
