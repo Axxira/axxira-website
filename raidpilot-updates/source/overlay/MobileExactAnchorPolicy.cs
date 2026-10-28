@@ -71,7 +71,8 @@ internal static class MobileExactAnchorPolicy
         double positionUncertaintyMeters = 4.0,
         LocalizationHealthState health = LocalizationHealthState.Red,
         bool recentTrustedVisualCorrection = false,
-        bool strongVisualCorroboration = true)
+        bool strongVisualCorroboration = true,
+        double nativeEvidenceIntervalSeconds = MinimumIntervalSeconds)
     {
         if (!double.IsFinite(secondsSinceExactAnchor)
             || double.IsNaN(secondsSinceLastAttempt)
@@ -83,6 +84,15 @@ internal static class MobileExactAnchorPolicy
 
         var interval = RequiredIntervalSeconds(positionUncertaintyMeters,
             health, recentTrustedVisualCorrection, strongVisualCorroboration);
+        // An independently validated native-F8 history may bridge the gap
+        // when rare simultaneous low/high visual consensus is unavailable.
+        // It never upgrades the visual-only 12-second tier, and it cannot
+        // override the live uncertainty or health guards.
+        if (double.IsFinite(nativeEvidenceIntervalSeconds)
+            && nativeEvidenceIntervalSeconds is >= 6.0 and <= 8.0
+            && health is (LocalizationHealthState.Green or LocalizationHealthState.Yellow)
+            && positionUncertaintyMeters < 1.35)
+            interval = Math.Max(interval, nativeEvidenceIntervalSeconds);
         return enabled && controlsActive && movementActive
             && !aimingOrFiring && safeScreenshotBinding
             && hasScreenshotWatcher && hasExactAnchor
