@@ -87,6 +87,7 @@ internal sealed partial class OverlayForm
             var done = new HashSet<string>(_ignoredContextObjectives,
                 StringComparer.OrdinalIgnoreCase);
             var completedQuests = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var questPilotHudVisible = false;
             if (active && _quests.Count > 0)
             {
                 // The native nearby panel must respect the same manual ticks
@@ -104,6 +105,7 @@ internal sealed partial class OverlayForm
                     var progress = JsonSerializer.Deserialize<QuestPilotContextProgress>(
                         result, new JsonSerializerOptions
                         { PropertyNameCaseInsensitive = true });
+                    questPilotHudVisible = progress?.HudVisible == true;
                     foreach (var id in (progress?.Done ?? Array.Empty<string>())
                         .Where(v => v is { Length: > 0 and <= 256 }).Take(240))
                         done.Add(id);
@@ -119,7 +121,8 @@ internal sealed partial class OverlayForm
                     : q.Objectives.Where(o => !done.Contains(q.Id + ":" + o.Id)).ToArray()
             }).ToArray();
             var hint = _questContextAdvisor.Select(quests, _confirmedQuestIds, _currentMap,
-                _raidGeneration, _realtimeEstimator.CurrentPose, age, active);
+                _raidGeneration, _realtimeEstimator.CurrentPose, age,
+                active && !questPilotHudVisible);
             _currentQuestContext = hint;
             _ignoreQuestObjectiveMenuItem.Enabled = hint is not null;
             var signature = _navigationSequence + "|" + JsonSerializer.Serialize(hint);
@@ -166,7 +169,7 @@ internal sealed partial class OverlayForm
     }
 
     private sealed record QuestPilotContextProgress(
-        string[] Done, string[] CompletedQuests);
+        string[] Done, string[] CompletedQuests, bool HudVisible);
 
     private void DisposeQuestContext()
     {
