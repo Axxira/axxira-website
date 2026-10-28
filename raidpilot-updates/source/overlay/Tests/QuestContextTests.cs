@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class QuestContextTests
 {
-    internal const int TestCount = 27;
+    internal const int TestCount = 29;
     private static readonly IReadOnlySet<string> Recognized = new HashSet<string> { "q1" };
     private static RealtimePose Pose(double x = 0, double y = 2, double z = 0, double uncertainty = 1) => new(x, y, z, 0, uncertainty, 1);
     private static QuestCandidate Quest(double x = 10, string map = "customs", string id = "q1", bool optional = false,
@@ -35,16 +35,20 @@ internal static class QuestContextTests
         }, failures);
         Run("contexte hystérésis de sortie", () => {
             var a = new QuestContextAdvisor(); var quests = new[] { Quest(x: 0) };
-            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 50), 0, true) is not null);
-            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 65), 0, true) is not null);
-            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 80), 0, true) is null);
+            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 25), 0, true) is not null);
+            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 35), 0, true) is not null);
+            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 55), 0, true) is null);
         }, failures);
         Run("contexte remet l'hystérésis à zéro au raid suivant", () => {
             var a = new QuestContextAdvisor(); var quests = new[] { Quest(x: 0) };
-            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 50), 0, true) is not null);
-            Require(a.Select(quests, Recognized, "customs", 2, Pose(x: 65), 0, true) is null);
+            Require(a.Select(quests, Recognized, "customs", 1, Pose(x: 25), 0, true) is not null);
+            Require(a.Select(quests, Recognized, "customs", 2, Pose(x: 35), 0, true) is null);
         }, failures);
-        Run("contexte ne certifie jamais l'étage", () => Require(Select(Quest(y: 10))!.Where.Contains("niveau à vérifier")), failures);
+        Run("contexte ne certifie jamais l'étage", () => Require(Select(Quest(y: 7))!.Where.Contains("niveau à vérifier")), failures);
+        Run("contexte refuse zone située sur un étage incompatible", () =>
+            Require(Select(Quest(y: 12)) is null), failures);
+        Run("contexte strictement local, pas une quête lointaine", () =>
+            Require(Select(Quest(x: 40)) is null), failures);
         Run("contexte signale un objectif facultatif", () => Require(Select(Quest(optional: true))!.Note.Contains("Facultatif")), failures);
         Run("contexte ne certifie jamais la progression", () => Require(Select(Quest())!.Note.Contains("Progression non vérifiée")), failures);
         Run("contexte garde les emplacements possibles", () => Require(Select(Quest())!.Where.Contains("Emplacement possible")), failures);
