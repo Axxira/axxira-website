@@ -73,7 +73,7 @@
     </main>
       <aside id="questpilot-panel" class="hidden" aria-label="QuestPilot — mes quêtes">
         <div class="qp-panel-title"><strong>🎯 QuestPilot</strong><button id="questpilot-close" type="button" aria-label="Fermer les quêtes">✕</button></div>
-        <p class="qp-subtle">Choisis tes quêtes ou utilise TAB → TÂCHES → F8. Recherche aussi les missions d'autres cartes. Les numéros et couleurs restent stables entre les raids.</p>
+        <p class="qp-subtle">Tes quêtes et étapes cochées restent sauvegardées entre les raids. TAB → TÂCHES → F8 ajoute les missions détectées sans effacer ton progrès. Clique sur « ✓ Fait » pour terminer manuellement une quête entière.</p>
         <input id="questpilot-search" type="search" placeholder="Chercher une quête partout…" aria-label="Chercher une quête parmi toutes les cartes et objectifs">
         <div id="questpilot-summary" class="qp-summary" role="status"></div>
         <button id="questpilot-show-all" type="button" aria-pressed="false">Voir toutes les quêtes disponibles</button>
@@ -102,7 +102,7 @@
     <section id="questpilot-hud" aria-live="off" aria-label="Prochain objectif QuestPilot" hidden>
       <span id="questpilot-hud-color" aria-hidden="true"></span>
       <div class="qp-current"><strong id="questpilot-hud-title"></strong><small id="questpilot-hud-detail"></small></div>
-      <span class="qp-hotkey-label">Ctrl + Alt + I<br>✓ Étape faite</span>
+      <span class="qp-hotkey-label">Zone de quête proche<br>Ouvre QuestPilot pour cocher</span>
     </section>
     <section id="quest-context" aria-label="Quête proche, progression non vérifiée" hidden><strong id="quest-name"></strong><span id="quest-where"></span><span id="quest-instruction"></span><small id="quest-note"></small></section>
   </div>
