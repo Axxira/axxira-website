@@ -637,3 +637,92 @@ summary:focus-visible{
   .kg-entry{gap:8px;min-height:64px}
   .kg-entry button{padding:5px 8px}
 }
+
+
+/* Options drawer 0.15.7.2: no absolute popup can escape the wrapped
+   two-line toolbar or sit underneath the map at high zoom / narrow widths.
+   Like QuestPilot this drawer takes its own flex row BELOW the viewport. */
+#options-panel{
+  position:relative;z-index:8;
+  width:100%;max-width:100%;min-height:0;
+  height:clamp(170px,34vh,320px);
+  max-height:calc(100vh - 130px);
+  flex:0 0 auto;overflow:auto;overscroll-behavior:contain;
+  padding:14px 18px 17px;
+  background:#101e2a;border-top:2px solid #65bacf;
+  box-shadow:0 -5px 22px #0006;
+  scrollbar-color:#58768a #132331;
+}
+#options-panel[hidden],#options-panel.hidden,
+html:not(.raidpilot-interactive) #options-panel{display:none!important}
+#options-panel .rp-options-heading{
+  position:sticky;top:-14px;z-index:2;
+  display:flex;justify-content:space-between;align-items:center;
+  gap:12px;padding:4px 0 12px;margin-bottom:10px;
+  color:#dfedf5;font-size:16px;
+  background:#101e2a;border-bottom:1px solid #344c5d;
+}
+#options-panel #options-close{
+  flex:0 0 auto;min-width:36px;min-height:34px;
+  color:#e1edf4;background:#243b4c;border:1px solid #4c6576;
+  border-radius:8px;cursor:pointer
+}
+#options-panel #options-close:hover{background:#305168}
+#options-panel .rp-more-content{
+  position:static;inset:auto;z-index:auto;display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:start;gap:11px 16px;
+  width:100%;max-width:none;
+  padding:0;border:0;border-radius:0;
+  background:transparent;box-shadow:none;white-space:normal;
+}
+#options-panel .rp-options-field{
+  min-width:0;display:flex;flex-direction:column;gap:6px
+}
+#options-panel .rp-options-field label{
+  font-size:12px;font-weight:650;color:#bdd3df
+}
+#options-panel .rp-options-field select{
+  display:block;width:100%;max-width:100%!important;
+  min-height:38px;padding:7px 11px;
+  border:1px solid #456477;border-radius:9px;
+  background:#172b3a;color:#eff6f8
+}
+#options-panel .rp-more-actions{
+  grid-column:1/span 2;display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;margin:0;align-items:center;
+}
+#options-panel .rp-more-actions button{
+  min-height:38px;padding:7px 11px;font-size:12px;font-weight:650;
+  border:1px solid #416175;border-radius:9px;
+  background:#1c3748;color:#e4f1f7
+}
+#options-panel .rp-more-actions button:hover{background:#295064}
+#options-panel .rp-options-status{
+  grid-column:1/-1;display:flex;flex-wrap:wrap;
+  align-items:center;gap:8px 16px;
+  padding-top:9px;border-top:1px solid #334c5b;
+  color:#bcd0dc;font-size:12px;white-space:normal
+}
+#options-panel .floor-coverage{
+  max-width:none;white-space:normal;font-size:12px
+}
+#options-panel .stat{display:inline;font-size:12px}
+#toolbar .rp-toolbar-more[open]>summary{
+  background:#254153;border-color:#82d9ea;color:#f0fbff
+}
+@media(max-width:950px){
+  #options-panel .rp-more-content{
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+  #options-panel .rp-more-actions{grid-column:1/-1}
+}
+@media(max-width:570px){
+  #options-panel{height:clamp(156px,38vh,255px);padding:10px 12px}
+  #options-panel .rp-options-heading{top:-10px}
+  #options-panel .rp-more-content{
+    grid-template-columns:1fr;gap:10px
+  }
+  #options-panel .rp-more-actions{grid-column:1}
+}
