@@ -13,6 +13,9 @@
         <button id="layers-btn" type="button" title="Afficher les filtres de carte">☰ Filtres</button>
         <button id="quests-btn" type="button" title="Ouvrir mes quêtes et ma progression sauvegardée" aria-expanded="false">🎯 Mes quêtes</button>
         <button id="keys-btn" type="button" title="Chercher une clé et retrouver la porte correspondante" aria-expanded="false">🔑 Clés</button>
+        <details id="toolbar-more" class="rp-toolbar-more">
+          <summary id="options-trigger" aria-label="Paramètres avancés de la carte" aria-controls="options-panel" aria-expanded="false">⚙ Options</summary>
+        </details>
         <label class="rp-toolbar-field rp-floor-field" for="floor"><span>Étage</span><select id="floor" aria-label="Étage de la carte"></select></label>
         <input id="search" type="search" placeholder="Rechercher sur la carte…" aria-label="Rechercher un lieu ou un objet sur la carte">
         <div class="rp-zoom-controls" role="group" aria-label="Zoom de la carte">
@@ -21,9 +24,6 @@
           <button id="zoom-in" type="button" title="Zoomer" aria-label="Zoomer">+</button>
         </div>
         <button id="center-player" type="button" title="Centrer sur ma position">◎ Centrer</button>
-        <details id="toolbar-more" class="rp-toolbar-more">
-          <summary id="options-trigger" aria-label="Paramètres avancés de la carte" aria-controls="options-panel" aria-expanded="false">⚙ Options</summary>
-        </details>
       </div>
     </header>
 
