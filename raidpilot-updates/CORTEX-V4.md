@@ -91,6 +91,43 @@ avec les rapports de vrais raids comparables. L'activation V4 reste
 volontaire, pour éviter de changer silencieusement la navigation des
 joueurs qui préfèrent l'ancienne politique.
 
+## Correctif V4.2 — cadence F8 4/6/8/12 s fondée sur des preuves réelles
+
+Le modèle précédent exigeait une correction visuelle locale haute/basse
+résolution effectivement appliquée pour dépasser 4 secondes. Or elle est rare
+quand le joueur se déplace continuellement, même avec une bonne prédiction.
+De plus, l'apprentissage V3 était remis à zéro à chaque raid, tandis que
+l'atlas V4 ne mémorisait que les secteurs à risque.
+
+La V4.2 ajoute un second mécanisme expérimental, **distinct du SLAM et de la
+reconnaissance de lieux** : une courte mémoire positive et négative des erreurs
+observées **sur de vrais F8 natifs comparables**, en mode Precision V2.
+
+- Résumé par carte, lié au profil local via un nom de fichier haché :
+  nombres bornés de bonnes et fortes erreurs, sans captures, coordonnées ou
+  historiques de déplacement; expiration après sept jours.
+- Si l'historique contient six corrections suffisamment fiables, au moins
+  deux F8 réellement comparables et fiables du **raid actuel** sont nécessaires
+  avant un palier de **6 secondes**.
+- Huit secondes exigent quatorze bonnes mesures historiques et quatre
+  mesures récentes consécutives du même raid. Les indices de risque V3 et V4
+  peuvent restreindre ce palier.
+- Douze secondes **n'est pas** une récompense de cet historique : elle continue
+  à nécessiter les repères visuels indépendants déjà prévus par V3.
+- Dégradation d'incertitude, de cap, état GPS orange/rouge, contradiction
+  de mouvement, fort résidu F8, zone à risque V4 ou condition de capture
+  dangereuse provoquent un retour conservateur à quatre secondes.
+- Le rapport CORTEX V4 indique maintenant les mesures comparables,
+  non comparables et les bonnes mesures consécutives. Si ces compteurs ne
+  progressent pas, l'espacement ne sera pas autorisé et le rapport permettra
+  de cibler le problème de datation/calibration des captures.
+
+V4.2 est intégrée au **mode CORTEX V4 expérimental**, activable dans le menu
+Windows. Les délais 6/8 s restent des plafonds empiriques sous conditions,
+pas des garanties de précision ni une assertion que des raids antérieurs
+étaient déjà appris. La comparaison sur des vrais raids doit mesurer
+la fréquence F8/minute et les erreurs F8 médiane/P90 à configuration égale.
+
 ## Activation
 
 Le comportement CORTEX V3 reste activé par défaut et inchangé.
