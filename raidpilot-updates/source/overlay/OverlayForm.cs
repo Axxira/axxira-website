@@ -1924,7 +1924,9 @@ internal sealed partial class OverlayForm : Form
             uncertaintyMeters,
             _visualRelocalization.Health,
             visualTrust,
-            strongVisualTrust);
+            strongVisualTrust,
+            CortexNativeAdaptiveIntervalSeconds(
+                now, _realtimeEstimator.CurrentPose, cortexAssessment));
 
         if (actionInProgress)
         {

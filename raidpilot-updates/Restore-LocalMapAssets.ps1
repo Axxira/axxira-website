@@ -3,7 +3,73 @@ $ErrorActionPreference = 'Stop'
 $SourceRoot = [IO.Path]::GetFullPath($SourceRoot)
 
 node (Join-Path $PSScriptRoot 'Restore-PublicCatalogues.cjs') $SourceRoot
-if ($LASTEXITCODE -ne 0) { throw 'Public catalogue validation failed.' }
+if ($LASTEXITCODE -ne 0) {
+    # A live public API change must never silently replace pinned game maps.
+    # Recover the exact cached catalogues from a SHA-256 verified earlier
+    # Stable release, then run ALL original per-catalogue checksums again.
+    Write-Warning 'Public game data changed: validating previously published immutable snapshot.'
+    $fallbackUrl = 'https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.6.1-b0.3.10-l0.2.15-9479f2923d5d/RaidPilot-Overlay-v0.15.6.1-Windows-x64.zip'
+    $fallbackSha = '1B222DD693003EB69DD7B7D41EC4EEE30FAD75170042271F862BD7E904D07D5A'
+    $temporaryRoot = if ([string]::IsNullOrWhiteSpace($env:RUNNER_TEMP)) {
+        [IO.Path]::GetTempPath()
+    } else { $env:RUNNER_TEMP }
+    $fallbackZip = Join-Path $temporaryRoot 'RaidPilot-Verified-Catalogues-0.15.6.1.zip'
+    if (-not (Test-Path -LiteralPath $fallbackZip) -or
+        (Get-FileHash -Algorithm SHA256 -LiteralPath $fallbackZip).Hash -ne $fallbackSha) {
+        Invoke-WebRequest -Uri $fallbackUrl -OutFile $fallbackZip -TimeoutSec 300
+    }
+    if ((Get-FileHash -Algorithm SHA256 -LiteralPath $fallbackZip).Hash -ne $fallbackSha) {
+        throw 'Pinned release archive SHA-256 mismatch: aborting catalogue recovery.'
+    }
+
+    Add-Type -AssemblyName System.IO.Compression
+    $specification = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'public-catalogues.json') -Raw | ConvertFrom-Json
+    $cacheDirectory = [IO.Path]::GetFullPath((Join-Path $SourceRoot 'LocalMap\cache'))
+    $archive = [IO.Compression.ZipFile]::OpenRead($fallbackZip)
+    try {
+        foreach ($entrySpec in @($specification.downloads) + @($specification.translations)) {
+            $relative = [string]$entrySpec.file
+            if ($relative -notmatch '^[A-Za-z0-9_./-]+$' -or
+                $relative.Contains('..') -or [IO.Path]::IsPathRooted($relative)) {
+                throw "Unsafe cached catalogue path: $relative"
+            }
+            $expected = 'LocalMap/cache/' + $relative.Replace('\','/')
+            $foundEntries = @($archive.Entries | Where-Object {
+                $_.FullName.Replace('\','/').Equals(
+                    $expected, [StringComparison]::OrdinalIgnoreCase)
+            })
+            if ($foundEntries.Count -ne 1 -or
+                $foundEntries[0].Length -le 0 -or
+                $foundEntries[0].Length -gt 67108864) {
+                throw "Pinned catalogue missing or oversized: $relative"
+            }
+            $destination = [IO.Path]::GetFullPath((Join-Path $cacheDirectory $relative))
+            if (-not $destination.StartsWith(
+                $cacheDirectory + [IO.Path]::DirectorySeparatorChar,
+                [StringComparison]::OrdinalIgnoreCase)) {
+                throw "Unsafe resolved catalogue path: $relative"
+            }
+            New-Item -ItemType Directory -Force -Path (Split-Path $destination -Parent) | Out-Null
+            $inputStream = $null
+            $outputStream = $null
+            try {
+                $inputStream = $foundEntries[0].Open()
+                $outputStream = [IO.File]::Create($destination)
+                $inputStream.CopyTo($outputStream)
+            }
+            finally {
+                if ($outputStream -ne $null) { $outputStream.Dispose() }
+                if ($inputStream -ne $null) { $inputStream.Dispose() }
+            }
+        }
+    }
+    finally { $archive.Dispose() }
+
+    node (Join-Path $PSScriptRoot 'Restore-PublicCatalogues.cjs') $SourceRoot --offline-verified
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Immutable catalogues failed the unchanged checkedSha256 rules.'
+    }
+}
 
 # Immutable fallback: the previous tested release contains the exact same
 # credited, pinned public map images. Never trust an upstream silent replacement.

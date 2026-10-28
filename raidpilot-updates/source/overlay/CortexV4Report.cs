@@ -14,7 +14,8 @@ internal static class CortexV4Report
         CortexVisualIntelligence vision,
         CortexSpatialReliabilityAtlas atlas,
         bool v4Enabled,
-        CortexVisualFeedbackGate? visualFeedback = null)
+        CortexVisualFeedbackGate? visualFeedback = null,
+        CortexNativeCadenceMemory? nativeCadence = null)
     {
         ArgumentNullException.ThrowIfNull(nativeF8Residuals);
         ArgumentNullException.ThrowIfNull(navigation);
@@ -75,6 +76,15 @@ internal static class CortexV4Report
                 ignoredAttribution = visualFeedback?.Ignored ?? 0,
                 empiricalF8CeilingSeconds =
                     visualFeedback?.MaximumIntervalSecondsAllowed
+            },
+            nativeCadence = new
+            {
+                historicalMaps = nativeCadence?.MapCount ?? 0,
+                consecutiveGoodNativeF8ThisRaid = nativeCadence?.CurrentClean ?? 0,
+                comparableNativeF8ThisRaid = nativeCadence?.ComparedInRaid ?? 0,
+                notComparableNativeF8ThisRaid = nativeCadence?.NotComparableInRaid ?? 0,
+                mechanism = "Positive historical F8 evidence enables at most 6/8 s; "
+                    + "requires fresh comparable anchors each raid and can fall back to 4 s."
             },
             learning = new
             {

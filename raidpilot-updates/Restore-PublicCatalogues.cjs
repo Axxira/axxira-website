@@ -6,12 +6,21 @@ const root=path.resolve(process.argv[2]||path.join(__dirname,'source/overlay'));
 const cache=path.join(root,'LocalMap/cache');
 const specification=JSON.parse(fs.readFileSync(path.join(__dirname,'public-catalogues.json'),'utf8'));
 const records=[];
+const offlineVerified=process.argv.includes('--offline-verified');
 (async()=>{
  for(const spec of specification.downloads){
   const url='https://api.tarkov-stammtisch.de/api/v2/'+spec.endpoint;
-  const response=await fetch(url,{signal:AbortSignal.timeout(120000)});
-  if(!response.ok)throw Error('Public catalogue '+spec.endpoint+': HTTP '+response.status);
-  const data=await response.json();
+  const cachedPath=path.join(cache,spec.file);
+  // Offline mode is ONLY for files recovered from a SHA-256 verified,
+  // previously published immutable RaidPilot release. The same per-catalogue
+  // checkedSha256 policy below remains mandatory, with NO trust downgrade.
+  const data=offlineVerified
+    ? JSON.parse(fs.readFileSync(cachedPath,'utf8'))
+    : await (async()=>{
+        const response=await fetch(url,{signal:AbortSignal.timeout(120000)});
+        if(!response.ok)throw Error('Public catalogue '+spec.endpoint+': HTTP '+response.status);
+        return response.json();
+      })();
   // Prices and public goon reports can change. Pin the actual map geometry,
   // quest objectives, translations and item identities used by this release.
   let checked=spec.table?data.data?.[spec.table]:data;
@@ -26,8 +35,11 @@ const records=[];
   if(hash(checked)!==spec.checkedSha256)throw Error('Public game data changed since validation: '+spec.endpoint);
   const text=JSON.stringify(data),target=path.join(cache,spec.file);
   fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,text);
-  records.push({file:spec.file,source:url,sha256:hash(text),bytes:Buffer.byteLength(text)});
-  console.log('Verified public catalogue: '+spec.endpoint);
+  records.push({file:spec.file,
+    source:offlineVerified?'Verified immutable prior Stable release: '+spec.endpoint:url,
+    sha256:hash(text),bytes:Buffer.byteLength(text)});
+  console.log('Verified public catalogue: '+spec.endpoint
+    +(offlineVerified?' (previous immutable release)':''));
  }
  for(const spec of specification.translations){
   const target=path.join(cache,spec.file),bytes=fs.readFileSync(target),data=JSON.parse(bytes);
