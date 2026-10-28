@@ -22,7 +22,8 @@
     if (typeof value !== "string") return "";
     const s = value.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120);
     // Tarkov game IDs and unresolved localization tokens are not door names.
-    return s && !/^[0-9a-f]{24}$/i.test(s) && !/^loc[_-]/i.test(s)
+    return s && !/^[0-9a-f]{24}$/i.test(s)
+      && !/^(?:loc|key)[_-]/i.test(s)
       ? s : "";
   }
   function label(text, translation) {
