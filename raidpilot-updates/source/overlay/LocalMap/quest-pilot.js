@@ -245,6 +245,7 @@
         return candidate.id===this.confirmedId?candidate:null;
       this.lastAt=receivedAt;
       if(candidate.id===this.confirmedId)return candidate;
+      this.confirmedId=""; // A different zone must earn fresh evidence.
       if(candidate.id!==this.candidateId){
         this.candidateId=candidate.id;
         this.firstAt=receivedAt;
