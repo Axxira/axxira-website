@@ -8,7 +8,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>RaidPilot.Overlay</AssemblyName>
     <RootNamespace>RaidPilot.Overlay</RootNamespace>
-    <Version>0.15.7.0</Version>
+    <Version>0.15.7.1</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <ApplicationIcon>..\brand\RaidPilot.ico</ApplicationIcon>
   </PropertyGroup>
