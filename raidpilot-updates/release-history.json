@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.15.7.1",
+      "raidPilotVersion": "0.15.7.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-28",
+      "summary": "Guide des clés Tarkov — portes associées, recherche et repères sur chaque carte",
+      "details": "Ajoute un guide « 🔑 Clés » aux cartes locales RaidPilot : recherche une clé par nom ou abréviation et retrouve les portes/serrures qu'elle ouvre selon les catalogues vérifiés de tarkov.dev. Les serrures identifiées affichent le nom de la clé, la catégorie de porte et une indication d'étage seulement si le niveau est documenté sans ambiguïté. Un clic sur « 📍 Voir » sélectionne la serrure sur la carte, à condition que le fond soit correctement calibré. Les clés permettant l'accès à une carte sans porte localisée sont présentées à part. Les portes sans clé ou position publiée sont explicitement indiquées comme non renseignées, jamais devinées. Les nouveaux marqueurs 🔑 sont disponibles via le guide/filtre; aucun nom de chambre ou emplacement n'est inventé. Fonctionnement hors ligne avec les données publiques vérifiées déjà incluses. L'interface conserve CORTEX V4.2, QuestPilot et la progression sans modification. Les données Tarkov peuvent changer après un patch du jeu; vérifier en partie. Aucun scan de trousseau ni nouvelle intelligence de localisation n'est affirmé."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.15.7.0",
       "raidPilotVersion": "0.15.7.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "Recalage exact F8 facultatif pendant la marche — réduit la dérive prolongée",
       "details": "Nouveau mode expérimental facultatif « Recalage F8 pendant déplacement · 4 s » dans le menu de l’Overlay, désactivé par défaut et mémorisé localement. Tant que le raid est actif, le jeu au premier plan, que le joueur se déplace et n'est pas en train de viser/tirer, RaidPilot peut redemander toutes les quatre secondes au minimum une capture avec la touche Screenshot F6–F12 SEULE que le joueur a configurée dans EFT. Les coordonnées exactes lues dans les noms de captures corrigent alors la trajectoire à l'instant de prise de vue, en conservant le mouvement postérieur grâce à l'historique. Aucun accès mémoire ni injection dans le jeu; le mécanisme Win32 SendInput déjà utilisé pour le recalage au repos est réemployé, mais peut produire une notification de screenshot en jeu. Les captures prises pendant le mouvement ne calibrent PAS les vitesses et ne sont PAS enregistrées comme repères visuels stationnaires. Limite de cadence, exclusion des touches à modificateurs qui pourraient perturber le sprint, suppression prudente des seules captures automatiques et diagnostics des demandes/réceptions. Nouveaux tests comportementaux, de persistance, de touche F8, et simulation de dérive bornée (pas une mesure de performance réelle EFT). Les méthodes de suivi optique/Precision V4, l'équipe, Beacon 0.3.9 et Launcher 0.2.15 restent disponibles. Le joueur doit activer lui-même cette fonctionnalité expérimentale et vérifier la conformité aux règles EFT; son efficacité et l'acceptation des touches synthétiques sont à valider en raid."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.15",
-      "raidPilotVersion": "0.14.2.24",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-23",
-      "summary": "RaidPilot 0.14.2.24 / Launcher 0.2.15 — résilience et intégrité renforcées",
-      "details": "RaidPilot Precision V4 : les intervalles F8 qui traversent un changement de mode V2/V4 sont exclus de la comparaison, un recalage visuel partiel ne réinitialise plus artificiellement l'âge de l'ancre exacte F8, et les trajets corrigés en V4 restent des estimations plutôt que des ancres exactes dans l'atlas appris. Nouveaux tests de régression. Launcher 0.2.15 : journal de transaction local permettant de restaurer Overlay/Beacon après arrêt brutal de Windows entre deux mises à jour; restauration vérifiée par SHA-256 des binaires d'origine. Téléchargement HTTP résilient sur trois essais avec reprise Range sécurisée ou redémarrage propre si le serveur ignore Range, contrôle de blocage réseau de 60 secondes et vérification de la taille et de l'empreinte finale. Pour la source Stable intégrée, les archives doivent venir de la même publication officielle Axxira/axxira-website et la version déclarée doit correspondre aux exécutables Overlay/Beacon dans les ZIP. Le script de mise à jour du Launcher recalcule le SHA-256 après fermeture. Avant publication, Windows lance désormais le Launcher dans un mode de vérification non interactif pour confirmer les fichiers embarqués, versions, DLL GPU, notes et source Stable. Beacon 0.3.9, suivi équipe, zoom et cartes existantes conservés. Aucun test de jeu EFT réel ni droit commercial supplémentaire sur les images n'est prétendu. Code signing Authenticode dépend toujours d'un certificat de l'éditeur."
     }
   ]
 }

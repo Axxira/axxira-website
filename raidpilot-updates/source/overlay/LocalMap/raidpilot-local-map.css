@@ -535,3 +535,105 @@ summary:focus-visible{
   #toolbar button,#toolbar select,#toolbar input,
   .rp-toolbar-more>summary{transition:none}
 }
+
+
+/* Offline key-to-door guide: clear mapping, explicit evidence provenance,
+   no game screenshots or proprietary third-party map artwork. */
+#toolbar #keys-btn{
+  background:#2a3540;border-color:#6a7b86;color:#f1e5c0;
+  font-weight:700
+}
+#toolbar #keys-btn[aria-expanded="true"]{
+  background:#52482d;border-color:#c9af75;color:#fff2cf
+}
+#keyguide-panel{
+  flex:0 0 auto;width:100%;max-width:100%;
+  height:clamp(200px,38vh,390px);overflow-y:auto;
+  border-top:2px solid #c3a66d;background:#101f2b;
+  color:#edf4f9;padding:14px 18px;
+  scrollbar-color:#597080 #142434;
+}
+#keyguide-panel.hidden{display:none}
+#keyguide-panel .kg-panel-title{
+  position:sticky;top:-14px;z-index:3;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:6px 0 11px;margin-bottom:8px;
+  font-size:17px;border-bottom:1px solid #3b4c59;
+  background:#101f2b
+}
+#keyguide-panel .kg-panel-title strong{color:#f3e5c3}
+#keyguide-close{
+  min-width:36px;min-height:34px;background:#273849;
+  border:1px solid #55687a;border-radius:8px
+}
+#keyguide-panel .kg-subtle{
+  display:block;color:#b1c5d0;font-size:12px;
+  line-height:1.5;margin:7px 0
+}
+#keyguide-search{
+  display:block;width:100%;min-height:39px;
+  margin:8px 0;padding:8px 11px;
+  background:#0b1924;border:1px solid #465f71;
+  border-radius:9px;color:#eef5fa
+}
+.kg-summary{
+  color:#c5e6f1;font-size:12px;font-weight:650;
+  line-height:1.5;margin:9px 0 2px
+}
+#keyguide-show-locks{
+  display:block;padding:7px 12px;margin:8px 0 11px;
+  border:1px solid #8a7750;border-radius:9px;
+  background:#403727;color:#fff0cf;min-height:36px;
+  cursor:pointer;font-weight:650
+}
+#keyguide-show-locks:hover{background:#524631}
+#keyguide-list{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));
+  gap:8px
+}
+.kg-entry{
+  display:flex;align-items:center;justify-content:space-between;
+  min-height:70px;gap:12px;padding:10px 12px;
+  background:#182b3b;border:1px solid #3a5365;
+  border-radius:10px
+}
+.kg-entry:hover{background:#1c3446;border-color:#6f8b9d}
+.kg-entry-text{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.kg-entry strong{
+  display:block;color:#f6e8c4;
+  font-size:13px;line-height:1.4;overflow-wrap:anywhere
+}
+.kg-entry .kg-meta{font-size:12px;color:#bfceda;line-height:1.4}
+.kg-entry .kg-alias{color:#aec6d3;font-size:11px}
+.kg-entry .kg-unverified{font-size:11px;color:#e4c38b}
+.kg-entry button{
+  flex:0 0 auto;padding:6px 10px;min-height:35px;
+  border:1px solid #517b92;border-radius:8px;
+  background:#28475a;color:#e8f7ff;
+  font-weight:650;cursor:pointer
+}
+.kg-entry button:hover{background:#315b71}
+.kg-entry button:disabled{opacity:.5;cursor:default}
+.kg-section{display:block;margin:15px 0 6px;color:#d3e8f3}
+.kg-access-item{
+  display:flex;justify-content:space-between;gap:10px;
+  align-items:baseline;padding:8px;
+  border-top:1px solid #2b4354;font-size:12px
+}
+.kg-access-item small{color:#a8bac9}
+.rp-key-lock-ring{
+  fill:#372e19;stroke:#e5c57c;stroke-width:2.1;
+  vector-effect:non-scaling-stroke
+}
+.rp-key-lock-symbol{
+  font:800 11px "Segoe UI",Arial,sans-serif;
+  text-anchor:middle;fill:#ffefcb;
+  pointer-events:none
+}
+@media(max-width:650px){
+  #keyguide-panel{height:clamp(150px,37vh,285px);padding:10px}
+  #keyguide-panel .kg-panel-title{top:-10px}
+  #keyguide-list{display:flex;flex-direction:column}
+  .kg-entry{gap:8px;min-height:64px}
+  .kg-entry button{padding:5px 8px}
+}

@@ -51,6 +51,9 @@ state.gameMode = "regular";
 state.catalogues = {};
 state.raidQuests = null;
 state.questPilot = null;
+state.keyGuide = null;
+state.keyGuideSearch = "";
+state.keyGuideMessage = "";
 state.questHudTarget = "";
 state.questZoneGate = null;
 state.questMapIds = new Set();
@@ -331,6 +334,11 @@ function renderMarker(marker, view) {
     const number=svgEl("text",{x:0,y:1,class:"rp-step-number"});
     number.textContent=questStyle.done?"✓":questStyle.label;
     g.appendChild(number);
+  } else if (marker.category === "lock") {
+    g.appendChild(svgEl("circle",{r:10,class:"rp-key-lock-ring"}));
+    const symbol=svgEl("text",{x:0,y:4,class:"rp-key-lock-symbol"});
+    symbol.textContent=marker.meta?.keyId?"K":"?";
+    g.appendChild(symbol);
   } else if (cls === "hazard") {
     g.appendChild(svgEl("path", {d:"M 0 -7 L 7 6 L -7 6 Z",class:"rp-hazard-icon"}));
     g.appendChild(svgEl("path", {d:"M 0 -3 V 1 M 0 3 V 4",class:"rp-icon-line"}));
@@ -452,6 +460,8 @@ function visibleMarkers() {
   }
   return base.filter(m => {
     if(!m.position)return false;
+    if (m.category==="lock" && m.id===state.selectedId)
+      return markerOnFloor(m);
     if(m.meta?.questId) {
       if(state.questPilot) {
         if(!markerOnFloor(m))return false;
@@ -716,7 +726,24 @@ function buildMarkersForMap(key) {
   }
 
   for (const [i,sw] of arrayOf(m.switches).entries()) add("switch", translateFrom(trM,sw.name || "Interrupteur"), sw.position, {id:markerId("switch",i,sw)});
-  for (const [i,l] of arrayOf(m.locks).entries()) add("lock", "Serrure / porte verrouillée", l.position, {id:markerId("lock",i,l)});
+  // Source of truth: map.locks[].key from the verified local Tarkov map
+  // catalogue, enriched with item identity and translation. No inferred
+  // door number, building, room or key relation is fabricated.
+  const doorEntries = RaidPilotKeyGuide.build(m,itemsRoot,trI,state.meta.maps[key]).locks;
+  for (const entry of doorEntries) {
+    if (!entry.position) continue;
+    const keyText = entry.identified ? entry.keyName : "Clé non renseignée";
+    add("lock", entry.kind + " · " + keyText,entry.position,{
+      id:entry.markerId,
+      description:"Clé : " + keyText
+        + (entry.floor?" · niveau : "+entry.floor:" · étage non confirmé")
+        + (entry.needsPower?" · alimentation électrique requise":"")
+        + " · repère local "+entry.ordinal,
+      search:[keyText,entry.shortName,entry.kind,entry.floor,"porte","clé","serrure"],
+      meta:{keyId:entry.keyId,keyName:keyText,doorOrdinal:entry.ordinal},
+      top:entry.position.y,bottom:entry.position.y
+    });
+  }
   const globalWeapons = root.stationaryWeapons || {};
   for (const [i,w] of arrayOf(m.stationaryWeapons).entries()) {
     const def = globalWeapons[w.stationaryWeapon] || {};
@@ -839,6 +866,7 @@ function setGameMode(mode){
     window.RaidPilotFeatures?.clearQuest();if(state.mapKey){
     state.markers=buildMarkersForMap(state.mapKey);
     state.questMapIds=questMapIdsFor(state.mapKey);
+    refreshKeyGuide();
     const hazards=arrayOf(state.apiMap?.hazards);
     state.cachedBoundaries=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="sniper"));
     state.cachedMines=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="minefield"));
@@ -874,6 +902,113 @@ function qpText(parent,tag,text,className){
   parent.appendChild(el);return el;
 }
 function qpEmpty(parent,message){qpText(parent,"div",message,"qp-empty");}
+function refreshKeyGuide(){
+  state.keyGuide=RaidPilotKeyGuide.build(
+    state.apiMap||findApiMap(state.mapKey),
+    rawItemsRoot(),itemTranslations(),state.mapMeta||{});
+  state.keyGuideMessage="";
+  renderKeyGuide();
+}
+function keyGuideVisible(show){
+  if(!refs.keyPanel||!refs.keyButton)return false;
+  const visible=typeof show==="boolean"?show:refs.keyPanel.classList.contains("hidden");
+  refs.keyPanel.classList.toggle("hidden",!visible);
+  refs.keyButton.setAttribute("aria-expanded",visible?"true":"false");
+  refs.keyButton.textContent=visible?"🔑 Masquer les clés":"🔑 Clés";
+  if(visible){
+    refs.panel?.classList.add("hidden");
+    refs.questPanel?.classList.add("hidden");
+    refs.questsBtn?.setAttribute("aria-expanded","false");
+    if(refs.questsBtn)refs.questsBtn.textContent="🎯 Afficher QuestPilot";
+    renderKeyGuide();
+  }
+  return visible;
+}
+function locateKeyDoor(door){
+  if(!door?.position)return false;
+  const marker=state.markers.find(x=>x.category==="lock"&&x.id===door.markerId);
+  if(!marker){
+    state.keyGuideMessage="Porte non localisable dans la carte actuelle.";
+    renderKeyGuide();return false;
+  }
+  // Explicit user selection is the only moment a floor is changed to
+  // reveal a locked door; never override automatic tracking in the raid.
+  if(door.floor&&Array.from(refs.floor?.options||[]).some(x=>x.value===door.floor)
+      &&state.floor!==door.floor) setFloor(door.floor);
+  const pixel=project(marker.position);
+  if(!Number.isFinite(pixel.x)||!Number.isFinite(pixel.y)||!pixel.inBounds){
+    state.keyGuideMessage="Ce fond de carte ne permet pas de placer la porte avec certitude. Choisis la carte tactique ou calibre ce fond.";
+    renderKeyGuide();return false;
+  }
+  state.enabled.add("lock");
+  savePreferences();
+  state.followPlayer=false;
+  refs.center?.classList.remove("following");
+  const rect=refs.viewport.getBoundingClientRect();
+  state.panX=rect.width/2-pixel.x*state.zoom;
+  state.panY=rect.height/2-pixel.y*state.zoom;
+  state.keyGuideMessage="Porte mise en évidence sur la carte · "+
+    (door.floor?"niveau "+door.floor:"étage non confirmé");
+  applyTransform();
+  selectMarker(marker);
+  renderKeyGuide();
+  return true;
+}
+function renderKeyGuide(){
+  if(!state.keyGuide||!refs.keyList||!refs.keySummary||!refs.keyAccess)return;
+  const c=state.keyGuide;
+  const matches=RaidPilotKeyGuide.search(c,state.keyGuideSearch||"");
+  refs.keyList.replaceChildren();
+  refs.keyAccess.replaceChildren();
+  refs.keySummary.textContent=c.locks.length+" serrures répertoriées · "+
+    c.keys+" références de clés · "+
+    c.identified+" associations nommées · "+
+    c.located+" portes positionnées.";
+  if(refs.keyMapNote)
+    refs.keyMapNote.textContent=state.keyGuideMessage||"Carte actuelle : "+(state.mapKey||"—");
+  if(refs.keyShowLocks)
+    refs.keyShowLocks.textContent=state.enabled.has("lock")
+      ?"✓ Portes affichées sur la carte":"📍 Afficher les portes sur la carte";
+  if(!matches.locks.length)
+    qpEmpty(refs.keyList,state.keyGuideSearch
+      ?"Aucune serrure correspondant à cette recherche sur cette carte."
+      :"Aucune serrure publiée sur cette carte.");
+  for(const door of matches.locks.slice(0,100)){
+    const row=document.createElement("div");row.className="kg-entry";
+    const text=document.createElement("div");text.className="kg-entry-text";
+    const key=qpText(text,"strong","🔑 "+(door.identified?door.keyName:"Clé non renseignée"));
+    key.title=door.note;
+    if(door.shortName&&door.shortName!==door.keyName)
+      qpText(text,"small",door.shortName,"kg-alias");
+    qpText(text,"span",door.kind+" · repère "+door.ordinal
+      +(door.floor?" · "+door.floor:" · étage non documenté")
+      +(door.needsPower?" · courant requis":""),"kg-meta");
+    if(!door.identified)
+      qpText(text,"small",door.note,"kg-unverified");
+    row.appendChild(text);
+    const go=document.createElement("button");go.type="button";
+    go.textContent=door.position?"📍 Voir":"Non localisé";
+    go.disabled=!door.position;
+    go.title=door.position?"Localiser cette serrure sur la carte":
+      "Le catalogue ne donne pas de coordonnées fiables pour cette porte";
+    go.addEventListener("click",()=>locateKeyDoor(door));
+    row.appendChild(go);
+    refs.keyList.appendChild(row);
+  }
+  if(matches.locks.length>100)qpEmpty(refs.keyList,
+    String(matches.locks.length-100)+" autres serrures : précise le nom de la clé.");
+  if(matches.access.length){
+    const title=qpText(refs.keyAccess,"strong","Clés d'accès à la carte","kg-section");
+    title.title="L'accès à la carte n'est pas une porte verrouillée géolocalisée";
+    for(const key of matches.access.slice(0,32)){
+      const row=document.createElement("div");row.className="kg-access-item";
+      qpText(row,"span",key.name);
+      qpText(row,"small","Accès à la carte · porte non précisée");
+      refs.keyAccess.appendChild(row);
+    }
+  }
+}
+
 function renderQuestPilotPanel(){
   const planner=state.questPilot;
   if(!planner||!refs.questList||!refs.questSteps||!refs.questPrep)return;
@@ -1348,6 +1483,7 @@ function setMap(key, { allowUncalibratedForge = false } = {}) {
   refs.mapName.textContent = k;
   refs.credit.textContent=state.mapStyle==="forge"?`${assetInfo().author || ""} · TarkovForge`:'tarkov.dev · carte locale';
   state.markers = buildMarkersForMap(k);
+  refreshKeyGuide();
   const hazards=arrayOf(state.apiMap?.hazards);
   state.cachedBoundaries=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="sniper"));
   state.cachedMines=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="minefield"));
@@ -1543,7 +1679,7 @@ function wireUI() {
   const syncMode=()=>{
     const current=interactive();if(current===lastInteractive)return;lastInteractive=current;
     state.followPlayer=!current;refs.center.classList.toggle("following",!current);
-    if(!current){cancelCalibration();refs.calibrationPanel.hidden=true;centerPlayer();}
+    if(!current){keyGuideVisible(false);cancelCalibration();refs.calibrationPanel.hidden=true;centerPlayer();}
   };
   if(typeof MutationObserver==="function")new MutationObserver(syncMode).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
   refs.viewport.addEventListener("wheel", e => {
@@ -1610,7 +1746,20 @@ function wireUI() {
     refs.questsBtn.textContent=show?"🎯 Masquer QuestPilot":"🎯 Afficher QuestPilot";
     if(show){refs.panel.classList.add("hidden");renderQuestPilotPanel();}
   };
-  refs.questsBtn?.addEventListener("click",()=>toggleQuestPanel());
+  refs.questsBtn?.addEventListener("click",()=>{
+    const now=toggleQuestPanel();
+    if(!refs.questPanel?.classList.contains("hidden"))keyGuideVisible(false);
+  });
+  refs.keyButton?.addEventListener("click",()=>keyGuideVisible());
+  refs.keyClose?.addEventListener("click",()=>keyGuideVisible(false));
+  refs.keySearch?.addEventListener("input",()=>{
+    state.keyGuideSearch=String(refs.keySearch.value||"").trim().slice(0,100);
+    renderKeyGuide();
+  });
+  refs.keyShowLocks?.addEventListener("click",()=>{
+    state.enabled.add("lock");
+    savePreferences();renderFilterPanel();renderKeyGuide();render();
+  });
   refs.questClose?.addEventListener("click",()=>toggleQuestPanel(false));
   refs.questSearch?.addEventListener("input",()=>{
     state.questSearch=refs.questSearch.value.trim().toLowerCase();
@@ -1662,6 +1811,10 @@ async function init() {
     viewport:$("#viewport"),stage:$("#stage"),baseMap:$("#base-map"),overlay:$("#overlay"),
     panel:$("#panel"),filters:$("#filters"),layersBtn:$("#layers-btn"),search:$("#search"),
     questPanel:$("#questpilot-panel"),questsBtn:$("#quests-btn"),questClose:$("#questpilot-close"),
+    keyPanel:$("#keyguide-panel"),keyButton:$("#keys-btn"),keyClose:$("#keyguide-close"),
+    keyList:$("#keyguide-list"),keyAccess:$("#keyguide-access"),
+    keySearch:$("#keyguide-search"),keySummary:$("#keyguide-summary"),
+    keyShowLocks:$("#keyguide-show-locks"),keyMapNote:$("#keyguide-map"),
     questSearch:$("#questpilot-search"),questList:$("#questpilot-list"),questSteps:$("#questpilot-steps"),
     questOther:$("#questpilot-other"),questDoneList:$("#questpilot-done"),questSharedSteps:$("#questpilot-shared-steps"),
     questPrep:$("#questpilot-prep"),questSummary:$("#questpilot-summary"),
@@ -1750,6 +1903,11 @@ const api = {
   handleMessage:handleHostMessage
   ,resetRaid,setRaidExtractions,applyRaidExtractions,clearRaidExtractions,setBoundaryHazards:p=>setHazards(p,"boundary"),setMineHazards:p=>setHazards(p,"mine"),clearBoundaryHazards:()=>clearHazards("boundary"),clearMineHazards:()=>clearHazards("mine"),setGuidanceTarget,clearGuidanceTarget
   ,setRaidQuests,clearRaidQuests,applyRaidQuests,applyQuestLogEvents,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
+  ,openKeyGuide:()=>keyGuideVisible(true),closeKeyGuide:()=>keyGuideVisible(false),
+   keyGuideSnapshot:()=>({map:state.mapKey,
+     locks:state.keyGuide?.locks?.length||0,keys:state.keyGuide?.keys||0,
+     identified:state.keyGuide?.identified||0,located:state.keyGuide?.located||0}),
+   keyGuideFind:q=>RaidPilotKeyGuide.search(state.keyGuide||{locks:[],access:[]},q)
   ,setLiveTeamQuestPlan,clearLiveTeamQuestPlan,clearAllLiveTeamQuestPlans,
     questPilotLiveSnapshot:()=>state.questPilot?.liveSnapshot()||null
   ,questPilotContextProgress:()=>({
