@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class MobileExactAnchorPolicyTests
 {
-    internal const int TestCount = 22;
+    internal const int TestCount = 26;
 
     private static bool Ready(
         bool enabled = true,
@@ -18,9 +18,10 @@ internal static class MobileExactAnchorPolicyTests
         double cooldown = 5,
         double uncertainty = 4.0,
         LocalizationHealthState health = LocalizationHealthState.Red,
-        bool trustedVisual = false) => MobileExactAnchorPolicy.ShouldCapture(
+        bool trustedVisual = false,
+        double native = 4) => MobileExactAnchorPolicy.ShouldCapture(
             enabled, controls, moving, combat, screenshot, watcher, anchor,
-            age, cooldown, uncertainty, health, trustedVisual);
+            age, cooldown, uncertainty, health, trustedVisual, true, native);
 
     internal static void RunAll(ICollection<string> failures)
     {
@@ -150,6 +151,48 @@ internal static class MobileExactAnchorPolicyTests
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             Require(!idle.RequestedWhileMoving && !idle.MovementOccurred);
         }, failures);
+
+        Run("F8 historique autorise un palier de six secondes, pas avant", () =>
+        {
+            Require(!Ready(age: 5.9, cooldown: 5.9, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: 6));
+            Require(Ready(age: 6, cooldown: 6, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: 6));
+        }, failures);
+
+        Run("F8 historique autorise huit secondes mais pas douze", () =>
+        {
+            Require(!Ready(age: 7, cooldown: 7, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: 8));
+            Require(Ready(age: 8, cooldown: 8, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: 8));
+            Require(!Ready(age: 8, cooldown: 8, uncertainty: 0.8,
+                health: LocalizationHealthState.Green,
+                trustedVisual: true, native: 8));
+        }, failures);
+
+        Run("F8 historique ne contourne jamais santé ou forte incertitude", () =>
+        {
+            Require(Ready(age: 4, cooldown: 4, uncertainty: 1.6,
+                health: LocalizationHealthState.Green, native: 8));
+            Require(Ready(age: 4, cooldown: 4, uncertainty: 0.8,
+                health: LocalizationHealthState.Orange, native: 8));
+            Require(Ready(age: 4, cooldown: 4, uncertainty: 0.8,
+                health: LocalizationHealthState.Red, native: 8));
+        }, failures);
+
+        Run("F8 historique ne contourne jamais action ou capture indisponible", () =>
+        {
+            Require(!Ready(age: 8, cooldown: 8, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: 8, combat: true));
+            Require(!Ready(age: 8, cooldown: 8, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: 8, screenshot: false));
+            Require(!Ready(age: 8, cooldown: 8, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: 8, controls: false));
+            Require(Ready(age: 4, cooldown: 4, uncertainty: 0.8,
+                health: LocalizationHealthState.Green, native: double.PositiveInfinity));
+        }, failures);
+
         Run("F8 mobile borne la dérive en simulation, sans prétendre mesurer EFT", () =>
         {
             var continuous = new RealtimePoseEstimator();
