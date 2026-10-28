@@ -51,6 +51,9 @@ state.gameMode = "regular";
 state.catalogues = {};
 state.raidQuests = null;
 state.questPilot = null;
+state.keyGuide = null;
+state.keyGuideSearch = "";
+state.keyGuideMessage = "";
 state.questHudTarget = "";
 state.questZoneGate = null;
 state.questMapIds = new Set();
@@ -331,6 +334,11 @@ function renderMarker(marker, view) {
     const number=svgEl("text",{x:0,y:1,class:"rp-step-number"});
     number.textContent=questStyle.done?"✓":questStyle.label;
     g.appendChild(number);
+  } else if (marker.category === "lock") {
+    g.appendChild(svgEl("circle",{r:10,class:"rp-key-lock-ring"}));
+    const symbol=svgEl("text",{x:0,y:4,class:"rp-key-lock-symbol"});
+    symbol.textContent=marker.meta?.keyId?"K":"?";
+    g.appendChild(symbol);
   } else if (cls === "hazard") {
     g.appendChild(svgEl("path", {d:"M 0 -7 L 7 6 L -7 6 Z",class:"rp-hazard-icon"}));
     g.appendChild(svgEl("path", {d:"M 0 -3 V 1 M 0 3 V 4",class:"rp-icon-line"}));
@@ -452,6 +460,8 @@ function visibleMarkers() {
   }
   return base.filter(m => {
     if(!m.position)return false;
+    if (m.category==="lock" && m.id===state.selectedId)
+      return markerOnFloor(m);
     if(m.meta?.questId) {
       if(state.questPilot) {
         if(!markerOnFloor(m))return false;
@@ -716,7 +726,24 @@ function buildMarkersForMap(key) {
   }
 
   for (const [i,sw] of arrayOf(m.switches).entries()) add("switch", translateFrom(trM,sw.name || "Interrupteur"), sw.position, {id:markerId("switch",i,sw)});
-  for (const [i,l] of arrayOf(m.locks).entries()) add("lock", "Serrure / porte verrouillée", l.position, {id:markerId("lock",i,l)});
+  // Source of truth: map.locks[].key from the verified local Tarkov map
+  // catalogue, enriched with item identity and translation. No inferred
+  // door number, building, room or key relation is fabricated.
+  const doorEntries = RaidPilotKeyGuide.build(m,itemsRoot,trI,state.meta.maps[key]).locks;
+  for (const entry of doorEntries) {
+    if (!entry.position) continue;
+    const keyText = entry.identified ? entry.keyName : "Clé non renseignée";
+    add("lock", entry.kind + " · " + keyText,entry.position,{
+      id:entry.markerId,
+      description:"Clé : " + keyText
+        + (entry.floor?" · niveau : "+entry.floor:" · étage non confirmé")
+        + (entry.needsPower?" · alimentation électrique requise":"")
+        + " · repère local "+entry.ordinal,
+      search:[keyText,entry.shortName,entry.kind,entry.floor,"porte","clé","serrure"],
+      meta:{keyId:entry.keyId,keyName:keyText,doorOrdinal:entry.ordinal},
+      top:entry.position.y,bottom:entry.position.y
+    });
+  }
   const globalWeapons = root.stationaryWeapons || {};
   for (const [i,w] of arrayOf(m.stationaryWeapons).entries()) {
     const def = globalWeapons[w.stationaryWeapon] || {};
@@ -839,6 +866,7 @@ function setGameMode(mode){
     window.RaidPilotFeatures?.clearQuest();if(state.mapKey){
     state.markers=buildMarkersForMap(state.mapKey);
     state.questMapIds=questMapIdsFor(state.mapKey);
+    refreshKeyGuide();
     const hazards=arrayOf(state.apiMap?.hazards);
     state.cachedBoundaries=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="sniper"));
     state.cachedMines=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="minefield"));
@@ -1348,6 +1376,7 @@ function setMap(key, { allowUncalibratedForge = false } = {}) {
   refs.mapName.textContent = k;
   refs.credit.textContent=state.mapStyle==="forge"?`${assetInfo().author || ""} · TarkovForge`:'tarkov.dev · carte locale';
   state.markers = buildMarkersForMap(k);
+  refreshKeyGuide();
   const hazards=arrayOf(state.apiMap?.hazards);
   state.cachedBoundaries=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="sniper"));
   state.cachedMines=RPRaidTactics.zones(hazards.filter(h=>normalize(h.hazardType)==="minefield"));
