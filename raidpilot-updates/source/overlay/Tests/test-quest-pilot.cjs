@@ -657,4 +657,27 @@ test("CORTEX zone : une observation GPS hors ordre réinitialise l'indice",()=>{
  assert.equal(gate.observe(a,1350)?.id,a.id);
 });
 
+test("interface : carte simple avec commandes essentielles et réglages avancés",()=>{
+ const fs=require("node:fs"),path=require("node:path");
+ const html=fs.readFileSync(path.join(__dirname,"../LocalMap/index.html"),"utf8");
+ for(const id of ["layers-btn","quests-btn","floor","zoom-in","zoom-out",
+  "center-player","map-style","profile","label-mode","fit","calibrate",
+  "questpilot-panel","questpilot-hud"]){
+  assert.equal((html.match(new RegExp('id="'+id+'"',"g"))||[]).length,1,
+   "Commande manquante ou dupliquée : "+id);
+ }
+ assert.match(html,/<details id="toolbar-more"/);
+ assert.match(html,/<summary[^>]+>⚙ Options<\/summary>/);
+ assert.match(html,/<aside id="questpilot-panel" class="hidden"/);
+ assert.match(html,/<section id="questpilot-hud"[^>]+hidden>/);
+});
+test("interface : une grille de quêtes sobre avec boutons faits accessibles",()=>{
+ const fs=require("node:fs"),path=require("node:path");
+ const css=fs.readFileSync(path.join(__dirname,
+  "../LocalMap/raidpilot-local-map.css"),"utf8");
+ assert.match(css,/#questpilot-list \.qp-task \.qp-quest-finish/);
+ assert.match(css,/focus-visible/);
+ assert.match(css,/@media\(max-width:600px\)/);
+ assert.match(css,/#questpilot-hud\[hidden\]\s*\{display:none\}/);
+});
 console.log(JSON.stringify({status:"PASS",checks}));
