@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexV4Tests
 {
-    internal const int TestCount = 33;
+    internal const int TestCount = 39;
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
     private static readonly DateTimeOffset Today =
@@ -463,6 +463,101 @@ internal static class CortexV4Tests
             g.OnVisualApplied(At(41), Map, 2, (nint)99, Proposed(), false);
             Require(g.SampleCount == 0);
         }, failures);
+        Run("F8 journal conserve le premier ancrage et les causes de rejet", () =>
+        {
+            var j = new CortexF8EvidenceJournal();
+            j.Observe(Today, true, PrecisionF8Outcome.FirstAnchor,
+                true, false, null);
+            j.Observe(Today.AddSeconds(8), true,
+                PrecisionF8Outcome.MissingPrediction, true, false, null);
+            j.Observe(Today.AddSeconds(16), true,
+                PrecisionF8Outcome.Comparable, true, true, Drift(0.4));
+            var s = j.Summarize(Today.AddSeconds(17));
+            Require(s.RetainedF8Events == 3 && s.WithCortexV4Enabled == 3
+                && s.WithPredictedPose == 1
+                && s.ComparableWithCortexV4 == 1
+                && s.Outcomes[nameof(PrecisionF8Outcome.FirstAnchor)] == 1
+                && s.Outcomes[nameof(PrecisionF8Outcome.MissingPrediction)] == 1
+                && s.MeasuredP90ErrorMeters == 0.4);
+        }, failures);
+
+        Run("F8 journal survit au chargement et ne stocke pas la position", () =>
+        {
+            var path = Path.Combine(Path.GetTempPath(),
+                "cortex-f8-evidence-" + Guid.NewGuid().ToString("N") + ".json");
+            try
+            {
+                var j = new CortexF8EvidenceJournal();
+                j.Observe(Today, false, PrecisionF8Outcome.FirstAnchor,
+                    true, false, null);
+                j.Observe(Today.AddSeconds(8), true,
+                    PrecisionF8Outcome.Comparable, true, true, Drift(.3));
+                Require(CortexF8EvidenceStore.TrySave(j, path, Today.AddMinutes(1)));
+                var reloaded = new CortexF8EvidenceJournal();
+                Require(CortexF8EvidenceStore.TryLoad(reloaded, path,
+                    Today.AddMinutes(1)) && reloaded.Count == 2);
+                var bytes = File.ReadAllText(path);
+                Require(!bytes.Contains("Screenshot", StringComparison.OrdinalIgnoreCase)
+                    && !bytes.Contains("MemberId", StringComparison.OrdinalIgnoreCase)
+                    && !bytes.Contains("Map", StringComparison.OrdinalIgnoreCase)
+                    && !bytes.Contains("Position", StringComparison.OrdinalIgnoreCase));
+            }
+            finally
+            {
+                if (File.Exists(path)) File.Delete(path);
+            }
+        }, failures);
+
+        Run("F8 journal garde la raison quand le résidu est invalide", () =>
+        {
+            var j = new CortexF8EvidenceJournal();
+            j.Observe(Today, true, PrecisionF8Outcome.Comparable,
+                true, true, null);
+            var s = j.Summarize(Today);
+            Require(s.Comparable == 0
+                && s.LastOutcome == nameof(PrecisionF8Outcome.InvalidResidual));
+        }, failures);
+
+        Run("F8 journal refuse les entrées persistées fabriquées", () =>
+        {
+            var j = new CortexF8EvidenceJournal();
+            var invalid = new CortexF8EvidenceJournal.Snapshot(1,
+                [new CortexF8EvidenceJournal.Entry(
+                    Today.ToUnixTimeSeconds(), true,
+                    PrecisionF8Outcome.Comparable, true, true, null, null)]);
+            Require(!j.Import(invalid, Today)
+                && j.Count == 0);
+        }, failures);
+
+        Run("F8 journal est borné et expire sans dégrader la navigation", () =>
+        {
+            var j = new CortexF8EvidenceJournal();
+            for (var i = 0; i < CortexF8EvidenceJournal.MaximumEvents + 5; i++)
+                j.Observe(Today.AddSeconds(i * 8), true,
+                    PrecisionF8Outcome.Interrupted, true, false, null);
+            Require(j.Count == CortexF8EvidenceJournal.MaximumEvents);
+            var navigation = new CortexNavigationEngine();
+            navigation.Reset();
+            Require(j.Count == CortexF8EvidenceJournal.MaximumEvents);
+            Require(j.Summarize(Today.AddDays(15)).RetainedF8Events == 0);
+        }, failures);
+
+        Run("CORTEX rapport V2 distingue session et F8 historiques", () =>
+        {
+            using var parsed = System.Text.Json.JsonDocument.Parse(
+                CortexV4Report.Build(Array.Empty<PrecisionDriftSample>(),
+                    new CortexNavigationEngine(),
+                    new CortexVisualIntelligence(),
+                    new CortexSpatialReliabilityAtlas(), true,
+                    f8Evidence: new CortexF8EvidenceJournal()));
+            var root = parsed.RootElement;
+            Require(root.GetProperty("schemaVersion").GetInt32() == 2
+                && root.GetProperty("nativeF8")
+                    .GetProperty("comparable").GetInt64() == 0
+                && root.GetProperty("capturePipeline")
+                    .GetProperty("RetainedF8Events").GetInt32() == 0);
+        }, failures);
+
     }
 
     private static void Run(string label, Action test,
