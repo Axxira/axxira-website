@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: raidpilot-cortex-f8-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   f8-regressions:
     name: Windows .NET 10 CORTEX and launcher checks
