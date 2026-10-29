@@ -2308,7 +2308,15 @@ const api = {
   ,setRaidQuests,clearRaidQuests,applyRaidQuests,applyQuestLogEvents,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
   ,openKeyGuide:()=>keyGuideVisible(true),closeKeyGuide:()=>keyGuideVisible(false),
     openCommandCenterTab:tab=>{
-      if(tab==="map"){refs.tabMap?.click();return true;}
+      if(tab==="map"){
+        closeIntelPanels();
+        questPilotClosePanel();
+        keyGuideVisible(false);
+        setOptionsVisible(false);
+        refs.panel?.classList.add("hidden");
+        syncCommandTabs();
+        return true;
+      }
       return setIntelPanelVisible(tab,true);
     },
     setHideoutIntel,
