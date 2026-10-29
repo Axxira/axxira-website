@@ -51,6 +51,14 @@ state.gameMode = "regular";
 state.catalogues = {};
 state.raidQuests = null;
 state.questPilot = null;
+state.lootPlanner = null;
+state.lootQuery = "";
+state.lootAllQuests = false;
+state.lootHideCovered = false;
+state.hideoutQuery = "";
+state.hideoutDataByMode = Object.create(null);
+state.hideoutErrors = Object.create(null);
+state.hideoutRequested = new Set();
 state.keyGuide = null;
 state.keyGuideSearch = "";
 state.keyGuideMessage = "";
@@ -1031,6 +1039,251 @@ function renderKeyGuide(){
       qpText(row,"small","Accès à la carte · porte non précisée");
       refs.keyAccess.appendChild(row);
     }
+  }
+}
+
+
+// In click-through (non-interactive) mode these panels are NEVER displayed.
+// Only native Ctrl+Alt+I grants access to the command center.
+function intelPanelOpen(element){return !!element && element.hidden===false;}
+function setIntelPanelVisible(section,show){
+  const panels={loot:refs.lootPanel,hideout:refs.hideoutPanel,team:refs.teamPanel};
+  const target=panels[section];
+  if(!target)return false;
+  const next=show===true && interactive();
+  const previous=target.hidden===false;
+  if(next){
+    setOptionsVisible(false);
+    questPilotClosePanel();
+    keyGuideVisible(false);
+    refs.panel?.classList.add("hidden");
+    for(const [key,panel] of Object.entries(panels)){
+      if(!panel)continue;
+      panel.hidden=key!==section;
+      panel.classList.toggle("hidden",key!==section);
+    }
+    if(section==="loot")renderLootIntel();
+    if(section==="hideout"){
+      renderHideoutIntel();
+      if(!state.hideoutDataByMode[state.gameMode]
+        && !state.hideoutRequested.has(state.gameMode))
+        requestHideoutIntel();
+    }
+    if(section==="team")renderTeamIntel();
+  }else{
+    target.hidden=true;
+    target.classList.add("hidden");
+  }
+  syncCommandTabs();
+  if(previous!==next && typeof window.requestAnimationFrame==="function")
+    window.requestAnimationFrame(()=>resizeViewport());
+  return next;
+}
+function closeIntelPanels(){
+  for(const panel of [refs.lootPanel,refs.hideoutPanel,refs.teamPanel]){
+    if(!panel)continue;
+    panel.hidden=true;
+    panel.classList.add("hidden");
+  }
+  syncCommandTabs();
+}
+function syncCommandTabs(){
+  const current=intelPanelOpen(refs.lootPanel)?"loot"
+    :intelPanelOpen(refs.hideoutPanel)?"hideout"
+    :intelPanelOpen(refs.teamPanel)?"team"
+    :refs.optionsPanel?.hidden===false?"options"
+    :refs.keyPanel?.hidden===false?"keys"
+    :refs.questPanel && !refs.questPanel.classList?.contains?.("hidden")?"quests"
+    :"map";
+  const entries={
+    map:refs.tabMap,quests:refs.questsBtn,keys:refs.keyButton,
+    loot:refs.tabLoot,hideout:refs.tabHideout,team:refs.tabTeam
+  };
+  for(const [name,node] of Object.entries(entries)){
+    node?.classList.toggle("rp-active-tab",name===current);
+    if(node && name==="map")node.setAttribute("aria-pressed",name===current?"true":"false");
+    else if(node)node.setAttribute("aria-expanded",name===current?"true":"false");
+  }
+  refs.toolbarMore?.classList.toggle("rp-active-tab",current==="options");
+}
+function refreshIntelProgress(){
+  if(!state.lootPlanner||!state.questPilot)return;
+  const planner=state.questPilot;
+  state.lootPlanner.setProgress({
+    activeQuests:planner.state.active,
+    completedQuests:[
+      ...planner.state.completedQuests,
+      ...Object.entries(planner.state.evidence||{})
+        .filter(([,value])=>value?.status==="completed")
+        .map(([id])=>id)
+    ],
+    completedObjectives:planner.state.done
+  });
+}
+function refreshIntelSources(){
+  if(!state.lootPlanner)return;
+  state.lootPlanner.setMode(state.gameMode);
+  state.lootPlanner.setData({
+    items:state.cache.items,
+    tasks:state.catalogues[state.gameMode]?.tasks,
+    hideout:state.hideoutDataByMode[state.gameMode]||null,
+    itemTranslations:itemTranslations(),
+    taskTranslations:taskTranslations(),
+    activeQuests:state.questPilot?.state.active||[],
+    completedQuests:[
+      ...(state.questPilot?.state.completedQuests||[]),
+      ...Object.entries(state.questPilot?.state.evidence||{})
+        .filter(([,value])=>value?.status==="completed").map(([id])=>id)
+    ],
+    completedObjectives:state.questPilot?.state.done||[]
+  });
+  if(intelPanelOpen(refs.lootPanel))renderLootIntel();
+  if(intelPanelOpen(refs.hideoutPanel))renderHideoutIntel();
+}
+function requestHideoutIntel(force=false){
+  if(!["regular","pve"].includes(state.gameMode))return false;
+  const mode=state.gameMode;
+  if(force)state.hideoutRequested.delete(mode);
+  if(state.hideoutRequested.has(mode))return false;
+  state.hideoutRequested.add(mode);
+  state.hideoutErrors[mode]="Chargement des modules tarkov.dev…";
+  renderHideoutIntel();
+  postHost({type:"raidpilot-hideout-intel-request",mode});
+  return true;
+}
+function setHideoutIntel(payload,mode,error=null){
+  if(!["regular","pve"].includes(mode))return false;
+  state.hideoutRequested.delete(mode);
+  if(payload && typeof payload==="object" && payload.data){
+    state.hideoutDataByMode[mode]=payload;
+    state.hideoutErrors[mode]="";
+  }else{
+    state.hideoutErrors[mode]=String(error||"Catalogue de planque indisponible. Réessaye en ligne.").slice(0,250);
+  }
+  if(state.gameMode===mode)refreshIntelSources();
+  return true;
+}
+function intelText(parent,tag,message,className=""){
+  const el=document.createElement(tag);
+  if(className)el.className=className;
+  el.textContent=String(message);
+  parent.appendChild(el);
+  return el;
+}
+function renderLootIntel(){
+  const planner=state.lootPlanner;
+  if(!planner||!refs.lootList||!refs.lootSummary)return;
+  refreshIntelProgress();
+  refs.lootList.replaceChildren();
+  const options={allQuests:state.lootAllQuests};
+  let rows=planner.search(state.lootQuery,options);
+  if(state.lootHideCovered)rows=rows.filter(item=>item.missing>0);
+  const totals=planner.requirements(options);
+  const missing=totals.filter(x=>x.missing>0).length;
+  refs.lootSummary.textContent=
+    totals.length+" objets liés aux besoins recensés · "
+    +missing+" objets encore nécessaires · "
+    +(planner.hideoutLoaded?planner.stations.length+" modules de planque connus":
+      "planque non chargée (ouvrir l'onglet Planque)")
+    +" · inventaire saisi manuellement";
+  if(!rows.length)intelText(refs.lootList,"div",
+    state.lootQuery?"Aucun résultat : cherche un autre nom.":"Aucun besoin confirmé dans les données et la sélection actuelle. Active tes quêtes ou charge la planque.",
+    "rp-intel-empty");
+  for(const item of rows.slice(0,90)){
+    const card=document.createElement("div");
+    card.className="rp-intel-card"+(item.missing===0?" is-covered":"");
+    const body=document.createElement("div");body.className="rp-intel-body";
+    intelText(body,"strong",item.name);
+    intelText(body,"small",item.recommendation+
+      " · requis "+item.quantity+" · restant "+item.missing+
+      (item.firQuantity?" · FIR "+item.firQuantity:""),
+      item.questQuantity?"rp-intel-quest":"rp-intel-hideout");
+    intelText(body,"small",item.reasons.slice(0,2).join(" · "));
+    card.appendChild(body);
+    const control=document.createElement("div");control.className="rp-intel-counter";
+    const minus=document.createElement("button");minus.type="button";minus.textContent="−";
+    minus.title="Retirer un objet de ma quantité déclarée";
+    minus.disabled=item.owned===0;
+    minus.addEventListener("click",()=>{
+      planner.setOwned(item.id,item.owned-1);renderLootIntel();
+    });
+    const num=document.createElement("output");num.textContent=String(item.owned);
+    num.title="Quantité possédée déclarée manuellement";
+    const plus=document.createElement("button");plus.type="button";plus.textContent="+";
+    plus.title="Ajouter un objet à ma quantité déclarée";
+    plus.addEventListener("click",()=>{
+      planner.setOwned(item.id,item.owned+1);renderLootIntel();
+    });
+    control.append(minus,num,plus);card.appendChild(control);
+    refs.lootList.appendChild(card);
+  }
+  if(rows.length>90)intelText(refs.lootList,"div",
+    (rows.length-90)+" autres objets : affine ta recherche.","rp-intel-empty");
+}
+function renderHideoutIntel(){
+  const planner=state.lootPlanner;
+  if(!planner||!refs.hideoutList||!refs.hideoutStatus)return;
+  refs.hideoutList.replaceChildren();
+  const stations=planner.stations.filter(s=>
+    !state.hideoutQuery||[s.name,s.id].join(" ").toLocaleLowerCase()
+      .includes(state.hideoutQuery.toLocaleLowerCase()));
+  refs.hideoutStatus.textContent=planner.hideoutLoaded
+    ?planner.stations.length+" modules chargés depuis tarkov.dev · niveaux confirmés par toi · matériaux calculés pour la prochaine amélioration"
+    :state.hideoutErrors[state.gameMode]||
+       "Données de planque non chargées. Clique « Actualiser les données ».";
+  if(!stations.length)intelText(refs.hideoutList,"div",
+    planner.hideoutLoaded?"Aucun module ne correspond à cette recherche."
+      :"Aucun module disponible hors ligne pour le moment. Les informations des quêtes restent utilisables.",
+    "rp-intel-empty");
+  for(const station of stations.slice(0,65)){
+    const row=document.createElement("div");row.className="rp-intel-card";
+    const body=document.createElement("div");body.className="rp-intel-body";
+    const current=planner.state.stationLevels[station.id]||0;
+    const next=planner.nextLevel(station);
+    intelText(body,"strong",station.name);
+    intelText(body,"small",next?"Prochain niveau : "+next.level
+      :"Tous les niveaux publiés sont cochés");
+    if(next){
+      const required=next.ingredients.filter(x=>x.quantity>0);
+      intelText(body,"small",required.length
+        ?required.slice(0,4).map(i=>i.name+" ×"+i.quantity).join(" · ")
+          +(required.length>4?" · +"+(required.length-4)+" autres":"")
+        :"Aucun matériau publié pour ce niveau.");
+    }
+    row.appendChild(body);
+    const levelPicker=document.createElement("select");
+    levelPicker.className="rp-intel-station-level";
+    levelPicker.setAttribute("aria-label","Niveau actuel de "+station.name);
+    const max=Math.max(0,...station.levels.map(x=>x.level));
+    for(let n=0;n<=max;n++){
+      const option=document.createElement("option");
+      option.value=String(n);option.textContent="Niveau "+n;
+      levelPicker.appendChild(option);
+    }
+    levelPicker.value=String(current);
+    levelPicker.addEventListener("change",()=>{
+      if(planner.setStationLevel(station.id,Number(levelPicker.value))){
+        renderHideoutIntel();renderLootIntel();
+      }
+    });
+    row.appendChild(levelPicker);
+    refs.hideoutList.appendChild(row);
+  }
+}
+function renderTeamIntel(){
+  if(!refs.teamList||!refs.teamSummary)return;
+  refs.teamList.replaceChildren();
+  const team=Array.isArray(state.teammates)?state.teammates:[];
+  refs.teamSummary.textContent=team.length+" coéquipier(s) transmis à la carte";
+  if(!team.length)intelText(refs.teamList,"div",
+    "Aucune position d'équipe confirmée. Connecte l'escouade dans le menu RaidPilot.",
+    "rp-intel-empty");
+  for(const entry of team.slice(0,12)){
+    const card=document.createElement("div");card.className="rp-intel-card";
+    const body=document.createElement("div");body.className="rp-intel-body";
+    intelText(body,"strong",String(entry.name||"Coéquipier").slice(0,32));
+    intelText(body,"small",entry.map===state.mapKey?"Même carte":"Carte différente ou non vérifiée");
+    card.appendChild(body);refs.teamList.appendChild(card);
   }
 }
 
