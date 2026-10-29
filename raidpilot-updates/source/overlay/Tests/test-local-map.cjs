@@ -77,6 +77,8 @@ context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90
    'Interactive loot drawer did not open');
  check(api.lootIntelSnapshot()?.items>100,
    'Real offline Tarkov item catalog not passed to intelligence planner');
+ check(api.lootIntelSnapshot()?.taskRequirements>0,
+   'The actual Tarkov task catalogue produced no item requirements: check source schema');
  check(ids['loot-summary'].textContent.includes('inventaire saisi manuellement'),
    'Loot drawer must disclose manually entered quantities');
  check(api.openCommandCenterTab('hideout')===true
