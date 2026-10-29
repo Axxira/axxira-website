@@ -146,6 +146,12 @@ internal sealed partial class OverlayForm
                 applied, fromCollectiveAtlas);
     }
 
+    private void CortexObserveRawScreenshotNotification()
+    {
+        _cortexF8Evidence.ObserveRawScreenshotNotification(DateTimeOffset.UtcNow);
+        SaveCortexF8Evidence();
+    }
+
     private void CortexObserveNativeF8(
         long now,
         bool comparable,
