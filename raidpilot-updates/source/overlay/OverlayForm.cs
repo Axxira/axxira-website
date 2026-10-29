@@ -3459,8 +3459,14 @@ internal sealed partial class OverlayForm : Form
     {
         RunOnUiThread(() =>
         {
-            if (!ReferenceEquals(sender, _screenshotWatcher)
-                || _raidActive || !_tarkovIsForeground
+            if (!ReferenceEquals(sender, _screenshotWatcher)) return;
+            // FileSystemWatcher delivers a deduplicated raw PNG event before
+            // ScreenshotNameParser. Keep both stages visible in diagnostics,
+            // without writing file names or changing GPS anchors.
+            if (_raidActive && string.Equals(Path.GetExtension(fileName),
+                    ".png", StringComparison.OrdinalIgnoreCase))
+                CortexObserveRawScreenshotNotification();
+            if (_raidActive || !_tarkovIsForeground
                 || _screenshotWatcher is not { } watcher
                 || !string.Equals(Path.GetExtension(fileName), ".png",
                     StringComparison.OrdinalIgnoreCase))
