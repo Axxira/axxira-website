@@ -23,10 +23,13 @@ internal sealed class CortexF8EvidenceJournal
         double? ErrorMeters,
         double? IntervalSeconds);
 
-    internal sealed record Snapshot(int SchemaVersion, List<Entry> Events);
+    internal sealed record Snapshot(int SchemaVersion, List<Entry> Events,
+        int RawScreenshotNotifications = 0, long LastRawScreenshotUnixSeconds = 0);
 
     internal sealed record Summary(
         int RetainedF8Events,
+        int RawScreenshotNotifications,
+        string? LastRawScreenshotUtc,
         int RetentionDays,
         int MaximumEvents,
         int WithCortexV4Enabled,
@@ -42,7 +45,19 @@ internal sealed class CortexF8EvidenceJournal
         string Interpretation);
 
     private readonly List<Entry> _events = new(MaximumEvents);
+    private int _rawScreenshotNotifications;
+    private long _lastRawScreenshotUnixSeconds;
     internal int Count => _events.Count;
+
+    internal void ObserveRawScreenshotNotification(DateTimeOffset utc)
+    {
+        var at = utc.ToUnixTimeSeconds();
+        if (at <= 0) return;
+        Prune(utc);
+        _rawScreenshotNotifications = Math.Min(1_000_000,
+            _rawScreenshotNotifications + 1);
+        _lastRawScreenshotUnixSeconds = at;
+    }
 
     internal void Observe(
         DateTimeOffset utc,
@@ -90,7 +105,12 @@ internal sealed class CortexF8EvidenceJournal
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
         var last = _events.Count > 0 ? _events[^1] : null;
         return new Summary(
-            _events.Count, RetentionDays, MaximumEvents,
+            _events.Count,
+            _rawScreenshotNotifications,
+            _lastRawScreenshotUnixSeconds <= 0 ? null
+                : DateTimeOffset.FromUnixTimeSeconds(
+                    _lastRawScreenshotUnixSeconds).UtcDateTime.ToString("O"),
+            RetentionDays, MaximumEvents,
             _events.Count(e => e.CortexV4Enabled),
             _events.Count(e => e.CaptureTimeResolved),
             _events.Count(e => e.PredictedPoseAvailable),
@@ -105,22 +125,29 @@ internal sealed class CortexF8EvidenceJournal
                 last.UnixSeconds).UtcDateTime.ToString("O"),
             last?.Outcome.ToString(),
             breakdown,
-            "Retained native-F8 events only; independent of resets and restarts. "
-                + "Capture time, prediction and comparison must all be valid; "
+            "F8 events are bounded and survive raid resets. Raw PNG notifications "
+                + "are separate FileSystemWatcher events (not necessarily valid "
+                + "position captures). Capture time, prediction and comparison "
+                + "must all be valid; "
                 + "this is not a measured localization accuracy improvement.");
     }
 
     internal Snapshot Export(DateTimeOffset utc)
     {
         Prune(utc);
-        return new Snapshot(1, _events.ToList());
+        return new Snapshot(1, _events.ToList(),
+            _rawScreenshotNotifications, _lastRawScreenshotUnixSeconds);
     }
 
     internal bool Import(Snapshot? snapshot, DateTimeOffset utc)
     {
         if (snapshot is null || snapshot.SchemaVersion != 1
             || snapshot.Events is null
-            || snapshot.Events.Count > MaximumEvents)
+            || snapshot.Events.Count > MaximumEvents
+            || snapshot.RawScreenshotNotifications is < 0 or > 1_000_000
+            || snapshot.LastRawScreenshotUnixSeconds < 0
+            || snapshot.LastRawScreenshotUnixSeconds
+                > utc.ToUnixTimeSeconds() + 300)
             return false;
         var events = new List<Entry>(snapshot.Events.Count);
         var now = utc.ToUnixTimeSeconds();
@@ -128,7 +155,7 @@ internal sealed class CortexF8EvidenceJournal
         foreach (var e in snapshot.Events)
         {
             if (e is null || !Enum.IsDefined(e.Outcome)
-                || e.UnixSeconds <= previous || e.UnixSeconds > now + 300
+                || e.UnixSeconds < previous || e.UnixSeconds > now + 300
                 || e.ErrorMeters is { } err
                     && (!double.IsFinite(err) || err is < 0 or > 200)
                 || e.IntervalSeconds is { } interval
@@ -142,6 +169,9 @@ internal sealed class CortexF8EvidenceJournal
         }
         _events.Clear();
         _events.AddRange(events);
+        _lastRawScreenshotUnixSeconds = snapshot.LastRawScreenshotUnixSeconds;
+        _rawScreenshotNotifications = snapshot.RawScreenshotNotifications;
+        Prune(utc);
         return true;
     }
 
@@ -149,6 +179,11 @@ internal sealed class CortexF8EvidenceJournal
     {
         var oldest = utc.ToUnixTimeSeconds() - RetentionDays * 86400L;
         _events.RemoveAll(e => e.UnixSeconds < oldest);
+        if (_lastRawScreenshotUnixSeconds < oldest)
+        {
+            _rawScreenshotNotifications = 0;
+            _lastRawScreenshotUnixSeconds = 0;
+        }
     }
 
     private void Trim()
