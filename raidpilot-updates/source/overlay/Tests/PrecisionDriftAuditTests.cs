@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class PrecisionDriftAuditTests
 {
-    internal const int TestCount = 13;
+    internal const int TestCount = 18;
 
     private static ScreenshotObservation Exact(double x = 0, double yaw = 0) =>
         new("synthetic-F8", x, 0, 0, 0, 0, 0, 1, yaw);
@@ -115,6 +115,60 @@ internal static class PrecisionDriftAuditTests
             audit.Reset();
             Require(audit.Count == 0 && audit.Last is null && audit.Ignored == 0);
         }, failures);
+        Run("F8 audit identifie le tout premier ancrage", () => {
+            var audit = new PrecisionDriftAudit();
+            Require(!audit.ObserveExactAnchor(Exact(), null,
+                10 * Stopwatch.Frequency, true)
+                && audit.LastOutcome == PrecisionF8Outcome.FirstAnchor);
+            Require(audit.ObserveExactAnchor(Exact(1), Pred(0),
+                20 * Stopwatch.Frequency, true)
+                && audit.LastOutcome == PrecisionF8Outcome.Comparable);
+        }, failures);
+
+        Run("F8 audit identifie horodatage inconnu et perte de référence", () => {
+            var audit = new PrecisionDriftAudit();
+            audit.ObserveExactAnchor(Exact(), null,
+                10 * Stopwatch.Frequency, true);
+            Require(!audit.ObserveExactAnchor(Exact(), Pred(),
+                0, true)
+                && audit.LastOutcome
+                    == PrecisionF8Outcome.MissingCaptureTimestamp);
+            Require(!audit.ObserveExactAnchor(Exact(), Pred(),
+                30 * Stopwatch.Frequency, true)
+                && audit.LastOutcome == PrecisionF8Outcome.FirstAnchor);
+        }, failures);
+
+        Run("F8 audit distingue interruption et absence de pose", () => {
+            var audit = new PrecisionDriftAudit();
+            audit.ObserveExactAnchor(Exact(), null,
+                10 * Stopwatch.Frequency, true);
+            audit.MarkInterrupted();
+            Require(!audit.ObserveExactAnchor(Exact(), Pred(),
+                20 * Stopwatch.Frequency, true)
+                && audit.LastOutcome == PrecisionF8Outcome.Interrupted);
+            Require(!audit.ObserveExactAnchor(Exact(), null,
+                30 * Stopwatch.Frequency, true)
+                && audit.LastOutcome == PrecisionF8Outcome.MissingPrediction);
+        }, failures);
+
+        Run("F8 audit indique une capture trop rapprochée", () => {
+            var audit = new PrecisionDriftAudit();
+            audit.ObserveExactAnchor(Exact(), null,
+                10 * Stopwatch.Frequency, true);
+            Require(!audit.ObserveExactAnchor(Exact(), Pred(),
+                12 * Stopwatch.Frequency, true)
+                && audit.LastOutcome == PrecisionF8Outcome.OutOfRangeInterval);
+        }, failures);
+
+        Run("F8 audit identifie un changement de moteur", () => {
+            var audit = new PrecisionDriftAudit();
+            audit.ObserveExactAnchor(Exact(), null,
+                10 * Stopwatch.Frequency, true, false);
+            Require(!audit.ObserveExactAnchor(Exact(), Pred(),
+                20 * Stopwatch.Frequency, true, true)
+                && audit.LastOutcome == PrecisionF8Outcome.ModeChanged);
+        }, failures);
+
     }
 
     private static void Run(string name, Action run, ICollection<string> failures)
