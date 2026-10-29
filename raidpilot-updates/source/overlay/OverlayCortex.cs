@@ -14,6 +14,9 @@ internal sealed partial class OverlayForm
     private readonly CortexSpatialReliabilityAtlas _cortexSpatialAtlas = new();
     private readonly CortexVisualFeedbackGate _cortexVisualFeedback = new();
     private readonly CortexNativeCadenceMemory _cortexNativeCadence = new();
+    private readonly CortexF8EvidenceJournal _cortexF8Evidence = new();
+    private string? _cortexF8EvidencePath;
+    private bool _cortexF8EvidenceSaveFailed;
     private string? _cortexNativeCadencePath;
     private int _cortexNativeCadenceUnsaved;
     private string? _cortexSpatialAtlasPath;
@@ -39,6 +42,10 @@ internal sealed partial class OverlayForm
             CortexSpatialReliabilityStore.GetPath(_squadProfile.MemberId);
         _ = CortexSpatialReliabilityStore.TryLoad(
             _cortexSpatialAtlas, _cortexSpatialAtlasPath);
+        _cortexF8EvidencePath =
+            CortexF8EvidenceStore.GetPath(_squadProfile.MemberId);
+        _ = CortexF8EvidenceStore.TryLoad(
+            _cortexF8Evidence, _cortexF8EvidencePath);
         _cortexNativeCadencePath =
             CortexNativeCadenceStore.GetPath(_squadProfile.MemberId);
         _ = CortexNativeCadenceStore.TryLoad(
@@ -47,6 +54,7 @@ internal sealed partial class OverlayForm
         {
             SaveCortexSpatialAtlas();
             SaveCortexNativeCadence();
+            SaveCortexF8Evidence();
         };
         _trayIcon.ContextMenuStrip?.Items.Insert(6, _cortexMenu);
         _trayIcon.ContextMenuStrip?.Items.Insert(7, _cortexV4Menu);
@@ -67,7 +75,7 @@ internal sealed partial class OverlayForm
                     CortexV4Report.Build(_precisionV2DriftAudit.Samples,
                         _cortex, _cortexVision, _cortexSpatialAtlas,
                         _cortexV4Menu.Checked, _cortexVisualFeedback,
-                        _cortexNativeCadence),
+                        _cortexNativeCadence, _cortexF8Evidence),
                     new System.Text.UTF8Encoding(false));
             }
             catch (Exception error) when (error is IOException
@@ -142,8 +150,18 @@ internal sealed partial class OverlayForm
         long now,
         bool comparable,
         PrecisionDriftSample? measured,
-        ScreenshotObservation? nativeObservation)
+        ScreenshotObservation? nativeObservation,
+        PrecisionF8Outcome auditOutcome,
+        bool captureTimeResolved,
+        bool predictedPoseAvailable)
     {
+        // Record the *actual native F8 event* even if CORTEX is turned off.
+        // Otherwise enabling V4 midway through a raid hides the reasons for
+        // missing comparisons, and restarting loses the entire diagnosis.
+        _cortexF8Evidence.Observe(DateTimeOffset.UtcNow,
+            _cortexV4Menu.Checked, auditOutcome, captureTimeResolved,
+            predictedPoseAvailable, comparable ? measured : null);
+        SaveCortexF8Evidence();
         if (!_cortexMenu.Checked) return;
         _cortex.NoteNativeF8(now, _currentMap, _raidGeneration,
             _lastForegroundWindow, comparable ? measured : null);
@@ -243,6 +261,13 @@ internal sealed partial class OverlayForm
             _cortexVision.NoteApplied();
     }
 
+    private void SaveCortexF8Evidence()
+    {
+        if (_cortexF8EvidencePath is not { } path) return;
+        _cortexF8EvidenceSaveFailed =
+            !CortexF8EvidenceStore.TrySave(_cortexF8Evidence, path);
+    }
+
     private void SaveCortexNativeCadence()
     {
         if (_cortexNativeCadencePath is { } path
@@ -277,11 +302,15 @@ internal sealed partial class OverlayForm
                     : "\nCORTEX V4 : désactivé (optionnel)")
                 + $"\nAtlas local : {_cortexSpatialAtlas.Count} secteurs"
                 + $"; observations apprises {_cortexSpatialAtlas.Observations}"
+                + $"\nJournal F8 conservé : {_cortexF8Evidence.Count} événements"
+                + (_cortexF8EvidenceSaveFailed ? " (SAUVEGARDE ÉCHOUÉE)" : "")
                 + $"\nRepères visuels persistants : "
                 + _visualKeyframeRecognizer.KeyframeCountForMap(_currentMap)
                 + " basse résolution / "
                 + _superKeyframeRecognizer.KeyframeCountForMap(_currentMap)
                 + " haute résolution"
-            : "CORTEX en attente du premier F8 exact";
+            : "CORTEX en attente du premier F8 exact"
+                + $"\nJournal F8 conservé : {_cortexF8Evidence.Count} événements"
+                + (_cortexF8EvidenceSaveFailed ? " (SAUVEGARDE ÉCHOUÉE)" : "");
     }
 }
