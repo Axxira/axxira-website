@@ -254,8 +254,33 @@
     search(query="",options={}){
       const text=token(query);
       let rows=this.requirements(options);
-      if(text)rows=rows.filter(x=>token(x.name+" "+x.shortName+" "+x.reasons.join(" ")).includes(text));
-      return rows.slice(0,300);
+      if(!text)return rows.slice(0,300);
+
+      // A player must be able to look up ANY named game item, not only
+      // requirements for the tracked quests. Unknown requirements are
+      // displayed conservatively; never infer an item is safe to sell.
+      const byId=new Map(rows.map(item=>[item.id,item]));
+      const historical=new Map(this.requirements({
+        allQuests:true,allHideout:true
+      }).map(item=>[item.id,item]));
+      for(const item of this.items.values()){
+        if(!token(item.name+" "+item.shortName).includes(text)||byId.has(item.id))
+          continue;
+        const prior=historical.get(item.id);
+        byId.set(item.id,{
+          ...item,quantity:0,missing:0,owned:this.state.owned[item.id]||0,
+          firQuantity:0,questQuantity:0,hideoutQuantity:0,
+          knownFutureUse:prior?.quantity||0,
+          recommendation:prior?.quantity>0
+            ?"Potentiel futur : vérifie les quêtes et modules non commencés"
+            :"Utilité non vérifiée : crafts, trocs et ventes à contrôler",
+          reasons:prior?.reasons||["Aucun besoin confirmé dans la sélection actuelle"]
+        });
+      }
+      rows=[...byId.values()].filter(item=>token(
+        item.name+" "+item.shortName+" "+item.reasons.join(" ")).includes(text));
+      return rows.sort((a,b)=>b.quantity-a.quantity
+        ||a.name.localeCompare(b.name,"fr")).slice(0,300);
     }
     summary(){
       return {
