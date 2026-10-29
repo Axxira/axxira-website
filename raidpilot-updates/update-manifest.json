@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-28T23:50:02.1069527+00:00",
+  "publishedAt": "2026-10-29T03:12:18.0762729+00:00",
   "raidPilot": {
-    "version": "0.15.7.2",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.7.2-b0.3.10-l0.2.15-14a5a42c9d1e/RaidPilot-Overlay-v0.15.7.2-Windows-x64.zip",
-    "sha256": "3B75115E8F00E2A307D079E1590D6786D7A2CCE22A9CE9B4201638B105264017",
-    "sizeBytes": 234544150,
-    "releaseNotes": "Corrige l'ouverture du menu ⚙ Options lorsque la barre de commandes RaidPilot se répartit sur deux lignes : le panneau flottant débordait à gauche ou devenait partiellement caché par la carte et QuestPilot. Options s'ouvre maintenant dans un panneau de réglages dédié, défilable, directement sous la carte, sans superposition et avec disposition responsive. Le bouton reste accessible sur la première ligne près de Clés. Les fenêtres Options, QuestPilot et Clés sont exclusives : ouvrir l'une ferme les autres. Le bouton Fermer et la touche Échap fonctionnent, y compris lors des changements du mode interactif. Les réglages existants, la carte, les coordonnées, les clés, QuestPilot et CORTEX ne changent pas. Des tests automatisés vérifient la nouvelle hiérarchie DOM, l'ouverture/fermeture, le panneau sous la carte et l'absence de conflits de fenêtres."
+    "version": "0.16.0.0",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.0-b0.3.10-l0.2.15-a0c7e3f82be7/RaidPilot-Overlay-v0.16.0.0-Windows-x64.zip",
+    "sha256": "BB496ABFAB19FE2F45ACF1EF7286AC7AAA7FA4AC00FC24C534C28549CEE79292",
+    "sizeBytes": 234557263,
+    "releaseNotes": "Ctrl+Alt+I ouvre désormais une interface RaidPilot à carte centrale, avec onglets Carte, Quêtes, Clés, Loot, Planque, Équipe, Options et Filtres, dans un style sombre professionnel. Les panneaux sont dockés sous la carte et mutuellement exclusifs. IMPORTANT : lorsque le mode interactif est fermé, la carte RaidPilot normale reste affichée comme avant, sans ces panneaux ; zoom, CORTEX, coéquipiers et marqueurs sont conservés. Nouveau conseiller de loot : recherche d'objets dans le catalogue local Tarkov, besoins recensés pour les quêtes suivies ou toutes les quêtes disponibles, priorité aux objets nécessaires à la planque et aux objectifs FIR lorsqu'identifiables, avec quantités possédées saisies manuellement et conservées par mode PvE/PvP. La planque charge ses niveaux et matériaux via l'API JSON publique de tarkov.dev en lecture seule, avec cache local, et permet au joueur d'enregistrer le niveau de ses modules. Si l'API est inaccessible, les quêtes/objets locaux restent consultables. Aucune vente automatique ni affirmation qu'un objet sans besoin recensé est inutile. Première phase : les prix à jour, trocs, crafts, prérequis complexes et reconnaissance automatique complète de l'inventaire ne sont pas encore intégrés. Tests Windows validant le mode normal/interactif, la sauvegarde et les filtres requis avant publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.7.2-b0.3.10-l0.2.15-14a5a42c9d1e/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "8254042C99063F2122AFDDDEE14E496682B3CA536950A41327CE3C2B2CC0240A",
-    "sizeBytes": 58332719,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.0-b0.3.10-l0.2.15-a0c7e3f82be7/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "F1ABD0DA65D60E4239EE66F9AA0B88BBFDED5AA4A46F6CF1C1AD4A2E108FA306",
+    "sizeBytes": 58332718,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.15.7.2-b0.3.10-l0.2.15-14a5a42c9d1e/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "1CED3FD5993CB10009DF3D4E5BE0F443AC49057E74C03AED83D896C2358569EB",
-    "sizeBytes": 351134036,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.0-b0.3.10-l0.2.15-a0c7e3f82be7/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "E4DC4EBD8205E73EB73319ACE576D551240A3F1ADF1C8724A62260957126A5E1",
+    "sizeBytes": 351147100,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.16.0.0",
+      "raidPilotVersion": "0.16.0.0",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-28",
+      "summary": "Command Center — nouveau menu interactif, Loot et évolution de la planque",
+      "details": "Ctrl+Alt+I ouvre désormais une interface RaidPilot à carte centrale, avec onglets Carte, Quêtes, Clés, Loot, Planque, Équipe, Options et Filtres, dans un style sombre professionnel. Les panneaux sont dockés sous la carte et mutuellement exclusifs. IMPORTANT : lorsque le mode interactif est fermé, la carte RaidPilot normale reste affichée comme avant, sans ces panneaux ; zoom, CORTEX, coéquipiers et marqueurs sont conservés. Nouveau conseiller de loot : recherche d'objets dans le catalogue local Tarkov, besoins recensés pour les quêtes suivies ou toutes les quêtes disponibles, priorité aux objets nécessaires à la planque et aux objectifs FIR lorsqu'identifiables, avec quantités possédées saisies manuellement et conservées par mode PvE/PvP. La planque charge ses niveaux et matériaux via l'API JSON publique de tarkov.dev en lecture seule, avec cache local, et permet au joueur d'enregistrer le niveau de ses modules. Si l'API est inaccessible, les quêtes/objets locaux restent consultables. Aucune vente automatique ni affirmation qu'un objet sans besoin recensé est inutile. Première phase : les prix à jour, trocs, crafts, prérequis complexes et reconnaissance automatique complète de l'inventaire ne sont pas encore intégrés. Tests Windows validant le mode normal/interactif, la sauvegarde et les filtres requis avant publication."
+    },
     {
       "component": "raidpilot",
       "version": "0.15.7.2",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "Beacon — captures F8 au repos hors interaction et combat",
       "details": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.43",
-      "raidPilotVersion": "0.14.2.43",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Intelligence V2 — repli sur les entrées lors de captures visuelles répétées",
-      "details": "Corrige la fusion de mouvement : une même trame visuelle ne conserve plus une décision de mouvement antérieure lorsque les entrées de déplacement ont évolué. Le moteur se replie sur les entrées actuelles et journalise le refus. Aucune coordonnée absolue n'est inventée; la précision doit être validée dans un raid réel."
     }
   ]
 }
