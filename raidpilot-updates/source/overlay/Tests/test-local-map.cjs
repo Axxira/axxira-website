@@ -2,10 +2,11 @@ const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('ass
 const root=path.resolve(__dirname,'../LocalMap');
 // Pure key/door data-model coverage is also part of this Windows suite.
 require('./test-key-guide.cjs');
+require('./test-loot-intelligence.cjs');
 // Minimal DOM model: runs the delivered renderer and real cached geometry
 // without a browser, network, WebView2, or game process.
 class Element {
- constructor(tag){this.tagName=tag;this.children=[];this.attrs={};this.dataset={};this.style={};this.listeners={};this.value='';this.textContent='';this.className='';this.classList={toggle:()=>{},add:()=>{},remove:()=>{}};}
+ constructor(tag){this.tagName=tag;this.children=[];this.attrs={};this.dataset={};this.style={};this.listeners={};this.value='';this.textContent='';this.className='';this.hidden=false;this.classList={toggle:()=>{},add:()=>{},remove:()=>{},contains:cls=>this.className.split(/\\s+/).includes(cls)};}
  append(...items){this.children.push(...items);} appendChild(item){this.children.push(item);return item;}
  replaceChildren(...items){this.children=items;}
  setAttribute(k,v){this.attrs[k]=String(v);if(k==='class')this.className=v;}
@@ -15,8 +16,15 @@ class Element {
  getBoundingClientRect(){return {width:1200,height:700,left:0,top:0};}
  setPointerCapture(){} get options(){return this.children;}
 }
+let testInteractive=false;
 const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','filters','layers-btn','search',
   'toolbar-more','options-trigger','options-panel','options-close','profile','floor','zoom-in','zoom-out','fit','center-player','zoom-value','map-name','marker-count','health','details','missing-asset','label-mode','map-style','map-credit','calibrate','calibration-panel','calibration-map','calibration-status','calibration-landmark','calibration-reference','calibration-position','calibration-offset','calibration-save','calibration-reset','calibration-close','tactical-warning','position-stale',
+  'rp-tab-map','rp-tab-loot','rp-tab-hideout','rp-tab-team',
+  'loot-panel','loot-close','loot-search','loot-scope',
+  'loot-hide-owned','loot-summary','loot-list',
+  'hideout-panel','hideout-close','hideout-search','hideout-retry',
+  'hideout-status','hideout-list',
+  'team-panel','team-close','team-summary','team-list',
   'quests-btn','questpilot-panel','questpilot-close','questpilot-search','questpilot-summary',
   'questpilot-list','questpilot-steps','questpilot-other','questpilot-shared-steps','questpilot-prep','questpilot-hud',
   'questpilot-hud-color','questpilot-hud-title','questpilot-hud-detail',
@@ -27,7 +35,11 @@ const ids={};for(const id of ['viewport','stage','base-map','overlay','panel','f
   'questpilot-peer-name','questpilot-peer-code','questpilot-import','questpilot-team-plans'])ids[id]=new Element('div');
 const listeners={}, messages=[], storage=new Map();
 const context={console,URLSearchParams,Event:class{constructor(type){this.type=type;}},setTimeout,clearTimeout,
- document:{getElementById:id=>ids[id]??null,querySelector:s=>ids[s.slice(1)]??null,createElement:t=>new Element(t),createElementNS:(_,t)=>new Element(t)},
+ document:{
+   documentElement:{classList:{contains:cls=>cls==='raidpilot-interactive' && testInteractive}},
+   getElementById:id=>ids[id]??null,querySelector:s=>ids[s.slice(1)]??null,
+   createElement:t=>new Element(t),createElementNS:(_,t)=>new Element(t)
+ },
  location:{search:'?map=customs'},localStorage:{
    getItem:key=>storage.has(key)?storage.get(key):null,
    setItem:(key,value)=>storage.set(key,String(value)),
@@ -41,11 +53,53 @@ const context={console,URLSearchParams,Event:class{constructor(type){this.type=t
 let checks=0;function check(ok,label){assert.ok(ok,label);checks++;}
 function marker(id){return ids.overlay.children.find(e=>e.dataset.markerId===id);}
 const ready=new Promise(resolve=>context.addEventListener('raidpilot-local-initialized',resolve));
-for(const f of ['projection.js','map-calibration.js','map-display.js','raid-tactics.js','automatic-floors.js','quest-pilot.js','key-guide.js','raidpilot-local-map.js','map-features.js','legacy-bridge.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
+for(const f of ['projection.js','map-calibration.js','map-display.js','raid-tactics.js','automatic-floors.js','quest-pilot.js','key-guide.js','loot-intelligence.js','raidpilot-local-map.js','map-features.js','legacy-bridge.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),context,{filename:f});
 context.__raidPilotSetLocalPose({generation:4,map:'customs',x:100,y:2,z:0,yaw:90});
 (async()=>{
  await Promise.race([ready,new Promise((_,reject)=>setTimeout(()=>reject(Error('Renderer did not initialize')),5000))]);
  const api=context.RaidPilotLocalMap;
+ const htmlSource=fs.readFileSync(path.join(root,'index.html'),'utf8');
+ const cssSource=fs.readFileSync(path.join(root,'raidpilot-local-map.css'),'utf8');
+ for(const id of ['rp-tab-map','rp-tab-loot','rp-tab-hideout','rp-tab-team',
+    'loot-panel','hideout-panel','team-panel']){
+   check((htmlSource.match(new RegExp('id="'+id+'"','g'))||[]).length===1,
+    'Missing command center control: '+id);
+ }
+ check(cssSource.includes('html:not(.raidpilot-interactive) #toolbar')
+   && cssSource.includes('html:not(.raidpilot-interactive) #loot-panel')
+   && cssSource.includes('html:not(.raidpilot-interactive) #team-panel'),
+   'Noninteractive view must render only the ordinary RaidPilot map');
+ check(api.openCommandCenterTab('loot')===false,
+   'The intelligence drawer must not open before Ctrl+Alt+I');
+ testInteractive=true;
+ check(api.openCommandCenterTab('loot')===true
+   && ids['loot-panel'].hidden===false,
+   'Interactive loot drawer did not open');
+ check(api.lootIntelSnapshot()?.items>100,
+   'Real offline Tarkov item catalog not passed to intelligence planner');
+ check(ids['loot-summary'].textContent.includes('inventaire saisi manuellement'),
+   'Loot drawer must disclose manually entered quantities');
+ check(api.openCommandCenterTab('hideout')===true
+   && ids['hideout-panel'].hidden===false
+   && ids['loot-panel'].hidden===true,
+   'Hideout drawer must replace Loot, not overlay it');
+ check(messages.some(m=>m.type==='raidpilot-hideout-intel-request'
+   && m.mode==='regular'),
+   'Native hideout JSON request was never sent to the verified host');
+ check(api.setHideoutIntel({data:{hideoutStations:[{
+     id:'generator',name:'Generator',
+     levels:[{level:1,itemRequirements:[]}]}]}},'regular')===true
+   && api.lootIntelSnapshot().hideoutLoaded===true,
+   'Hideout intelligence payload not parsed by local renderer');
+ check(api.openCommandCenterTab('team')===true
+   && ids['team-panel'].hidden===false
+   && ids['hideout-panel'].hidden===true,
+   'Team drawer cannot replace hideout');
+ api.openCommandCenterTab('map');
+ check(ids['loot-panel'].hidden===true &&
+   ids['hideout-panel'].hidden===true&&ids['team-panel'].hidden===true,
+   'Carte should close every extended menu');
+ testInteractive=false;
  // Regression: at the 840px width shown by the player the old Options popup
  // was cut off at the left edge / obscured by the end of the map.
  const optionsHtml=fs.readFileSync(path.join(root,'index.html'),'utf8');
