@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-10-29T03:12:18.0762729+00:00",
+  "publishedAt": "2026-10-29T14:31:42.2640722+00:00",
   "raidPilot": {
-    "version": "0.16.0.0",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.0-b0.3.10-l0.2.15-a0c7e3f82be7/RaidPilot-Overlay-v0.16.0.0-Windows-x64.zip",
-    "sha256": "BB496ABFAB19FE2F45ACF1EF7286AC7AAA7FA4AC00FC24C534C28549CEE79292",
-    "sizeBytes": 234557263,
-    "releaseNotes": "Ctrl+Alt+I ouvre désormais une interface RaidPilot à carte centrale, avec onglets Carte, Quêtes, Clés, Loot, Planque, Équipe, Options et Filtres, dans un style sombre professionnel. Les panneaux sont dockés sous la carte et mutuellement exclusifs. IMPORTANT : lorsque le mode interactif est fermé, la carte RaidPilot normale reste affichée comme avant, sans ces panneaux ; zoom, CORTEX, coéquipiers et marqueurs sont conservés. Nouveau conseiller de loot : recherche d'objets dans le catalogue local Tarkov, besoins recensés pour les quêtes suivies ou toutes les quêtes disponibles, priorité aux objets nécessaires à la planque et aux objectifs FIR lorsqu'identifiables, avec quantités possédées saisies manuellement et conservées par mode PvE/PvP. La planque charge ses niveaux et matériaux via l'API JSON publique de tarkov.dev en lecture seule, avec cache local, et permet au joueur d'enregistrer le niveau de ses modules. Si l'API est inaccessible, les quêtes/objets locaux restent consultables. Aucune vente automatique ni affirmation qu'un objet sans besoin recensé est inutile. Première phase : les prix à jour, trocs, crafts, prérequis complexes et reconnaissance automatique complète de l'inventaire ne sont pas encore intégrés. Tests Windows validant le mode normal/interactif, la sauvegarde et les filtres requis avant publication."
+    "version": "0.16.0.1",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.15-17ce2425b21a/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "E90657DA3CE9062AB67C72691FA2572ACD01A1C1C0D026625CDD9709DCC504D2",
+    "sizeBytes": 234564529,
+    "releaseNotes": "Corrige le diagnostic CORTEX lorsque le rapport affiche zéro F8 exploitable ou WaitingForAnchor malgré des parties précédentes : chaque capture F8 reconnue est maintenant classée par cause (premier ancrage, horodatage absent/non monotone, suivi interrompu, changement de mode, pose prédite absente, durée incompatible, géométrie ou résidu invalide). Le journal local, dont le nom de fichier dérive d'un hachage de l'identifiant de profil, conserve au maximum 256 événements sur 14 jours, avec compteurs des PNG signalés par le surveillant, indépendamment de la reconnaissance de nom. Le rapport JSON schemaVersion 2 ajoute capturePipeline (étapes observées, causes de refus, moyenne et P90 sur comparaisons réelles, date de dernière observation) et précise la différence entre compteurs de session et historique. Pas de PNG, coordonnées, trajets, noms de joueur ou carte dans cet historique; aucune modification des seuils de sécurité, de la cadence F8 ou de l'estimation de position. Ajoute des tests de causes d'exclusion, persistance, expiration, cohérence et confidentialité. Première étape instrumentée : l'amélioration réelle du GPS doit être évaluée avec des F8 comparables en raid."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.0-b0.3.10-l0.2.15-a0c7e3f82be7/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "F1ABD0DA65D60E4239EE66F9AA0B88BBFDED5AA4A46F6CF1C1AD4A2E108FA306",
-    "sizeBytes": 58332718,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.15-17ce2425b21a/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "FE6D321967D779B5831A1CF891F324CA9F75311F65D6C8DCC59CCE0CCA9F2B03",
+    "sizeBytes": 58332831,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.15",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.0-b0.3.10-l0.2.15-a0c7e3f82be7/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
-    "sha256": "E4DC4EBD8205E73EB73319ACE576D551240A3F1ADF1C8724A62260957126A5E1",
-    "sizeBytes": 351147100,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.15-17ce2425b21a/RaidPilot-Launcher-v0.2.15-Windows-x64.zip",
+    "sha256": "02A92D90E84D388EF8740DD90FC52A6B97D41D788442247ECDF45AAF740EBDAC",
+    "sizeBytes": 351154266,
     "releaseNotes": "Launcher 0.2.15 reste inchangé dans cette publication. Développé par Peko."
   },
   "releaseHistory": [
+    {
+      "component": "raidpilot",
+      "version": "0.16.0.1",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-29",
+      "summary": "CORTEX V4.3 — rapport F8 explicable et journal de diagnostic durable",
+      "details": "Corrige le diagnostic CORTEX lorsque le rapport affiche zéro F8 exploitable ou WaitingForAnchor malgré des parties précédentes : chaque capture F8 reconnue est maintenant classée par cause (premier ancrage, horodatage absent/non monotone, suivi interrompu, changement de mode, pose prédite absente, durée incompatible, géométrie ou résidu invalide). Le journal local, dont le nom de fichier dérive d'un hachage de l'identifiant de profil, conserve au maximum 256 événements sur 14 jours, avec compteurs des PNG signalés par le surveillant, indépendamment de la reconnaissance de nom. Le rapport JSON schemaVersion 2 ajoute capturePipeline (étapes observées, causes de refus, moyenne et P90 sur comparaisons réelles, date de dernière observation) et précise la différence entre compteurs de session et historique. Pas de PNG, coordonnées, trajets, noms de joueur ou carte dans cet historique; aucune modification des seuils de sécurité, de la cadence F8 ou de l'estimation de position. Ajoute des tests de causes d'exclusion, persistance, expiration, cohérence et confidentialité. Première étape instrumentée : l'amélioration réelle du GPS doit être évaluée avec des F8 comparables en raid."
+    },
     {
       "component": "raidpilot",
       "version": "0.16.0.0",
@@ -253,16 +263,6 @@
       "date": "2026-10-24",
       "summary": "F8 intelligent en mouvement activé au premier lancement",
       "details": "Active par défaut les recalages F8 mobiles pour les installations sans préférence sauvegardée, avec intervalle minimal de quatre secondes, raccourci de capture dédié F6–F12 et première ancre exacte requise. Respecte le refus explicite déjà enregistré. Bloque toute capture automatique lorsque F, R, tir ou visée sont actifs. La précision reste à mesurer en raid; aucun ennemi n'est détecté directement."
-    },
-    {
-      "component": "beacon",
-      "version": "0.3.10",
-      "raidPilotVersion": "0.14.2.43",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Beacon — captures F8 au repos hors interaction et combat",
-      "details": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
     }
   ]
 }
