@@ -17,6 +17,7 @@ internal sealed partial class OverlayForm
     private readonly CortexF8EvidenceJournal _cortexF8Evidence = new();
     private string? _cortexF8EvidencePath;
     private bool _cortexF8EvidenceSaveFailed;
+    private int _cortexF8EvidenceUnsaved;
     private string? _cortexNativeCadencePath;
     private int _cortexNativeCadenceUnsaved;
     private string? _cortexSpatialAtlasPath;
@@ -149,7 +150,9 @@ internal sealed partial class OverlayForm
     private void CortexObserveRawScreenshotNotification()
     {
         _cortexF8Evidence.ObserveRawScreenshotNotification(DateTimeOffset.UtcNow);
-        SaveCortexF8Evidence();
+        // Do not do synchronous disk IO for every PNG watcher notification
+        // on the UI thread: save in batches, and always on FormClosing.
+        if (++_cortexF8EvidenceUnsaved >= 8) SaveCortexF8Evidence();
     }
 
     private void CortexObserveNativeF8(
@@ -167,7 +170,7 @@ internal sealed partial class OverlayForm
         _cortexF8Evidence.Observe(DateTimeOffset.UtcNow,
             _cortexV4Menu.Checked, auditOutcome, captureTimeResolved,
             predictedPoseAvailable, comparable ? measured : null);
-        SaveCortexF8Evidence();
+        if (++_cortexF8EvidenceUnsaved >= 4) SaveCortexF8Evidence();
         if (!_cortexMenu.Checked) return;
         _cortex.NoteNativeF8(now, _currentMap, _raidGeneration,
             _lastForegroundWindow, comparable ? measured : null);
@@ -272,6 +275,7 @@ internal sealed partial class OverlayForm
         if (_cortexF8EvidencePath is not { } path) return;
         _cortexF8EvidenceSaveFailed =
             !CortexF8EvidenceStore.TrySave(_cortexF8Evidence, path);
+        if (!_cortexF8EvidenceSaveFailed) _cortexF8EvidenceUnsaved = 0;
     }
 
     private void SaveCortexNativeCadence()
