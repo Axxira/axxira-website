@@ -3638,7 +3638,8 @@ internal sealed partial class OverlayForm : Form
                 _precisionV2ToggleMenuItem.Checked,
                 _precisionV4Menu.Checked);
             CortexObserveNativeF8(now, comparableF8, _precisionV2DriftAudit.Last,
-                observation);
+                observation, _precisionV2DriftAudit.LastOutcome,
+                hasCaptureTimestamp, estimatedPoseAtCapture is not null);
             CalibrateRealtimeEstimator(observation, estimatedPoseAtCapture, allowCalibration);
             _skipNextRealtimeCalibration = postCaptureIntervalContaminated;
             _lastExactObservation = observation;
