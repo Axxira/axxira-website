@@ -882,7 +882,12 @@ function setGameMode(mode){
   }}
   try{localStorage.setItem("gameMode",JSON.stringify(mode));}catch(_){}
   const el=$("#game-mode");if(el)el.value=mode;
-  updateCatalogueStatus();renderQuestPilotPanel();render();return !!state.catalogues[mode]?.tasks;
+  updateCatalogueStatus();
+  refreshIntelSources();
+  if(intelPanelOpen(refs.hideoutPanel) && !state.hideoutDataByMode[mode])
+    requestHideoutIntel();
+  renderQuestPilotPanel();render();
+  return !!state.catalogues[mode]?.tasks;
 }
 function questMapIdsFor(mapKey) {
   const ids=new Set([mapKey]);
@@ -902,6 +907,7 @@ function refreshQuestPilotCatalogue(){
   planner.setCatalog(arrayOf(root.tasks),taskTranslations(),
     root.questItems || itemRoot.items || {},state.cache.itemsFr ? unwrap(state.cache.itemsFr) : {});
   renderQuestPilotPanel();
+  refreshIntelSources();
 }
 function qpText(parent,tag,text,className){
   const el=document.createElement(tag);
@@ -929,6 +935,7 @@ function setOptionsVisible(show){
   refs.toolbarMore.open=visible;
   refs.optionsTrigger?.setAttribute("aria-expanded",visible?"true":"false");
   if(visible&&!wasVisible){
+    closeIntelPanels();
     questPilotClosePanel();
     keyGuideVisible(false);
     refs.panel?.classList.add("hidden");
@@ -939,6 +946,7 @@ function setOptionsVisible(show){
   if(visible!==wasVisible && state.initialized
       && typeof window.requestAnimationFrame==="function")
     window.requestAnimationFrame(()=>resizeViewport());
+  syncCommandTabs();
   return visible;
 }
 function keyGuideVisible(show){
@@ -948,6 +956,7 @@ function keyGuideVisible(show){
   refs.keyButton.setAttribute("aria-expanded",visible?"true":"false");
   refs.keyButton.textContent=visible?"🔑 Masquer les clés":"🔑 Clés";
   if(visible){
+    closeIntelPanels();
     setOptionsVisible(false);
     refs.panel?.classList.add("hidden");
     refs.questPanel?.classList.add("hidden");
@@ -955,6 +964,7 @@ function keyGuideVisible(show){
     if(refs.questsBtn)refs.questsBtn.textContent="🎯 Afficher QuestPilot";
     renderKeyGuide();
   }
+  syncCommandTabs();
   return visible;
 }
 function locateKeyDoor(door){
@@ -1569,16 +1579,19 @@ function questPilotClosePanel(){
   if(!refs.questPanel)return false;
   refs.questPanel.classList.add("hidden");
   refs.questsBtn?.setAttribute("aria-expanded","false");
-  if(refs.questsBtn)refs.questsBtn.textContent="🎯 Afficher QuestPilot";
+  if(refs.questsBtn)refs.questsBtn.textContent="🎯 Quêtes";
+  syncCommandTabs();
   return true;
 }
 function questPilotOpenPanel(){
   if(!refs.questPanel)return false;
+  closeIntelPanels();
   setOptionsVisible(false);
   keyGuideVisible(false);
   refs.questPanel.classList.remove("hidden");
   refs.questsBtn?.setAttribute("aria-expanded","true");
-  if(refs.questsBtn)refs.questsBtn.textContent="🎯 Masquer QuestPilot";
+  if(refs.questsBtn)refs.questsBtn.textContent="🎯 Quêtes";
+  syncCommandTabs();
   renderQuestPilotPanel();
   return true;
 }
@@ -1794,7 +1807,12 @@ function setPlayer(p) {
   return true;
 }
 
-function setTeam(team) { state.teammates = Array.isArray(team) ? team : []; state.beaconStatus = team ? "READY" : "LOCAL"; render(); }
+function setTeam(team) {
+  state.teammates = Array.isArray(team) ? team : [];
+  state.beaconStatus = team ? "READY" : "LOCAL";
+  if(intelPanelOpen(refs.teamPanel))renderTeamIntel();
+  render();
+}
 function setFloor(floor,automatic=false) { state.floor = floor || "BASE";if(!automatic)state.manualFloor=state.floor!=="AUTO"; cancelCalibration();state.calibrationPoints=[];loadCalibration();if ([...refs.floor.options].some(o=>o.value===state.floor)) refs.floor.value=state.floor; render(); }
 function setRuntimeMarkers(markers) { state.runtimeMarkers = Array.isArray(markers) ? markers : []; renderFilterPanel(); render(); }
 function setCalibration(c) { state.calibration = RPMapCalibration.valid(c) ? c : null; render(); }
@@ -1970,12 +1988,23 @@ function wireUI() {
   });
   let lastInteractive=interactive();
   const syncMode=()=>{
-    const current=interactive();if(current===lastInteractive)return;lastInteractive=current;
-    state.followPlayer=!current;refs.center.classList.toggle("following",!current);
+    const current=interactive();
+    if(current===lastInteractive)return;
+    lastInteractive=current;
+    state.followPlayer=!current;
+    refs.center.classList.toggle("following",!current);
     if(!current){
-    setOptionsVisible(false);keyGuideVisible(false);
-    cancelCalibration();refs.calibrationPanel.hidden=true;centerPlayer();
-  }
+      // CRITICAL: Ctrl+Alt+I off returns the original map, not the new menu.
+      closeIntelPanels();
+      questPilotClosePanel();
+      setOptionsVisible(false);
+      keyGuideVisible(false);
+      refs.panel?.classList.add("hidden");
+      cancelCalibration();
+      refs.calibrationPanel.hidden=true;
+      centerPlayer();
+    }
+    syncCommandTabs();
   };
   if(typeof MutationObserver==="function")new MutationObserver(syncMode).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
   refs.viewport.addEventListener("wheel", e => {
@@ -2040,28 +2069,69 @@ function wireUI() {
   refs.layersBtn.addEventListener("click",()=>{
     refs.panel.classList.toggle("hidden");
     if(!refs.panel.className.includes("hidden")){
+      closeIntelPanels();
       setOptionsVisible(false);
       questPilotClosePanel();
       keyGuideVisible(false);
     }
+    syncCommandTabs();
   });
   const toggleQuestPanel=force=>{
     if(!refs.questPanel)return;
     const show=typeof force==="boolean"?force:refs.questPanel.classList.contains("hidden");
     refs.questPanel.classList.toggle("hidden",!show);
     refs.questsBtn?.setAttribute("aria-expanded",show?"true":"false");
-    refs.questsBtn.textContent=show?"🎯 Masquer QuestPilot":"🎯 Afficher QuestPilot";
+    refs.questsBtn.textContent="🎯 Quêtes";
     if(show){
+      closeIntelPanels();
       setOptionsVisible(false);
       refs.panel.classList.add("hidden");
       renderQuestPilotPanel();
     }
+    syncCommandTabs();
   };
   refs.questsBtn?.addEventListener("click",()=>{
-    const now=toggleQuestPanel();
+    toggleQuestPanel();
     if(!refs.questPanel?.classList.contains("hidden"))keyGuideVisible(false);
+    syncCommandTabs();
   });
   refs.keyButton?.addEventListener("click",()=>keyGuideVisible());
+  refs.tabMap?.addEventListener("click",()=>{
+    closeIntelPanels();
+    questPilotClosePanel();
+    keyGuideVisible(false);
+    setOptionsVisible(false);
+    refs.panel?.classList.add("hidden");
+    syncCommandTabs();
+  });
+  refs.tabLoot?.addEventListener("click",()=>setIntelPanelVisible(
+    "loot",!intelPanelOpen(refs.lootPanel)));
+  refs.tabHideout?.addEventListener("click",()=>setIntelPanelVisible(
+    "hideout",!intelPanelOpen(refs.hideoutPanel)));
+  refs.tabTeam?.addEventListener("click",()=>setIntelPanelVisible(
+    "team",!intelPanelOpen(refs.teamPanel)));
+  for(const [button,panel] of [
+    [refs.lootClose,"loot"],[refs.hideoutClose,"hideout"],[refs.teamClose,"team"]])
+    button?.addEventListener("click",()=>setIntelPanelVisible(panel,false));
+  refs.lootSearch?.addEventListener("input",()=>{
+    state.lootQuery=String(refs.lootSearch.value||"").trim().slice(0,80);
+    renderLootIntel();
+  });
+  refs.lootScope?.addEventListener("change",()=>{
+    state.lootAllQuests=refs.lootScope.value==="all";
+    renderLootIntel();
+  });
+  refs.lootHideOwned?.addEventListener("click",()=>{
+    state.lootHideCovered=!state.lootHideCovered;
+    refs.lootHideOwned.setAttribute("aria-pressed",
+      state.lootHideCovered?"true":"false");
+    renderLootIntel();
+  });
+  refs.hideoutSearch?.addEventListener("input",()=>{
+    state.hideoutQuery=String(refs.hideoutSearch.value||"").trim().slice(0,80);
+    renderHideoutIntel();
+  });
+  refs.hideoutRetry?.addEventListener("click",()=>requestHideoutIntel(true));
   refs.keyClose?.addEventListener("click",()=>keyGuideVisible(false));
   refs.keySearch?.addEventListener("input",()=>{
     state.keyGuideSearch=String(refs.keySearch.value||"").trim().slice(0,100);
@@ -2121,6 +2191,17 @@ async function init() {
   Object.assign(refs, {
     viewport:$("#viewport"),stage:$("#stage"),baseMap:$("#base-map"),overlay:$("#overlay"),
     panel:$("#panel"),filters:$("#filters"),layersBtn:$("#layers-btn"),search:$("#search"),
+    tabMap:$("#rp-tab-map"),tabLoot:$("#rp-tab-loot"),
+    tabHideout:$("#rp-tab-hideout"),tabTeam:$("#rp-tab-team"),
+    lootPanel:$("#loot-panel"),lootClose:$("#loot-close"),
+    lootSearch:$("#loot-search"),lootScope:$("#loot-scope"),
+    lootHideOwned:$("#loot-hide-owned"),lootSummary:$("#loot-summary"),
+    lootList:$("#loot-list"),
+    hideoutPanel:$("#hideout-panel"),hideoutClose:$("#hideout-close"),
+    hideoutSearch:$("#hideout-search"),hideoutRetry:$("#hideout-retry"),
+    hideoutStatus:$("#hideout-status"),hideoutList:$("#hideout-list"),
+    teamPanel:$("#team-panel"),teamClose:$("#team-close"),
+    teamSummary:$("#team-summary"),teamList:$("#team-list"),
     toolbarMore:$("#toolbar-more"),optionsTrigger:$("#options-trigger"),
     optionsPanel:$("#options-panel"),optionsClose:$("#options-close"),
     questPanel:$("#questpilot-panel"),questsBtn:$("#quests-btn"),questClose:$("#questpilot-close"),
@@ -2173,13 +2254,19 @@ async function init() {
   wireUI();
   await loadCache();
   state.questPilot = new RPQuestPilot.Planner(window.localStorage,state.gameMode);
+  state.lootPlanner = new RaidPilotLootIntel.Planner(window.localStorage,state.gameMode);
   state.questZoneGate = new RPQuestPilot.ZoneGate();
   refreshQuestPilotCatalogue();
   // Keep the planner's loaded progress. No automatic quest overlay away
   // from objectives; players can open their saved checklist manually.
   refs.questPanel?.classList.add("hidden");
   refs.questsBtn?.setAttribute("aria-expanded","false");
-  refs.questsBtn.textContent="🎯 Afficher QuestPilot";
+  refs.questsBtn.textContent="🎯 Quêtes";
+  if(refs.lootPanel)refs.lootPanel.hidden=true;
+  if(refs.hideoutPanel)refs.hideoutPanel.hidden=true;
+  if(refs.teamPanel)refs.teamPanel.hidden=true;
+  refreshIntelSources();
+  syncCommandTabs();
   renderQuestPilotPanel();
   if($("#game-mode"))$("#game-mode").value=state.gameMode;
   state.initialized = true;
@@ -2220,6 +2307,12 @@ const api = {
   ,resetRaid,setRaidExtractions,applyRaidExtractions,clearRaidExtractions,setBoundaryHazards:p=>setHazards(p,"boundary"),setMineHazards:p=>setHazards(p,"mine"),clearBoundaryHazards:()=>clearHazards("boundary"),clearMineHazards:()=>clearHazards("mine"),setGuidanceTarget,clearGuidanceTarget
   ,setRaidQuests,clearRaidQuests,applyRaidQuests,applyQuestLogEvents,setGameMode,setLearnedRoute,clearLearnedRoute,setFloorPose,clearFloorPose
   ,openKeyGuide:()=>keyGuideVisible(true),closeKeyGuide:()=>keyGuideVisible(false),
+    openCommandCenterTab:tab=>{
+      if(tab==="map"){refs.tabMap?.click();return true;}
+      return setIntelPanelVisible(tab,true);
+    },
+    setHideoutIntel,
+    lootIntelSnapshot:()=>state.lootPlanner?.summary()||null,
    keyGuideSnapshot:()=>({map:state.mapKey,
      locks:state.keyGuide?.locks?.length||0,keys:state.keyGuide?.keys||0,
      identified:state.keyGuide?.identified||0,located:state.keyGuide?.located||0}),
