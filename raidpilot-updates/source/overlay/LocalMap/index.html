@@ -8,23 +8,34 @@
 </head>
 <body>
   <div id="rp-root">
-    <header id="toolbar" aria-label="Commandes de la carte">
-      <div class="rp-toolbar-main">
-        <button id="layers-btn" type="button" title="Afficher les filtres de carte">☰ Filtres</button>
-        <button id="quests-btn" type="button" title="Ouvrir mes quêtes et ma progression sauvegardée" aria-expanded="false">🎯 Mes quêtes</button>
-        <button id="keys-btn" type="button" title="Chercher une clé et retrouver la porte correspondante" aria-expanded="false">🔑 Clés</button>
+    <header id="toolbar" aria-label="RaidPilot · centre de commande interactif">
+      <div class="rp-shell-header">
+        <div class="rp-shell-brand"><span aria-hidden="true" class="rp-brand-symbol">◈</span>
+          <span><strong>RaidPilot</strong><small>Centre de commande</small></span>
+        </div>
+        <div class="rp-shell-controls">
+          <input id="search" type="search" placeholder="Rechercher un lieu…" aria-label="Rechercher un lieu ou un repère sur la carte">
+          <label class="rp-toolbar-field rp-floor-field" for="floor"><span>Étage</span><select id="floor" aria-label="Étage de la carte"></select></label>
+          <div class="rp-zoom-controls" role="group" aria-label="Zoom de la carte">
+            <button id="zoom-out" type="button" title="Dézoomer" aria-label="Dézoomer">−</button>
+            <output id="zoom-value" aria-label="Niveau de zoom">100%</output>
+            <button id="zoom-in" type="button" title="Zoomer" aria-label="Zoomer">+</button>
+          </div>
+          <button id="center-player" type="button" title="Centrer sur ma position">◎ Centrer</button>
+        </div>
+      </div>
+      <nav id="rp-main-tabs" class="rp-main-tabs" aria-label="Sections de RaidPilot">
+        <button id="rp-tab-map" type="button" aria-pressed="true">🗺 Carte</button>
+        <button id="quests-btn" type="button" title="Progression des quêtes" aria-expanded="false">🎯 Quêtes</button>
+        <button id="keys-btn" type="button" title="Clés et portes" aria-expanded="false">🔑 Clés</button>
+        <button id="rp-tab-loot" type="button" aria-expanded="false">📦 Loot</button>
+        <button id="rp-tab-hideout" type="button" aria-expanded="false">🏠 Planque</button>
+        <button id="rp-tab-team" type="button" aria-expanded="false">👥 Équipe</button>
         <details id="toolbar-more" class="rp-toolbar-more">
           <summary id="options-trigger" aria-label="Paramètres avancés de la carte" aria-controls="options-panel" aria-expanded="false">⚙ Options</summary>
         </details>
-        <label class="rp-toolbar-field rp-floor-field" for="floor"><span>Étage</span><select id="floor" aria-label="Étage de la carte"></select></label>
-        <input id="search" type="search" placeholder="Rechercher sur la carte…" aria-label="Rechercher un lieu ou un objet sur la carte">
-        <div class="rp-zoom-controls" role="group" aria-label="Zoom de la carte">
-          <button id="zoom-out" type="button" title="Dézoomer" aria-label="Dézoomer">−</button>
-          <output id="zoom-value" aria-label="Niveau de zoom">100%</output>
-          <button id="zoom-in" type="button" title="Zoomer" aria-label="Zoomer">+</button>
-        </div>
-        <button id="center-player" type="button" title="Centrer sur ma position">◎ Centrer</button>
-      </div>
+        <button id="layers-btn" type="button" title="Filtres de la carte">☰ Filtres</button>
+      </nav>
     </header>
 
     <div id="health" class="health warn">INITIALISATION…</div>
@@ -138,6 +149,45 @@
       <p id="keyguide-note" class="kg-subtle">Source : données ouvertes tarkov.dev conservées localement. Les portes peuvent changer après une mise à jour de Tarkov; vérifie en jeu.</p>
     </aside>
 
+    <aside id="loot-panel" class="rp-command-panel hidden" hidden aria-label="Loot et priorités de conservation">
+      <div class="rp-panel-heading"><strong>📦 Loot essentiel</strong>
+        <button id="loot-close" type="button" aria-label="Fermer le guide du loot">✕</button></div>
+      <p class="rp-muted">Les objets utiles aux quêtes suivies et à la planque. Les quantités possédées sont saisies manuellement, jamais inventées à partir de captures.</p>
+      <div class="rp-intel-toolbar">
+        <input id="loot-search" type="search" placeholder="Chercher un objet…" aria-label="Rechercher un objet">
+        <label for="loot-scope">Quêtes</label>
+        <select id="loot-scope" aria-label="Périmètre des quêtes">
+          <option value="tracked">Suivies seulement</option>
+          <option value="all">Toutes disponibles</option>
+        </select>
+        <button id="loot-hide-owned" type="button" aria-pressed="false">Masquer les besoins comblés</button>
+      </div>
+      <div id="loot-summary" class="rp-intel-summary" role="status"></div>
+      <div id="loot-list" class="rp-intel-list" aria-label="Objets à conserver selon la progression"></div>
+      <p class="rp-muted">« Non recensé » ne veut pas dire inutile : les trocs, crafts, prix et usages non documentés doivent être vérifiés avant de vendre.</p>
+    </aside>
+
+    <aside id="hideout-panel" class="rp-command-panel hidden" hidden aria-label="Évolution de la planque">
+      <div class="rp-panel-heading"><strong>🏠 Évolution de la planque</strong>
+        <button id="hideout-close" type="button" aria-label="Fermer la planque">✕</button></div>
+      <p class="rp-muted">Indique le niveau réel de chaque module. RaidPilot calcule les objets manquants pour le prochain niveau à partir de tarkov.dev.</p>
+      <div class="rp-intel-toolbar">
+        <input id="hideout-search" type="search" placeholder="Rechercher un module…" aria-label="Rechercher un module de la planque">
+        <button id="hideout-retry" type="button">↻ Actualiser les données</button>
+      </div>
+      <div id="hideout-status" class="rp-intel-summary" role="status"></div>
+      <div id="hideout-list" class="rp-intel-list" aria-label="Modules et niveaux de planque"></div>
+      <p class="rp-muted">Sources : API JSON tarkov.dev, cache local si disponible. Aucun niveau ni achat n’est déduit automatiquement de ta partie.</p>
+    </aside>
+
+    <aside id="team-panel" class="rp-command-panel hidden" hidden aria-label="Mon équipe">
+      <div class="rp-panel-heading"><strong>👥 Équipe</strong>
+        <button id="team-close" type="button" aria-label="Fermer le panneau équipe">✕</button></div>
+      <div id="team-summary" class="rp-intel-summary" role="status">Aucun coéquipier confirmé.</div>
+      <div id="team-list" class="rp-intel-list" aria-label="Coéquipiers visibles"></div>
+      <p class="rp-muted">Le partage d’équipe se règle depuis l’icône RaidPilot près de l’horloge Windows. Aucune position de coéquipier n’est inventée.</p>
+    </aside>
+
     <section id="questpilot-hud" aria-live="off" aria-label="Prochain objectif QuestPilot" hidden>
       <span id="questpilot-hud-color" aria-hidden="true"></span>
       <div class="qp-current"><strong id="questpilot-hud-title"></strong><small id="questpilot-hud-detail"></small></div>
@@ -152,6 +202,7 @@
   <script src="automatic-floors.js"></script>
   <script src="quest-pilot.js"></script>
   <script src="key-guide.js"></script>
+  <script src="loot-intelligence.js"></script>
   <script src="raidpilot-local-map.js"></script>
   <script src="map-features.js"></script>
   <script src="legacy-bridge.js"></script>

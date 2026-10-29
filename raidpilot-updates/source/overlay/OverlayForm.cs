@@ -2771,6 +2771,7 @@ internal sealed partial class OverlayForm : Form
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.AreBrowserAcceleratorKeysEnabled = false;
             core.WebMessageReceived += OnMapZoomPreferenceMessage;
+            core.WebMessageReceived += OnHideoutIntelMessage;
             core.NavigationStarting += OnNavigationStarting;
             core.NavigationCompleted += OnNavigationCompleted;
             core.SourceChanged += OnSourceChanged;
@@ -6728,7 +6729,10 @@ internal sealed partial class OverlayForm : Form
             _squadClient = null;
         }
         if (_webView.CoreWebView2 is { } zoomCore)
+        {
             zoomCore.WebMessageReceived -= OnMapZoomPreferenceMessage;
+            zoomCore.WebMessageReceived -= OnHideoutIntelMessage;
+        }
         DisposeCollectiveAtlas();
         DisposePrecision();
         DisposeRaidClockUi();
