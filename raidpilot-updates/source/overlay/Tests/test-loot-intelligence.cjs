@@ -4,11 +4,10 @@ const {Planner,extractHideout,extractTaskRequirements,cleanState}
  =require('../LocalMap/loot-intelligence.js');
 let checks=0;
 const test=(title,fn)=>{fn();checks++;console.log('OK '+title);};
-const storage=new Map();
-const local={
-  getItem:k=>storage.get(k)||null,
-  setItem:(k,v)=>storage.set(k,String(v))
-};
+const makeStore=(memory=new Map())=>({
+  getItem:k=>memory.get(k)||null,
+  setItem:(k,v)=>memory.set(k,String(v))
+});
 const items={data:{items:{
   bolts:{id:'bolts',name:'bolt name',shortName:'Bolt',basePrice:18000},
   wire:{id:'wire',name:'wire name',shortName:'Wire'},
@@ -37,8 +36,8 @@ const hideout={data:{hideoutStations:[
     {level:1,itemRequirements:[{item:{id:'wire'},count:3}]}
   ]}
 ]}};
-const make=(mode='pve')=>{
-  const p=new Planner(local,mode);
+const make=(mode='pve',memory=null)=>{
+  const p=new Planner(makeStore(memory||new Map()),mode);
   p.setData({items,tasks,hideout,itemTranslations:fr,
     activeQuests:['quest-A'],completedQuests:[],completedObjectives:[]});
   return p;
@@ -107,10 +106,10 @@ test('un objet absent des données ne peut pas être enregistré comme connu',()
  assert.equal(p.setStationLevel('generator',999),false);
 });
 test('progression planque/inventaire conservée entre raids et redémarrages',()=>{
- const one=make();
+ const memory=new Map(),one=make('pve',memory);
  one.setOwned('bolts',3);
  one.setStationLevel('generator',1);
- const two=make();
+ const two=make('pve',memory);
  assert.equal(two.state.owned.bolts,3);
  assert.equal(two.state.stationLevels.generator,1);
 });
@@ -132,7 +131,7 @@ test('translittération française et recherche par noms',()=>{
  const p=make();
  assert.equal(p.search('BOULONS').length,1);
  assert.equal(p.search('boulons').length,1);
- assert.equal(p.search('QUETE').length>=1,true);
+ assert.equal(p.search('Quest A').length,1);
 });
 test('import de données non fiables borné et nettoyé',()=>{
  const result=cleanState({owned:{bolts:3,invalid:-1},stationLevels:{
