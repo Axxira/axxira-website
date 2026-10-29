@@ -4,7 +4,7 @@ namespace RaidPilot.Overlay.Tests;
 
 internal static class CortexV4Tests
 {
-    internal const int TestCount = 39;
+    internal const int TestCount = 40;
     private const string Map = "customs";
     private static readonly nint Window = (nint)11;
     private static readonly DateTimeOffset Today =
@@ -463,6 +463,22 @@ internal static class CortexV4Tests
             g.OnVisualApplied(At(41), Map, 2, (nint)99, Proposed(), false);
             Require(g.SampleCount == 0);
         }, failures);
+        Run("F8 journal distingue PNG bruts et véritables ancrages", () =>
+        {
+            var j = new CortexF8EvidenceJournal();
+            j.ObserveRawScreenshotNotification(Today);
+            j.ObserveRawScreenshotNotification(Today.AddSeconds(1));
+            var snapshot = j.Export(Today.AddSeconds(2));
+            Require(snapshot.RawScreenshotNotifications == 2
+                && snapshot.Events.Count == 0);
+            var restored = new CortexF8EvidenceJournal();
+            Require(restored.Import(snapshot, Today.AddSeconds(2)));
+            var summary = restored.Summarize(Today.AddSeconds(2));
+            Require(summary.RetainedF8Events == 0
+                && summary.RawScreenshotNotifications == 2
+                && summary.Comparable == 0);
+        }, failures);
+
         Run("F8 journal conserve le premier ancrage et les causes de rejet", () =>
         {
             var j = new CortexF8EvidenceJournal();
