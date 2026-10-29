@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "raidpilot",
+      "version": "0.16.0.1",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.15",
+      "date": "2026-10-29",
+      "summary": "CORTEX V4.3 — rapport F8 explicable et journal de diagnostic durable",
+      "details": "Corrige le diagnostic CORTEX lorsque le rapport affiche zéro F8 exploitable ou WaitingForAnchor malgré des parties précédentes : chaque capture F8 reconnue est maintenant classée par cause (premier ancrage, horodatage absent/non monotone, suivi interrompu, changement de mode, pose prédite absente, durée incompatible, géométrie ou résidu invalide). Le journal local, dont le nom de fichier dérive d'un hachage de l'identifiant de profil, conserve au maximum 256 événements sur 14 jours, avec compteurs des PNG signalés par le surveillant, indépendamment de la reconnaissance de nom. Le rapport JSON schemaVersion 2 ajoute capturePipeline (étapes observées, causes de refus, moyenne et P90 sur comparaisons réelles, date de dernière observation) et précise la différence entre compteurs de session et historique. Pas de PNG, coordonnées, trajets, noms de joueur ou carte dans cet historique; aucune modification des seuils de sécurité, de la cadence F8 ou de l'estimation de position. Ajoute des tests de causes d'exclusion, persistance, expiration, cohérence et confidentialité. Première étape instrumentée : l'amélioration réelle du GPS doit être évaluée avec des F8 comparables en raid."
+    },
+    {
+      "component": "raidpilot",
       "version": "0.16.0.0",
       "raidPilotVersion": "0.16.0.0",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot — partage en direct prêt côté client, opt-in et protection des plans d'escouade",
       "details": "Ajout d'une architecture de synchronisation de quêtes entre coéquipiers, toujours facultative et désactivée par défaut. Le menu Escouade propose « Partager mes quêtes » avec consentement explicite pour chaque connexion. Le logiciel interroge /health du relais Cloudflare officiel : aucun plan n'est transmis si le serveur n'annonce pas explicitement features.questplan=true. Les paquets contiennent uniquement les identifiants publics des quêtes et étapes cochées de l'utilisateur, séparés par mode PvE/PvP, jamais les captures, journaux EFT, identifiants de profil ou secrets de connexion. Les plans reçus sont éphémères, expirent après 90 secondes, sont effacés lors du départ du joueur/déconnexion et ne modifient jamais la progression locale. Numéros et couleurs des balises existantes conservés, étapes d'équipe étiquetées comme non vérifiées. Sécurisation de la validation des paquets et de leurs horodatages, limitation des échanges et anti-rejeu; tests du protocole WebSocket et de la carte locale. Un Worker Cloudflare v2 candidat, avec Durable Objects, protection des salles et compatibilité pose, est livré dans le dépôt UNIQUEMENT pour staging, sans être déployé sur le relais réel. Important : le relais Cloudflare actuellement en production n'a pas encore confirmé la prise en charge des quêtes; seul le partage manuel RPQ1 reste garanti tant que le Worker n'est pas migré et validé avec deux clients. Aucune mise à jour à distance de Cloudflare n'est revendiquée. Beacon 0.3.9 et Launcher 0.2.15 inchangés."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.27",
-      "raidPilotVersion": "0.14.2.27",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot : remise de quête reconnue dans les journaux EFT + plans d'équipe copiables",
-      "details": "QuestPilot améliore le suivi des objectifs et la coopération. Nouveau lecteur en lecture seule des journaux EFT push-notifications : il décode uniquement les événements de quête new_message, types 10 (acceptée), 11 (échouée), 12 (remise au marchand), identifiés par leur identifiant public 24 hex et une date de notification valide. Les autres messages sont rejetés, aucun chat ni identifiant de compte n'est conservé. Les notifications sont lues de manière bornée, par lignes et fragments JSON, sans rejouer les événements historiques au lancement et sans accès mémoire au jeu. Le mode PvE/PvP/PvP saison est déterminé explicitement depuis les logs d'application EFT; les événements dont le mode reste inconnu attendent une identification fiable, jamais de transfert implicite vers PvP. Dans QuestPilot, une quête remise est marquée « Journal EFT »; les étapes posées mais non confirmées dans les logs restent « faites selon toi ». Les exclusions manuelles des quêtes dominent l'OCR et les nouveaux événements; les profils restent locaux et séparés. En escouade, un nouveau partage MANUEL de plan par code RPQ1 permet de copier son plan, importer celui d'un ami sans modifier sa progression et afficher les balises des quêtes partagées avec un rendu distinct; le code ne contient que des identifiants publics de quêtes et les cases cochées, jamais les identifiants personnels ou les journaux. Le relais Cloudflare actuellement déployé ne retransmet pas encore les types de messages QuestPilot (test synthétique négatif le 24 octobre 2026) : le partage automatique en temps réel n'est PAS activé ni annoncé comme fonctionnel. Toutes les fonctions Overlay, Launcher, Beacon, GPS, quêtes numérotées, extractions et cartes sont conservées. Tests C#, JS, multi-étape, priorité manuelle, lecture des nouveaux logs, isolation PvE/PvP et import local."
     }
   ]
 }

@@ -15,7 +15,8 @@ internal static class CortexV4Report
         CortexSpatialReliabilityAtlas atlas,
         bool v4Enabled,
         CortexVisualFeedbackGate? visualFeedback = null,
-        CortexNativeCadenceMemory? nativeCadence = null)
+        CortexNativeCadenceMemory? nativeCadence = null,
+        CortexF8EvidenceJournal? f8Evidence = null)
     {
         ArgumentNullException.ThrowIfNull(nativeF8Residuals);
         ArgumentNullException.ThrowIfNull(navigation);
@@ -39,8 +40,9 @@ internal static class CortexV4Report
         var risk = navigation.DriftRisk;
         var report = new
         {
-            schemaVersion = 1,
+            schemaVersion = 2,
             engine = "CORTEX V4",
+            generatedUtc = DateTimeOffset.UtcNow.ToString("O"),
             experimental = true,
             enabled = v4Enabled,
             nativeF8 = new
@@ -57,6 +59,10 @@ internal static class CortexV4Report
                 measuredP90ErrorMeters = Percentile90(error),
                 suspicious = navigation.SuspiciousF8Anchors
             },
+            // Unlike the above per-session counters, this bounded evidence
+            // survives a new raid and application restart. It also records
+            // WHY each native screenshot was not comparable.
+            capturePipeline = f8Evidence?.Summarize(DateTimeOffset.UtcNow),
             visual = new
             {
                 accepted = vision.Accepted,
@@ -96,9 +102,11 @@ internal static class CortexV4Report
                 estimatedErrorAt12Meters = risk.Calibrated
                     ? (double?)risk.EstimatedErrorAt12Meters : null
             },
-            limitations = "Risk model is empirical; true position error " +
-                "requires independent native F8 measurements. No claim of " +
-                "accuracy improvement without matched in-game comparison."
+            limitations = "Current-session CORTEX counters reset on new raids. "
+                + "capturePipeline contains the last 256 native F8 observations "
+                + "within 14 days, if instrumented by this version. "
+                + "Risk model is empirical; true position error requires native "
+                + "F8 comparisons. No accuracy improvement claim without field tests."
         };
         return JsonSerializer.Serialize(report,
             new JsonSerializerOptions { WriteIndented = true });

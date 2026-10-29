@@ -1,0 +1,80 @@
+name: RaidPilot CORTEX F8 Diagnostics CI
+
+on:
+  push:
+    branches:
+      - raidpilot-cortex-f8-diagnostics-20261029
+  pull_request:
+    branches:
+      - raidpilot-updates
+    paths:
+      - "raidpilot-updates/source/**"
+      - "raidpilot-updates/release-history.json"
+      - "raidpilot-updates/CORTEX-V4.md"
+      - ".github/workflows/raidpilot-cortex-f8-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: raidpilot-cortex-f8-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  f8-regressions:
+    name: Windows .NET 10 CORTEX and launcher checks
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout proposed revision
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Validate release history
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          node raidpilot-updates/source/launcher/Tests/test-release-history.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Release version test failed' }
+
+      - name: Restore verified offline map assets
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & ./raidpilot-updates/Restore-LocalMapAssets.ps1
+          if ($LASTEXITCODE -ne 0) { throw 'Pinned map catalog restore failed' }
+
+      - name: Generate RaidPilot icon
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run --project raidpilot-updates/source/brand/icon-builder/IconBuilder.csproj -c Release -- raidpilot-updates/source/brand
+          if ($LASTEXITCODE -ne 0) { throw 'Icon generation failed' }
+
+      - name: Run full CORTEX and overlay regression suite
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run --project raidpilot-updates/source/overlay/Tests/RaidPilot.Overlay.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Overlay regression tests failed' }
+
+      - name: Run launcher regression suite
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release
+          if ($LASTEXITCODE -ne 0) { throw 'Launcher tests failed' }
+
+      - name: Test local-map and QuestPilot JS compatibility
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tests = 'raidpilot-updates/source/overlay/Tests'
+          foreach ($name in @('test-local-map.cjs', 'test-map-quality.cjs', 'test-quest-pilot.cjs')) {
+            node (Join-Path $tests $name)
+            if ($LASTEXITCODE -ne 0) { throw "JS regression failed: $name" }
+          }

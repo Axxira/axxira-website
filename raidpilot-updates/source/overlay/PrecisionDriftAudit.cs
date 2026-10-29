@@ -15,6 +15,21 @@ internal readonly record struct PrecisionDriftSample(
     double ModelUncertaintyMeters,
     bool PrecisionV4Enabled = false);
 
+/// <summary>Why an exact F8 could or could not be compared to a live pose.</summary>
+internal enum PrecisionF8Outcome
+{
+    FirstAnchor,
+    Comparable,
+    MissingCaptureTimestamp,
+    NonMonotonicCaptureTimestamp,
+    Interrupted,
+    ModeChanged,
+    MissingPrediction,
+    OutOfRangeInterval,
+    InvalidGeometry,
+    InvalidResidual
+}
+
 internal sealed class PrecisionDriftAudit
 {
     private const int Capacity = 32;
@@ -27,6 +42,7 @@ internal sealed class PrecisionDriftAudit
     private bool _interrupted;
     private int _ignored;
 
+    internal PrecisionF8Outcome LastOutcome { get; private set; } = PrecisionF8Outcome.FirstAnchor;
     internal int Count => _samples.Count;
     internal int Ignored => _ignored;
     internal IReadOnlyList<PrecisionDriftSample> Samples => _samples.ToArray();
@@ -40,6 +56,7 @@ internal sealed class PrecisionDriftAudit
         _lastV4Mode = false;
         _interrupted = false;
         _ignored = 0;
+        LastOutcome = PrecisionF8Outcome.FirstAnchor;
     }
 
     internal void MarkInterrupted() => _interrupted = true;
@@ -61,24 +78,47 @@ internal sealed class PrecisionDriftAudit
         _lastV4Mode = precisionV4Enabled;
         _interrupted = false;
 
-        if (captureAt <= 0 || previous <= 0 || captureAt <= previous
-            || wasInterrupted || previousMode != precisionV2Enabled
-            || previousV4Mode != precisionV4Enabled
-            || predictedAtCapture is not { } predicted)
+        // Record one explicit outcome per native F8. The normal conservative
+        // comparison rules are unchanged; the diagnostics now explain zeros.
+        if (captureAt <= 0)
+            LastOutcome = PrecisionF8Outcome.MissingCaptureTimestamp;
+        else if (previous <= 0)
+            LastOutcome = PrecisionF8Outcome.FirstAnchor;
+        else if (captureAt <= previous)
+            LastOutcome = PrecisionF8Outcome.NonMonotonicCaptureTimestamp;
+        else if (wasInterrupted)
+            LastOutcome = PrecisionF8Outcome.Interrupted;
+        else if (previousMode != precisionV2Enabled
+            || previousV4Mode != precisionV4Enabled)
+            LastOutcome = PrecisionF8Outcome.ModeChanged;
+        else if (predictedAtCapture is null)
+            LastOutcome = PrecisionF8Outcome.MissingPrediction;
+        else
+            LastOutcome = PrecisionF8Outcome.Comparable;
+
+        if (LastOutcome != PrecisionF8Outcome.Comparable)
         {
             if (previous > 0) _ignored++;
             return false;
         }
 
+        var predicted = predictedAtCapture!.Value;
         var seconds = (captureAt - previous) / (double)Stopwatch.Frequency;
-        if (seconds is < MinimumSeconds or > MaximumSeconds
-            || !double.IsFinite(predicted.X) || !double.IsFinite(predicted.Z)
+        if (seconds is < MinimumSeconds or > MaximumSeconds)
+        {
+            LastOutcome = PrecisionF8Outcome.OutOfRangeInterval;
+            _ignored++;
+            return false;
+        }
+
+        if (!double.IsFinite(predicted.X) || !double.IsFinite(predicted.Z)
             || !double.IsFinite(predicted.YawDegrees)
             || !double.IsFinite(predicted.PositionUncertaintyMeters)
             || !double.IsFinite(observation.X) || !double.IsFinite(observation.Z)
             || !double.IsFinite(observation.YawDegrees)
             || predicted.PositionUncertaintyMeters < 0)
         {
+            LastOutcome = PrecisionF8Outcome.InvalidGeometry;
             _ignored++;
             return false;
         }
@@ -89,6 +129,7 @@ internal sealed class PrecisionDriftAudit
         var heading = Math.Abs(NormalizeYaw(observation.YawDegrees - predicted.YawDegrees));
         if (!double.IsFinite(meters) || !double.IsFinite(heading) || meters > 100_000)
         {
+            LastOutcome = PrecisionF8Outcome.InvalidResidual;
             _ignored++;
             return false;
         }

@@ -128,6 +128,70 @@ pas des garanties de précision ni une assertion que des raids antérieurs
 étaient déjà appris. La comparaison sur des vrais raids doit mesurer
 la fréquence F8/minute et les erreurs F8 médiane/P90 à configuration égale.
 
+## Complément V4.3 — diagnostic des captures F8 (Overlay 0.16.0.1)
+
+Un export JSON V4 peut afficher `WaitingForAnchor` et zéro comparaison
+même après des raids précédents : les compteurs `nativeF8`, `visual`,
+`feedback` et `learning` décrivent le **superviseur courant**, qui est
+réinitialisé lors des changements de session ou de mode. L'atlas `spatial`
+peut quant à lui être chargé depuis une ancienne sauvegarde et afficher des
+secteurs sans nouvelle observation mesurée. Zéro n'est pas une preuve que
+l'estimateur de déplacement ne s'est jamais exécuté.
+
+V4.3 ajoute un journal **distinct de l'état de navigation** :
+
+- `capturePipeline.RawScreenshotNotifications` : avis de nouveaux PNG
+  reçus depuis le dossier surveillé pendant un raid. Le nom peut être non
+  reconnu par le parseur GPS; il ne s'agit **pas** de F8 validés.
+- `capturePipeline.RetainedF8Events` : observations natives de position
+  ayant passé la reconnaissance de nom et atteint le gestionnaire de F8.
+- `capturePipeline.WithResolvedCaptureTime` et `WithPredictedPose` :
+  étapes d'horodatage et de récupération de la pose **avant correction**.
+- `capturePipeline.Outcomes` : répartition exhaustive des motifs de
+  comparaison non exploitable (`FirstAnchor`, `MissingCaptureTimestamp`,
+  `NonMonotonicCaptureTimestamp`, `Interrupted`, `ModeChanged`,
+  `MissingPrediction`, `OutOfRangeInterval`, `InvalidGeometry`,
+  `InvalidResidual`) ou `Comparable`.
+- `capturePipeline.ComparableWithCortexV4` : échantillons exploitables
+  enregistrés alors que l'option CORTEX V4 était activée. Les erreurs
+  moyenne et P90 de ce bloc ne reposent que sur les vrais F8 comparables;
+  absence de résultat = `null`, pas zéro mètre de dérive.
+- `capturePipeline.LastObservedUtc` et `LastRawScreenshotUtc` :
+  dernières étapes constatées en heure UTC.
+
+Le journal conserve au plus 256 événements et une fenêtre de 14 jours,
+en écriture atomique locale, sous un nom de fichier dérivé du hachage du
+profil. Il contient des dates UTC, indicateurs de traitement, durées et
+éventuelles erreurs mesurées. **Il ne contient aucune capture, image,
+coordonnée précise, trajectoire, touche, nom de carte ou identifiant
+de joueur.** Il ne transmet rien en réseau. La sauvegarde est signalée
+dans le diagnostic si elle échoue. Le schéma du rapport exporté passe à
+`schemaVersion: 2` ; les champs existants sont conservés.
+
+### Interprétation lors du prochain essai
+
+1. Jouer avec l'overlay **mis à jour** (les anciens rapports ne peuvent
+   être enrichis rétroactivement), activer CORTEX V4 pour l'essai et
+   effectuer au moins deux F8 en raid, idéalement après un déplacement
+   contrôlé sans interruption du suivi.
+2. Exporter le rapport via le menu CORTEX. Si les notifications brutes
+   progressent mais `RetainedF8Events` reste à zéro, contrôler le
+   format des noms de fichiers EFT ou le chemin du dossier surveillé.
+3. Si les F8 reconnus progressent sans `Comparable`, examiner en
+   priorité les motifs `Outcomes` : timestamp manquant,
+   `MissingPrediction` ou `Interrupted` sont distincts et nécessitent
+   des correctifs différents.
+4. Si `Comparable` progresse, seulement alors comparer erreur moyenne,
+   P90, cap et fréquence F8 entre sessions de même carte, résolution,
+   sensibilité et stratégie. Sans captures avec heure certaine ou sans
+   pose historique, **ne pas** utiliser le résultat pour étendre la
+   cadence 4/6/8/12 s.
+
+**Aucun changement** des estimateurs, du mode interactif, des règles de
+sécurité F8, des repères visuels ou de l'intervalle de capture. Ce patch
+rend le diagnostic exploitable; son gain de précision in-game reste à
+démontrer.
+
 ## Activation
 
 Le comportement CORTEX V3 reste activé par défaut et inchangé.
