@@ -287,6 +287,7 @@
         gameMode:this.mode,items:this.items.size,
         stationCount:this.stations.length,hideoutLoaded:this.hideoutLoaded,
         trackedQuests:this.tracked.size,
+        taskRequirements:this.taskNeeds.length,
         ownedItems:Object.keys(this.state.owned).length,
         requirements:this.requirements().length
       };
