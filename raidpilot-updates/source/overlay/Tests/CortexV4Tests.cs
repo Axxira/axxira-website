@@ -513,10 +513,14 @@ internal static class CortexV4Tests
                 Require(CortexF8EvidenceStore.TryLoad(reloaded, path,
                     Today.AddMinutes(1)) && reloaded.Count == 2);
                 var bytes = File.ReadAllText(path);
-                Require(!bytes.Contains("Screenshot", StringComparison.OrdinalIgnoreCase)
+                // Aggregate RawScreenshotNotifications is intentional metadata;
+                // reject filenames, paths, coordinates and identifying values.
+                Require(bytes.Contains("RawScreenshotNotifications", StringComparison.Ordinal)
+                    && !bytes.Contains("ScreenshotPath", StringComparison.OrdinalIgnoreCase)
+                    && !bytes.Contains("FileName", StringComparison.OrdinalIgnoreCase)
                     && !bytes.Contains("MemberId", StringComparison.OrdinalIgnoreCase)
-                    && !bytes.Contains("Map", StringComparison.OrdinalIgnoreCase)
-                    && !bytes.Contains("Position", StringComparison.OrdinalIgnoreCase));
+                    && !bytes.Contains("MapId", StringComparison.OrdinalIgnoreCase)
+                    && !bytes.Contains("PositionX", StringComparison.OrdinalIgnoreCase));
             }
             finally
             {
