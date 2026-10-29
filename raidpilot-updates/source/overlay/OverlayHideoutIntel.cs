@@ -37,6 +37,7 @@ internal sealed partial class OverlayForm
             var root = parsed.RootElement;
             if (root.ValueKind != JsonValueKind.Object
                 || !root.TryGetProperty("type", out var type)
+                || type.ValueKind != JsonValueKind.String
                 || type.GetString() != "raidpilot-hideout-intel-request"
                 || !root.TryGetProperty("mode", out var gameMode)
                 || gameMode.ValueKind != JsonValueKind.String)
