@@ -42,11 +42,33 @@ I.profiles={
     hybride={label="Druide polyvalent",str=1,agi=1,sta=1,int=1,spi=1,armor=.015,ap=.3,sp=1,heal=.5,dps=0},
     chasseur={label="Chasseur",str=.2,agi=2,sta=1,int=.5,spi=.2,armor=.01,ap=.5,sp=0,heal=0,dps=0},
 }
-I.defaults={DRUID="hybride",PALADIN="melee",WARRIOR="melee",ROGUE="agile",HUNTER="chasseur",SHAMAN="melee",PRIEST="caster",MAGE="caster",WARLOCK="caster"}
+I.defaults={PALADIN="melee",WARRIOR="melee",ROGUE="agile",HUNTER="chasseur",SHAMAN="melee",PRIEST="caster",MAGE="caster",WARLOCK="caster"}
+function I:DruidProfile()
+    -- Classic/Forever has talent trees, not a reliable retail specialization.
+    -- Do not infer a role from the current shapeshift or from worn gear.
+    if self:Number(B.Call(GetNumTalentTabs))~=3 then return end
+    local best,total,tied=nil,0,false
+    for tab=1,3 do
+        local count=self:Number(B.Call(GetNumTalents,tab))
+        if not count or count<1 or count>100 then return end
+        local spent=0
+        for index=1,count do
+            local data=B.Call(function() return {GetTalentInfo(tab,index)} end)
+            local rank=self:Number(self:Field(data,5))
+            if not rank or rank<0 then return end
+            spent=spent+rank
+        end
+        if spent>total then best,total,tied=tab,spent,false
+        elseif spent==total then tied=true end
+    end
+    if best and not tied then return ({"caster","feral","soin"})[best] end
+end
 function I:Profile()
     local class=B.Call(Ding.Compat.PlayerClass)
     local key=B.char.gearProfile or "auto"
-    if key=="auto" then key=self.defaults[class] end
+    if key=="auto" then
+        if class=="DRUID" then key=self:DruidProfile() else key=self.defaults[class] end
+    end
     return self.profiles[key],key
 end
 function I:SetProfile(key)

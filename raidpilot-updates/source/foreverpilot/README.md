@@ -16,7 +16,7 @@ Le survol commence par **Upgrade : OUI / NON**, avec les gains et pertes de stat
 par rapport à l'équipement porté. Le profil reste visible dans l'en-tête; les points
 internes de score sont retirés de l'infobulle et de la liste des sacs.
 Une donnée manquante ou un effet non évalué reste **À VÉRIFIER**.
-Le calcul du conseil n'est pas modifié par cette simplification.
+Les poids de stats restent inchangés. En mode Auto, le druide utilise désormais son arbre de talents dominant (Équilibre, Farouche ou Restauration). Sans arbre dominant lisible, il faut choisir le profil : aucun verdict polyvalent inventé. Un choix manuel reste prioritaire, notamment pour un build mixte.
 
 Les valeurs HDV utilisent les icônes natives or, argent et cuivre. La valeur de la
 pile apparaît seulement pour plusieurs objets. L'âge du prix et les scans partiels

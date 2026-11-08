@@ -8,8 +8,8 @@
       "beaconVersion": "0.3.10",
       "launcherVersion": "0.2.22",
       "date": "2026-11-08",
-      "summary": "ForeverPilot 1.6.1 : upgrades clairs et prix en pièces",
-      "details": "Simplifie le survol des objets et la liste des équipements : Upgrade OUI ou NON, puis gains et pertes de stats. Le profil de comparaison reste visible; les points de score, le rappel de case et le prix marchand en double sont retirés. Les données incomplètes et les effets ou restrictions non évalués gardent la mention À VÉRIFIER. Le calcul du conseil est inchangé. Les prix HDV utilisent les petites icônes natives or, argent et cuivre, avec repli compatible. Prix par unité et par pile, âge, résultats partiels, objets liés et variantes restent correctement distingués. Aucun achat, vente ou équipement automatique. Après installation, recharger l'interface hors combat avec /reload."
+      "summary": "ForeverPilot 1.6.1 : verdicts simples, profil druide et pièces",
+      "details": "Simplifie le survol des objets et la liste des équipements : Upgrade OUI ou NON, puis gains et pertes de stats. Le profil de comparaison reste visible; les points de score, le rappel de case et le prix marchand en double sont retirés. Les données incomplètes et les effets ou restrictions non évalués gardent la mention À VÉRIFIER. Le calcul du conseil est inchangé. Les prix HDV utilisent les petites icônes natives or, argent et cuivre, avec repli compatible. Prix par unité et par pile, âge, résultats partiels, objets liés et variantes restent correctement distingués. Aucun achat, vente ou équipement automatique. Après installation, recharger l'interface hors combat avec /reload. Corrige aussi le mauvais profil druide par défaut : Auto suit les points de talents dominants, avec Farouche pour le combat farouche, Équilibre pour les sorts et Restauration pour les soins. Si les talents sont absents, à égalité ou illisibles, le conseil demande un profil au lieu de choisir Polyvalent. Un profil manuel reste prioritaire. Le cas Scout Ranger's Belt vers Jackseed Belt est testé : NON pour Farouche malgré les 3 points d'Intelligence gagnés."
     },
     {
       "component": "launcher",
