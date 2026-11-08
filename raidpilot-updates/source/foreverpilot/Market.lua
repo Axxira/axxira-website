@@ -55,9 +55,18 @@ function M:Key(link)
     return id..":"..table.concat(variant,":")..":"..table.concat(tail,":"),id
 end
 function M:Money(copper)
-    copper=num(copper);if not copper then return "?" end
+    copper=num(copper);if not copper or copper<0 then return "?" end
+    copper=math.floor(copper)
+    local coins=B.Call(C_CurrencyInfo and C_CurrencyInfo.GetCoinTextureString or GetCoinTextureString,copper,14)
+    if type(coins)=="string" and coins~="" then return coins end
     copper=math.floor(copper);local g=math.floor(copper/10000);local s=math.floor(copper/100)%100;local c=copper%100
-    if g>0 then return g.." Gold "..s.." Silver "..c.." Copper" elseif s>0 then return s.." Silver "..c.." Copper" else return c.." Copper" end
+    local parts={}
+    for _,coin in ipairs({{g,"Gold"},{s,"Silver"},{c,"Copper"}}) do
+        if coin[1]>0 or (copper==0 and coin[2]=="Copper") then
+            parts[#parts+1]=coin[1].."|TInterface\\MoneyFrame\\UI-"..coin[2].."Icon:14:14:2:0|t"
+        end
+    end
+    return table.concat(parts," ")
 end
 function M:Age(at)
     local age=math.max(0,time()-(num(at) or 0))

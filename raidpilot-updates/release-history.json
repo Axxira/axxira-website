@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.22",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.22",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.6.1 : verdicts simples, profil druide et pièces",
+      "details": "Simplifie le survol des objets et la liste des équipements : Upgrade OUI ou NON, puis gains et pertes de stats. Le profil de comparaison reste visible; les points de score, le rappel de case et le prix marchand en double sont retirés. Les données incomplètes et les effets ou restrictions non évalués gardent la mention À VÉRIFIER. Le calcul du conseil est inchangé. Les prix HDV utilisent les petites icônes natives or, argent et cuivre, avec repli compatible. Prix par unité et par pile, âge, résultats partiels, objets liés et variantes restent correctement distingués. Aucun achat, vente ou équipement automatique. Après installation, recharger l'interface hors combat avec /reload. Corrige aussi le mauvais profil druide par défaut : Auto suit les points de talents dominants, avec Farouche pour le combat farouche, Équilibre pour les sorts et Restauration pour les soins. Si les talents sont absents, à égalité ou illisibles, le conseil demande un profil au lieu de choisir Polyvalent. Un profil manuel reste prioritaire. Le cas Scout Ranger's Belt vers Jackseed Belt est testé : NON pour Farouche malgré les 3 points d'Intelligence gagnés."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.21",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot — Ctrl+Alt+I ouvre carte et quêtes, validation par boutons",
       "details": "Ctrl+Alt+I ne coche plus aucun objectif. Ce raccourci ouvre la carte interactive et le panneau QuestPilot avec la liste des quêtes. Chaque objectif non terminé propose un bouton explicite « ✓ Fait »; les étapes cochées manuellement se restaurent via « Étapes terminées » → « Réactiver ce point ». Le bandeau sous la carte et le filtrage des points terminés restent disponibles. Les quêtes remises confirmées par les journaux EFT restent protégées contre une réactivation incorrecte."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.35",
-      "raidPilotVersion": "0.14.2.35",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot — objectifs terminés masqués, bandeau lisible, Ctrl+Alt+I",
-      "details": "Sur la carte, chaque objectif personnel marqué terminé disparaît immédiatement; les autres points de la même quête restent affichés. Une section repliable « Étapes terminées » permet de réactiver en un clic un objectif coché manuellement. Les lieux alternatifs d'une seule étape partagent le même statut; les marqueurs des coéquipiers restent indépendants. Une quête entière remise et confirmée par les journaux EFT ne peut pas être remise en cours manuellement. Les journaux EFT disponibles confirment des quêtes entières, pas nécessairement chaque sous-objectif; la validation rapide des étapes se fait manuellement. Deux tests de non-régression ajoutés. Comprend également le correctif de priorité du suivi manuel et masque les distances quand la localisation est incertaine (PR #26 reprise dans cette version). Nouveau bandeau d'objectif placé sous la carte (texte plus grand) et raccourci global Ctrl+Alt+I pour cocher une seule étape ciblée pendant un raid, uniquement si Tarkov est au premier plan. Le raccourci Interagir est transféré à Ctrl+Alt+U pour éviter toute collision. Les étapes terminées sont restaurables manuellement."
     }
   ]
 }
