@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.23",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.23",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.7.0 : profils par classe, spécialisation et sélecteur",
+      "details": "Les conseils d'équipement suivent automatiquement les talents des neuf classes et de leurs 27 arbres. La classe et la spécialisation apparaissent dans l'infobulle; un changement de talents recalcule le profil. Les réglages restent propres à chaque personnage. Un build hybride indéterminé demande un choix, sans inventer un verdict. Les classes à rôle unique gardent un profil de classe avec la mention spé à préciser. Nouveau sélecteur dans Objets > Profil : race et classe détectées pour le personnage connecté, spécialisation automatique ou manuelle; option Farouche ours tank. La vue Autre personnage permet de choisir race, classe et spécialisation pour consulter et mémoriser les priorités sans modifier les conseils des objets portés ni les quêtes. Combinaisons race/classe et bonus raciaux non évalués. Poids indicatifs, effets spéciaux non simulés. Le panneau de guidage garde sa taille. Les verdicts simples, les pièces HDV, Ding et ChangeLayer sont conservés. Après installation : /reload hors combat."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.22",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot sous la carte et Ctrl+Alt+I ouvre/ferme",
       "details": "Le panneau complet QuestPilot (liste des quêtes, étapes, bouton Fait, restauration et options) a été déplacé hors de la zone de carte dans une section défilante sous la carte, avec texte agrandi. Le raccourci global Ctrl+Alt+I bascule entre l'ouverture interactive carte+quêtes et la fermeture de l'interface, sans cocher d'étape. Les marqueurs des étapes terminées restent masqués, sauf objectifs encore à faire; les anciens contrôles restent accessibles."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.36",
-      "raidPilotVersion": "0.14.2.36",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot — Ctrl+Alt+I ouvre carte et quêtes, validation par boutons",
-      "details": "Ctrl+Alt+I ne coche plus aucun objectif. Ce raccourci ouvre la carte interactive et le panneau QuestPilot avec la liste des quêtes. Chaque objectif non terminé propose un bouton explicite « ✓ Fait »; les étapes cochées manuellement se restaurent via « Étapes terminées » → « Réactiver ce point ». Le bandeau sous la carte et le filtrage des points terminés restent disponibles. Les quêtes remises confirmées par les journaux EFT restent protégées contre une réactivation incorrecte."
     }
   ]
 }

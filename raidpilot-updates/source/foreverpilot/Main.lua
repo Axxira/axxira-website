@@ -12,6 +12,7 @@ function B.SetEnabled(enabled)
         B.UI.frame:SetShown(B.settings.shown~=false);B.dirty=true
     else
         if B.Advisor and B.Advisor.frame then B.Advisor.frame:Hide() end
+        if B.Advisor and B.Advisor.profileFrame then B.Advisor.profileFrame:Hide() end
         if B.Market then B.Market:Cancel() end
         B.Validator:Close()
         Ding.AutoQuest.Wanted=B.originalWanted
@@ -187,6 +188,7 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="addons" then B.Advisor:Toggle("addons")
     elseif msg=="layers" or msg=="layer" then B.LayerUI:Toggle()
     elseif msg=="scan" then B.Market:Scan();B.Print(B.Market.status);B.Advisor:RefreshIfShown()
+    elseif msg=="profil" then B.Advisor:ToggleProfile()
     elseif msg:match("^profil%s+") then
         local key=msg:match("^profil%s+(%S+)$")
         if B.Items:SetProfile(key) then B.Print("Profil objets : "..key);B.Advisor:RefreshIfShown()

@@ -1,4 +1,4 @@
-# ForeverPilot Brain v1.6.1
+# ForeverPilot Brain v1.7.0
 
 Assistant de leveling dynamique pour WoW Forever. Nécessite **Ding** activé.
 L'installation locale se trouve dans `_forever_/Interface/AddOns/ForeverPilot_Leveling`.
@@ -9,6 +9,37 @@ et combat lui-même. La flèche indique une destination, pas un chemin qui conto
 automatiquement les obstacles.
 
 ## Utilisation
+
+### Profil par classe et spécialisation (1.7.0)
+
+**Objets → Profil** ouvre un sélecteur discret. **Mon personnage** détecte sa race
+et sa classe; **Automatique** lit les points réellement dépensés dans les talents
+des neuf classes et de leurs 27 arbres. Le nom de la classe et de l'arbre apparaît
+dans l'infobulle. Le profil se recalcule après un changement de talents; le cache
+expire également après une seconde. Chaque personnage conserve ses propres choix.
+
+Une spécialisation choisie manuellement reste prioritaire jusqu'au retour en Auto.
+Farouche utilise le profil de dégâts; **Farouche · ours tank** est disponible à la
+main, car le même arbre peut servir aux deux rôles. Un build hybride sans arbre
+dominant ou des talents illisibles demande un choix et garde **À VÉRIFIER**.
+Mage, démoniste, voleur et chasseur peuvent conserver leur profil de classe quand
+l'arbre est indéterminé, avec **spé à préciser**, sans inventer de spécialisation.
+
+**Autre personnage** permet de choisir une race, une classe et une spécialisation
+pour consulter les priorités du profil, puis de mémoriser cet aperçu. Cette vue
+ne remplace ni le profil utilisé sur tes objets ni l'identité utilisée pour les
+quêtes. Les combinaisons race/classe, bonus raciaux, caps et effets spéciaux ne
+sont pas évalués. Les poids restent des préférences de leveling, pas une
+simulation de DPS. Les arbres partageant un rôle partagent les mêmes bases;
+paladin et chaman ont des ajustements pour leurs stats de mana et de sorts.
+
+`/fpl profil` ouvre le sélecteur; `/fpl profil auto` réactive la détection.
+Les anciens choix manuels (`feral`, `soin`, `tank`, etc.) sont conservés.
+Après installation : `/reload` hors combat. Aucun nouveau module à charger.
+
+Références de compatibilité : API de talents utilisée par `Ding/Core/Talents.lua`,
+ordre des arbres vérifié dans les [métadonnées Classic de TalentEmu](https://github.com/alexqu0822/TalentEmu/blob/master/Data/classic.lua),
+races Forever reconnues par `Ding/Core/Import.lua`. Aucun poids commercial copié.
 
 ### Objets : verdict simple et pièces (1.6.1)
 

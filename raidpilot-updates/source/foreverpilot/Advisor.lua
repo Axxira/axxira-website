@@ -1,7 +1,6 @@
 -- Optional drawer and tooltip rows. The navigation panel stays the same size.
 local B=ForeverPilotLeveling
 local A={page=1};B.Advisor=A
-local profileOrder={"auto","feral","tank","soin","caster","melee","agile","hybride","chasseur"}
 local function text(parent,size,x,y,w,h)
     local t=parent:CreateFontString(nil,"OVERLAY");t:SetFont(STANDARD_TEXT_FONT,size,"")
     t:SetPoint("TOPLEFT",parent,"TOPLEFT",x,-y);t:SetSize(w,h);t:SetJustifyH("LEFT");t:SetJustifyV("TOP");t:SetWordWrap(true)
@@ -104,11 +103,14 @@ function A:Audit()
     lines[#lines+1]="BugSack + BugGrabber : utiles pour diagnostiquer les erreurs."
     return table.concat(lines,"\n")
 end
-function A:RefreshIfShown() if self.frame and self.frame:IsShown() then self:Render() end end
+function A:RefreshIfShown()
+    if self.frame and self.frame:IsShown() then self:Render() end
+    if self.profileFrame and self.profileFrame:IsShown() then self:RenderProfile() end
+end
 function A:Render()
     if not self.frame then return end
-    local profile=B.Items:Profile()
-    self.profileButton.label:SetText("Profil : "..((B.char.gearProfile or "auto")=="auto" and "Auto / " or "")..(profile and profile.label or "à choisir"))
+    local _,_,label=B.Items:Profile()
+    self.profileButton.label:SetText("Profil : "..(label or "à choisir").."  ›")
     local tab=self.tab or "gear"
     if tab=="market" then
         self.body:SetText("PRIX CONSULTABLES PARTOUT\n\n"..(B.Market.status or "Ouvre l'hôtel des ventes, puis lance un scan.").."\n\n"..
@@ -144,7 +146,7 @@ function A:Render()
         end
         if #rows==0 then lines[#lines+1]="Aucun équipement comparable dans les sacs." end
         if pending>0 then lines[#lines+1]=pending.." objet(s) en cours de chargement." end
-        lines[#lines+1]="Profils indicatifs : choisis celui de ton rôle. Effets spéciaux non simulés."
+        lines[#lines+1]="Conseil selon ta classe et ta spécialisation. Effets spéciaux non simulés."
         self.body:SetText(table.concat(lines,"\n"));self.pages=pages
     end
     self.scan:SetShown(tab=="market");self.previous:SetShown(tab=="gear");self.next:SetShown(tab=="gear")
@@ -160,11 +162,7 @@ function A:Create()
     for i,t in ipairs({{"gear","Équipement"},{"market","Prix HDV"},{"addons","Addons"}}) do
         local tab=t[1];button(f,t[2],20+(i-1)*145,52,135,function() self.tab=tab;self:Render() end)
     end
-    self.profileButton=button(f,"Profil",20,91,425,function()
-        local current=B.char.gearProfile or "auto";local index=1
-        for i,k in ipairs(profileOrder) do if k==current then index=i end end
-        B.Items:SetProfile(profileOrder[index%#profileOrder+1]);self:Render()
-    end)
+    self.profileButton=button(f,"Profil",20,91,425,function() self:ToggleProfile() end)
     self.body=text(f,12,20,130,425,280)
     self.scan=button(f,"Scanner l'HDV",20,422,200,function() B.Market:Scan();self:Render() end)
     self.previous=button(f,"Précédent",20,422,130,function() self.page=math.max(1,self.page-1);self:Render() end)
@@ -176,6 +174,107 @@ function A:Toggle(tab)
     self:Create();if tab then self.tab=tab end
     if self.frame:IsShown() and not tab then self.frame:Hide() else self.frame:Show();self:Render() end
 end
+function A:ProfileChoices(title,choices,selected,callback)
+    local f=self.choiceFrame
+    if not f then
+        f=CreateFrame("Frame",nil,self.profileFrame);self.choiceFrame=f;self.choicePool={}
+        local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.045,.09,.12,1)
+        self.choiceTitle=text(f,14,14,13,330,24)
+        button(f,"×",350,7,27,function() f:Hide() end)
+    end
+    f:SetSize(388,65+math.ceil(#choices/2)*34);f:SetPoint("CENTER",self.profileFrame,"CENTER",0,0)
+    f:SetFrameStrata("DIALOG");f:SetFrameLevel(self.profileFrame:GetFrameLevel()+10);f:EnableMouse(true)
+    self.choiceTitle:SetText(title);self.choiceButtons={}
+    for _,b in ipairs(self.choicePool) do b:Hide() end
+    for i,choice in ipairs(choices) do
+        local key=choice.key
+        local b=self.choicePool[i]
+        if not b then b=button(f,"",12+((i-1)%2)*184,48+math.floor((i-1)/2)*34,178,function() end);self.choicePool[i]=b end
+        b.label:SetText((key==selected and "• " or "")..choice.label)
+        b:SetScript("OnClick",function()
+            callback(key);f:Hide();self:RenderProfile()
+        end)
+        self.choiceButtons[key]=b;b:Show()
+    end
+    f:Show()
+end
+function A:RenderProfile()
+    local I=B.Items;local preview=self.profileMode=="preview"
+    local class=preview and self.preview.class or B.Call(Ding.Compat.PlayerClass)
+    local def=I.classes[class];local raceName=B.Call(UnitRace,"player") or "Inconnue"
+    if preview then
+        raceName="Inconnue"
+        for _,r in ipairs(I:RaceChoices()) do if r.key==self.preview.race then raceName=r.label end end
+    end
+    self.raceChoice.label:SetText("Race : "..raceName..(preview and "  ›" or " · détectée"))
+    self.classChoice.label:SetText("Classe : "..(def and def.label or "Inconnue")..(preview and "  ›" or " · détectée"))
+    self.raceChoice:SetEnabled(preview);self.classChoice:SetEnabled(preview)
+    local selection=preview and self.preview.selection or self.liveSelection
+    local selectionLabel=I.profiles[selection] and I.profiles[selection].label or "À choisir"
+    for _,c in ipairs(I:SpecChoices(class,not preview)) do if c.key==selection then selectionLabel=c.label end end
+    self.specChoice.label:SetText("Spé : "..selectionLabel.."  ›")
+    local profile,_,label,reason=I:ResolveProfile(class,selection,not preview)
+    self.profileModeLabel:SetText(preview and "CONSULTER UN AUTRE PERSONNAGE" or "CONSEILS POUR MON PERSONNAGE")
+    self.profileInfo:SetText((label or "").."\n\nPriorités de comparaison :\n"..I:Priorities(profile)..
+        (reason and "\n\n"..reason or "")..(preview and
+        "\n\nAperçu des priorités. Tes objets gardent le profil de ton personnage connecté. Combinaisons race/classe et bonus raciaux non évalués." or
+        "\n\nAutomatique suit tes talents. Un choix manuel reste prioritaire jusqu'au retour en automatique."))
+    self.profileApply.label:SetText(preview and "Garder cet aperçu" or "Utiliser ce profil")
+    self.profileApply:SetEnabled(preview or selection=="auto" or profile~=nil)
+end
+function A:CreateProfile()
+    if self.profileFrame then return end
+    local f=CreateFrame("Frame","ForeverPilotProfileFrame",UIParent);self.profileFrame=f
+    f:SetSize(430,478);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetClampedToScreen(true)
+    f:SetFrameStrata("DIALOG");f:SetFrameLevel((self.frame and self.frame:GetFrameLevel() or 0)+5);f:EnableMouse(true)
+    local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.99)
+    text(f,17,20,16,350,26):SetText("ForeverPilot · Profil")
+    button(f,"×",390,10,28,function() f:Hide() end)
+    self.liveModeButton=button(f,"Mon personnage",20,52,190,function() self.profileMode="live";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
+    self.previewModeButton=button(f,"Autre personnage",220,52,190,function() self.profileMode="preview";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
+    self.profileModeLabel=text(f,10,20,88,390,18);self.profileModeLabel:SetTextColor(.3,.85,.8)
+    self.raceChoice=button(f,"Race",20,110,390,function()
+        if self.profileMode~="preview" then return end
+        self:ProfileChoices("Choisir une race",B.Items:RaceChoices(),self.preview.race,function(key) self.preview.race=key end)
+    end)
+    self.classChoice=button(f,"Classe",20,144,390,function()
+        if self.profileMode~="preview" then return end
+        local choices={};for _,class in ipairs(B.Items.classOrder) do choices[#choices+1]={key=class,label=B.Items.classes[class].label} end
+        self:ProfileChoices("Choisir une classe",choices,self.preview.class,function(key)
+            self.preview.class=key;self.preview.selection="spec:"..key..":1"
+        end)
+    end)
+    self.specChoice=button(f,"Spécialisation",20,178,390,function()
+        local preview=self.profileMode=="preview";local class=preview and self.preview.class or B.Call(Ding.Compat.PlayerClass)
+        self:ProfileChoices("Choisir une spécialisation",B.Items:SpecChoices(class,not preview),preview and self.preview.selection or self.liveSelection,function(key)
+            if preview then self.preview.selection=key else self.liveSelection=key end
+        end)
+    end)
+    self.profileInfo=text(f,12,20,218,390,208)
+    self.profileApply=button(f,"Utiliser ce profil",20,440,390,function()
+        if self.profileMode=="preview" then B.char.gearPreview=B.Copy(self.preview)
+        elseif not B.Items:SetProfile(self.liveSelection) then return end
+        f:Hide();self:RefreshIfShown()
+    end)
+    f:SetScript("OnHide",function() if self.choiceFrame then self.choiceFrame:Hide() end end)
+    if UISpecialFrames then table.insert(UISpecialFrames,"ForeverPilotProfileFrame") end
+    f:Hide()
+end
+function A:ToggleProfile()
+    self:CreateProfile()
+    if self.profileFrame:IsShown() then self.profileFrame:Hide();return end
+    local I=B.Items;local class=B.Call(Ding.Compat.PlayerClass)
+    local _,race=B.Call(UnitRace,"player")
+    self.liveSelection=B.char.gearProfile or "auto";self.profileMode="live"
+    local saved=type(B.char.gearPreview)=="table" and B.char.gearPreview or {}
+    self.preview=B.Copy(saved)
+    if not I.classes[self.preview.class] then self.preview.class=I.classes[class] and class or "WARRIOR" end
+    local validRace=false;for _,r in ipairs(I:RaceChoices()) do validRace=validRace or r.key==self.preview.race end
+    if not validRace then self.preview.race=race or "Human" end
+    local validSpec=false;for _,c in ipairs(I:SpecChoices(self.preview.class,false)) do validSpec=validSpec or c.key==self.preview.selection end
+    if not validSpec then self.preview.selection="spec:"..self.preview.class..":1" end
+    self:RenderProfile();self.profileFrame:Show()
+end
 function A:Init()
     B.Market:Init();self:InstallTooltips()
     if B.AuctionUI then B.AuctionUI:Init() end
@@ -183,8 +282,10 @@ function A:Init()
     self.openButton=button(f,"Objets",173,6,54,function() self:Toggle() end)
     local events=CreateFrame("Frame");self.events=events
     for _,e in ipairs({"AUCTION_HOUSE_SHOW","AUCTION_HOUSE_CLOSED","REPLICATE_ITEM_LIST_UPDATE","COMMODITY_SEARCH_RESULTS_UPDATED","COMMODITY_SEARCH_RESULTS_ADDED","ITEM_SEARCH_RESULTS_UPDATED","ITEM_SEARCH_RESULTS_ADDED","BAG_UPDATE_DELAYED","PLAYER_EQUIPMENT_CHANGED","GET_ITEM_INFO_RECEIVED","PLAYER_REGEN_ENABLED"}) do pcall(events.RegisterEvent,events,e) end
+    for e in pairs(B.Items.profileEvents) do pcall(events.RegisterEvent,events,e) end
     events:SetScript("OnEvent",function(_,e,arg)
         local ok,err=pcall(function()
+            if B.Items.profileEvents[e] then B.Items:InvalidateProfile() end
             B.Market:Event(e,arg)
             if B.settings.enabled and not self.refreshPending then
                 self.refreshPending=true;C_Timer.After(.25,function() self.refreshPending=false;B.Call(self.RefreshIfShown,self) end)
