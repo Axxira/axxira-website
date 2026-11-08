@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T15:49:00.1327520+00:00",
+  "publishedAt": "2026-11-08T23:45:17.3075588+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.26-18acba441889/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "CB2387597AB2DC5704435BEB03BB33C5E9792E13E6CDBF069C6AF919140550FB",
-    "sizeBytes": 234564526,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.27-ee1389ab8deb/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "EC3D4DACE341CCF8E7CF63CA74EAFCFD8C4D41FA035B65D986BACD603090CF5E",
+    "sizeBytes": 234564527,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.26-18acba441889/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "45859F03FE9DC16502D9923884BE0864146A01F36DB5EBD36B0206FEA900E234",
-    "sizeBytes": 58332827,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.27-ee1389ab8deb/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "1EE813C8E1BE017A05A91B9B2EC9C11DA23002AB45D362A07F52A8237B56560B",
+    "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.26",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.26-18acba441889/RaidPilot-Launcher-v0.2.26-Windows-x64.zip",
-    "sha256": "A37CA9443FB7801E0DF4385F95E29D4529B4E708E0EBAA051F9F93973D2472AC",
-    "sizeBytes": 360604239,
-    "releaseNotes": "Accueil au premier lancement et onglet Abonnement dans Options. L’édition RaidPilot reste intégralement gratuite, sans compte ni connexion. La distribution publique relie Fast XP et les conseils de classe au compagnon Windows, avec vérification du paiement PayPal et annulation des renouvellements. HDV et outils restent accessibles. Ding reprend le guidage lorsqu’un accès public expire. Redémarrage complet de WoW requis. Paiement et annulation vérifiés avec le service de test PayPal; aucun paiement réel effectué. La publication CurseForge reste soumise à sa modération."
+    "version": "0.2.27",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.27-ee1389ab8deb/RaidPilot-Launcher-v0.2.27-Windows-x64.zip",
+    "sha256": "5B051A573B02F7CFDF1137DBFE7423118A75EDB629FCA804AF60EB70750E2F40",
+    "sizeBytes": 360607979,
+    "releaseNotes": "Compare les deux trajets complets avant un retour, intègre les quêtes proches déjà prises à la sortie et libère les anciennes prises lointaines. Les quêtes de classe proches, prises ou réellement offertes restent prioritaires. Ajoute les courtes boucles solo confirmées dans le journal ou au PNJ, avec contrôles de niveau et destination. Les récompenses rares observées peuvent favoriser une quête si leurs statistiques conviennent à la classe et spécialisation; bonus limité, effets complexes à comparer manuellement. Aucun catalogue complet de récompenses bleues, aucune promesse de gain XP/h. Interface compacte FR/EN, aucun nouveau fichier à charger. Édition RaidPilot entièrement gratuite. CurseForge reste soumis à modération."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.27",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.27",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.9.1 : moins de retours au village",
+      "details": "Compare les deux trajets complets avant un retour, intègre les quêtes proches déjà prises à la sortie et libère les anciennes prises lointaines. Les quêtes de classe proches, prises ou réellement offertes restent prioritaires. Ajoute les courtes boucles solo confirmées dans le journal ou au PNJ, avec contrôles de niveau et destination. Les récompenses rares observées peuvent favoriser une quête si leurs statistiques conviennent à la classe et spécialisation; bonus limité, effets complexes à comparer manuellement. Aucun catalogue complet de récompenses bleues, aucune promesse de gain XP/h. Interface compacte FR/EN, aucun nouveau fichier à charger. Édition RaidPilot entièrement gratuite. CurseForge reste soumis à modération."
+    },
     {
       "component": "launcher",
       "version": "0.2.26",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — interface minimale et validation de scan F8",
       "details": "StashPilot montre désormais les objets et leurs décisions en quatre colonnes seulement : objet, quantité, décision, raison. Les réglages d'inventaire et de besoins sont déplacés dans une fenêtre secondaire. En menu Tarkov, F8 lance l'OCR local puis une seule fenêtre permet de corriger et confirmer les noms/quantités reconnus avant de remplacer la liste du dernier scan et de sauvegarder localement. Aucun objet sans besoin confirmé ne reçoit un conseil de vente. L'OCR ne reconnaît pas les icônes seules, et le scan doit être vérifié manuellement avant confirmation. Aucun achat ni vente automatique."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.4.1",
-      "raidPilotVersion": "0.15.4.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — F8 seul dans le menu Tarkov ouvre le scan",
-      "details": "StashPilot n'exige plus Ctrl+Alt+P ni d'armer le scan quand le joueur est hors raid. Le watcher RaidPilot détecte aussi les nouveaux screenshots du menu dont les noms ne portent pas de coordonnées GPS. Un F8 pris depuis le menu Tarkov ouvre automatiquement StashPilot et lance une lecture OCR locale quand le PNG a fini d'être écrit. Plusieurs scans successifs possibles, sans action en raid. Les résultats OCR restent à vérifier : les icônes seules et quantités incertaines ne sont pas déclarées comme confirmées."
     }
   ]
 }
