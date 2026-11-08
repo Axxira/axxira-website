@@ -994,6 +994,7 @@ internal enum LauncherAction
     OpenForeverFolder,
     RefreshForeverPilot,
     InstallForeverPilot,
+    InstallChangeLayer,
     ToggleHabsGoals,
     PreviewHabsGoals,
     Home,

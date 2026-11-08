@@ -39,7 +39,7 @@ function N:Choose(s,quest)
 end
 function N:MerchantClosed()
     local a=B.Planner.current
-    if a and a.kind=="service" then
+    if a and a.kind=="service" and a.service~="flight" then
         -- Do not trap the player here if a repair was unaffordable or they chose
         -- to keep their items. No item is sold or discarded by this module.
         B.char.deferred[a.key]=time()+300;B.Recovery.revision=(B.Recovery.revision or 0)+1

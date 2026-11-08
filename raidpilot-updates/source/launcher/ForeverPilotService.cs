@@ -144,7 +144,7 @@ internal static class ForeverPilotService
             throw new InvalidDataException("Licence ou crédits de Ding absents du package.");
     }
 
-    private static void RejectLinkedPath(string path)
+    internal static void RejectLinkedPath(string path)
     {
         for (var current = Path.GetFullPath(path); !string.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))
             if ((Directory.Exists(current) || File.Exists(current)) && (File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)

@@ -43,10 +43,10 @@ function P:Progress(row)
     end
     return total>0 and have/total or 0,total-have
 end
-function P:Unlock(n,s,future)
+function P:Unlock(n,s,future,classOnly)
     -- Only unfinished, compatible descendants in the current bracket justify
     -- doing a low-level parent now. An already-satisfied OR branch does not.
-    local key=future and "futureUnlocks" or "unlocks"
+    local key=classOnly and "classUnlocks" or future and "futureUnlocks" or "unlocks"
     s[key]=s[key] or {};local cache=s[key]
     if cache[n.id]~=nil then return cache[n.id] or nil end
     local visited={};local limit=0
@@ -65,12 +65,14 @@ function P:Unlock(n,s,future)
         local ids={};for q in pairs(current.next or {}) do ids[#ids+1]=q end;table.sort(ids)
         for _,q in ipairs(ids) do
             local child=B.Graph:Node(q)
-            local valid=child and child.fast and not child.profession and not s:IsDone(q) and not s.log[q] and Ding.Data:QuestOpenToPlayer(q) and needs(child,current.id)
+            local isClass=child and B.Journal:IsClass(child)
+            local useful=child and (classOnly and (isClass or child.classPrerequisite) or child.fast)
+            local valid=useful and not child.profession and not B.Recovery:IsSkipped(q) and not s:IsDone(q) and not s.log[q] and Ding.Data:QuestOpenToPlayer(q) and needs(child,current.id)
             if valid then
                 for _,exclusive in ipairs(child.exclusive or {}) do if s:IsDone(exclusive) or s.log[exclusive] then valid=false end end
             end
             if valid then
-                if (child.level or 0)>=s.level-1 and (future or ((child.min or 0)<=s.level and child.level<=s.level+2)) then return q end
+                if (classOnly and isClass or not classOnly and (child.level or 0)>=s.level-1) and (future or ((child.min or 0)<=s.level and child.level<=s.level+2)) then return q end
                 local deeper=follow(child,depth+1);if deeper then return deeper end
             end
         end
@@ -91,6 +93,7 @@ function P:Evaluate(n,kind,s,a)
         local fraction,remaining=self:Progress(row)
         if kind=="turnin" then fit.keep="ready"
         elseif B.Journal:IsClass(n) then fit.keep="class"
+        elseif n.classPrerequisite and self:Unlock(n,s,false,true) then fit.keep="classPrerequisite"
         elseif kind=="complete" and fraction>0 and (fraction>=0.8 or remaining<=2) then fit.keep="almostDone"
         else fit.unlock=self:Unlock(n,s);if fit.unlock then fit.keep="prerequisite" end end
         fit.retire=not fit.keep
