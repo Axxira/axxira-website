@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T12:54:46.2779474+00:00",
+  "publishedAt": "2026-11-08T13:23:13.4389065+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.22-d4c4f2686c8d/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "DDF40E03B0E3086BB5ED5CB259BF235284C515F39C240E4C50E0539E546F5A3F",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.23-be03902f4d8d/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "E2C24407EC91CA711598EFC80315F96C0F469C45AD2BF20385884B7BFC347FCE",
     "sizeBytes": 234564528,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.22-d4c4f2686c8d/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "3704E16FEAB7BB24A9137CB9E165ED04806AD3B8055B7D3E5045D5D8143BB41F",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.23-be03902f4d8d/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "48B34AFC5168CCA5992793E3F1CABFBE212074ECBCC02EB86984BBECF67DBB84",
     "sizeBytes": 58332828,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.22",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.22-d4c4f2686c8d/RaidPilot-Launcher-v0.2.22-Windows-x64.zip",
-    "sha256": "B876D1976D9A167DD25A61B27D05ACBAD7E0D62E4969B24A71881CA3B49650F3",
-    "sizeBytes": 360590353,
-    "releaseNotes": "Simplifie le survol des objets et la liste des équipements : Upgrade OUI ou NON, puis gains et pertes de stats. Le profil de comparaison reste visible; les points de score, le rappel de case et le prix marchand en double sont retirés. Les données incomplètes et les effets ou restrictions non évalués gardent la mention À VÉRIFIER. Le calcul du conseil est inchangé. Les prix HDV utilisent les petites icônes natives or, argent et cuivre, avec repli compatible. Prix par unité et par pile, âge, résultats partiels, objets liés et variantes restent correctement distingués. Aucun achat, vente ou équipement automatique. Après installation, recharger l'interface hors combat avec /reload. Corrige aussi le mauvais profil druide par défaut : Auto suit les points de talents dominants, avec Farouche pour le combat farouche, Équilibre pour les sorts et Restauration pour les soins. Si les talents sont absents, à égalité ou illisibles, le conseil demande un profil au lieu de choisir Polyvalent. Un profil manuel reste prioritaire. Le cas Scout Ranger's Belt vers Jackseed Belt est testé : NON pour Farouche malgré les 3 points d'Intelligence gagnés."
+    "version": "0.2.23",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.23-be03902f4d8d/RaidPilot-Launcher-v0.2.23-Windows-x64.zip",
+    "sha256": "5F1E6A495D0204B9B29232BC3496C4D05F437F7998990A794AA11B52966F156F",
+    "sizeBytes": 360594569,
+    "releaseNotes": "Les conseils d'équipement suivent automatiquement les talents des neuf classes et de leurs 27 arbres. La classe et la spécialisation apparaissent dans l'infobulle; un changement de talents recalcule le profil. Les réglages restent propres à chaque personnage. Un build hybride indéterminé demande un choix, sans inventer un verdict. Les classes à rôle unique gardent un profil de classe avec la mention spé à préciser. Nouveau sélecteur dans Objets > Profil : race et classe détectées pour le personnage connecté, spécialisation automatique ou manuelle; option Farouche ours tank. La vue Autre personnage permet de choisir race, classe et spécialisation pour consulter et mémoriser les priorités sans modifier les conseils des objets portés ni les quêtes. Combinaisons race/classe et bonus raciaux non évalués. Poids indicatifs, effets spéciaux non simulés. Le panneau de guidage garde sa taille. Les verdicts simples, les pièces HDV, Ding et ChangeLayer sont conservés. Après installation : /reload hors combat."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.23",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.23",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.7.0 : profils par classe, spécialisation et sélecteur",
+      "details": "Les conseils d'équipement suivent automatiquement les talents des neuf classes et de leurs 27 arbres. La classe et la spécialisation apparaissent dans l'infobulle; un changement de talents recalcule le profil. Les réglages restent propres à chaque personnage. Un build hybride indéterminé demande un choix, sans inventer un verdict. Les classes à rôle unique gardent un profil de classe avec la mention spé à préciser. Nouveau sélecteur dans Objets > Profil : race et classe détectées pour le personnage connecté, spécialisation automatique ou manuelle; option Farouche ours tank. La vue Autre personnage permet de choisir race, classe et spécialisation pour consulter et mémoriser les priorités sans modifier les conseils des objets portés ni les quêtes. Combinaisons race/classe et bonus raciaux non évalués. Poids indicatifs, effets spéciaux non simulés. Le panneau de guidage garde sa taille. Les verdicts simples, les pièces HDV, Ding et ChangeLayer sont conservés. Après installation : /reload hors combat."
+    },
     {
       "component": "launcher",
       "version": "0.2.22",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — propositions d'objets et quantités à partir d'OCR",
       "details": "Le lecteur OCR propose maintenant les quantités au format « Boulons x4 » ou « 4 x Boulons » depuis des captures choisies par le joueur. L'import dans la liste d'inventaire reste non confirmé, sans statut FIR déduit, et exige de vérifier chaque ligne. Les inconnus ne sont jamais classés automatiquement comme objets à vendre. Trois tests de non-régression ajoutés; la reconnaissance des icônes et la synchronisation complète des quêtes et de la planque restent à développer."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.3.0",
-      "raidPilotVersion": "0.15.3.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — OCR local de captures PNG avec revue manuelle",
-      "details": "Ajout d'un bouton de lecture OCR Windows pour captures PNG choisies par le joueur, sans transfert réseau. Les résultats sont affichés dans une fenêtre de revue et insérés comme notes non vérifiées. Aucun objet ou quantité n'est automatiquement confirmé ni conseillé à la vente. La reconnaissance fiable des icônes d'inventaire et la synchronisation de progression restent à développer."
     }
   ]
 }
