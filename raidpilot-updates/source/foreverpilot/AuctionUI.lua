@@ -42,8 +42,9 @@ function U:Attach()
     if not parent or self.button then return end
     -- The title bar and empty footer are separate from search, rows and sale controls.
     local f=CreateFrame("Button","ForeverPilotAuctionScanButton",parent);self.button=f
-    -- Blizzard's title decoration is itself a higher-level child frame.
-    f:SetFrameLevel(parent:GetFrameLevel()+20)
+    -- Forever's title decoration renders above MEDIUM children, even at level 21.
+    -- HIGH stays below tooltips/dialogs; the parent still controls visibility.
+    f:SetFrameStrata("HIGH");f:SetFrameLevel(parent:GetFrameLevel()+20)
     f:SetSize(154,22);f:SetPoint("TOPRIGHT",parent,"TOPRIGHT",-36,-3)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);self.background=bg
     self.title=label(f,11);self.title:SetJustifyH("CENTER")

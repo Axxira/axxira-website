@@ -13,7 +13,7 @@ U.events.scripts.OnEvent(U.events,'ADDON_LOADED','Blizzard_AuctionHouseUI')
 assert(U.button and U.button.parent==AuctionHouseFrame and U.footer.parent==AuctionHouseFrame,'controls not attached to AH')
 assert(M.open and U.button.enabled and U.title.text=='Scanner HDV','already-open AH not detected')
 assert(U.button.anchor=='TOPRIGHT' and U.button.h==22 and U.footer.h==20,'toolbar covers main AH content')
-assert(U.button:GetFrameLevel()>AuctionHouseFrame:GetFrameLevel()+5,'scan button hidden behind Blizzard title decoration')
+assert(U.button.strata=='HIGH' and U.button:GetFrameLevel()>AuctionHouseFrame:GetFrameLevel()+5,'scan button hidden behind Blizzard title decoration')
 local first=U.button;local frames=#TEST.frames
 U:Attach();U.events.scripts.OnEvent(U.events,'AUCTION_HOUSE_SHOW')
 assert(U.button==first and #TEST.frames==frames,'duplicate AH controls')
