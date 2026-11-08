@@ -1,0 +1,28 @@
+## Interface: 16001
+## Title: ForeverPilot |cff48D7E8Brain 1-60|r
+## Notes: Dynamic quest planning, live validation, recovery, batching and arrow-first guidance. GPLv3.
+## Author: ForeverPilot Project
+## Version: 1.4.1
+## Dependencies: Ding
+## SavedVariables: ForeverPilotLevelingDB
+## SavedVariablesPerCharacter: ForeverPilotLevelingCharDB
+Bootstrap.lua
+Knowledge.lua
+State.lua
+Graph.lua
+Journal.lua
+Progression.lua
+Recovery.lua
+Validator.lua
+Travel.lua
+Needs.lua
+Learning.lua
+Loop.lua
+Journey.lua
+Planner.lua
+Navigation.lua
+UI.lua
+Items.lua
+Market.lua
+Advisor.lua
+Main.lua

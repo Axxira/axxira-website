@@ -738,12 +738,13 @@ Run("notes: grand historique borné et trois lignes dynamiques disponibles", () 
         "le panneau pourrait dépasser le budget d'affichage");
 });
 
+ForeverPilotTests.Run(Run);
 if (failures.Count == 0)
 {
-    Console.WriteLine("40/40 tests launcher réussis.");
+    Console.WriteLine("49/49 tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/40 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/49 test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 

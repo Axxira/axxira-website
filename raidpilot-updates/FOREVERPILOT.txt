@@ -1,0 +1,41 @@
+FOREVERPILOT DANS RAIDPILOT LAUNCHER
+
+Le menu ForeverPilot gère ForeverPilot_Leveling pour WoW Forever.
+Le programme reste un addon chargé par WoW, avec Ding comme dépendance.
+Le bouton Battle.net ouvre Battle.net; le joueur sélectionne ensuite WoW Forever.
+Le launcher ne confirme pas l'activation des addons en jeu.
+
+L'installation est explicite et exige de fermer WoW. La version précédente
+est conservée sous _forever_/Interface/ForeverPilotBackups. Pour la restaurer,
+fermer WoW puis remettre le dossier sauvegardé dans Interface/AddOns sous
+le nom ForeverPilot_Leveling. Ne pas toucher au bridge séparé ForeverPilot.
+Les réglages et la progression restent sous WTF et ne sont pas modifiés.
+Ding est distribué séparément par son projet; son code n'est pas inclus ici.
+
+PROCÉDURE GITHUB RETROUVÉE ET UTILISÉE
+Dépôt : https://github.com/Axxira/axxira-website
+Base de publication : raidpilot-updates (pas main).
+Exemple précédent : https://github.com/Axxira/axxira-website/pull/61
+
+1. Créer une branche de correction depuis la dernière branche raidpilot-updates.
+2. Modifier source/launcher et, si nécessaire, source/foreverpilot.
+   Incrémenter la version du launcher dans RaidPilot.Launcher.csproj.
+   Pour une évolution de l'addon, modifier aussi sa version TOC.
+3. Ajouter en tête de release-history.json une fiche unique correspondant
+   au trio exact des versions Overlay / Beacon / Launcher. Maximum 40 fiches.
+4. Tester le launcher, ses sauvegardes et les notes; compiler la véritable UI.
+   Vérifier visuellement la page et les clics. Tester le Lua lors des changements
+   de l'addon; une simple copie de version déjà validée ne change pas le jeu.
+5. Pousser la branche et ouvrir une PR vers raidpilot-updates.
+   raidpilot-foreverpilot-validation.yml valide Windows et le contenu embarqué.
+   Le workflow CORTEX existant teste aussi les régressions générales sur la PR.
+6. Après validation et décision de publication, fusionner la PR.
+   raidpilot-release.yml construit les trois composants Windows, vérifie leurs
+   versions et le bundle, produit les archives et leurs SHA-256, crée une Release
+   immuable puis met à jour update-manifest.json. Ne pas éditer ce manifeste à la main.
+7. Attendre le succès du workflow Stable, contrôler les versions, liens et empreintes
+   du manifeste avant d'annoncer la disponibilité dans les launchers.
+
+L'addon est embarqué dans le package du launcher et bénéficie de son canal existant.
+Une mise à jour du launcher ne remplace jamais automatiquement l'addon dans WoW :
+le joueur applique la version proposée depuis la page ForeverPilot, jeu fermé.

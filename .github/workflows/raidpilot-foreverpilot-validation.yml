@@ -1,0 +1,54 @@
+name: RaidPilot ForeverPilot Launcher CI
+
+on:
+  push:
+    branches: [raidpilot-foreverpilot-launcher-20261107]
+  pull_request:
+    branches: [raidpilot-updates]
+    paths:
+      - "raidpilot-updates/source/launcher/**"
+      - "raidpilot-updates/source/foreverpilot/**"
+      - "raidpilot-updates/release-history.json"
+      - ".github/workflows/raidpilot-foreverpilot-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foreverpilot-validation-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  launcher:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - name: Validate notes, installer and launcher regressions
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          node raidpilot-updates/source/launcher/Tests/test-release-history.cjs
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release
+      - name: Build actual Windows UI and addon payload
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          dotnet run --project raidpilot-updates/source/brand/icon-builder/IconBuilder.csproj -c Release -- raidpilot-updates/source/brand
+          dotnet publish raidpilot-updates/source/launcher/RaidPilot.Launcher.csproj -c Release -r win-x64 --self-contained true -o validation-output
+          $source = (Resolve-Path raidpilot-updates/source/foreverpilot).Path
+          $bundle = Join-Path $PWD 'validation-output/payload/ForeverPilot_Leveling'
+          foreach ($file in Get-ChildItem -LiteralPath $source -File -Recurse) {
+            $relative = [IO.Path]::GetRelativePath($source, $file.FullName)
+            $copy = Join-Path $bundle $relative
+            if (!(Test-Path -LiteralPath $copy) -or
+                (Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $copy).Hash) {
+              throw "Addon payload differs from source: $relative"
+            }
+          }
+          Write-Host 'Windows launcher and complete addon payload validated; no Stable publication.'
