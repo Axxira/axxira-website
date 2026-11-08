@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.18",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.18",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot : les lumières de but des Canadiens dans WoW",
+      "details": "Option LE BUT dans la page ForeverPilot : deux gyrophares rouges animés, un bandeau lumineux rouge, blanc et bleu et un panneau à DEL pendant 10 secondes. Le launcher lit les buts de Montréal dans le flux public de la LNH et affiche la célébration uniquement lorsque la fenêtre WoW Forever sélectionnée est active. Activer les lumières puis laisser le launcher ouvert, même réduit. Un bouton Tester dans WoW permet un aperçu identifié. Aucun ancien but au démarrage ou après une longue coupure, aucun doublon; les tentatives de tirs de barrage sont exclues. Masquage immédiat hors de WoW, aucune interception des clics. Actualisation du match toutes les 20 secondes : le délai dépend de la publication LNH et peut différer de la télévision. Nécessite WoW en mode fenêtré ou plein écran sans bordure. Aucun son, saisie dans le jeu ni accès à sa mémoire. Option désactivée par défaut. ForeverPilot_Leveling reste en version 1.4.2."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.17",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "Localisation — journal de dérive enrichi et mesures souris/ADS",
       "details": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.30",
-      "raidPilotVersion": "0.14.2.30",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Diagnostic localisation F8 — correction CSV et synchronisation privée",
-      "details": "Correctif de génération du diagnostic-localisation.csv : les observations F8 acceptées sont désormais consignées même lorsqu'il n'existe pas d'historique de pose, avec statut no_historical_pose plutôt qu'une comparaison inventée. Conserve la mesure des écarts lorsque l'historique est disponible, et la copie opt-in vers un dossier privé synchronisé. Version augmentée pour garantir la détection de cette mise à jour par les launchers. La précision du suivi entre F8 reste à améliorer à partir de mesures réelles."
     }
   ]
 }

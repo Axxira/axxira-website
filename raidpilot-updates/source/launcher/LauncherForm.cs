@@ -18,6 +18,7 @@ internal sealed partial class LauncherForm : Form
     private UpdateManifest? _manifest;
     private bool _busy;
     private bool _backgroundUpdateCheckInProgress;
+    private readonly HabsGoalService _habs;
 
     internal LauncherForm()
     {
@@ -49,6 +50,11 @@ internal sealed partial class LauncherForm : Form
         _surface.DragRequested += (_, _) => BeginWindowDrag();
         Controls.Add(_surface);
 
+        RefreshForeverPilot();
+        _habs = new HabsGoalService(() => _surface.Forever.GamePath);
+        _habs.Changed += SyncHabsStatus;
+        SyncHabsStatus();
+
         _automaticUpdateTimer.Tick += async (_, _) =>
         {
             await CheckUpdatesAsync(showErrors: false, background: true);
@@ -62,6 +68,7 @@ internal sealed partial class LauncherForm : Form
             _automaticUpdateTimer.Stop();
             _automaticUpdateTimer.Dispose();
             _updates.Dispose();
+            _habs.Dispose();
         };
         KeyDown += (_, e) =>
         {
@@ -987,6 +994,8 @@ internal enum LauncherAction
     OpenForeverFolder,
     RefreshForeverPilot,
     InstallForeverPilot,
+    ToggleHabsGoals,
+    PreviewHabsGoals,
     Home,
     CheckUpdates,
     Play,

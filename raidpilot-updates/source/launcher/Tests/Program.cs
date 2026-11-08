@@ -8,6 +8,7 @@ using RaidPilot.Launcher;
 using RaidPilot.Overlay;
 
 var failures = new List<string>();
+int testCount = 0;
 Run("comparaison de versions", () =>
 {
     Require(UpdateService.IsNewer("0.10.2", "0.11.0"), "0.11.0 devrait être plus récent");
@@ -739,22 +740,25 @@ Run("notes: grand historique borné et trois lignes dynamiques disponibles", () 
 });
 
 ForeverPilotTests.Run(Run);
+HabsGoalTests.Run(Run);
 if (failures.Count == 0)
 {
-    Console.WriteLine("49/49 tests launcher réussis.");
+    Console.WriteLine($"{testCount}/{testCount} tests launcher réussis.");
     return 0;
 }
-Console.Error.WriteLine($"{failures.Count}/49 test(s) launcher en échec");
+Console.Error.WriteLine($"{failures.Count}/{testCount} test(s) launcher en échec");
 foreach (var failure in failures) Console.Error.WriteLine("- " + failure);
 return 1;
 
 void Run(string name, Action test)
 {
+    testCount++;
     try { test(); Console.WriteLine("OK  " + name); }
     catch (Exception ex) { failures.Add(name + ": " + ex.Message); Console.Error.WriteLine("FAIL " + name + ": " + ex.Message); }
 }
 async Task RunAsync(string name, Func<Task> test)
 {
+    testCount++;
     try { await test(); Console.WriteLine("OK  " + name); }
     catch (Exception ex) { failures.Add(name + ": " + ex.Message); Console.Error.WriteLine("FAIL " + name + ": " + ex.Message); }
 }
