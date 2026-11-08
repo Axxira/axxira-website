@@ -13,15 +13,46 @@ local function button(parent,label,x,y,w,callback)
     local t=text(f,11,7,6,w-14,16);t:SetText(label);f.label=t;f:SetScript("OnClick",callback)
     return f
 end
+function A:ItemContext(tip)
+    -- Use the hovered instance, never a count summed across all matching bags.
+    local data=B.Call(tip.GetPrimaryTooltipData,tip)
+    local guid=B.Items:Text(B.Items:Field(data,"guid"))
+    local location=guid and B.Call(C_Item and C_Item.GetItemLocation,guid)
+    if not location then return end
+    local count=B.Items:Number(B.Call(C_Item and C_Item.GetStackCount,location))
+    local bound=B.Call(C_Item and C_Item.IsBound,location)
+    return count and count>=1 and math.floor(count) or nil,bound==true
+end
+function A:MarketTooltip(tip,link,info)
+    local count,bound=self:ItemContext(tip)
+    if bound or (info and info.bindType==1) then
+        tip:AddLine("HDV : objet lié · non vendable",.65,.7,.75,true)
+    else
+        local p,stale=B.Market:Get(link)
+        if p then
+            tip:AddLine("HDV / unité : "..B.Market:Money(p.price),.94,.77,.43,true)
+            if count and count>1 then tip:AddLine("HDV / pile de "..count.." : "..B.Market:Money(p.price*count),.94,.77,.43,true) end
+            tip:AddLine("Minimum observé · "..B.Market:Age(p.at)..(stale and " · ANCIEN" or "")..(p.partial and " · partiel" or ""),.7,.75,.8,true)
+        else
+            tip:AddLine("HDV : prix inconnu",.65,.7,.75,true)
+            tip:AddLine("Aucun prix observé pour cette variante. Scanne l'HDV ou recherche cet objet.",.58,.65,.7,true)
+        end
+    end
+    if info and info.vendor then tip:AddLine("Marchand / unité : "..B.Market:Money(info.vendor),.75,.8,.85,true) end
+end
 function A:Tooltip(tip)
     if self.busy or not B.settings or not B.settings.enabled then return end
     if tip~=GameTooltip and tip~=ItemRefTooltip then return end
     local _,link=B.Call(TooltipUtil and TooltipUtil.GetDisplayedItem or tip.GetItem,tip)
+    if type(link)~="string" then _,link=B.Call(tip.GetItem,tip) end
     if type(link)~="string" then return end
     self.busy=true
     local ok,err=pcall(function()
-        local r=B.Items:Compare(link);local info=r and r.info or B.Items:Info(link)
+        local info=B.Call(B.Items.Info,B.Items,link)
         tip:AddLine(" ");tip:AddLine("ForeverPilot · Objets",.4,.85,.8)
+        self:MarketTooltip(tip,link,info)
+        -- Missing comparison data must not hide a perfectly usable market price.
+        local r=B.Call(B.Items.Compare,B.Items,link)
         if r then
             local green=r.status=="upgrade"
             tip:AddLine(r.text,green and .4 or .9,green and .9 or .77,green and .65 or .5,true)
@@ -33,17 +64,6 @@ function A:Tooltip(tip)
             if #d>0 then tip:AddLine(table.concat(d," · "),.8,.85,.9,true) end
             tip:AddLine("Score indicatif ; effets spéciaux non simulés.",.58,.65,.7,true)
         end
-        if info and info.vendor then tip:AddLine("Marchand / unité : "..B.Market:Money(info.vendor),.75,.8,.85,true) end
-        if info and info.bindType==1 then
-            tip:AddLine("Lié au ramassage · prix HDV non pertinent",.65,.7,.75,true)
-        else
-            local p,stale=B.Market:Get(link)
-            if p then
-                tip:AddLine("HDV min. observé / unité : "..B.Market:Money(p.price),.94,.77,.43,true)
-                tip:AddLine(p.source.." · "..B.Market:Age(p.at)..(stale and " · ANCIEN" or "")..(p.partial and " · partiel" or ""),.7,.75,.8,true)
-                tip:AddLine("Annonces observées ; vente non garantie. Objet lié : non vendable.",.58,.65,.7,true)
-            else tip:AddLine("HDV : aucun prix observé pour cette variante",.65,.7,.75,true) end
-        end
     end)
     self.busy=false
     if not ok then self.lastError=tostring(err) end
@@ -53,7 +73,8 @@ function A:InstallTooltips()
     if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall and Enum and Enum.TooltipDataType then
         local ok=pcall(TooltipDataProcessor.AddTooltipPostCall,Enum.TooltipDataType.Item,function(tip) self:Tooltip(tip) end)
         self.hooked=ok
-    elseif GameTooltip and GameTooltip.HookScript then
+    end
+    if not self.hooked and GameTooltip and GameTooltip.HookScript then
         self.hooked=pcall(GameTooltip.HookScript,GameTooltip,"OnTooltipSetItem",function(tip) self:Tooltip(tip) end)
     end
 end
@@ -144,6 +165,7 @@ function A:Toggle(tab)
 end
 function A:Init()
     B.Market:Init();self:InstallTooltips()
+    if B.AuctionUI then B.AuctionUI:Init() end
     local f=B.UI.frame
     self.openButton=button(f,"Objets",173,6,54,function() self:Toggle() end)
     local events=CreateFrame("Frame");self.events=events

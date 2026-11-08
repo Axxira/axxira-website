@@ -2,12 +2,13 @@ name: RaidPilot ForeverPilot Launcher CI
 
 on:
   push:
-    branches: [raidpilot-foreverpilot-launcher-20261107]
+    branches: [raidpilot-foreverpilot-launcher-20261107, foreverpilot-auction-house-button-20261107]
   pull_request:
     branches: [raidpilot-updates]
     paths:
       - "raidpilot-updates/source/launcher/**"
       - "raidpilot-updates/source/foreverpilot/**"
+      - "raidpilot-updates/source/foreverpilot-tests/**"
       - "raidpilot-updates/release-history.json"
       - ".github/workflows/raidpilot-foreverpilot-validation.yml"
 
@@ -27,6 +28,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - name: Test addon auction controls and scan lifecycle
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          npm ci --ignore-scripts --prefix raidpilot-updates/source/foreverpilot-tests
+          npm test --prefix raidpilot-updates/source/foreverpilot-tests
       - name: Validate notes, installer and launcher regressions
         shell: pwsh
         run: |

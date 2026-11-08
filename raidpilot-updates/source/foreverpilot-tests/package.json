@@ -1,0 +1,6 @@
+{
+  "name": "foreverpilot-regressions",
+  "private": true,
+  "scripts": { "test": "node run.cjs" },
+  "dependencies": { "fengari": "0.1.5" }
+}

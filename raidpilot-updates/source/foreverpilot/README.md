@@ -1,4 +1,4 @@
-# ForeverPilot Brain v1.4.1
+# ForeverPilot Brain v1.4.2
 
 Assistant de leveling dynamique pour WoW Forever. Nécessite **Ding** activé.
 L'installation locale se trouve dans `_forever_/Interface/AddOns/ForeverPilot_Leveling`.
@@ -9,6 +9,21 @@ et combat lui-même. La flèche indique une destination, pas un chemin qui conto
 automatiquement les obstacles.
 
 ## Utilisation
+
+### Scanner depuis l'hôtel des ventes (1.4.2)
+
+Le bouton **Scanner HDV** apparaît dans la barre de titre de l'HDV, à droite.
+Le bas de la fenêtre affiche l'attente du serveur, la progression, le nombre
+de variantes mémorisées ou la raison d'un échec. Laisse l'HDV ouvert jusqu'à la fin.
+Le compte à rebours de 15 minutes reste valable après `/reload`.
+Les prix se consultent en survolant les objets; le scan ne remplit pas la liste
+de recherche du jeu. **Objets → Prix HDV** et `/fpl scan` restent disponibles.
+
+Dans les sacs, l'infobulle affiche **HDV / unité**, **HDV / pile** (quantité de la
+pile survolée), l'âge du relevé et le prix marchand. Les prix restent consultables
+loin de l'HDV. Un objet lié est indiqué non vendable ; une variante absente du
+cache affiche « prix inconnu ». Ces montants sont les minimums des annonces
+observées, pas des ventes garanties ni des cours actualisés en continu.
 
 ### Passer une quête trop difficile (1.4.1)
 
