@@ -39,41 +39,124 @@ I.profiles={
     soin={label="Soins",str=0,agi=0,sta=.7,int=2,spi=1.8,armor=.005,ap=0,sp=1.5,heal=1.5,dps=0},
     tank={label="Tank",str=1,agi=1,sta=2, int=0,spi=.1,armor=.04,ap=.3,sp=0,heal=0,dps=1},
     feral={label="Druide farouche",str=1.5,agi=2,sta=1.2,int=.2,spi=.2,armor=.015,ap=.5,sp=0,heal=0,dps=0},
+    ours={label="Druide ours (tank)",str=1.5,agi=1.5,sta=2,int=.1,spi=.1,armor=.05,ap=.5,sp=0,heal=0,dps=0},
     hybride={label="Druide polyvalent",str=1,agi=1,sta=1,int=1,spi=1,armor=.015,ap=.3,sp=1,heal=.5,dps=0},
     chasseur={label="Chasseur",str=.2,agi=2,sta=1,int=.5,spi=.2,armor=.01,ap=.5,sp=0,heal=0,dps=0},
 }
-I.defaults={PALADIN="melee",WARRIOR="melee",ROGUE="agile",HUNTER="chasseur",SHAMAN="melee",PRIEST="caster",MAGE="caster",WARLOCK="caster"}
-function I:DruidProfile()
-    -- Classic/Forever has talent trees, not a reliable retail specialization.
-    -- Do not infer a role from the current shapeshift or from worn gear.
-    if self:Number(B.Call(GetNumTalentTabs))~=3 then return end
+-- Classic tree order, independent of localized names. Shared roles deliberately
+-- share modest leveling weights: these are not simulated spec-specific DPS scales.
+I.classes={
+    WARRIOR={label="Guerrier",{"Armes","melee"},{"Fureur","melee"},{"Protection","tank"}},
+    PALADIN={label="Paladin",{"Sacré","soin"},{"Protection","tank"},{"Vindicte","melee"}},
+    HUNTER={label="Chasseur",fallback="chasseur",{"Maîtrise des bêtes","chasseur"},{"Précision","chasseur"},{"Survie","chasseur"}},
+    ROGUE={label="Voleur",fallback="agile",{"Assassinat","agile"},{"Combat","agile"},{"Finesse","agile"}},
+    PRIEST={label="Prêtre",{"Discipline","soin"},{"Sacré","soin"},{"Ombre","caster"}},
+    SHAMAN={label="Chaman",{"Élémentaire","caster"},{"Amélioration","melee"},{"Restauration","soin"}},
+    MAGE={label="Mage",fallback="caster",{"Arcanes","caster"},{"Feu","caster"},{"Givre","caster"}},
+    WARLOCK={label="Démoniste",fallback="caster",{"Affliction","caster"},{"Démonologie","caster"},{"Destruction","caster"}},
+    DRUID={label="Druide",{"Équilibre","caster"},{"Farouche","feral"},{"Restauration","soin"}},
+}
+I.classOrder={"WARRIOR","PALADIN","HUNTER","ROGUE","PRIEST","SHAMAN","MAGE","WARLOCK","DRUID"}
+-- The nine races recognized by Ding's Forever import API. Include the live
+-- player race below if a later server patch introduces a different race.
+I.races={{"Human","Humain"},{"Dwarf","Nain"},{"NightElf","Elfe de la nuit"},{"Gnome","Gnome"},
+    {"Orc","Orc"},{"Scourge","Mort-vivant"},{"Tauren","Tauren"},{"Troll","Troll"},{"Skyborne","Skyborne"}}
+I.classWeights={
+    PALADIN={tank={int=.5,sp=.75},melee={int=.25,sp=.25},soin={spi=.5}},
+    SHAMAN={melee={int=.5,sp=.3},soin={spi=.5}},
+}
+I.profileEvents={CHARACTER_POINTS_CHANGED=true,PLAYER_TALENT_UPDATE=true,ACTIVE_TALENT_GROUP_CHANGED=true,
+    PLAYER_ENTERING_WORLD=true,PLAYER_LEVEL_UP=true}
+function I:InvalidateProfile() self.talentCache=nil end
+function I:TalentTree()
+    -- Read learned ranks, never recommended builds, preview points or a stance.
+    if self:Number(B.Call(GetNumTalentTabs))~=3 then return nil,"Talents non lisibles : choisis une spécialisation." end
     local best,total,tied=nil,0,false
     for tab=1,3 do
         local count=self:Number(B.Call(GetNumTalents,tab))
-        if not count or count<1 or count>100 then return end
+        if not count or count<1 or count>100 or count%1~=0 then return nil,"Talents non lisibles : choisis une spécialisation." end
         local spent=0
         for index=1,count do
             local data=B.Call(function() return {GetTalentInfo(tab,index)} end)
-            local rank=self:Number(self:Field(data,5))
-            if not rank or rank<0 then return end
+            local rank,maxRank=self:Number(self:Field(data,5)),self:Number(self:Field(data,6))
+            if not rank or rank<0 or rank%1~=0 or not maxRank or maxRank<1 or maxRank>100 or rank>maxRank then
+                return nil,"Talents non lisibles : choisis une spécialisation."
+            end
             spent=spent+rank
         end
         if spent>total then best,total,tied=tab,spent,false
         elseif spent==total then tied=true end
     end
-    if best and not tied then return ({"caster","feral","soin"})[best] end
+    if best and not tied then return best end
+    return nil,total==0 and "Pas encore de talents : choisis une spécialisation." or "Build mixte : choisis une spécialisation."
+end
+function I:AutoTree(class)
+    local now=self:Number(B.Call(GetTime))
+    local cache=self.talentCache
+    if cache and cache.char==B.char and cache.class==class and now and now>=cache.at and now-cache.at<1 then
+        return cache.tree,cache.reason
+    end
+    local tree,reason=self:TalentTree()
+    self.talentCache=now and {char=B.char,class=class,at=now,tree=tree,reason=reason} or nil
+    return tree,reason
+end
+function I:ResolveProfile(class,selection,live)
+    local def=self.classes[class]
+    if not def then return nil,nil,"Classe inconnue","Classe non prise en charge." end
+    local key,tree,reason=selection
+    if selection=="auto" then
+        if live then tree,reason=self:AutoTree(class) end
+        key=tree and def[tree][2] or def.fallback
+    elseif type(selection)=="string" and selection:match("^spec:") then
+        local owner,index=selection:match("^spec:([A-Z]+):([123])$")
+        tree=owner==class and tonumber(index) or nil
+        key=tree and def[tree][2] or nil
+    end
+    local label=def.label..(tree and " · "..def[tree][1] or " · spé à préciser")
+    if not key or not self.profiles[key] then return nil,nil,label,reason or "Choisis une spécialisation dans Profil." end
+    local profile=B.Copy(self.profiles[key])
+    for stat,weight in pairs(self.classWeights[class] and self.classWeights[class][key] or {}) do profile[stat]=weight end
+    if selection~="auto" and not tree then label=def.label.." · "..profile.label end
+    if selection~="auto" then label=label.." (manuel)" end
+    return profile,key,label,reason
 end
 function I:Profile()
-    local class=B.Call(Ding.Compat.PlayerClass)
-    local key=B.char.gearProfile or "auto"
-    if key=="auto" then
-        if class=="DRUID" then key=self:DruidProfile() else key=self.defaults[class] end
-    end
-    return self.profiles[key],key
+    return self:ResolveProfile(B.Call(Ding.Compat.PlayerClass),B.char and B.char.gearProfile or "auto",true)
 end
 function I:SetProfile(key)
-    if key~="auto" and not self.profiles[key] then return false end
-    B.char.gearProfile=key;return true
+    if key~="auto" and not self.profiles[key] then
+        local class,tab
+        if type(key)=="string" then class,tab=key:match("^spec:([A-Z]+):([123])$") end
+        if class~=B.Call(Ding.Compat.PlayerClass) or not self.classes[class] or not tab then return false end
+    end
+    B.char.gearProfile=key;self:InvalidateProfile();return true
+end
+function I:SpecChoices(class,includeAuto)
+    local out=includeAuto and {{key="auto",label="Automatique · mes talents"}} or {}
+    local def=self.classes[class];if not def then return out end
+    for tab=1,3 do out[#out+1]={key="spec:"..class..":"..tab,label=def[tab][1]} end
+    if class=="DRUID" then out[#out+1]={key="ours",label="Farouche · ours tank"} end
+    return out
+end
+function I:RaceChoices()
+    local out={};local name,token=B.Call(UnitRace,"player");local found=false
+    name,token=self:Text(name),self:Text(token)
+    for _,r in ipairs(self.races) do
+        out[#out+1]={key=r[1],label=r[1]==token and name or r[2]};found=found or r[1]==token
+    end
+    if token and not found then out[#out+1]={key=token,label=name or token} end
+    return out
+end
+function I:Priorities(profile)
+    if not profile then return "Choisis une spécialisation." end
+    local rows={}
+    for _,stat in ipairs(self.stats) do
+        local weight=profile[stat[1]] or 0
+        if weight>0 then rows[#rows+1]={name=stat[2],weight=weight} end
+    end
+    table.sort(rows,function(a,b) if a.weight==b.weight then return a.name<b.name end;return a.weight>b.weight end)
+    local out={};for i=1,math.min(5,#rows) do out[i]=rows[i].name end
+    return table.concat(out," · ")
 end
 function I:Stats(link)
     local t=B.Call(C_Item and C_Item.GetItemStats or GetItemStats,link)
@@ -115,8 +198,8 @@ function I:Compare(link)
     local info=self:Info(link);if not info then return {status="unknown",text="Données de l'objet à charger"} end
     local slots=self.slots[info.equipLoc];if not slots then return end
     local result={info=info,status="unknown",text="Comparaison indisponible"}
-    local profile=self:Profile();if not profile then result.text="Choisis un profil de comparaison";return result end
-    result.profile=profile.label
+    local profile,_,label,reason=self:Profile();result.profile=label
+    if not profile then result.text=reason or "Choisis une spécialisation dans Profil.";return result end
     if B.Call(InCombatLockdown)==true then result.text="Comparaison disponible hors combat";return result end
     local level=self:Number(B.Call(UnitLevel,"player"))
     if info.minLevel and level and info.minLevel>level then result.status="unusable";result.text="À garder pour le niveau "..info.minLevel;return result end
