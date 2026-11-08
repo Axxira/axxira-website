@@ -10,6 +10,8 @@ local function button(parent,label,x,y,w,callback)
     local f=CreateFrame("Button",nil,parent);f:SetPoint("TOPLEFT",parent,"TOPLEFT",x,-y);f:SetSize(w,26)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.13,.23,.28,.95)
     local t=text(f,11,7,6,w-14,16);t:SetText(label);f.label=t;f:SetScript("OnClick",callback)
+    f:SetScript("OnEnter",function() bg:SetColorTexture(.20,.34,.38,1) end)
+    f:SetScript("OnLeave",function() bg:SetColorTexture(.13,.23,.28,.95);GameTooltip:Hide() end)
     return f
 end
 function A:ItemContext(tip)
@@ -151,10 +153,7 @@ function A:Render()
     end
     self.scan:SetShown(tab=="market");self.previous:SetShown(tab=="gear");self.next:SetShown(tab=="gear")
     self.profileButton:SetShown(tab=="gear")
-    for _,entry in ipairs(self.languageButtons or {}) do
-        entry.button:SetShown(tab=="addons")
-        entry.button.label:SetText((B.settings.language==entry.key and "• " or "")..entry.label)
-    end
+    for key,b in pairs(self.tabButtons) do b.label:SetText((tab==key and "• " or "")..b.title) end
 end
 function A:Create()
     if self.frame then return end
@@ -163,24 +162,12 @@ function A:Create()
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.98)
     local title=text(f,17,20,18,390,24);title:SetText(B.T("ForeverPilot · Objets & HDV"))
     button(f,"×",430,12,28,function() f:Hide() end)
+    self.tabButtons={}
     for i,t in ipairs({{"gear",B.T("Équipement")},{"market",B.T("Prix HDV")},{"addons","Addons"}}) do
-        local tab=t[1];button(f,t[2],20+(i-1)*145,52,135,function() self.tab=tab;self:Render() end)
+        local tab=t[1];local b=button(f,t[2],20+(i-1)*145,52,135,function() self.tab=tab;self:Render() end)
+        b.title=t[2];self.tabButtons[tab]=b
     end
     self.profileButton=button(f,B.T("Profil"),20,91,425,function() self:ToggleProfile() end)
-    self.languageButtons={}
-    for i,entry in ipairs({{key="fr",label="Français"},{key="en",label="English"},{key="auto",label="Auto"}}) do
-        local key=entry.key
-        entry.button=button(f,entry.label,20+(i-1)*145,91,135,function() B.SetLanguage(key) end)
-        entry.button:SetScript("OnEnter",function()
-            GameTooltip:SetOwner(entry.button,"ANCHOR_BOTTOM")
-            GameTooltip:SetText("Français / English")
-            GameTooltip:AddLine(B.language=="en" and "Apply language and reload the interface. Auto follows the game language." or
-                "Appliquer la langue et recharger l'interface. Auto suit la langue du jeu.",.8,.9,.9,true)
-            GameTooltip:Show()
-        end)
-        entry.button:SetScript("OnLeave",function() GameTooltip:Hide() end)
-        self.languageButtons[i]=entry
-    end
     self.body=text(f,12,20,130,425,280)
     self.scan=button(f,B.T("Scanner l'HDV"),20,422,200,function() B.Market:Scan();self:Render() end)
     self.previous=button(f,B.T("Précédent"),20,422,130,function() self.page=math.max(1,self.page-1);self:Render() end)
@@ -297,7 +284,12 @@ function A:Init()
     B.Market:Init();self:InstallTooltips()
     if B.AuctionUI then B.AuctionUI:Init() end
     local f=B.UI.frame
-    self.openButton=button(f,B.T("Objets"),173,6,54,function() self:Toggle() end)
+    self.openButton=button(f,B.T("Objets"),170,3,66,function() if B.Options.frame then B.Options.frame:Hide() end;self:Toggle() end)
+    self.optionsButton=button(f,"Options",244,3,86,function() B.Options:Toggle() end)
+    self.optionsButton:SetScript("OnEnter",function()
+        GameTooltip:SetOwner(self.optionsButton,"ANCHOR_BOTTOM");GameTooltip:SetText("Options · Français / English")
+        GameTooltip:AddLine(B.T("Langue, profil, taille et aide."),.8,.9,.9,true);GameTooltip:Show()
+    end)
     local events=CreateFrame("Frame");self.events=events
     for _,e in ipairs({"AUCTION_HOUSE_SHOW","AUCTION_HOUSE_CLOSED","REPLICATE_ITEM_LIST_UPDATE","COMMODITY_SEARCH_RESULTS_UPDATED","COMMODITY_SEARCH_RESULTS_ADDED","ITEM_SEARCH_RESULTS_UPDATED","ITEM_SEARCH_RESULTS_ADDED","BAG_UPDATE_DELAYED","PLAYER_EQUIPMENT_CHANGED","GET_ITEM_INFO_RECEIVED","PLAYER_REGEN_ENABLED"}) do pcall(events.RegisterEvent,events,e) end
     for e in pairs(B.Items.profileEvents) do pcall(events.RegisterEvent,events,e) end

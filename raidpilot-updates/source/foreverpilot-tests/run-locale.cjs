@@ -16,22 +16,24 @@ function context(locale,saved){
  C_Timer={After=function(_,f) TEST.timers[#TEST.timers+1]=f end}
  function InCombatLockdown() return TEST.combat end
  function ReloadUI() TEST.reloads=(TEST.reloads or 0)+1 end
- ForeverPilotLevelingDB=${saved}
+ ForeverPilotLevelingDB=nil
  `);
  file('Bootstrap.lua');file('Locale.lua');
- return {run,file};
+ return {run,file,restore:()=>run('ForeverPilotLevelingDB='+saved)};
 }
 for(const [locale,saved,want] of [
  ['frFR','nil','fr'],['enUS','nil','en'],['enGB','nil','en'],['deDE','nil','en'],
  ['enUS','{brain={enabled=true}}','fr'],['enUS','{brain={language="fr"}}','fr'],
  ['frFR','{brain={language="en"}}','en'],['frFR','{brain={language="auto"}}','fr'],
  ['enUS','{brain={language="auto"}}','en'],['frFR','{brain={language="unknown"}}','fr']]){
- const c=context(locale,saved);c.run(`assert(ForeverPilotLeveling.language=="${want}"); assert(ForeverPilotLeveling.T("An actual quest name")=="An actual quest name")`);checks+=2;
+ const c=context(locale,saved);c.restore();c.run(`ForeverPilotLeveling.InitLocale(); assert(ForeverPilotLeveling.language=="${want}"); assert(ForeverPilotLeveling.T("An actual quest name")=="An actual quest name")`);checks+=2;
 }
 for(const language of ['en','fr']){
  const c=context('enUS',`{brain={language="${language}"}}`);
  c.run(fs.readFileSync(path.join(__dirname,'ui-runtime.lua'),'utf8'),'UI fixture');
- for(const f of ['Items.lua','Market.lua','AuctionUI.lua','Advisor.lua','UI.lua'])c.file(f);
+ for(const f of ['Items.lua','Market.lua','AuctionUI.lua','Advisor.lua','UI.lua','Options.lua'])c.file(f);
+ // Actual client order: Lua files first, saved variables second, PLAYER_LOGIN last.
+ c.restore();
  const english=language==='en';
  c.run(`local B=ForeverPilotLeveling
  B.InitDB();B.Market:Init()
@@ -43,20 +45,32 @@ for(const language of ['en','fr']){
  assert(verdict==${JSON.stringify(english?'Upgrade: NO':'Upgrade : NON')})
  assert(details[1]==${JSON.stringify(english?'Gains: +3 Intellect':'Gains : +3 Intelligence')})
  assert(details[2]==${JSON.stringify(english?'Losses: -1 Strength':'Pertes : -1 Force')})
- B.Recovery={};B.Journal={Badge=function()end,IsClass=function()return false end}
+ B.Recovery={LastSkipped=function()end};B.Journal={Badge=function()end,IsClass=function()return false end}
  local v=B.UI:View({kind="complete",node={name="Centaur Bracers"},objective={text="0/15 Centaur Bracers"},confidence="LIVE"},{log={}})
  assert(v.title=="Centaur Bracers" and v.detail=="0/15 Centaur Bracers")
  assert(v.verb==${JSON.stringify(english?'COMPLETE':'TERMINE')})
  assert(v.footer==${JSON.stringify(english?'STAY OUT FOR NOW':'NE RENTRE PAS ENCORE')})
  assert(B.Market:Money(20405):find("GoldIcon",1,true) and B.Market:Money(20405):find("CopperIcon",1,true))
- B.Advisor:Toggle("addons")
- assert(B.Advisor.languageButtons[1].button:IsShown())
- local click=B.Advisor.languageButtons[2].button.scripts.OnClick
- click();assert(B.settings.language=="en" and TEST.reloads==1)
- TEST.combat=true;B.Advisor.languageButtons[1].button.scripts.OnClick()
- assert(B.settings.language=="fr" and TEST.reloads==1)
- assert(B.SetLanguage("bogus")==false and B.settings.language=="fr")
- B.Advisor:Toggle("gear");assert(not B.Advisor.languageButtons[1].button:IsShown())
+ B.UI:Create();B.Options:Toggle()
+ local O=B.Options
+ assert(O.frame:IsShown() and O.pages.general:IsShown() and not O.pages.help:IsShown())
+ assert(O.languages.auto.label.text==${JSON.stringify(english?'Auto · game language':'Auto · langue du jeu')})
+ local other=B.language=="en" and "fr" or "en"
+ O.languages[other].scripts.OnClick()
+ assert(TEST.reloads==nil and B.settings.language==B.language and O.apply.enabled)
+ TEST.combat=true;O.frame.scripts.OnEvent();O.apply.scripts.OnClick()
+ assert(not O.apply.enabled and TEST.reloads==nil and B.settings.language==B.language)
+ TEST.combat=false;O.frame.scripts.OnEvent();O.apply.scripts.OnClick()
+ assert(B.settings.language==other and TEST.reloads==1)
+ assert(B.SetLanguage("bogus")==false and B.settings.language==other)
+ O.sizes[1.2].scripts.OnClick();assert(B.UI.frame.scale==1.2)
+ O.lock.scripts.OnClick();assert(B.settings.locked)
+ O.pause.scripts.OnClick();assert(B.settings.paused and B.dirty)
+ O.tabs.help.scripts.OnClick();assert(O.pages.help:IsShown() and not O.pages.general:IsShown())
+ assert(not O.resume.enabled)
+ O:Toggle();assert(not O.frame:IsShown())
+ O:Toggle();assert(O.tab=="general" and O.frame:IsShown())
+ assert(not B.UI.tag:IsShown())
  `,'localized behavior '+language);checks+=16;
 }
 // Format arguments must retain their order and types in all translated messages.

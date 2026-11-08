@@ -19,6 +19,7 @@ end
 function U:Refresh()
     if not self.frame then return end
     local l=B.Layers;local pending=l:Pending();local provider=l:Provider()
+    self.shelf:SetShown(B.settings.layerShortcut==true or pending or l.state=="transfer")
     self.primary.label:SetText(pending and B.T("Changer maintenant") or provider and B.T("Changer / arrêter (ChangeLayer)") or B.T("ChangeLayer requis"))
     self.detail:SetText(l.detail)
     self.helper.label:SetText(B.T("Réglages ChangeLayer"))
@@ -35,8 +36,10 @@ function U:Init()
     local edge=shelf:CreateTexture(nil,"ARTWORK");edge:SetPoint("TOPLEFT",shelf,"TOPLEFT",14,0);edge:SetSize(316,1);edge:SetColorTexture(.40,.85,.80,.3)
     self.button=button(shelf,14,4,135,B.T("Changer de layer"),function() self:Toggle() end)
     self.status=label(shelf,9,160,11,170,14);self.status:SetJustifyH("RIGHT")
-    local f=CreateFrame("Frame","ForeverPilotLayerFrame",shelf);self.frame=f
-    f:SetPoint("TOPLEFT",shelf,"BOTTOMLEFT",0,-4);f:SetSize(344,208);f:EnableMouse(true);f:SetClampedToScreen(true)
+    -- Independent of the optional shelf, so Options > Layers always works.
+    local f=CreateFrame("Frame","ForeverPilotLayerFrame",UIParent);self.frame=f
+    f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetSize(344,208);f:EnableMouse(true);f:SetClampedToScreen(true)
+    f:SetFrameStrata("DIALOG")
     f:SetFrameLevel(main:GetFrameLevel()+10)
     local panel=f:CreateTexture(nil,"BACKGROUND");panel:SetAllPoints(f);panel:SetColorTexture(.045,.07,.09,.98)
     local title=label(f,12,14,13,280,18);title:SetText(B.T("CHANGER DE LAYER"));title:SetTextColor(.40,.85,.80)
@@ -49,5 +52,6 @@ function U:Init()
     self.helper=button(f,14,147,316,B.T("Réglages ChangeLayer"),function(l) l:Options() end)
     local hint=label(f,9,14,178,316,25);hint:SetWordWrap(true)
     hint:SetText(B.T("Réseau ChangeLayer · ForeverPilot non requis pour aider.\nGénéral : demande en anglais à valider avec Entrée."));hint:SetTextColor(.58,.68,.74)
+    if UISpecialFrames then table.insert(UISpecialFrames,"ForeverPilotLayerFrame") end
     f:Hide();self:Refresh()
 end
