@@ -56,3 +56,36 @@ function K:Points(q,kind)
     end
     return out
 end
+-- Read only the quest window / selected journal entry. Never change selection,
+-- auto-pick a reward, or invent a reward list when the client has not loaded it.
+function K:ReadRewards(dialog)
+    local q
+    if dialog then q=Ding.Compat.DialogQuestID()
+    else q=B.Call(C_QuestLog and C_QuestLog.GetSelectedQuest) end
+    if type(q)~="number" or q<=0 then return end
+    local rewards={};local complete=true
+    for _,kind in ipairs({"reward","choice"}) do
+        local fn,linkFn
+        if dialog then
+            if kind=="reward" then fn=GetNumQuestRewards else fn=GetNumQuestChoices end
+            linkFn=GetQuestItemLink
+        else
+            if kind=="reward" then fn=GetNumQuestLogRewards else fn=GetNumQuestLogChoices end
+            linkFn=GetQuestLogItemLink
+        end
+        local count=B.Call(fn)
+        if type(count)~="number" or count<0 or count>20 then complete=false;break end
+        for i=1,count do
+            local link=B.Call(linkFn,kind,i)
+            if type(link)~="string" or not link:find("item:",1,true) then complete=false
+            else rewards[#rewards+1]={link=link,kind=kind} end
+        end
+    end
+    if complete and #rewards>0 then
+        local r=self:Quest(q);if r then r.rewards=rewards;r.rewardsAt=time() end
+    end
+end
+function K:Rewards(q)
+    local r=self.db and self.db.quests[q]
+    return r and r.rewardsAt and time()-r.rewardsAt<30*86400 and r.rewards or {}
+end

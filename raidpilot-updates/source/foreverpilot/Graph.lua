@@ -132,3 +132,32 @@ function G:XP(n,s)
     local over=s.level-level
     return base*(over>5 and math.max(0.1,1-(over-5)*0.2) or 1),false
 end
+-- Open zone guides are a catalog, not automatically a fast route. Admit a
+-- small, solo, local loop only after the quest is held or really offered.
+function G:LocalOpportunity(n,s)
+    if not s or n.profession or n.manual or not B.Planner:Solo(n) then return false end
+    for _,o in ipairs(s.log[n.id] and s.log[n.id].objectives or {}) do
+        if not o.finished and o.objectiveType==14 then return false end
+    end
+    local level=n.level>0 and n.level or s.level
+    if level<s.level-2 or level>s.level+2 or n.min>s.level then return false end
+    if s.log[n.id] and B.char.opportunities and B.char.opportunities[n.id] then return true end
+    if not s.log[n.id] and not (B.Validator.npc and B.Validator.offers[n.id]) then return false end
+    local targets=self:Locations(n,"complete");if #targets==0 then return false end
+    local origin=s;local seconds=0
+    for _,t in ipairs(targets) do
+        local p=B.Travel:Nearest(B.Planner:SafePoints(t,s,n.id),origin)
+        local d=p and B.Travel:Distance(origin,p)
+        if not d or not B.Travel:Reachable(p,s) then return false end
+        seconds=seconds+d/7;origin=p
+    end
+    local finish=B.Travel:Nearest(self:Locations(n,"turnin"),origin)
+    local d=finish and B.Travel:Distance(origin,finish)
+    if not d or not B.Travel:Reachable(finish,s) or seconds+d/7>240 then return false end
+    if s.log[n.id] then
+        B.char.opportunities=B.char.opportunities or {}
+        B.char.opportunities[n.id]=true
+        for q in pairs(B.char.opportunities) do if not s.log[q] then B.char.opportunities[q]=nil end end
+    end
+    return true
+end

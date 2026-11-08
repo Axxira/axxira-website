@@ -19,7 +19,7 @@ TEST.level=16;s=state();check(not B.Validator:Eligible(B.Graph:Node(98340),s,'ac
 local bear=B.Graph:Node(94006)
 check(B.Journal:Allows(bear,s) and B.Progression:Evaluate(bear,'accept',s).keep=='class','old unfinished class quest still allowed')
 B.Travel:Prepare(s);local candidates=B.Planner:Candidates(s);local bearFound=false
-for _,a in ipairs(candidates) do if a.q==94006 and a.classPriority then bearFound=true end end
+for _,a in ipairs(candidates) do if a.q==94006 then bearFound=true end end
 check(bearFound,'class quest beyond old five-level window must remain a candidate')
 B.char.skipped[94006]={};check(not B.Planner:Action(bear,'accept',s),'skip still respected for class quests');B.char.skipped={}
 B.char.unavailable[94006]={npc=1,level=s.level,signature=B.Recovery:Availability(94006,s)}

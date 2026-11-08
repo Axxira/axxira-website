@@ -48,7 +48,7 @@ function L:Project(a,s)
     -- A live offer is certain only for availability, not for completion time.
     local certainty=a.kind=="accept" and (B.Validator.offers[a.q] and 0.95 or 0.82) or 1
     local chain=0;for _ in pairs(n.next or {}) do chain=chain+1 end
-    return {a=a,tasks=tasks,xp=a.xp,value=a.xp*certainty*(1+math.min(0.15,chain*0.03))/(1+(a.risk or 0))*(a.levelFit and a.levelFit.factor or 1)*(a.regionFactor or 1)}
+    return {a=a,tasks=tasks,xp=a.xp,value=a.xp*certainty*(1+math.min(0.15,chain*0.03))/(1+(a.risk or 0))*(a.levelFit and a.levelFit.factor or 1)*(a.regionFactor or 1)*(1+(a.reward and a.reward.bonus or 0))}
 end
 local function advance(state,project,index,s,costs)
     local step=state.progress[index] or 1;local t=project.tasks[step]

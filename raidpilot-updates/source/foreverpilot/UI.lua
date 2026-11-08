@@ -25,6 +25,7 @@ function U:View(a,s)
     local v={verb=verbs[a.kind] or "CONTINUE",title=a.node and a.node.name or a.label or "",detail=a.objective and a.objective.text or a.note or "",color=colors.normal}
     v.tag=a.confidence=="LIVE" and "LIVE" or a.confidence=="RECOVERY" and B.T("ADAPTATION") or B.T("GUIDAGE")
     if a.levelFit and a.levelFit.questLevel then v.verb=v.verb..B.T(" · NIV. ")..a.levelFit.questLevel end
+    if a.reward then v.verb=(verbs[a.kind] or "")..B.T(" · BUTIN BLEU À COMPARER") end
     local log=a.q and s.log[a.q];local have,need=0,0
     for _,o in ipairs(log and log.objectives or {}) do
         local total=o.numRequired or 1;need=need+total
@@ -68,6 +69,12 @@ function U:Tooltip()
     local levelNote=B.Progression:Describe(a.levelFit)
     if levelNote then GameTooltip:AddLine(levelNote,0.94,0.76,0.43,true) end
     if self.routeHint then GameTooltip:AddLine(self.routeHint,0.8,0.9,0.94,true) end
+    if a.savedTravel then GameTooltip:AddLine(string.format(B.T("En finissant ici : environ %d min de trajet évitées (estimation)."),math.max(1,math.floor(a.savedTravel/60))),.4,.85,.8,true) end
+    if a.reward then
+        GameTooltip:AddLine(B.T("Récompense observée : ")..a.reward.link,.4,.65,1,true)
+        GameTooltip:AddLine(B.T("Statistiques utiles pour ")..(a.reward.profile or "")..B.T(". Compare les effets avant de choisir."),.75,.83,.95,true)
+        for i,d in ipairs(a.reward.deltas or {}) do if i<=3 then GameTooltip:AddLine(d.text,.75,.83,.95,true) end end
+    end
     if self.view.detail~="" then GameTooltip:AddLine(self.view.detail,1,1,1,true) end
     if a.note and a.note~=self.view.detail then GameTooltip:AddLine(a.note,0.8,0.85,0.90,true) end
     if a.tripIDs then

@@ -39,6 +39,14 @@ function J:Start(winner,actions,s)
 end
 function J:Choose(winner,actions,s)
     local byQuest={};for _,a in ipairs(actions) do byQuest[a.q]=a end
+    -- A ready quest outside the saved outing can also free a full journal.
+    -- Likewise, hand in at an NPC already beside us instead of coming back.
+    local immediate
+    for _,a in ipairs(actions) do
+        if a.kind=="turnin" and (s.count>=s.limit-1 or a.travel<6)
+            and (not immediate or a.travel<immediate.travel or (a.travel==immediate.travel and a.key<immediate.key)) then immediate=a end
+    end
+    if immediate then self:Start(immediate,actions,s);immediate.tripIDs=B.char.trip.ids;return immediate end
     local trip=B.char.trip
     if trip then
         trip.level=s.level
@@ -48,7 +56,10 @@ function J:Choose(winner,actions,s)
             -- requested, its objective is unsafe, or the player abandons it.
             local abandoned=trip.accepted[q] and not s.log[q] and not s:IsDone(q)
             if abandoned then B.char.deferred['accept:'..q]=time()+300;byQuest[q]=nil end
-            if s:IsDone(q) or not byQuest[q] then
+            local a=byQuest[q]
+            local remotePickup=a and a.kind=="accept" and not a.classPriority and a.travel>300
+                and winner and winner.q~=q and winner.travel<=180
+            if s:IsDone(q) or not a or remotePickup then
                 if not s:IsDone(q) and s.log[q] then
                     local node=B.Graph:Node(q)
                     local fit=node and B.Progression:Evaluate(node,s.log[q].ready and "turnin" or "complete",s)
@@ -68,6 +79,23 @@ function J:Choose(winner,actions,s)
         self:Start(winner,actions,s);trip=B.char.trip
     end
     if not trip then return winner end
+    -- Reconcile the outing with the live journal. New useful field quests must
+    -- not be invisible merely because they were absent when the trip started.
+    local members={};for _,q in ipairs(trip.ids) do members[q]=true end
+    local additions={}
+    for _,a in ipairs(actions) do
+        if s.log[a.q] and a.kind=="complete" and not members[a.q] then
+            for _,q in ipairs(trip.ids) do
+                local held=byQuest[q]
+                if held and (B.Planner:BeforeReturn(held,a,s) or
+                    (held.kind=="complete" and distance(held.point,a.point)<450 and a.travel<=180)) then
+                    additions[#additions+1]=a;break
+                end
+            end
+        end
+    end
+    table.sort(additions,function(a,b) if a.travel==b.travel then return a.key<b.key end return a.travel<b.travel end)
+    for _,a in ipairs(additions) do if #trip.ids<6 then trip.ids[#trip.ids+1]=a.q;members[a.q]=true end end
     local pending,held,confirmed={},{},0
     for _,q in ipairs(trip.ids) do
         local a=byQuest[q]
@@ -85,13 +113,18 @@ function J:Choose(winner,actions,s)
     else
         local old=B.Planner.current
         if old then for _,a in ipairs(held) do if a.key==old.key then chosen=a;break end end end
+        if chosen and chosen.kind=="turnin" then
+            local field={}
+            for _,a in ipairs(held) do
+                local saved=B.Planner:BeforeReturn(chosen,a,s)
+                if saved then a.savedTravel=saved;field[#field+1]=a end
+            end
+            chosen=best(field) or chosen
+        end
         if not chosen then
             local field={}
             for _,a in ipairs(held) do if a.kind=="complete" then field[#field+1]=a end end
             chosen=best(field) or best(held)
-            for _,a in ipairs(held) do
-                if a.kind=="turnin" and (a.travel<6 or s.count>=s.limit-1) then chosen=a;break end
-            end
         end
     end
     if chosen then chosen.tripIDs=trip.ids end

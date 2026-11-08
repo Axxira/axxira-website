@@ -69,7 +69,11 @@ I.classWeights={
 }
 I.profileEvents={CHARACTER_POINTS_CHANGED=true,PLAYER_TALENT_UPDATE=true,ACTIVE_TALENT_GROUP_CHANGED=true,
     PLAYER_ENTERING_WORLD=true,PLAYER_LEVEL_UP=true}
-function I:InvalidateProfile() self.talentCache=nil end
+function I:InvalidateProfile()
+    self.talentCache=nil
+    if B.Planner then B.Planner.signature=nil end
+    B.dirty=true
+end
 function I:TalentTree()
     -- Read learned ranks, never recommended builds, preview points or a stance.
     if self:Number(B.Call(GetNumTalentTabs))~=3 then return nil,B.T("Talents non lisibles : choisis une spécialisation.") end
@@ -242,12 +246,29 @@ function I:Compare(link)
     local unique=B.Call(C_Item and C_Item.GetItemUniquenessByID,info.link)
     local complex=usable~=true or unique==true or info.classID==2 or best.slot>=16 or info.equipLoc=="INVTYPE_TRINKET"
         or stats.extra or best.stats.extra or spell or oldSpell or (info.setID or 0)>0 or (best.info and (best.info.setID or 0)>0)
-        or (info.quality or 0)>=3 or (best.info and (best.info.quality or 0)>=3)
+    -- A rare item's raw stats can justify a modest route preference, but the
+    -- tooltip still asks the player to compare it. Weapons/procs stay excluded.
+    result.rewardStatUpgrade=not complex and result.gain>math.max(.5,math.abs(best.before)*.02)
+    complex=complex or (info.quality or 0)>=3 or (best.info and (best.info.quality or 0)>=3)
     if complex then result.status="compare";result.text=B.T("À COMPARER · effets / restrictions non évalués")
     elseif result.gain>math.max(.5,math.abs(best.before)*.02) then result.status="upgrade";result.text=B.T("AMÉLIORATION ESTIMÉE")
     elseif result.gain<-.5 then result.status="lower";result.text=B.T("Score inférieur pour ce profil")
     else result.status="similar";result.text=B.T("Équivalent pour ce profil") end
     return result
+end
+function I:QuestReward(q)
+    local best
+    for _,r in ipairs(B.Knowledge:Rewards(q)) do
+        local compare=self:Compare(r.link)
+        if compare and compare.info and (compare.info.quality or 0)>=3 and compare.rewardStatUpgrade then
+            local fraction=compare.gain/math.max(10,math.abs(compare.before))
+            local bonus=math.min(.25,fraction*.5)
+            if bonus>=.03 and (not best or bonus>best.bonus) then
+                best={link=r.link,bonus=bonus,profile=compare.profile,deltas=compare.deltas}
+            end
+        end
+    end
+    return best
 end
 function I:Bags()
     local out={};local C=Ding.Compat
