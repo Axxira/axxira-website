@@ -1,4 +1,4 @@
-# ForeverPilot 1.9.0 · Français / English
+# ForeverPilot 1.9.1 · Français / English
 
 Assistant de leveling pour **WoW Forever**, interface 16001. **Ding est obligatoire**
 et doit rester activé. ChangeLayer est facultatif. Le joueur se déplace et combat
@@ -39,8 +39,19 @@ Portail officiel : https://foreverpilot-subscriptions.tyronixstudio.workers.dev
 
 Journal réellement confirmé, offres du PNJ, prérequis, niveau, classe, quêtes terminées,
 objectifs voisins, trajets connus, apprentissage et exclusions par personnage.
-Les quêtes de classe utiles et faisables sont prioritaires. Un maître de vol proche
+Les sorties regroupent aussi les objectifs proches déjà pris. Avant de rendre une
+quête, le guide compare les trajets complets pour éviter de repartir aussitôt au même
+endroit. Des boucles solo courtes, réellement offertes ou présentes au journal,
+peuvent compléter la route. Un journal plein et un PNJ tout proche permettent de rendre.
+Les quêtes de classe proches, déjà prises ou réellement offertes sont prioritaires;
+une prise lointaine non confirmée reste candidate sans imposer un détour immédiat. Un maître de vol proche
 est proposé pour découverte/vérification; sa carte doit être ouverte pour confirmation.
+
+Les récompenses bleues observées dans la fenêtre de quête ou l'entrée sélectionnée du
+journal peuvent favoriser légèrement une quête si leurs statistiques conviennent à
+ton profil et ton équipement. Compare les effets avant de choisir. Les armes et effets
+complexes ne reçoivent pas de bonus supposé; les récompenses inconnues restent inconnues.
+Ce n'est pas un catalogue complet des quêtes donnant du bleu ni une promesse d'XP/h.
 
 Les conseils d'objets suivent classe ET spécialisation : **Upgrade OUI/NON**, gains et
 pertes, ou **À VÉRIFIER** si les données manquent. Ce sont des estimations, pas une simulation
@@ -83,6 +94,15 @@ Gear advice follows class/spec and shows YES/NO or CHECK when uncertain. Class q
 and nearby flight masters are prioritized when available and feasible. Live game state
 takes priority over route data. Neither the simulator nor UI checks establish a complete
 real-world 1–60 playthrough. Montreal goal lights require the Windows launcher.
+
+Outings include useful nearby held quests and compare complete return itineraries.
+Short solo loops can join with live offer/journal evidence and known destinations.
+Nearby, held and live-offered class quests keep priority; distant unconfirmed pickups
+remain candidates without forcing a detour. Observed rare rewards may add a small,
+capped preference based on actual class/spec and equipped stats. Compare effects
+manually; weapons and unknown effects receive no guessed bonus. This is not a complete
+rare-reward catalog or a measured XP/hour claim. Updating from 1.9.0 only needs a reload
+outside combat; no new files are loaded.
 
 ## Source, licences et crédits
 
