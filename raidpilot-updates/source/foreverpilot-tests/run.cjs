@@ -26,4 +26,7 @@ for (const file of ['Bootstrap.lua', 'Items.lua', 'Market.lua', 'AuctionUI.lua',
 load('local B=ForeverPilotLeveling; B.char={}; B.settings={enabled=true}; B.Market:Init(); B.AuctionUI:Init()', 'initialize');
 load(fs.readFileSync(path.join(__dirname, 'auction-ui.lua'), 'utf8'), 'auction UI regression');
 load(fs.readFileSync(path.join(__dirname, 'market-tooltip.lua'), 'utf8'), 'inventory tooltip regression');
-console.log('PASS: all addon modules parse; auction integration and scan lifecycle verified.');
+for (const file of ['Layers.lua', 'LayerUI.lua'])
+  load(fs.readFileSync(path.join(addon, file), 'utf8'), file);
+load(fs.readFileSync(path.join(__dirname, 'layers.lua'), 'utf8'), 'layer assistance regression');
+console.log('PASS: all addon modules parse; auction, tooltips and layer assistance verified.');

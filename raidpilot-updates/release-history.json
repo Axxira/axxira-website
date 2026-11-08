@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.20",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.20",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot 1.5.0 : bouton Changer de layer",
+      "details": "Ajoute un bouton discret sous le guidage et un panneau facultatif accessible avec /fpl layers. Recherche sur demande de volontaires ForeverPilot dans la même zone, via son propre canal et la guilde; un seul volontaire est sélectionné. Le mode Aider les autres est facultatif et désactivé par défaut. Les invitations sont acceptées manuellement dans WoW. Le bouton Demander dans Général prépare un message modifiable, sans l’envoyer. Lorsqu’un transfert est déjà proposé par WoW, Changer maintenant permet de le confirmer hors combat. Seule la confirmation serveur affiche un succès; rejoindre un groupe ne prouve pas un changement. Gestion des délais, combat, instances, annulation, refus serveur et anti-spam persistant après rechargement. Aucun départ de groupe automatique, aucun numéro de layer inventé. Code original, sans copie de ChangeLayer. Les utilisateurs doivent avoir ForeverPilot 1.5.0 et activer l’aide pour répondre à la recherche. Ding reste inclus; le bridge ForeverPilot est préservé. Appliquer la mise à jour dans la page ForeverPilot du launcher, jeu fermé."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.19",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot simplifié — prochain objectif, suivi rapide, options avancées repliées",
       "details": "La liste QuestPilot montre par défaut uniquement les quêtes suivies, avec un bouton pour afficher le catalogue complet. La recherche révèle aussi les missions non suivies. Un encart Prochain objectif permet de suivre une étape sur la carte ou de la cocher d'un seul clic. L'affichage principal est limité à dix étapes et les préparatifs, objectifs sans GPS et options d'escouade sont regroupés dans des sections dépliables. Les marqueurs numérotés, couleurs, statuts personnels et d'équipe restent disponibles. Aucune quête n'est cochée automatiquement sans action du joueur ou preuve EFT."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.32",
-      "raidPilotVersion": "0.14.2.32",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Reader visuel 160×90 — fusion de rotation avec Raw Input, contrôles renforcés",
-      "details": "Le capteur visuel 160×90 déjà présent peut désormais contribuer à la calibration de rotation (yaw) lorsqu'il observe une rotation pure confirmée par les mouvements de souris horodatés. Les images anciennes ou trop lentes, les changements de fenêtre, les déplacements même brefs entre captures, la visée ADS, les interactions (notamment le maintien de F) et les signaux contradictoires sont ignorés. Les corrections restent bornées par VisualYawCalibration et la capture 64×36 sert de repli lorsqu'aucun signal V2 fiable n'est récent. Capture Windows Graphics Capture toujours désactivée par défaut et uniquement activable par l'utilisateur; le mode visuel GDI reste local. Aucune lecture de la mémoire EFT, aucune injection et aucune collecte d'images sur disque. Les pixels ne donnent pas de distance absolue en mètres : le suivi des coordonnées reste estimé entre deux F8, à valider par le diagnostic CSV. Sept tests ajoutés pour vérifier la fraîcheur des images et le filtrage des actions."
     }
   ]
 }
