@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.26",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.26",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.9.0 : accueil bilingue et accès public",
+      "details": "Accueil au premier lancement et onglet Abonnement dans Options. L’édition RaidPilot reste intégralement gratuite, sans compte ni connexion. La distribution publique relie Fast XP et les conseils de classe au compagnon Windows, avec vérification du paiement PayPal et annulation des renouvellements. HDV et outils restent accessibles. Ding reprend le guidage lorsqu’un accès public expire. Redémarrage complet de WoW requis. Paiement et annulation vérifiés avec le service de test PayPal; aucun paiement réel effectué. La publication CurseForge reste soumise à sa modération."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.25",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "Étages — état des catalogues vérifiés par carte et sélection de secours",
       "details": "Affiche la disponibilité des étages par carte, le nombre de niveaux présents et la couverture localisée aux bâtiments. Refuse le mode AUTO lorsqu'aucun niveau validé n'est fourni, et maintient le réglage BASE. Les niveaux explicitement documentés restent sélectionnables manuellement. Cette version ne prétend pas couvrir tous les bâtiments : les catalogues sans étages doivent être renseignés à partir de géométries sourcées et testées avant activation automatique."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.39",
-      "raidPilotVersion": "0.14.2.39",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot Pro — grandes cartes de quêtes scannées pour le raid en cours",
-      "details": "QuestPilot affiche uniquement les quêtes signalées par le scan TAB → TÂCHES → F8 pour le raid courant. La sélection et les validations manuelles temporaires sont réinitialisées au début et à la fin d'un raid sans effacer les preuves de quête terminée issues des journaux EFT. Une nouvelle détection de liste remplace la sélection précédente. Le panneau sous la carte devient plus haut et présente des cartes lisibles, avec typographie agrandie, boutons Fait et restauration. Ctrl+Alt+I ne change que le mode interactif, pas la visibilité de la carte et du panneau. Le panneau QuestPilot dispose d'un bouton de barre d'outils Afficher/Masquer et d'un bouton Fermer; seul le panneau est masqué, jamais la carte. Ctrl+Alt+I continue de basculer les clics et ne force pas la réouverture du panneau caché."
     }
   ]
 }

@@ -1,6 +1,15 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.8.1", modules = {}, dirty = true }
+local B = { version = "1.9.0", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
+-- The CurseForge packager changes this one marker. RaidPilot always remains free.
+B.distribution = "raidpilot-test"
+B.subscriptionURL = "https://foreverpilot-subscriptions.tyronixstudio.workers.dev"
+function B.HasPremium(feature)
+    if B.distribution=="raidpilot-test" then return true end
+    local a=_G.ForeverPilotAccess
+    if type(a)~="table" or a.environment~="live" or type(a.expires)~="number" or not(a.expires>time()) then return false end
+    return feature=="class" and a.classGuidance==true or feature~="class" and a.fastXP==true
+end
 function B.List(v) if type(v)=="table" then return v elseif type(v)=="number" then return {v} end return {} end
 function B.Copy(v)
     if type(v)~="table" then return v end
