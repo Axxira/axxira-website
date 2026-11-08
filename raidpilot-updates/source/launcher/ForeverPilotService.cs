@@ -13,11 +13,12 @@ internal sealed record ForeverPilotStatus(string? GamePath, string? Version, boo
         (Version is null || System.Version.Parse(BundledVersion) > System.Version.Parse(Version));
 }
 
-/// <summary>Manages only our addon. Never writes WTF, Ding or the legacy ForeverPilot bridge.</summary>
+/// <summary>Installs our addon and missing/broken Ding. Preserves healthy Ding, WTF and the legacy bridge.</summary>
 internal static class ForeverPilotService
 {
     internal const string AddonName = "ForeverPilot_Leveling";
     internal static string BundlePath => Path.Combine(AppContext.BaseDirectory, "payload", AddonName);
+    internal static string DingBundlePath => Path.Combine(AppContext.BaseDirectory, "payload", "Ding");
     private static string SettingsPath => Path.Combine(LauncherSettingsStore.SettingsDirectory, "foreverpilot.json");
 
     internal static ForeverPilotStatus Inspect()
@@ -48,7 +49,8 @@ internal static class ForeverPilotService
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
             { problem = "Installation incomplète : " + e.Message; }
         }
-        var ding = game is not null && File.Exists(Path.Combine(game, "Interface", "AddOns", "Ding", "Ding.toc"));
+        var ding = game is not null && IsDingComplete(Path.Combine(game, "Interface", "AddOns", "Ding"));
+        if (game is not null && !ding) problem ??= "Ding manque ou est incomplet. Installe ou répare les addons avec le bouton ci-dessous.";
         string? bundled = null;
         try { ValidateAddon(bundle); bundled = ReadVersion(bundle); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException) { }
@@ -114,6 +116,34 @@ internal static class ForeverPilotService
         return full;
     }
 
+    internal static bool IsDingComplete(string folder)
+    {
+        try { ValidateDing(folder); return true; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException) { return false; }
+    }
+
+    internal static void ValidateDing(string folder, bool requireLicense = false)
+    {
+        RejectLinkedPath(folder);
+        var toc = new FileInfo(Path.Combine(folder, "Ding.toc"));
+        if (!toc.Exists || toc.Length > 1024 * 1024) throw new InvalidDataException("Ding.toc absent ou invalide.");
+        var lines = File.ReadAllLines(toc.FullName);
+        if (!lines.Any(l => l.Trim().StartsWith("## Interface:", StringComparison.OrdinalIgnoreCase) &&
+            l[(l.IndexOf(':') + 1)..].Split(',').Any(v => v.Trim() == "16001")))
+            throw new InvalidDataException("Ding doit être la version WoW Forever.");
+        var modules = lines.Select(l => l.Trim()).Where(l => l.Length > 0 && !l.StartsWith('#')).ToArray();
+        foreach (var needed in new[] { "Core\\Ding.lua", "Core\\Data.lua", "Core\\Registry.lua", "Core\\Engine.lua", "DB\\DB.lua", "DB\\Quests.lua", "UI\\Arrow.lua" })
+            if (!modules.Contains(needed, StringComparer.OrdinalIgnoreCase)) throw new InvalidDataException("Module Ding requis absent : " + needed);
+        foreach (var relative in modules.Concat(new[] { "Media\\Textures\\arrow.tga" }))
+        {
+            var path = SafeChild(folder, relative);
+            RejectLinkedPath(path);
+            if (!File.Exists(path)) throw new InvalidDataException("Fichier Ding manquant : " + relative);
+        }
+        if (requireLicense && (!File.Exists(Path.Combine(folder, "LICENSE")) || !File.Exists(Path.Combine(folder, "DB", "CREDITS.md"))))
+            throw new InvalidDataException("Licence ou crédits de Ding absents du package.");
+    }
+
     private static void RejectLinkedPath(string path)
     {
         for (var current = Path.GetFullPath(path); !string.IsNullOrEmpty(current); current = Path.GetDirectoryName(current))
@@ -150,7 +180,7 @@ internal static class ForeverPilotService
             Path.GetFileName(p) is "Battle.net.exe" or "Battle.net Launcher.exe");
     }
 
-    internal static string Install(string game, string bundle, Func<bool>? gameRunning = null)
+    internal static string Install(string game, string bundle, Func<bool>? gameRunning = null, string? dingBundle = null)
     {
         if ((gameRunning ?? IsGameRunning)()) throw new InvalidOperationException("Ferme World of Warcraft avant de mettre l'addon à jour.");
         game = NormalizeGamePath(game) ?? throw new InvalidDataException("Installation WoW Forever introuvable.");
@@ -159,27 +189,60 @@ internal static class ForeverPilotService
         var target = Path.Combine(game, "Interface", "AddOns", AddonName);
         RejectLinkedPath(target);
         var existing = ReadVersion(target);
-        if (existing is not null && Version.Parse(existing) > Version.Parse(ReadVersion(bundle)!))
+        var dingTarget = Path.Combine(game, "Interface", "AddOns", "Ding");
+        RejectLinkedPath(dingTarget);
+        var needsDing = !IsDingComplete(dingTarget);
+        var newerAddon = existing is not null && Version.Parse(existing) > Version.Parse(ReadVersion(bundle)!);
+        if (newerAddon && !needsDing)
             throw new InvalidOperationException("La version installée est plus récente que celle du launcher.");
+        dingBundle ??= DingBundlePath;
+        if (needsDing) ValidateDing(dingBundle, requireLicense: true);
         var id = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N")[..8];
         var backups = Path.Combine(game, "Interface", "ForeverPilotBackups");
         RejectLinkedPath(backups);
-        var stage = Path.Combine(backups, "staging-" + id);
-        var backup = Path.Combine(backups, (existing ?? "installation") + "-" + id);
-        CopyVerified(bundle, stage);
-        ValidateAddon(stage);
+        var plans = new List<(string Target, string Stage, string Backup)>();
+        if (needsDing)
+        {
+            var stage = Path.Combine(backups, "staging-Ding-" + id);
+            CopyVerified(dingBundle, stage);
+            ValidateDing(stage, requireLicense: true);
+            plans.Add((dingTarget, stage, Path.Combine(backups, "Ding-" + id)));
+        }
+        if (!newerAddon)
+        {
+            var stage = Path.Combine(backups, "staging-" + id);
+            CopyVerified(bundle, stage);
+            ValidateAddon(stage);
+            plans.Add((target, stage, Path.Combine(backups, (existing ?? "installation") + "-" + id)));
+        }
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         // Recheck immediately before switching folders: WoW may have started during staging.
         if ((gameRunning ?? IsGameRunning)()) throw new InvalidOperationException("WoW est ouvert. Installation reportée.");
-        var hadOld = Directory.Exists(target);
-        if (hadOld) Directory.Move(target, backup);
-        try { Directory.Move(stage, target); }
+        var installed = new List<(string Target, string Stage)>();
+        var moved = new List<(string Target, string Backup)>();
+        try
+        {
+            foreach (var plan in plans)
+            {
+                if (Directory.Exists(plan.Target))
+                {
+                    Directory.Move(plan.Target, plan.Backup);
+                    moved.Add((plan.Target, plan.Backup));
+                }
+                Directory.Move(plan.Stage, plan.Target);
+                installed.Add((plan.Target, plan.Stage));
+            }
+            ValidateDing(dingTarget);
+            ValidateAddon(target);
+        }
         catch
         {
-            if (hadOld && !Directory.Exists(target)) Directory.Move(backup, target);
+            // Roll back both addons together. Move only directories installed by this transaction.
+            foreach (var item in installed.AsEnumerable().Reverse()) Directory.Move(item.Target, item.Stage);
+            foreach (var item in moved.AsEnumerable().Reverse()) Directory.Move(item.Backup, item.Target);
             throw;
         }
-        return hadOld ? backup : "";
+        return moved.Count > 0 ? moved[^1].Backup : "";
     }
 
     private static void CopyVerified(string source, string destination)
@@ -191,7 +254,8 @@ internal static class ForeverPilotService
             var dest = SafeChild(destination, Path.GetFileName(entry));
             if (Directory.Exists(entry)) { CopyVerified(entry, dest); continue; }
             var info = new FileInfo(entry);
-            if (info.Length > 16 * 1024 * 1024 || !new[] { ".lua", ".toc", ".tga", ".md", ".txt" }.Contains(info.Extension.ToLowerInvariant()))
+            if (info.Length > 16 * 1024 * 1024 ||
+                !(info.Name == "LICENSE" || new[] { ".lua", ".toc", ".tga", ".md", ".txt", ".xml", ".ttf" }.Contains(info.Extension.ToLowerInvariant())))
                 throw new InvalidDataException("Fichier inattendu dans l'addon : " + info.Name);
             File.Copy(entry, dest, overwrite: false);
             using var original = File.OpenRead(entry);

@@ -10,6 +10,8 @@ on:
       - "raidpilot-updates/source/foreverpilot/**"
       - "raidpilot-updates/source/foreverpilot-tests/**"
       - "raidpilot-updates/release-history.json"
+      - "raidpilot-updates/Restore-DingAddon.ps1"
+      - "raidpilot-updates/Ding-NOTICE.txt"
       - ".github/workflows/raidpilot-foreverpilot-validation.yml"
 
 permissions:
@@ -28,6 +30,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - name: Restore verified Ding dependency
+        shell: pwsh
+        run: ./raidpilot-updates/Restore-DingAddon.ps1
       - name: Test addon auction controls and scan lifecycle
         shell: pwsh
         run: |
@@ -60,3 +65,13 @@ jobs:
             }
           }
           Write-Host 'Windows launcher and complete addon payload validated; no Stable publication.'
+          $ding = Join-Path $PWD 'validation-output/payload/Ding'
+          foreach ($file in Get-ChildItem -LiteralPath 'raidpilot-updates/source/ding' -File -Recurse) {
+            if ($file.Name -eq '.gitignore') { continue }
+            $relative = [IO.Path]::GetRelativePath((Resolve-Path 'raidpilot-updates/source/ding').Path, $file.FullName)
+            $copy = Join-Path $ding $relative
+            if (!(Test-Path -LiteralPath $copy) -or (Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $copy).Hash) {
+              throw "Ding dependency differs from verified source: $relative"
+            }
+          }
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release -- --addon-package validation-output

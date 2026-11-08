@@ -741,6 +741,8 @@ Run("notes: grand historique borné et trois lignes dynamiques disponibles", () 
 
 ForeverPilotTests.Run(Run);
 HabsGoalTests.Run(Run);
+if (args.Length == 2 && args[0] == "--addon-package")
+    Run("ForeverPilot : package réel installé sur un PC vierge", () => ForeverPilotTests.VerifyPublishedPackage(args[1]));
 if (failures.Count == 0)
 {
     Console.WriteLine($"{testCount}/{testCount} tests launcher réussis.");

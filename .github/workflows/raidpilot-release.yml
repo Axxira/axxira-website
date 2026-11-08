@@ -10,6 +10,7 @@ on:
       - "raidpilot-updates/Restore-*.ps1"
       - "raidpilot-updates/Restore-*.cjs"
       - "raidpilot-updates/public-catalogues.json"
+      - "raidpilot-updates/Ding-NOTICE.txt"
       - ".github/workflows/raidpilot-release.yml"
   workflow_dispatch:
 
@@ -41,6 +42,10 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+
+      - name: Restore verified Ding dependency
+        shell: pwsh
+        run: ./raidpilot-updates/Restore-DingAddon.ps1
 
       - name: Build optional WGC capture bridge
         shell: pwsh
@@ -240,6 +245,8 @@ jobs:
             throw "Launcher packaged-runtime smoke test failed with code $($smoke.ExitCode)."
           }
           Write-Host "Launcher, bundled Overlay/Beacon, WGC bridge and Stable feed verified."
+          dotnet run --project raidpilot-updates/source/launcher/Tests/RaidPilot.Launcher.Tests.csproj -c Release -- --addon-package $folder
+          if ($LASTEXITCODE -ne 0) { throw 'Fresh-PC ForeverPilot + Ding installation failed.' }
 
       - name: Create release archives
         shell: pwsh
