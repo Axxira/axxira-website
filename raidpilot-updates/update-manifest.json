@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T01:45:58.4669569+00:00",
+  "publishedAt": "2026-11-08T03:31:12.0843002+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.19-d1e31f83dd77/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "DBF9B489ADD326C54ED7E9B5874D7F82B5FF475242A7AE8809B48766102C5AA0",
-    "sizeBytes": 234564529,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.20-a8e90f14dda5/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "791C1197CC573B9840CA6AD9EC90E77857AA2C08198F3DAA5B43B7F2049ACC85",
+    "sizeBytes": 234564527,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.19-d1e31f83dd77/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "5FF04CDDC68D767799DEEDEE886A38139E1CB5719F5B6BC52DE8DC43E93C830F",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.20-a8e90f14dda5/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "2C7929C5F2875B4CBE023641CDAA7C421751B12442076CD8176C465113D28710",
     "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.19",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.19-d1e31f83dd77/RaidPilot-Launcher-v0.2.19-Windows-x64.zip",
-    "sha256": "527A42F18C436EB9C57FE93A899D3AE8A7C2AB60B84B63F89F974F07478E4098",
-    "sizeBytes": 360578121,
-    "releaseNotes": "Corrige les installations sur un nouveau PC : le launcher inclut maintenant Ding v1.8.1 officiel et ForeverPilot_Leveling 1.4.2. Le bouton Installer ForeverPilot + Ding installe les deux addons, jeu fermé. Si ForeverPilot est déjà présent, Installer / réparer Ding complète la dépendance manquante ou cassée. Le contrôle vérifie tous les modules Ding, son édition Forever et sa flèche; la seule présence de Ding.toc ne suffit plus. Un Ding existant valide est conservé. Les versions remplacées sont sauvegardées et les deux addons sont restaurés ensemble si une étape échoue. Une version plus récente de ForeverPilot est préservée lors de la réparation de Ding. Ding est récupéré depuis sa publication officielle avec empreinte SHA-256 fixe; code source, licence GPLv3, crédits et licences des polices sont inclus. Un essai automatique installe le vrai package sur une installation vierge et compare chaque fichier. Après installation, activer Ding et ForeverPilot_Leveling à la sélection du personnage. Le bridge ForeverPilot et WTF sont conservés. Lumières LE BUT : corrige les buts ajoutés tardivement au détail LNH après des actions plus récentes et les buts gagnants publiés après la fin du match. Suivi toutes les 10 secondes en direct, effet de 10 secondes inchangé. Le launcher conserve le résultat de la dernière alerte et un diagnostic local borné pour distinguer réception du but, WoW hors premier plan et erreur d’affichage. Aucun rattrapage des anciens buts au démarrage ou après une longue coupure."
+    "version": "0.2.20",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.20-a8e90f14dda5/RaidPilot-Launcher-v0.2.20-Windows-x64.zip",
+    "sha256": "0E7D080C5B5317CAC6ECA86040CCBA7D8F652F60FF1B0A50E749B69C717AF493",
+    "sizeBytes": 360585713,
+    "releaseNotes": "Ajoute un bouton discret sous le guidage et un panneau facultatif accessible avec /fpl layers. Recherche sur demande de volontaires ForeverPilot dans la même zone, via son propre canal et la guilde; un seul volontaire est sélectionné. Le mode Aider les autres est facultatif et désactivé par défaut. Les invitations sont acceptées manuellement dans WoW. Le bouton Demander dans Général prépare un message modifiable, sans l’envoyer. Lorsqu’un transfert est déjà proposé par WoW, Changer maintenant permet de le confirmer hors combat. Seule la confirmation serveur affiche un succès; rejoindre un groupe ne prouve pas un changement. Gestion des délais, combat, instances, annulation, refus serveur et anti-spam persistant après rechargement. Aucun départ de groupe automatique, aucun numéro de layer inventé. Code original, sans copie de ChangeLayer. Les utilisateurs doivent avoir ForeverPilot 1.5.0 et activer l’aide pour répondre à la recherche. Ding reste inclus; le bridge ForeverPilot est préservé. Appliquer la mise à jour dans la page ForeverPilot du launcher, jeu fermé."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.20",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.20",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot 1.5.0 : bouton Changer de layer",
+      "details": "Ajoute un bouton discret sous le guidage et un panneau facultatif accessible avec /fpl layers. Recherche sur demande de volontaires ForeverPilot dans la même zone, via son propre canal et la guilde; un seul volontaire est sélectionné. Le mode Aider les autres est facultatif et désactivé par défaut. Les invitations sont acceptées manuellement dans WoW. Le bouton Demander dans Général prépare un message modifiable, sans l’envoyer. Lorsqu’un transfert est déjà proposé par WoW, Changer maintenant permet de le confirmer hors combat. Seule la confirmation serveur affiche un succès; rejoindre un groupe ne prouve pas un changement. Gestion des délais, combat, instances, annulation, refus serveur et anti-spam persistant après rechargement. Aucun départ de groupe automatique, aucun numéro de layer inventé. Code original, sans copie de ChangeLayer. Les utilisateurs doivent avoir ForeverPilot 1.5.0 et activer l’aide pour répondre à la recherche. Ding reste inclus; le bridge ForeverPilot est préservé. Appliquer la mise à jour dans la page ForeverPilot du launcher, jeu fermé."
+    },
     {
       "component": "launcher",
       "version": "0.2.19",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — premier conseiller de quêtes, planque et inventaire",
       "details": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.1.0",
-      "raidPilotVersion": "0.15.1.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "CORTEX V2 — mémoire visuelle des lieux et contrôle d'identité des repères",
-      "details": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
     }
   ]
 }
