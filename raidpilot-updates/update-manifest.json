@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T00:14:49.9692717+00:00",
+  "publishedAt": "2026-11-08T00:58:53.8854138+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.16-143549139a44/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "102CCE4E9A218E622DF3BC762C87A46934D60B551CF9BE83930DA73EC74B5177",
-    "sizeBytes": 234564529,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.17-9022f4250ef1/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "1C0EC1A6C6FF5D9A0808AB45D55E22EA357607FF3A5BABA4EE05FAC24A5B13B8",
+    "sizeBytes": 234564528,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.16-143549139a44/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "A1BB0E2A6A6AF88C67267A913600216F19456DAE9C9C1504171E5D4096C40F52",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.17-9022f4250ef1/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "2083C551ACA6E390C98CB5797FAE0AF78934EDBC8760C8DDB8870E0E7EFEA021",
     "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.16",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.16-143549139a44/RaidPilot-Launcher-v0.2.16-Windows-x64.zip",
-    "sha256": "B0B94AD5B418B633E724C370D146F4D00DF008254741C509A573D1F657CFC216",
-    "sizeBytes": 351233660,
-    "releaseNotes": "Ajoute une page ForeverPilot au launcher : version installée, présence de Ding, vérification des modules, choix du dossier _forever_, accès à AddOns et ouverture de Battle.net. Le launcher embarque ForeverPilot_Leveling 1.4.1 (GPLv3). Installation ou mise à jour sur demande, jeu fermé, copie vérifiée et sauvegarde de la version précédente dans Interface/ForeverPilotBackups. Une version plus récente n'est jamais remplacée. Le bridge ForeverPilot, Ding et les réglages WTF sont conservés. Ding reste une dépendance à installer séparément; son activation et celle de ForeverPilot_Leveling se contrôlent dans le jeu. Les prochaines versions de l'addon sont livrées avec les mises à jour du launcher. Aucun téléchargement de données Zygor/RestedXP ni lancement direct de Wow.exe. Tests de détection, préservation, sauvegarde, version, package incomplet et protection pendant le jeu."
+    "version": "0.2.17",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.17-9022f4250ef1/RaidPilot-Launcher-v0.2.17-Windows-x64.zip",
+    "sha256": "FB3D2C1B2127A2179950DA818F8C0C45E5211D4E2152359E305EE173A2BF5EEC",
+    "sizeBytes": 351236313,
+    "releaseNotes": "Le survol des objets affiche le prix HDV par unité et par pile, l'âge du relevé, les données partielles et les objets liés. Le bouton Scanner HDV apparaît dans la barre de titre de l'hôtel des ventes. Le bas de la fenêtre affiche l'attente du serveur, la progression, les variantes mémorisées, les résultats partiels et les messages d'échec. Le compte à rebours de 15 minutes persiste après un rechargement. Les commandes et le panneau Objets restent disponibles. Le scan mémorise des prix consultables au survol des objets; il ne remplit pas les résultats de recherche Blizzard. Aucun achat, vente ou annulation automatique. Tests Lua du chargement à la demande, des clics, délais, fermeture, erreurs serveur et de la réactivation. Le launcher fournit ForeverPilot_Leveling 1.4.2; appliquer sa mise à jour dans le menu ForeverPilot, jeu fermé. Ding reste nécessaire."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.17",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.17",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot 1.4.2 : scan HDV et prix dans les sacs",
+      "details": "Le survol des objets affiche le prix HDV par unité et par pile, l'âge du relevé, les données partielles et les objets liés. Le bouton Scanner HDV apparaît dans la barre de titre de l'hôtel des ventes. Le bas de la fenêtre affiche l'attente du serveur, la progression, les variantes mémorisées, les résultats partiels et les messages d'échec. Le compte à rebours de 15 minutes persiste après un rechargement. Les commandes et le panneau Objets restent disponibles. Le scan mémorise des prix consultables au survol des objets; il ne remplit pas les résultats de recherche Blizzard. Aucun achat, vente ou annulation automatique. Tests Lua du chargement à la demande, des clics, délais, fermeture, erreurs serveur et de la réactivation. Le launcher fournit ForeverPilot_Leveling 1.4.2; appliquer sa mise à jour dans le menu ForeverPilot, jeu fermé. Ding reste nécessaire."
+    },
     {
       "component": "launcher",
       "version": "0.2.16",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "CORTEX Core — fusion de confiance, apprentissage des écarts F8 et navigation adaptive",
       "details": "Première phase de CORTEX : superviseur local connecté aux mouvements, aux corrections visuelles réellement appliquées et à l'audit exact F8. Il suit la session carte/raid/fenêtre, rejette les observations périmées ou incohérentes, comptabilise les corrections visuelles corroborées et retient la dérive réelle observée aux F8 sans enregistrer de coordonnées. Une erreur F8 importante bloque temporairement l'espacement des captures; une nouvelle confiance exige deux mesures correctes. Deux corrections visuelles indépendantes sont nécessaires pour l'intervalle maximal de 12 s. Mode CORTEX désactivable depuis le menu pour comparer avec l'ancien moteur. Il ne s'agit pas encore d'un modèle neuronal ou d'un SLAM complet; précision à confirmer en raid."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.45",
-      "raidPilotVersion": "0.14.2.45",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "F8 adaptatif silencieux — 4 à 12 s selon les repères visuels fiables",
-      "details": "Le recalage exact pendant la marche conserve 4 s lorsque la vision manque, que la position devient incertaine ou que la santé GPS est orange/rouge. Des corrections visuelles locales, indépendantes et réellement appliquées (consensus de repères, confiance ≥ 0,90 et faible résidu) permettent d'espacer les F8 à 8 ou 12 s, réduisant sons et notifications du jeu. F, tir, visée et rechargement bloquent toujours les captures. Le suivi par images reste local, sans coordonnées inventées; les tests en raid doivent vérifier l'équilibre précision/discrétion."
     }
   ]
 }
