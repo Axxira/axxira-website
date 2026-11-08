@@ -1,6 +1,14 @@
 local B=ForeverPilotLeveling
 local P={};B.Planner=P
 local function count(t) local n=0 for _ in pairs(t) do n=n+1 end return n end
+local function better(a,b)
+    if not not a.classPriority~=not not b.classPriority then return not not a.classPriority end
+    if a.score==b.score then return a.key<b.key end
+    return a.score>b.score
+end
+function P:ClassPriority(n,s)
+    return B.Journal:IsClass(n) or (n.classPrerequisite and B.Progression:Unlock(n,s,false,true)) or false
+end
 function P:SafePoints(target,s,q)
     local points={}
     for _,p in ipairs(target.points or {}) do
@@ -35,9 +43,10 @@ function P:Action(n,kind,s,recovery)
         end
     end
     local a={q=n.id,node=n,kind=kind,key=kind..":"..n.id,confidence=reason=="LIVE" and "LIVE" or (kind~="accept" and "LIVE / POSITION DB" or "DATABASE"),recovery=recovery}
+    a.classPriority=not not self:ClassPriority(n,s)
     if B.char.deferred[a.key] and B.char.deferred[a.key]>time() then return nil,"deferred" end
     local context=B.Graph:Context(n,kind,s);a.context=context
-    if context and (context.step.elite or context.step.dungeon) then return nil,"group" end
+    if kind~="turnin" and context and (context.step.elite or context.step.dungeon) then return nil,"group" end
     if kind~="turnin" and not self:Solo(n) then return nil,"group" end
     if kind=="accept" then
         -- Reserve journal space for quests whose known objectives can actually be done.
@@ -144,7 +153,7 @@ function P:Candidates(s)
     for q,log in pairs(s.log) do add(B.Graph:Node(q),log.ready and "turnin" or "complete") end
     local pool={} for _,n in pairs(B.Graph.nodes) do pool[#pool+1]=n end
     for _,n in ipairs(pool) do
-        if n.min<=s.level and n.level<=s.level+2 and n.level>=s.level-5 and not s.log[n.id] and not s:IsDone(n.id) then
+        if n.min<=s.level and n.level<=s.level+2 and (n.level>=s.level-5 or self:ClassPriority(n,s)) and not s.log[n.id] and not s:IsDone(n.id) then
             local context=B.Graph:Context(n,"accept",s)
             if context or n.extension or B.Validator.offers[n.id] then
                 if context or n.extension then recover(n,{},0) end
@@ -165,7 +174,7 @@ function P:Candidates(s)
     if localWork then for _,a in ipairs(out) do
         if a.kind=="accept" and not B.Travel:Distance(a.point,s) then a.regionFactor=0.65;a.score=a.score*a.regionFactor end
     end end
-    table.sort(out,function(a,b) if a.score==b.score then return a.key<b.key end return a.score>b.score end)
+    table.sort(out,better)
     self.blocked=blocked
     return out
 end
@@ -193,7 +202,7 @@ function P:Batch(actions,s)
             end
         end
     end
-    table.sort(top,function(a,b) if a.score==b.score then return a.key<b.key end return a.score>b.score end)
+    table.sort(top,better)
     return top
 end
 function P:Fallback(s)
@@ -237,7 +246,7 @@ function P:Signature(s)
     for q,row in pairs(s.log) do log[#log+1]=q..":"..B.Recovery:Signature(row) end
     table.sort(log)
     return table.concat({s.level,s.map or 0,math.floor((s.wx or 0)/35),math.floor((s.wy or 0)/35),s.count,s.limit,s.bags or -1,
-        B.Validator.generation or 0,B.Validator.revision or 0,B.Recovery.revision or 0,
+        B.Validator.generation or 0,B.Validator.revision or 0,B.Recovery.revision or 0,B.FlightPaths.revision or 0,
         math.floor((s.health or 1)*20),math.floor((s.mana or 1)*20),math.floor((s.durability or 1)*20),tostring(s.combat),table.concat(log,";")},"|")
 end
 function P:Plan(s)
@@ -252,15 +261,21 @@ function P:Plan(s)
     B.Travel:Prepare(s)
     local actions=self:Batch(self:Candidates(s),s)
     self.actions=actions
-    local winner=B.Loop:Choose(actions,s) or actions[1]
-    table.sort(actions,function(a,b) if a.score==b.score then return a.key<b.key end return a.score>b.score end)
+    local priority={}
+    for _,a in ipairs(actions) do if a.classPriority then priority[#priority+1]=a end end
+    -- Priority is a separate decision tier; XP scoring and a saved ordinary
+    -- outing must not hide an eligible class chain again.
+    local choices=#priority>0 and priority or actions
+    local winner=B.Loop:Choose(choices,s) or choices[1]
+    table.sort(actions,better)
     local old=self.current
     if winner and old then
-        for _,a in ipairs(actions) do
+        for _,a in ipairs(choices) do
             if a.key==old.key and a.score>=winner.score*0.88 and not (winner.kind=="turnin" and winner.travel<8) then winner=a;break end
         end
     end
-    winner=B.Journey:Choose(winner,actions,s) or self:Fallback(s)
+    winner=B.Journey:Choose(winner,choices,s) or self:Fallback(s)
+    winner=B.FlightPaths:Choose(s,winner)
     winner=B.Needs:Choose(s,winner)
     if not old or old.key~=winner.key then B.Trace("decision",winner.key);winner.since=s.now else winner.since=old.since end
     self.current=winner

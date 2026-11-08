@@ -16,7 +16,7 @@ internal sealed partial class LauncherForm
 
     private void RefreshForeverPilot()
     {
-        try { _surface.Forever = ForeverPilotService.Inspect(); }
+        try { _surface.Forever = ForeverPilotService.Inspect(); _surface.ChangeLayerVersion = ChangeLayerService.InstalledVersion(_surface.Forever.GamePath); }
         catch (Exception e) { _surface.ForeverMessage = "Vérification impossible : " + e.Message; }
         _surface.Invalidate();
     }
@@ -25,7 +25,7 @@ internal sealed partial class LauncherForm
     {
         if (action is not (LauncherAction.ForeverPilot or LauncherAction.LaunchBattleNet or
             LauncherAction.ChooseForeverFolder or LauncherAction.OpenForeverFolder or
-            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or
+            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or LauncherAction.InstallChangeLayer or
             LauncherAction.ToggleHabsGoals or LauncherAction.PreviewHabsGoals)) return false;
         if (_foreverInstalling || _busy) return true;
         try
@@ -35,6 +35,14 @@ internal sealed partial class LauncherForm
             var state = _surface.Forever;
             switch (action)
             {
+                case LauncherAction.InstallChangeLayer:
+                    if (state.GamePath is null) throw new InvalidOperationException("Choisis d'abord ton dossier WoW Forever.");
+                    _foreverInstalling = true; SetBusy(true);
+                    _surface.ForeverMessage = "Téléchargement de ChangeLayer (Foofi) depuis CurseForge…";
+                    _surface.Invalidate();
+                    try { _surface.ForeverMessage = await ChangeLayerService.DownloadAndInstall(state.GamePath); }
+                    finally { _foreverInstalling = false; SetBusy(false); RefreshForeverPilot(); }
+                    break;
                 case LauncherAction.ToggleHabsGoals:
                     _habs.SetEnabled(!_habs.Enabled);
                     break;
@@ -111,6 +119,7 @@ internal sealed partial class LauncherSurface
 {
     internal ForeverPilotStatus Forever = new(null, null, false, null, null, false, null);
     internal string ForeverMessage = "Les addons se chargent à l'intérieur de World of Warcraft.";
+    internal string? ChangeLayerVersion;
     internal bool HabsEnabled;
     internal string HabsStatus = "Désactivé · Lumières visibles uniquement dans WoW";
     private static readonly Color ForeverAccent = Color.FromArgb(84, 224, 200);
@@ -162,7 +171,10 @@ internal sealed partial class LauncherSurface
         var tip = Forever.GameRunning ? "WoW est ouvert : ferme le jeu avant d'installer une mise à jour de l'addon."
             : !Forever.DingInstalled ? "Ding est inclus : clique sur Installer, puis active Ding et ForeverPilot_Leveling dans le jeu."
             : "Dans le jeu, garde Ding et ForeverPilot_Leveling activés. Tape /fpl pour retrouver le guidage.";
-        ForeverText(g, tip, 218, 550, 932, 42, 10, Muted);
+        ForeverText(g, tip, 218, 544, 932, 22, 9, Muted);
+        ForeverText(g, "Layers : réseau public ChangeLayer par Foofi · téléchargement officiel CurseForge", 218, 575, 690, 20, 9, Muted);
+        ForeverButton(g, new Rectangle(914, 566, 240, 30), ChangeLayerVersion is null ? "Installer ChangeLayer" : "ChangeLayer " + ChangeLayerVersion + " installé",
+            LauncherAction.InstallChangeLayer, ChangeLayerVersion is null && Forever.GamePath is not null && !Forever.GameRunning && !Busy);
         using (var fill = new SolidBrush(Panel2))
         using (var shape = RoundedRect(new Rectangle(214, 600, 940, 90), 10))
             g.FillPath(fill, shape);

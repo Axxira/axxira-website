@@ -4,7 +4,7 @@ local J={};B.Journal=J
 local classBits={1,2,4,8,16,64,128,256,1024}
 local labels={abandon="À ABANDONNER",class="CLASSE · À CONSERVER",prerequisite="PRÉREQUIS · À CONSERVER",fast="PARCOURS RAPIDE",unknown="À VÉRIFIER · CONSERVER",skipped="MISE DE CÔTÉ · CONSERVÉE"}
 local colors={abandon={1,0.65,0.36},class={0.74,0.66,1},prerequisite={0.40,0.85,0.80},fast={0.40,0.85,0.80},unknown={0.94,0.76,0.43},skipped={0.69,0.76,0.84}}
-local order={abandon=1,class=2,skipped=3,unknown=4,prerequisite=5,fast=6}
+local order={class=1,abandon=2,skipped=3,unknown=4,prerequisite=5,fast=6}
 function J:IsClass(n)
     if not n then return false end
     if B.Graph.classQuests[n.id] then return true end
@@ -19,7 +19,9 @@ function J:Classify(q,s)
     local n=B.Graph:Node(q);local row=s and s.log[q]
     local status,reason
     if self:IsClass(n) then
-        status="class";reason=n.fast and "Quête de classe incluse dans le parcours rapide." or "Quête de classe hors parcours rapide : conserve-la pour ta progression de classe."
+        status="class";reason="Prioritaire pour ta classe dès qu'elle est disponible et faisable en solo. À conserver."
+    elseif n and n.classPrerequisite then
+        status="prerequisite";reason="Prérequis d'une quête de classe : à conserver."
     elseif n and n.fastPrerequisite then
         status="prerequisite";reason="Débloque une quête du parcours rapide."
     elseif n and n.profession then
@@ -36,7 +38,7 @@ function J:Classify(q,s)
         local fit=B.Progression:Evaluate(n,row.ready and "turnin" or "complete",s)
         if fit.retire then
             outleveled=true
-            if B.Progression:Unlock(n,s,true) then
+            if n.classPrerequisite or B.Progression:Unlock(n,s,true) then
                 status="prerequisite";reason="Trop basse pour la boucle actuelle, mais prérequis utile pour la suite : conserve-la."
             else
                 status="abandon";reason="Niveau dépassé : "..(fit.questLevel or "?").." pour ton niveau "..s.level..", sans suite utile connue."
@@ -56,9 +58,6 @@ function J:Allows(n,s)
     if row.status=="skipped" then return false,"skipped" end
     if row.outleveled then return false,"outleveled" end
     if row.status=="abandon" then return false,"outsideFastRoute" end
-    -- Class quests remain visible and protected, but optional class detours do
-    -- not take over the fast arrow unless the leveling route includes them.
-    if row.status=="class" and not n.fast then return false,"optionalClass" end
     return true
 end
 function J:Refresh(s,notify)
@@ -97,8 +96,8 @@ function J:Print(s)
 end
 function J:Badge()
     local r=self.current;if not r then return end
-    if r.abandon>0 then return r.abandon.." À ABANDONNER",colors.abandon end
     if r.class>0 then return r.class.." DE CLASSE",colors.class end
+    if r.abandon>0 then return r.abandon.." À ABANDONNER",colors.abandon end
     if r.unknown>0 then return r.unknown.." À VÉRIFIER",colors.unknown end
 end
 function J:Tooltip()

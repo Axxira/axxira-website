@@ -1,4 +1,4 @@
-# ForeverPilot Brain v1.5.0
+# ForeverPilot Brain v1.6.0
 
 Assistant de leveling dynamique pour WoW Forever. Nécessite **Ding** activé.
 L'installation locale se trouve dans `_forever_/Interface/AddOns/ForeverPilot_Leveling`.
@@ -10,16 +10,35 @@ automatiquement les obstacles.
 
 ## Utilisation
 
-### Changer de layer (1.5.0)
+### Quêtes de classe et trajets aériens (1.6.0)
+
+Les guides de classe Ding correspondant à ta classe et ta race participent au moteur.
+Une quête de classe disponible et faisable en solo passe avant les boucles d'XP,
+avec la mention **CLASSE PRIORITAIRE** dans le panneau habituel. Ses prérequis sont
+protégés et prioritaires lorsqu'ils débloquent une étape de classe accessible.
+Les chaînes Forever dont la base omet un lien utilisent les liens explicites
+« rendre + prendre » du guide de classe; une offre réelle du PNJ reste prioritaire.
+Les limites de niveau, les preuves d'indisponibilité et le bouton Passer restent actifs.
+Les quêtes de groupe ne sont pas imposées au joueur solo.
+
+À moins de 320 yards d'un maître de vol allié ou neutre, une halte propose de découvrir
+son trajet avant de quitter le village. Un trajet déjà connu est ignoré. Si l'API ne
+permet pas de vérifier son état, le panneau dit **Vérifie ce trajet aérien**.
+Arriver au PNJ ne valide rien : il faut lui parler et ouvrir sa carte de vol.
+La confirmation est mémorisée par personnage; la boucle reprend ensuite.
+Aucun vol n'est pris automatiquement. Aucun détour pendant un combat, une mort,
+un vol ou en instance. Passer reporte cette halte de cinq minutes.
+Le panneau garde ses dimensions et n'ajoute aucun bouton.
+
+### Changer de layer avec ChangeLayer (1.5.1)
 
 Le bouton **Changer de layer**, sous le guidage, ouvre un petit panneau facultatif.
-**Chercher un volontaire** envoie une seule demande aux utilisateurs ForeverPilot
-de ta zone : message visible dans le canal `ForeverPilotLayers` et message addon
-dans ta guilde, si tu en as une. Au premier accès, attendre la connexion au canal,
-puis recliquer. Une seule personne est sélectionnée; accepte ensuite son invitation
-dans WoW. **Aider les autres : OUI** permet d'envoyer une invitation à un demandeur
-de la même zone, seulement lorsque tu es solo, vivant et hors combat/instance.
-Cette option est désactivée par défaut et enregistrée par personnage.
+Il appelle le bouton officiel de **ChangeLayer** : les volontaires n'ont donc pas
+besoin de ForeverPilot. Installe ChangeLayer depuis la page ForeverPilot du launcher,
+puis redémarre complètement WoW via Battle.net et active les trois addons.
+ChangeLayer gère la recherche, ses délais et ses invitations; consulte son état sous
+la minicarte. **Réglages ChangeLayer** ouvre ses options, dont l'aide aux autres.
+ForeverPilot ne modifie pas ses réglages. L'ancien réseau privé est retiré.
 
 Sans volontaire, **Demander dans Général** prépare un message en anglais modifiable que tu
 envoies toi-même avec Entrée. Aucun message automatique dans Général. Si WoW
@@ -28,17 +47,20 @@ propose déjà un transfert, **Changer maintenant** permet de le confirmer hors 
 
 Le jeu garde le contrôle du transfert : rejoindre un groupe ne garantit pas un
 autre layer. Seul l'événement serveur de transfert affiche « confirmé ». Sans
-confirmation, le panneau l'indique après 30 secondes. Aucune acceptation, sortie
-de groupe ou exclusion automatique. Pas de sélection d'un numéro de layer, ni de
-compatibilité annoncée avec les protocoles d'autres addons. Recherche limitée à
-une demande par minute (limite locale, persistante après `/reload`). Combat,
-changement de zone, délai ou désactivation interrompent la recherche. Les messages
-et leurs expéditeurs sont validés; les valeurs protégées sont ignorées.
+confirmation, le panneau l'indique après 30 secondes. Notre bouton refuse la
+recherche en combat, mort, instance, restriction de chat ou lorsque tu es déjà
+en groupe. Il ne quitte jamais ton groupe. ChangeLayer reste un addon indépendant :
+arrête une recherche dans son propre panneau si nécessaire. Aucun transfert solo
+instantané ni choix garanti d'un numéro de layer.
 
 Sources API : [interface Blizzard Forever](https://github.com/Gethe/wow-ui-source/tree/forever/Interface/AddOns),
 `ChatInfoDocumentation`, `PartyInfoDocumentation`, `SystemDocumentation`,
 `PlayerInteractionManagerDocumentation` et `Blizzard_StaticPopup_Game/GameDialogDefs.lua`.
-Code original GPLv3; aucun code de ChangeLayer copié.
+Code original GPLv3; aucun code de ChangeLayer copié. Interface utilisée : sa fonction
+publique `ChangeLayer_Go()` (raccourci officiel) et `/changelayer options`.
+[ChangeLayer par Foofi](https://www.curseforge.com/wow/addons/changelayer) reste sous
+sa licence propre. Le launcher télécharge sa version Forever 1.1.4 depuis le CDN
+officiel, vérifie son SHA-256 et l'installe intacte, sans la redistribuer dans le package.
 
 ### Scanner depuis l'hôtel des ventes (1.4.2)
 

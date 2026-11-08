@@ -1,5 +1,5 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.5.0", modules = {}, dirty = true }
+local B = { version = "1.6.0", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 function B.List(v) if type(v)=="table" then return v elseif type(v)=="number" then return {v} end return {} end
 function B.Copy(v)
@@ -40,7 +40,7 @@ function B.InitDB()
     -- Keep settings.characters untouched as an archive of that old history.
     ForeverPilotLevelingCharDB = type(ForeverPilotLevelingCharDB)=="table" and ForeverPilotLevelingCharDB or {}
     B.char=ForeverPilotLevelingCharDB
-    for _,k in ipairs({"completed","unavailable","learning","trace","deferred","skipped"}) do
+    for _,k in ipairs({"completed","unavailable","learning","trace","deferred","skipped","flightDiscoveries"}) do
         if type(B.char[k])~="table" then B.char[k]={} end
     end
     B.char.storage="character";B.char.schema=1

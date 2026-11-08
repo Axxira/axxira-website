@@ -93,7 +93,7 @@ local function init()
 end
 local f=CreateFrame("Frame")
 for _,ev in ipairs({"PLAYER_LOGIN","PLAYER_ENTERING_WORLD","PLAYER_XP_UPDATE","PLAYER_LEVEL_UP","QUEST_LOG_UPDATE","QUEST_ACCEPTED","QUEST_TURNED_IN","QUEST_REMOVED","QUEST_WATCH_UPDATE","ZONE_CHANGED_NEW_AREA","BAG_UPDATE_DELAYED","GOSSIP_SHOW","GOSSIP_CLOSED","QUEST_GREETING","QUEST_DETAIL","QUEST_PROGRESS","QUEST_COMPLETE","QUEST_FINISHED","PLAYER_DEAD","PLAYER_ALIVE","PLAYER_UNGHOST","TAXIMAP_OPENED","HEARTHSTONE_BOUND","PLAYER_LOGOUT"}) do pcall(f.RegisterEvent,f,ev) end
-for _,ev in ipairs({"MERCHANT_CLOSED","UPDATE_INVENTORY_DURABILITY","UNIT_HEALTH","UNIT_POWER_UPDATE"}) do pcall(f.RegisterEvent,f,ev) end
+for _,ev in ipairs({"MERCHANT_CLOSED","UPDATE_INVENTORY_DURABILITY","UNIT_HEALTH","UNIT_POWER_UPDATE","ZONE_CHANGED","ZONE_CHANGED_INDOORS","TAXI_NODE_STATUS_CHANGED"}) do pcall(f.RegisterEvent,f,ev) end
 f:SetScript("OnEvent",function(_,event,...)
     local q,xp=...
     if (event=="UNIT_HEALTH" or event=="UNIT_POWER_UPDATE") and q~="player" then return end
@@ -109,6 +109,7 @@ f:SetScript("OnEvent",function(_,event,...)
             return
         end
         if not B.settings.enabled then return end
+        if event=="TAXIMAP_OPENED" or event=="TAXI_NODE_STATUS_CHANGED" or event=="ZONE_CHANGED" or event=="ZONE_CHANGED_INDOORS" or event=="ZONE_CHANGED_NEW_AREA" then B.FlightPaths:Event(event) end
         if event=="QUEST_TURNED_IN" then
             if type(q)=="number" then
                 B.char.completed[q]=true;B.Learning:TurnIn(q,xp)
@@ -145,8 +146,9 @@ function B.Snapshot()
     snapshot.storage=B.char.storage;snapshot.guid=B.char.guid
     snapshot.advisorError=B.Advisor and B.Advisor.lastError
     snapshot.auctionUIError=B.AuctionUI and B.AuctionUI.lastError
-    snapshot.layers=B.Layers and {state=B.Layers.state,lastError=B.Layers.lastError,helper=B.char.layerHelper==true}
+    snapshot.layers=B.Layers and {state=B.Layers.state,lastError=B.Layers.lastError,provider=B.Layers:Provider()}
     snapshot.skipped=B.Copy(B.char.skipped)
+    snapshot.flightDiscoveries=B.Copy(B.char.flightDiscoveries)
 end
 function B.SkipCurrent()
     B.Guard(function()

@@ -18,14 +18,12 @@ function U:Toggle()
 end
 function U:Refresh()
     if not self.frame then return end
-    local l=B.Layers;local pending=l:Pending();local busy=l:Busy()
-    self.primary.label:SetText(pending and "Changer maintenant" or busy and "Annuler la recherche" or "Chercher un volontaire")
-    self.primary:SetEnabled(l.state~="joining")
+    local l=B.Layers;local pending=l:Pending();local provider=l:Provider()
+    self.primary.label:SetText(pending and "Changer maintenant" or provider and "Changer / arrêter (ChangeLayer)" or "ChangeLayer requis")
     self.detail:SetText(l.detail)
-    self.helper.label:SetText(B.char.layerHelper and "Aider les autres : OUI" or "Aider les autres : NON")
-    local status=pending and "TRANSFERT PRÊT" or l.state=="success" and "CONFIRMÉ" or busy and "EN COURS…" or "SUR DEMANDE"
+    self.helper.label:SetText("Réglages ChangeLayer")
+    local status=pending and "TRANSFERT PRÊT" or l.state=="success" and "CONFIRMÉ" or provider and "CHANGELAYER" or "À INSTALLER"
     self.status:SetText(status);self.status:SetTextColor(pending and .94 or .40,pending and .76 or .85,pending and .43 or .80)
-    if l.state=="search" and l.request then self.status:SetText("RECHERCHE · "..math.max(0,math.ceil(l.request.untilAt-B.Now())).." s") end
 end
 function U:Init()
     if self.frame then return end
@@ -44,12 +42,12 @@ function U:Init()
     local title=label(f,12,14,13,280,18);title:SetText("CHANGER DE LAYER");title:SetTextColor(.40,.85,.80)
     self.close=button(f,306,7,24,"×",function() f:Hide() end)
     self.detail=label(f,11,14,40,316,43);self.detail:SetWordWrap(true)
-    self.primary=button(f,14,89,316,"Chercher un volontaire",function(l)
-        if l:Pending() then l:Confirm() elseif l:Busy() then l:Stop() else l:Start() end
+    self.primary=button(f,14,89,316,"Changer via ChangeLayer",function(l)
+        if l:Pending() then l:Confirm() else l:Start() end
     end)
     self.general=button(f,14,118,316,"Demander dans Général",function(l) l:DraftGeneral() end)
-    self.helper=button(f,14,147,316,"Aider les autres : NON",function(l) l:SetHelper(not B.char.layerHelper) end)
+    self.helper=button(f,14,147,316,"Réglages ChangeLayer",function(l) l:Options() end)
     local hint=label(f,9,14,178,316,25);hint:SetWordWrap(true)
-    hint:SetText("Volontaires ForeverPilot · même zone.\nInvitation à accepter dans WoW; aucun départ automatique.");hint:SetTextColor(.58,.68,.74)
+    hint:SetText("Réseau ChangeLayer · ForeverPilot non requis pour aider.\nGénéral : demande en anglais à valider avec Entrée.");hint:SetTextColor(.58,.68,.74)
     f:Hide();self:Refresh()
 end

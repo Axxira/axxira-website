@@ -27,7 +27,7 @@ function G:Build()
                 end
             end end
         end
-        if (g.pack=="ding" or g.pack=="ding-zones") and Ding:GuideMatchesPlayer(g) then
+        if (g.pack=="ding" or g.pack=="ding-zones" or g.pack=="ding-class") and Ding:GuideMatchesPlayer(g) then
             self.routes[#self.routes+1]=g
             for i,step in ipairs(g.steps) do
                 if Ding:StepMatchesPlayer(step) then
@@ -36,6 +36,12 @@ function G:Build()
                             local n=self:Node(q)
                             if n then
                                 if g.pack=="ding" then n.fast=true end
+                                if g.pack=="ding-class" and kind=="accept" then
+                                    n.classParents=n.classParents or {}
+                                    for _,parent in ipairs(B.List(step.turnin)) do
+                                        if parent~=q then n.classParents[parent]=true end
+                                    end
+                                end
                                 n.routes[#n.routes+1]={guide=g,index=i,step=step,kind=kind}
                                 if step.why and step.why.quest==q and step.why.xp then n.xp=step.why.xp end
                                 if step.noauto then for _,id in ipairs(B.List(step.noauto)) do if id==q then n.manual=true end end end
@@ -44,6 +50,15 @@ function G:Build()
                     end
                 end
             end
+        end
+    end
+    -- Some Forever class entries omit their prerequisites in the database.
+    -- Use only explicit turnin+accept links in the matching class guide, never
+    -- the previous arbitrary guide step. A live NPC offer still wins.
+    for _,n in pairs(self.nodes) do
+        if #n.any==0 and #n.all==0 and n.classParents then
+            for q in pairs(n.classParents) do n.any[#n.any+1]=q end
+            table.sort(n.any)
         end
     end
     -- Preserve the old quest-first additions as candidates, without editing Ding routes.
@@ -72,6 +87,16 @@ function G:Build()
         end end
     end
     for _,n in ipairs(roots) do if n.fast and not n.profession then protect(n) end end
+    -- Class chains need their own prerequisites even outside the XP route.
+    local classMarked={}
+    local function protectClass(n)
+        if not n or classMarked[n.id] then return end;classMarked[n.id]=true
+        for _,list in ipairs({n.any,n.all}) do for _,id in ipairs(list) do
+            local p=G:Node(math.abs(id))
+            if p then p.classPrerequisite=true;protectClass(p) end
+        end end
+    end
+    for _,n in ipairs(roots) do if self.classQuests[n.id] then protectClass(n) end end
 end
 function G:Locations(n,kind)
     if kind=="accept" or kind=="turnin" then

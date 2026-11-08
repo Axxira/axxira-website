@@ -49,6 +49,15 @@ function U:View(a,s)
     if B.settings.paused then v.tag="PAUSE";v.footer="Clic droit pour reprendre";v.color=colors.pause end
     local badge,badgeColor=B.Journal:Badge()
     if badge then v.tag=badge;v.tagColor=badgeColor end
+    if a.classPriority then
+        v.tag="CLASSE PRIORITAIRE";v.tagColor={0.74,0.66,1}
+        v.footer=B.Journal:IsClass(a.node) and "PROGRESSION DE CLASSE" or "PRÉREQUIS DE CLASSE"
+    end
+    if a.service=="flight" then
+        v.tag="TRAJET AÉRIEN";v.tagColor=colors.turnin;v.verb="PARLE AU MAÎTRE DE VOL"
+        v.footer="À DÉCOUVRIR AVANT DE PARTIR"
+    end
+    if B.settings.paused then v.tag="PAUSE";v.footer="Clic droit pour reprendre";v.tagColor=colors.pause end
     return v
 end
 function U:Tooltip()
@@ -144,7 +153,7 @@ function U:Tick()
     if B.settings.paused then self.arrow:Hide();self.distance:SetText("Pause");return end
     local p=a.point
     if not p then self.arrow:Hide();self.distance:SetText(a.kind=="done" and "60" or "—");B.Navigation:Mark(nil);return end
-    local leg=B.Travel:Leg(p)
+    local leg=not a.walkOnly and B.Travel:Leg(p) or nil
     -- A hearthstone/teleport is an action performed here, not an arrow pointing
     -- across disconnected world coordinates toward its remote destination.
     if leg and not leg.point and (leg.kind=="hearth" or leg.kind=="teleport") then
