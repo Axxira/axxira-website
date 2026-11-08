@@ -1,4 +1,4 @@
-# ForeverPilot Brain v1.4.2
+# ForeverPilot Brain v1.5.0
 
 Assistant de leveling dynamique pour WoW Forever. Nécessite **Ding** activé.
 L'installation locale se trouve dans `_forever_/Interface/AddOns/ForeverPilot_Leveling`.
@@ -9,6 +9,36 @@ et combat lui-même. La flèche indique une destination, pas un chemin qui conto
 automatiquement les obstacles.
 
 ## Utilisation
+
+### Changer de layer (1.5.0)
+
+Le bouton **Changer de layer**, sous le guidage, ouvre un petit panneau facultatif.
+**Chercher un volontaire** envoie une seule demande aux utilisateurs ForeverPilot
+de ta zone : message visible dans le canal `ForeverPilotLayers` et message addon
+dans ta guilde, si tu en as une. Au premier accès, attendre la connexion au canal,
+puis recliquer. Une seule personne est sélectionnée; accepte ensuite son invitation
+dans WoW. **Aider les autres : OUI** permet d'envoyer une invitation à un demandeur
+de la même zone, seulement lorsque tu es solo, vivant et hors combat/instance.
+Cette option est désactivée par défaut et enregistrée par personnage.
+
+Sans volontaire, **Demander dans Général** prépare un message en anglais modifiable que tu
+envoies toi-même avec Entrée. Aucun message automatique dans Général. Si WoW
+propose déjà un transfert, **Changer maintenant** permet de le confirmer hors combat.
+`/fpl layers` ouvre aussi les contrôles. Ouvrir le panneau n'envoie aucune demande.
+
+Le jeu garde le contrôle du transfert : rejoindre un groupe ne garantit pas un
+autre layer. Seul l'événement serveur de transfert affiche « confirmé ». Sans
+confirmation, le panneau l'indique après 30 secondes. Aucune acceptation, sortie
+de groupe ou exclusion automatique. Pas de sélection d'un numéro de layer, ni de
+compatibilité annoncée avec les protocoles d'autres addons. Recherche limitée à
+une demande par minute (limite locale, persistante après `/reload`). Combat,
+changement de zone, délai ou désactivation interrompent la recherche. Les messages
+et leurs expéditeurs sont validés; les valeurs protégées sont ignorées.
+
+Sources API : [interface Blizzard Forever](https://github.com/Gethe/wow-ui-source/tree/forever/Interface/AddOns),
+`ChatInfoDocumentation`, `PartyInfoDocumentation`, `SystemDocumentation`,
+`PlayerInteractionManagerDocumentation` et `Blizzard_StaticPopup_Game/GameDialogDefs.lua`.
+Code original GPLv3; aucun code de ChangeLayer copié.
 
 ### Scanner depuis l'hôtel des ventes (1.4.2)
 

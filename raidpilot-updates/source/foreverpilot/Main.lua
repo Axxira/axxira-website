@@ -23,6 +23,7 @@ function B.SetEnabled(enabled)
         end
     end
     if B.AuctionUI then B.AuctionUI:SyncEnabled() end
+    if B.Layers then B.Layers:Safe(B.Layers.SyncEnabled) end
 end
 function B.Guard(fn)
     local ok,err=pcall(fn)
@@ -84,6 +85,7 @@ local function init()
         local ok,err=pcall(B.Advisor.Init,B.Advisor)
         if not ok then B.Advisor.lastError=tostring(err);B.Print("Conseils objets indisponibles : /fpl debug") end
     end
+    if B.Layers then B.Layers:Safe(B.Layers.Init) end
     B.originalWanted=Ding.AutoQuest.Wanted
     B.dingPrefs={panel=Ding.db.panel.shown,arrow=Ding.db.arrow.shown,autoAccept=Ding.db.ui.autoAccept,autoTurnin=Ding.db.ui.autoTurnin}
     B.SetEnabled(B.settings.enabled~=false)
@@ -143,6 +145,7 @@ function B.Snapshot()
     snapshot.storage=B.char.storage;snapshot.guid=B.char.guid
     snapshot.advisorError=B.Advisor and B.Advisor.lastError
     snapshot.auctionUIError=B.AuctionUI and B.AuctionUI.lastError
+    snapshot.layers=B.Layers and {state=B.Layers.state,lastError=B.Layers.lastError,helper=B.char.layerHelper==true}
     snapshot.skipped=B.Copy(B.char.skipped)
 end
 function B.SkipCurrent()
@@ -180,6 +183,7 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="objets" or msg=="gear" then B.Advisor:Toggle("gear")
     elseif msg=="hdv" then B.Advisor:Toggle("market")
     elseif msg=="addons" then B.Advisor:Toggle("addons")
+    elseif msg=="layers" or msg=="layer" then B.LayerUI:Toggle()
     elseif msg=="scan" then B.Market:Scan();B.Print(B.Market.status);B.Advisor:RefreshIfShown()
     elseif msg:match("^profil%s+") then
         local key=msg:match("^profil%s+(%S+)$")
@@ -202,8 +206,9 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
         B.Print("v"..B.version.." Ding="..tostring(Ding~=nil).." DB="..tostring(Ding.Data.available).." nodes="..B.Graph.count.." errors="..(B.errors or 0).." profil="..tostring(B.char.storage))
         if B.lastError then B.Print(B.lastError) end
         if B.Advisor and B.Advisor.lastError then B.Print("Objets : "..B.Advisor.lastError) end
+        if B.Layers and B.Layers.lastError then B.Print("Layers : "..B.Layers.lastError) end
         for reason,n in pairs(B.Planner.blocked or {}) do B.Print(reason.."="..n) end
     elseif msg=="off" then B.SetEnabled(false);B.Print("Brain désactivé. Guide Ding restauré.")
     elseif msg=="on" then B.errors=0;B.failed=nil;B.SetEnabled(true);B.Guard(B.Update);B.Print("Brain activé.")
-    else B.Print("/fpl | objets | hdv | scan | addons | profil auto | journal | why | skip | reprendre [tout] | resync | pause | size 1 | lock | guide | debug | on | off") end
+    else B.Print("/fpl | objets | hdv | scan | layers | addons | profil auto | journal | why | skip | reprendre [tout] | resync | pause | size 1 | lock | guide | debug | on | off") end
 end
