@@ -16,6 +16,8 @@ assert(chosen==field,'saved trip returned to hub despite nearby held work')
 s.count=20;B.Planner:Batch({hub,field},s)
 assert(hub.returnPenalty==1,'full journal prevented return')
 assert(B.Journey:Choose(hub,{hub,field},s)==hub,'full journal trapped in field')
+B.char.trip={ids={field.q},accepted={[field.q]=true}};B.Planner.current=field
+assert(B.Journey:Choose(hub,{hub,field},s)==hub,'full journal ignored a ready quest outside the saved outing')
 print('PASS outings: field work beyond 250 yards, refresh saved outing, full journal escape')
 
 s.count=2

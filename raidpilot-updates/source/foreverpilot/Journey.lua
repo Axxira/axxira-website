@@ -39,6 +39,14 @@ function J:Start(winner,actions,s)
 end
 function J:Choose(winner,actions,s)
     local byQuest={};for _,a in ipairs(actions) do byQuest[a.q]=a end
+    -- A ready quest outside the saved outing can also free a full journal.
+    -- Likewise, hand in at an NPC already beside us instead of coming back.
+    local immediate
+    for _,a in ipairs(actions) do
+        if a.kind=="turnin" and (s.count>=s.limit-1 or a.travel<6)
+            and (not immediate or a.travel<immediate.travel or (a.travel==immediate.travel and a.key<immediate.key)) then immediate=a end
+    end
+    if immediate then self:Start(immediate,actions,s);immediate.tripIDs=B.char.trip.ids;return immediate end
     local trip=B.char.trip
     if trip then
         trip.level=s.level
@@ -118,11 +126,6 @@ function J:Choose(winner,actions,s)
             for _,a in ipairs(held) do if a.kind=="complete" then field[#field+1]=a end end
             chosen=best(field) or best(held)
         end
-        -- Capacity / an NPC already beside the player also override a retained
-        -- field objective. A saved trip must never prevent freeing the journal.
-        local returns={}
-        for _,a in ipairs(held) do if a.kind=="turnin" and (a.travel<6 or s.count>=s.limit-1) then returns[#returns+1]=a end end
-        chosen=best(returns) or chosen
     end
     if chosen then chosen.tripIDs=trip.ids end
     return chosen or winner
