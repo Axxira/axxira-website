@@ -5,7 +5,7 @@ using RaidPilot.Overlay;
 
 namespace RaidPilot.Launcher;
 
-internal sealed class LauncherForm : Form
+internal sealed partial class LauncherForm : Form
 {
     private readonly UpdateService _updates = new();
     private readonly LauncherSurface _surface = new();
@@ -56,6 +56,7 @@ internal sealed class LauncherForm : Form
         };
 
         Shown += OnShown;
+        Activated += (_, _) => RefreshForeverPilot();
         FormClosed += (_, _) =>
         {
             _automaticUpdateTimer.Stop();
@@ -108,6 +109,7 @@ internal sealed class LauncherForm : Form
 
     private async void OnActionRequested(object? sender, LauncherAction action)
     {
+        if (await HandleForeverPilotAction(action)) return;
         switch (action)
         {
             case LauncherAction.Minimize:
@@ -958,6 +960,7 @@ internal sealed class LauncherForm : Form
 internal enum LauncherSection
 {
     Home,
+    ForeverPilot,
     Update,
     Play,
     Squad,
@@ -978,6 +981,12 @@ internal enum LauncherStatus
 internal enum LauncherAction
 {
     None,
+    ForeverPilot,
+    LaunchBattleNet,
+    ChooseForeverFolder,
+    OpenForeverFolder,
+    RefreshForeverPilot,
+    InstallForeverPilot,
     Home,
     CheckUpdates,
     Play,
@@ -999,7 +1008,7 @@ internal enum LauncherAction
     Close,
 }
 
-internal sealed class LauncherSurface : Control
+internal sealed partial class LauncherSurface : Control
 {
     private const int CanvasWidth = 1180;
     private const int CanvasHeight = 760;
@@ -1113,6 +1122,11 @@ internal sealed class LauncherSurface : Control
 
         DrawSidebar(g);
         DrawTitleBar(g);
+        if (ActiveSection == LauncherSection.ForeverPilot)
+        {
+            DrawForeverPilotPage(g);
+            return;
+        }
         DrawHero(g);
 
         if (ActiveSection == LauncherSection.Squad)
@@ -1159,9 +1173,10 @@ internal sealed class LauncherSurface : Control
         DrawNavItem(g, LauncherAction.CheckUpdates, LauncherSection.Update, navStart + 47, "↻", "Mise à jour");
         DrawNavItem(g, LauncherAction.Play, LauncherSection.Play, navStart + 94, "▶", "Jouer");
         DrawNavItem(g, LauncherAction.Squad, LauncherSection.Squad, navStart + 141, "♟", "Escouade");
-        DrawNavItem(g, LauncherAction.Settings, LauncherSection.Settings, navStart + 188, "⚙", "Paramètres");
-        DrawNavItem(g, LauncherAction.ReleaseNotes, LauncherSection.ReleaseNotes, navStart + 235, "▤", "Notes de version");
-        DrawNavItem(g, LauncherAction.Help, LauncherSection.Help, navStart + 282, "?", "Aide");
+        DrawNavItem(g, LauncherAction.ForeverPilot, LauncherSection.ForeverPilot, navStart + 188, "➤", "ForeverPilot");
+        DrawNavItem(g, LauncherAction.Settings, LauncherSection.Settings, navStart + 235, "⚙", "Paramètres");
+        DrawNavItem(g, LauncherAction.ReleaseNotes, LauncherSection.ReleaseNotes, navStart + 282, "▤", "Notes de version");
+        DrawNavItem(g, LauncherAction.Help, LauncherSection.Help, navStart + 329, "?", "Aide");
 
         using var small = FontOf("Segoe UI", 8.5F);
         using var mutedBrush = new SolidBrush(Color.FromArgb(90, 111, 122));

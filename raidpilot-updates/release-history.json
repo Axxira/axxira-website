@@ -2,6 +2,16 @@
   "schemaVersion": 1,
   "entries": [
     {
+      "component": "launcher",
+      "version": "0.2.16",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.16",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot rejoint le launcher : guidage WoW Forever et installation de l'addon",
+      "details": "Ajoute une page ForeverPilot au launcher : version installée, présence de Ding, vérification des modules, choix du dossier _forever_, accès à AddOns et ouverture de Battle.net. Le launcher embarque ForeverPilot_Leveling 1.4.1 (GPLv3). Installation ou mise à jour sur demande, jeu fermé, copie vérifiée et sauvegarde de la version précédente dans Interface/ForeverPilotBackups. Une version plus récente n'est jamais remplacée. Le bridge ForeverPilot, Ding et les réglages WTF sont conservés. Ding reste une dépendance à installer séparément; son activation et celle de ForeverPilot_Leveling se contrôlent dans le jeu. Les prochaines versions de l'addon sont livrées avec les mises à jour du launcher. Aucun téléchargement de données Zygor/RestedXP ni lancement direct de Wow.exe. Tests de détection, préservation, sauvegarde, version, package incomplet et protection pendant le jeu."
+    },
+    {
       "component": "raidpilot",
       "version": "0.16.0.1",
       "raidPilotVersion": "0.16.0.1",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot pratique — toutes les quêtes recherchables, étapes sans GPS, équipe et HUD optimisé",
       "details": "QuestPilot simplifie la préparation et le suivi des raids : la recherche dans « Mes quêtes » porte désormais sur toutes les cartes et sur le texte des objectifs, même sans coordonnées publiques. Les quêtes non géolocalisées restent sélectionnables et leurs étapes apparaissent dans « Autres étapes · sans lieu précis », avec des cases manuelles persistantes et une distinction claire entre la coche du joueur et la remise de quête confirmée par un journal EFT. Les marqueurs numérotés continuent d'utiliser la même couleur par quête; seuls les objectifs possédant une position fiable sont numérotés sur la carte 1/2/3, tandis que les autres sont conservés dans le suivi sans produire de faux points. Les préparatifs (clé, objet, balise, équipement) couvrent aussi les objectifs sans emplacement, sans prétendre lire l'inventaire. Nouvelle section « Objectifs communs à l'escouade » à l'intérieur de « Mes quêtes », distinguant la progression personnelle de la progression importée ou reçue en direct, avec mention explicite « coché par l'ami » vs « à faire ». Les repères appartenant seulement à l'équipe ne changent plus le focus de la propre quête du joueur. La boucle de HUD à 10Hz interroge seulement le prochain objectif pertinent en temps linéaire O(n), au lieu de recalculer toute la tournée de proximité O(n² log n) en permanence; la liste de planification détaillée reste dans le panneau. Tests de non-régression sur la recherche transcartes, les balises numérotées, les étapes non géolocalisées, les plans d'équipe et l'état de confiance. Aucun déploiement Cloudflare en production n'est effectué dans cette version : le partage manuel RPQ1 fonctionne, et le partage direct demeure bloqué tant que le relais n'annonce pas features.questplan=true et ne passe pas un test WebSocket bidirectionnel. L'ordre de visite n'est pas une route garantie entre bâtiments. Versions Beacon 0.3.9 et Launcher 0.2.15 inchangées."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.28",
-      "raidPilotVersion": "0.14.2.28",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot — partage en direct prêt côté client, opt-in et protection des plans d'escouade",
-      "details": "Ajout d'une architecture de synchronisation de quêtes entre coéquipiers, toujours facultative et désactivée par défaut. Le menu Escouade propose « Partager mes quêtes » avec consentement explicite pour chaque connexion. Le logiciel interroge /health du relais Cloudflare officiel : aucun plan n'est transmis si le serveur n'annonce pas explicitement features.questplan=true. Les paquets contiennent uniquement les identifiants publics des quêtes et étapes cochées de l'utilisateur, séparés par mode PvE/PvP, jamais les captures, journaux EFT, identifiants de profil ou secrets de connexion. Les plans reçus sont éphémères, expirent après 90 secondes, sont effacés lors du départ du joueur/déconnexion et ne modifient jamais la progression locale. Numéros et couleurs des balises existantes conservés, étapes d'équipe étiquetées comme non vérifiées. Sécurisation de la validation des paquets et de leurs horodatages, limitation des échanges et anti-rejeu; tests du protocole WebSocket et de la carte locale. Un Worker Cloudflare v2 candidat, avec Durable Objects, protection des salles et compatibilité pose, est livré dans le dépôt UNIQUEMENT pour staging, sans être déployé sur le relais réel. Important : le relais Cloudflare actuellement en production n'a pas encore confirmé la prise en charge des quêtes; seul le partage manuel RPQ1 reste garanti tant que le Worker n'est pas migré et validé avec deux clients. Aucune mise à jour à distance de Cloudflare n'est revendiquée. Beacon 0.3.9 et Launcher 0.2.15 inchangés."
     }
   ]
 }

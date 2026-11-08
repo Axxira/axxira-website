@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\ForeverPilotService.cs" Link="ForeverPilotService.cs" />
 
     <Compile Include="..\UpdateService.cs" Link="UpdateService.cs" />
     <Compile Include="..\LauncherUpdateRecovery.cs" Link="LauncherUpdateRecovery.cs" />

@@ -53,6 +53,7 @@ internal static class LauncherPackageVerifier
         }
         try
         {
+            ForeverPilotService.ValidateAddon(Path.Combine(root, "payload", ForeverPilotService.AddonName));
             var feed = File.ReadAllText(Path.Combine(root, "update-feed.txt")).Trim();
             if (!string.Equals(feed, LauncherSettings.StableManifestUrl,
                     StringComparison.OrdinalIgnoreCase))
