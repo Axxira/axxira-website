@@ -31,12 +31,12 @@ function B.Guard(fn)
     if not ok then
         B.errors=(B.errors or 0)+1;B.lastError=tostring(err)
         B.Trace("error",err)
-        if B.errors==1 then B.Print("Erreur capturée : "..tostring(err)) end
+        if B.errors==1 then B.Print(B.T("Erreur capturée : ")..tostring(err)) end
         -- Stop the brain after repeated faults and restore Ding's original guidance.
         if B.errors>=3 and B.settings and not B.failed then
             B.failed=true
             if B.dingPrefs then B.SetEnabled(false) else B.settings.enabled=false end
-            B.Print("Brain suspendu après erreurs. Guide Ding restauré. /fpl debug")
+            B.Print(B.T("Brain suspendu après erreurs. Guide Ding restauré. /fpl debug"))
         end
     end
     return ok
@@ -80,17 +80,17 @@ end
 local function init()
     if initialized then return end
     B.InitDB()
-    if not (Ding and Ding.Data and Ding.Data.available) then B.Print("Données Ding indisponibles.");return end
+    if not (Ding and Ding.Data and Ding.Data.available) then B.Print(B.T("Données Ding indisponibles."));return end
     B.Graph:Build();B.UI:Create()
     if B.Advisor then
         local ok,err=pcall(B.Advisor.Init,B.Advisor)
-        if not ok then B.Advisor.lastError=tostring(err);B.Print("Conseils objets indisponibles : /fpl debug") end
+        if not ok then B.Advisor.lastError=tostring(err);B.Print(B.T("Conseils objets indisponibles : /fpl debug")) end
     end
     if B.Layers then B.Layers:Safe(B.Layers.Init) end
     B.originalWanted=Ding.AutoQuest.Wanted
     B.dingPrefs={panel=Ding.db.panel.shown,arrow=Ding.db.arrow.shown,autoAccept=Ding.db.ui.autoAccept,autoTurnin=Ding.db.ui.autoTurnin}
     B.SetEnabled(B.settings.enabled~=false)
-    initialized=true;B.Update();B.Print("Brain v"..B.version.." chargé : "..B.Graph.count.." quêtes. /fpl why")
+    initialized=true;B.Update();B.Print("Brain v"..B.version..B.T(" chargé : ")..B.Graph.count..B.T(" quêtes. /fpl why"))
 end
 local f=CreateFrame("Frame")
 for _,ev in ipairs({"PLAYER_LOGIN","PLAYER_ENTERING_WORLD","PLAYER_XP_UPDATE","PLAYER_LEVEL_UP","QUEST_LOG_UPDATE","QUEST_ACCEPTED","QUEST_TURNED_IN","QUEST_REMOVED","QUEST_WATCH_UPDATE","ZONE_CHANGED_NEW_AREA","BAG_UPDATE_DELAYED","GOSSIP_SHOW","GOSSIP_CLOSED","QUEST_GREETING","QUEST_DETAIL","QUEST_PROGRESS","QUEST_COMPLETE","QUEST_FINISHED","PLAYER_DEAD","PLAYER_ALIVE","PLAYER_UNGHOST","TAXIMAP_OPENED","HEARTHSTONE_BOUND","PLAYER_LOGOUT"}) do pcall(f.RegisterEvent,f,ev) end
@@ -154,13 +154,13 @@ end
 function B.SkipCurrent()
     B.Guard(function()
         if B.Recovery:Defer(B.Planner.current) then B.Update()
-        else B.Print("Aucune quête ou étape à passer.") end
+        else B.Print(B.T("Aucune quête ou étape à passer.")) end
     end)
 end
 function B.ResumeSkipped(q)
     B.Guard(function()
         if B.Recovery:Resume(q) then B.Update()
-        else B.Print("Aucune quête écartée à reprendre.") end
+        else B.Print(B.T("Aucune quête écartée à reprendre.")) end
     end)
 end
 local elapsed,arrow=0,0
@@ -173,46 +173,51 @@ end)
 SLASH_FOREVERPILOTLEVELING1="/fpl"
 SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     msg=(msg or ""):lower():match("^%s*(.-)%s*$")
-    if not initialized then B.Print("Chargement en attente de Ding.");return end
+    if not initialized then B.Print(B.T("Chargement en attente de Ding."));return end
+    local language=msg:match("^lang%s+(%a+)$") or msg:match("^langue%s+(%a+)$") or msg:match("^language%s+(%a+)$")
+    if language then
+        if not B.SetLanguage(language) then B.Print("/fpl lang fr | en | auto") end
+        return
+    end
     if msg=="" then B.settings.shown=not B.UI.frame:IsShown();B.UI.frame:SetShown(B.settings.shown)
     elseif msg=="skip" or msg=="next" or msg=="passer" then B.SkipCurrent()
     elseif msg=="reprendre" or msg=="unskip" then B.ResumeSkipped()
     elseif msg=="reprendre tout" or msg=="unskip all" then B.ResumeSkipped("all")
-    elseif msg:match("^reprendre%s+%d+$") then B.ResumeSkipped(tonumber(msg:match("(%d+)$")))
+    elseif msg:match("^reprendre%s+%d+$") or msg:match("^unskip%s+%d+$") then B.ResumeSkipped(tonumber(msg:match("(%d+)$")))
     elseif msg=="resync" or msg=="reset" then B.Recovery:Reset();B.Planner.current=nil;B.Guard(B.Update)
     elseif msg=="pause" or msg=="auto" then B.settings.paused=not B.settings.paused;B.dirty=true
     elseif msg=="guide" then Ding.Panel:Toggle()
     elseif msg=="journal" then B.Journal:Print(B.State:Refresh())
-    elseif msg=="objets" or msg=="gear" then B.Advisor:Toggle("gear")
-    elseif msg=="hdv" then B.Advisor:Toggle("market")
+    elseif msg=="objets" or msg=="gear" or msg=="items" then B.Advisor:Toggle("gear")
+    elseif msg=="hdv" or msg=="ah" then B.Advisor:Toggle("market")
     elseif msg=="addons" then B.Advisor:Toggle("addons")
     elseif msg=="layers" or msg=="layer" then B.LayerUI:Toggle()
     elseif msg=="scan" then B.Market:Scan();B.Print(B.Market.status);B.Advisor:RefreshIfShown()
-    elseif msg=="profil" then B.Advisor:ToggleProfile()
-    elseif msg:match("^profil%s+") then
-        local key=msg:match("^profil%s+(%S+)$")
-        if B.Items:SetProfile(key) then B.Print("Profil objets : "..key);B.Advisor:RefreshIfShown()
-        else B.Print("Profils : auto, feral, tank, soin, caster, melee, agile, hybride, chasseur") end
+    elseif msg=="profil" or msg=="profile" then B.Advisor:ToggleProfile()
+    elseif msg:match("^profil%s+") or msg:match("^profile%s+") then
+        local key=msg:match("^profil%s+(%S+)$") or msg:match("^profile%s+(%S+)$")
+        if B.Items:SetProfile(key) then B.Print(B.T("Profil objets : ")..key);B.Advisor:RefreshIfShown()
+        else B.Print(B.T("Profils : auto, feral, tank, soin, caster, melee, agile, hybride, chasseur")) end
     elseif msg:match("^size%s+") then
         local scale=tonumber(msg:match("^size%s+([%d%.]+)$"))
         if scale then B.settings.scale=math.max(0.8,math.min(1.5,scale));B.UI.frame:SetScale(B.settings.scale) end
-    elseif msg=="lock" then B.settings.locked=not B.settings.locked;B.Print(B.settings.locked and "Position verrouillée." or "Panneau déplaçable.")
+    elseif msg=="lock" then B.settings.locked=not B.settings.locked;B.Print(B.settings.locked and B.T("Position verrouillée.") or B.T("Panneau déplaçable."))
     elseif msg=="why" then
         local a=B.Planner.current
-        B.Print(a and (a.key.." | "..a.confidence.." | "..(a.note or "")) or "Pas de décision")
+        B.Print(a and (a.key.." | "..a.confidence.." | "..(a.note or "")) or B.T("Pas de décision"))
         local levelNote=a and B.Progression:Describe(a.levelFit);if levelNote then B.Print(levelNote) end
         if a and a.plan then
-            B.Print(string.format("Boucle : %d quête(s), environ %d min (estimation)",a.plan.quests,math.ceil(a.plan.seconds/60)))
+            B.Print(string.format(B.T("Boucle : %d quête(s), environ %d min (estimation)"),a.plan.quests,math.ceil(a.plan.seconds/60)))
             for i,t in ipairs(a.plan.steps) do if i<=8 then B.Print(i..". "..t.kind.." · "..t.name) end end
         end
-        for i,c in ipairs(B.Planner.actions or {}) do if i<=5 then B.Print(string.format("%d. %s %s | score %.2f | trajet ~%.0fs",i,c.kind,c.node.name,c.score,c.travel)) end end
+        for i,c in ipairs(B.Planner.actions or {}) do if i<=5 then B.Print(string.format(B.T("%d. %s %s | score %.2f | trajet ~%.0fs"),i,c.kind,c.node.name,c.score,c.travel)) end end
     elseif msg=="debug" then
-        B.Print("v"..B.version.." Ding="..tostring(Ding~=nil).." DB="..tostring(Ding.Data.available).." nodes="..B.Graph.count.." errors="..(B.errors or 0).." profil="..tostring(B.char.storage))
+        B.Print("v"..B.version.." Ding="..tostring(Ding~=nil).." DB="..tostring(Ding.Data.available).." nodes="..B.Graph.count.." errors="..(B.errors or 0)..B.T(" profil=")..tostring(B.char.storage))
         if B.lastError then B.Print(B.lastError) end
-        if B.Advisor and B.Advisor.lastError then B.Print("Objets : "..B.Advisor.lastError) end
+        if B.Advisor and B.Advisor.lastError then B.Print(B.T("Objets : ")..B.Advisor.lastError) end
         if B.Layers and B.Layers.lastError then B.Print("Layers : "..B.Layers.lastError) end
         for reason,n in pairs(B.Planner.blocked or {}) do B.Print(reason.."="..n) end
-    elseif msg=="off" then B.SetEnabled(false);B.Print("Brain désactivé. Guide Ding restauré.")
-    elseif msg=="on" then B.errors=0;B.failed=nil;B.SetEnabled(true);B.Guard(B.Update);B.Print("Brain activé.")
-    else B.Print("/fpl | objets | hdv | scan | layers | addons | profil auto | journal | why | skip | reprendre [tout] | resync | pause | size 1 | lock | guide | debug | on | off") end
+    elseif msg=="off" then B.SetEnabled(false);B.Print(B.T("Brain désactivé. Guide Ding restauré."))
+    elseif msg=="on" then B.errors=0;B.failed=nil;B.SetEnabled(true);B.Guard(B.Update);B.Print(B.T("Brain activé."))
+    else B.Print(B.T("/fpl | objets | hdv | scan | layers | addons | profil auto | journal | why | skip | reprendre [tout] | resync | pause | size 1 | lock | guide | debug | on | off")) end
 end

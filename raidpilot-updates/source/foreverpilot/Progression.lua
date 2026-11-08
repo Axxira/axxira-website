@@ -103,14 +103,14 @@ function P:Evaluate(n,kind,s,a)
 end
 function P:Describe(fit)
     if not fit then return end
-    local text="Ton niveau : "..fit.playerLevel
-    if fit.questLevel then text=text.." · Quête : "..fit.questLevel end
-    if fit.mobMax then text=text.." · Monstres : "..fit.mobMin.."–"..fit.mobMax.." (base)" end
+    local text=B.T("Ton niveau : ")..fit.playerLevel
+    if fit.questLevel then text=text..B.T(" · Quête : ")..fit.questLevel end
+    if fit.mobMax then text=text..B.T(" · Monstres : ")..fit.mobMin.."–"..fit.mobMax..B.T(" (base)") end
     if fit.keep=="prerequisite" then
         local n=B.Graph:Node(fit.unlock)
-        text=text..". Prérequis pour "..(n and n.name or tostring(fit.unlock)).."."
-    elseif fit.keep=="almostDone" then text=text..". Objectifs presque terminés."
-    elseif fit.keep=="ready" then text=text..". XP prête à récupérer."
-    elseif fit.keep=="class" then text=text..". Progression de classe conservée." end
+        text=text..B.T(". Prérequis pour ")..(n and n.name or tostring(fit.unlock)).."."
+    elseif fit.keep=="almostDone" then text=text..B.T(". Objectifs presque terminés.")
+    elseif fit.keep=="ready" then text=text..B.T(". XP prête à récupérer.")
+    elseif fit.keep=="class" then text=text..B.T(". Progression de classe conservée.") end
     return text
 end

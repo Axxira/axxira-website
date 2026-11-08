@@ -22,25 +22,25 @@ function M:CooldownRemaining()
     return math.min(900,math.max(0,math.ceil(remaining)))
 end
 function M:Availability()
-    if not B.settings or not B.settings.enabled then return false,"Scan désactivé","Active ForeverPilot pour scanner l'HDV." end
-    if not self.open then return false,"Scanner HDV","Ouvre l'hôtel des ventes pour lancer un scan." end
-    if self.pending then return false,"Attente du serveur…","Scan demandé · attente du serveur…" end
+    if not B.settings or not B.settings.enabled then return false,B.T("Scan désactivé"),B.T("Active ForeverPilot pour scanner l'HDV.") end
+    if not self.open then return false,B.T("Scanner HDV"),B.T("Ouvre l'hôtel des ventes pour lancer un scan.") end
+    if self.pending then return false,B.T("Attente du serveur…"),B.T("Scan demandé · attente du serveur…") end
     if self.job then return false,"Scan · "..math.floor(100*self.job.index/math.max(1,self.job.n)).." %",self.status end
-    if B.Call(InCombatLockdown)==true then return false,"Attends la fin du combat","Attends la fin du combat." end
+    if B.Call(InCombatLockdown)==true then return false,B.T("Attends la fin du combat"),B.T("Attends la fin du combat.") end
     local A=C_AuctionHouse
     if not (A and type(A.ReplicateItems)=="function" and type(A.GetReplicateItemInfo)=="function"
         and type(A.GetReplicateItemLink)=="function" and type(A.GetNumReplicateItems)=="function") then
-        return false,"Scan indisponible","Scan global indisponible ; les recherches HDV peuvent encore alimenter les prix."
+        return false,B.T("Scan indisponible"),B.T("Scan global indisponible ; les recherches HDV peuvent encore alimenter les prix.")
     end
     local seconds=self:CooldownRemaining()
     if seconds>0 then
         local clock=string.format("%d:%02d",math.floor(seconds/60),seconds%60)
-        return false,"Scan dans "..clock,"Prochain scan dans "..clock..". Les recherches restent enregistrées."
+        return false,B.T("Scan dans ")..clock,B.T("Prochain scan dans ")..clock..B.T(". Les recherches restent enregistrées.")
     end
     if type(A.IsThrottledMessageSystemReady)=="function" and B.Call(A.IsThrottledMessageSystemReady)~=true then
-        return false,"HDV occupé…","HDV occupé : attends quelques secondes puis réessaie."
+        return false,B.T("HDV occupé…"),B.T("HDV occupé : attends quelques secondes puis réessaie.")
     end
-    return true,"Scanner HDV"
+    return true,B.T("Scanner HDV")
 end
 function M:Key(link)
     link=B.Items:Text(link);if not link then return end
@@ -70,8 +70,8 @@ function M:Money(copper)
 end
 function M:Age(at)
     local age=math.max(0,time()-(num(at) or 0))
-    if age<60 then return "à l'instant" elseif age<3600 then return "il y a "..math.floor(age/60).." min"
-    elseif age<86400 then return "il y a "..math.floor(age/3600).." h" else return "il y a "..math.floor(age/86400).." j" end
+    if age<60 then return B.T("à l'instant") elseif age<3600 then return B.T("il y a ")..math.floor(age/60).." min"
+    elseif age<86400 then return B.T("il y a ")..math.floor(age/3600).." h" else return B.T("il y a ")..math.floor(age/86400)..B.T(" j") end
 end
 function M:Get(link)
     if not self.db then return end
@@ -118,11 +118,11 @@ function M:Scan()
     self.db.lastRequestAt=time()
     local generation=self.generation
     local ok=pcall(A.ReplicateItems)
-    if not ok then self.db.lastRequestAt=previous;self.requestAt=nil;self:Cancel("Le serveur a refusé le scan. Réessaie plus tard.");return false end
-    self:SetStatus("Scan demandé · attente du serveur…")
+    if not ok then self.db.lastRequestAt=previous;self.requestAt=nil;self:Cancel(B.T("Le serveur a refusé le scan. Réessaie plus tard."));return false end
+    self:SetStatus(B.T("Scan demandé · attente du serveur…"))
     C_Timer.After(40,function()
         if self.generation==generation and self.pending then
-            self:Cancel("Le serveur n'a pas répondu. Aucun nouveau prix enregistré.")
+            self:Cancel(B.T("Le serveur n'a pas répondu. Aucun nouveau prix enregistré."))
         end
     end)
     return true
@@ -130,7 +130,7 @@ end
 function M:Replicated()
     if not self.open or not self.pending or not (B.settings and B.settings.enabled) then return end
     local n=num(B.Call(C_AuctionHouse.GetNumReplicateItems))
-    if not n or n<=0 then self:Cancel("Scan vide ou indisponible ; derniers prix conservés.");return end
+    if not n or n<=0 then self:Cancel(B.T("Scan vide ou indisponible ; derniers prix conservés."));return end
     self.pending=nil
     self.job={n=math.min(n,self.maxRows),total=n,index=0,prices={},at=time(),generation=self.generation,skipped=0}
     self:Chunk()
@@ -145,12 +145,12 @@ function M:Chunk()
         if not row or not self:Add(job.prices,link,field(row,10),field(row,3)) then job.skipped=job.skipped+1 end
     end
     job.index=last+1
-    self.status="Lecture du scan · "..math.floor(100*job.index/job.n).." %"
+    self.status=B.T("Lecture du scan · ")..math.floor(100*job.index/job.n).." %"
     if job.index>=job.n then
         local partial=job.total>job.n or job.skipped>0
-        local n=self:Commit(job.prices,"Scan HDV",partial,job.at)
+        local n=self:Commit(job.prices,B.T("Scan HDV"),partial,job.at)
         self.job=nil;self.db.lastScan=job.at;self.db.lastScanPartial=partial;self.db.lastScanCount=n
-        self.status=n.." variantes enregistrées"..(partial and " · résultats partiels" or "")..". Prix affichés = annonces, pas ventes garanties."
+        self.status=n..B.T(" variantes enregistrées")..(partial and B.T(" · résultats partiels") or "")..B.T(". Prix affichés = annonces, pas ventes garanties.")
         B.Print(self.status)
     else
         C_Timer.After(.05,function() if self.job==job then B.Call(self.Chunk,self) end end)
@@ -174,15 +174,15 @@ function M:Observe(kind,key)
         if not self:Add(batch,link,price,count) then missing=true end
     end
     local full=B.Call(commodity and A.HasFullCommoditySearchResults or A.HasFullItemSearchResults,key)==true
-    self:Commit(batch,"Recherche HDV",not full or missing or n>500)
+    self:Commit(batch,B.T("Recherche HDV"),not full or missing or n>500)
 end
 function M:Event(event,arg)
-    if event=="AUCTION_HOUSE_CLOSED" then self.open=false;self:Cancel("HDV fermé · derniers prix conservés.");return end
+    if event=="AUCTION_HOUSE_CLOSED" then self.open=false;self:Cancel(B.T("HDV fermé · derniers prix conservés."));return end
     if not B.settings or not B.settings.enabled then return end
     if event=="AUCTION_HOUSE_SHOW" then
         self.open=true
         local count=self.db and self.db.count or 0
-        self:SetStatus(count>0 and (count.." variantes mémorisées · survole un objet pour son prix.") or "Prêt · lance un scan ou recherche un objet à l'HDV.")
+        self:SetStatus(count>0 and (count..B.T(" variantes mémorisées · survole un objet pour son prix.")) or B.T("Prêt · lance un scan ou recherche un objet à l'HDV."))
     elseif event=="REPLICATE_ITEM_LIST_UPDATE" then self:Replicated()
     elseif event=="COMMODITY_SEARCH_RESULTS_UPDATED" or event=="COMMODITY_SEARCH_RESULTS_ADDED" then self:Observe("commodity",B.Public(arg))
     elseif event=="ITEM_SEARCH_RESULTS_UPDATED" or event=="ITEM_SEARCH_RESULTS_ADDED" then self:Observe("item",B.Public(arg)) end

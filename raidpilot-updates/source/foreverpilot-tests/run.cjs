@@ -21,7 +21,7 @@ function InCombatLockdown() return TEST.combat or false end
 C_Timer={After=function(_,fn) TEST.timers[#TEST.timers+1]=fn end}
 `, 'host-fixture');
 load(fs.readFileSync(path.join(__dirname, 'ui-runtime.lua'), 'utf8'), 'UI fixture');
-for (const file of ['Bootstrap.lua', 'Items.lua', 'Market.lua', 'AuctionUI.lua', 'Advisor.lua'])
+for (const file of ['Bootstrap.lua', 'Locale.lua', 'Items.lua', 'Market.lua', 'AuctionUI.lua', 'Advisor.lua'])
   load(fs.readFileSync(path.join(addon, file), 'utf8'), file);
 load('local B=ForeverPilotLeveling; B.char={}; B.settings={enabled=true}; B.Market:Init(); B.AuctionUI:Init()', 'initialize');
 load(fs.readFileSync(path.join(__dirname, 'auction-ui.lua'), 'utf8'), 'auction UI regression');

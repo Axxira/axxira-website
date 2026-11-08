@@ -1,8 +1,8 @@
 local B=ForeverPilotLeveling
 local U={width=344,height=132};B.UI=U
-local verbs={accept="PRENDS",complete="TERMINE",turnin="RENDS",grind="XP D'APPOINT",corpse="RETOUR AU CORPS",done="NIVEAU 60",recovery="RÉORIENTATION",service="FAIS UNE HALTE",rest="RÉCUPÈRE"}
+local verbs={accept=B.T("PRENDS"),complete=B.T("TERMINE"),turnin=B.T("RENDS"),grind=B.T("XP D'APPOINT"),corpse=B.T("RETOUR AU CORPS"),done=B.T("NIVEAU 60"),recovery=B.T("RÉORIENTATION"),service=B.T("FAIS UNE HALTE"),rest=B.T("RÉCUPÈRE")}
 local colors={normal={0.40,0.85,0.80},turnin={0.94,0.76,0.43},recovery={1,0.65,0.36},pause={0.60,0.65,0.72}}
-local travelVerbs={fly="PRENDS LE VOL",hearth="PIERRE DE FOYER",boat="PRENDS LE BATEAU",zeppelin="PRENDS LE ZEPPELIN",tram="PRENDS LE TRAM",passage="SUIS LE PASSAGE",teleport="TÉLÉPORTATION"}
+local travelVerbs={fly=B.T("PRENDS LE VOL"),hearth=B.T("PIERRE DE FOYER"),boat=B.T("PRENDS LE BATEAU"),zeppelin=B.T("PRENDS LE ZEPPELIN"),tram=B.T("PRENDS LE TRAM"),passage=B.T("SUIS LE PASSAGE"),teleport=B.T("TÉLÉPORTATION")}
 local arrowTexture="Interface\\AddOns\\Ding\\Media\\Textures\\arrow_halo_gold"
 local mapTexture="Interface\\Icons\\INV_Misc_Map_01"
 function U:Symbol(texture)
@@ -22,42 +22,42 @@ local function rect(f,x,y,w,h,r,g,b,a)
 end
 function U:View(a,s)
     local v={verb=verbs[a.kind] or "CONTINUE",title=a.node and a.node.name or a.label or "",detail=a.objective and a.objective.text or a.note or "",color=colors.normal}
-    v.tag=a.confidence=="LIVE" and "LIVE" or a.confidence=="RECOVERY" and "ADAPTATION" or "GUIDAGE"
-    if a.levelFit and a.levelFit.questLevel then v.verb=v.verb.." · NIV. "..a.levelFit.questLevel end
+    v.tag=a.confidence=="LIVE" and "LIVE" or a.confidence=="RECOVERY" and B.T("ADAPTATION") or B.T("GUIDAGE")
+    if a.levelFit and a.levelFit.questLevel then v.verb=v.verb..B.T(" · NIV. ")..a.levelFit.questLevel end
     local log=a.q and s.log[a.q];local have,need=0,0
     for _,o in ipairs(log and log.objectives or {}) do
         local total=o.numRequired or 1;need=need+total
         have=have+math.min(total,o.numFulfilled or (o.finished and total or 0))
     end
     v.fraction=need>0 and math.max(0,math.min(1,have/need)) or (a.kind=="turnin" and 1 or 0)
-    v.footer=a.kind=="turnin" and "RETOUR HUB" or a.kind=="complete" and "NE RENTRE PAS ENCORE" or "BOUCLE EN COURS"
+    v.footer=a.kind=="turnin" and B.T("RETOUR HUB") or a.kind=="complete" and B.T("NE RENTRE PAS ENCORE") or B.T("BOUCLE EN COURS")
     local tripCount=a.tripIDs and #a.tripIDs or a.plan and a.plan.quests or 0
-    if tripCount>1 then v.footer=v.footer.."  ·  "..tripCount.." quêtes" end
-    if v.detail=="" and a.point and a.point.label then v.detail="Parle à "..a.point.label end
+    if tripCount>1 then v.footer=v.footer.."  ·  "..tripCount..B.T(" quêtes") end
+    if v.detail=="" and a.point and a.point.label then v.detail=B.T("Parle à ")..a.point.label end
     if a.kind=="turnin" then v.color=colors.turnin end
-    if a.kind=="grind" then v.footer="Quêtes réévaluées à chaque progression" end
-    if a.kind=="rest" then v.footer="La boucle t'attend";v.color=colors.turnin end
-    if a.kind=="service" then v.footer="Reprise des quêtes après cette halte";v.color=colors.turnin end
-    if a.kind=="recovery" then v.title="Une nouvelle direction";v.footer="Ouvre un PNJ de quêtes à proximité";v.color=colors.recovery end
-    if a.kind=="corpse" then v.title=s.ghost and "Rejoins ton corps" or "Reviens quand tu es prêt";v.footer="La boucle reprend après résurrection" end
-    if a.kind=="done" then v.title="L'aventure continue.";v.detail="Niveau 60 atteint";v.footer="Objectif accompli" end
-    if a.itemStart then v.verb="OUVRE L'OBJET" end
-    if a.collection then v.footer=string.format("AVANT DE PARTIR · %d/%d quêtes prises",a.collection.confirmed,a.collection.total) end
-    if a.levelFit and a.levelFit.keep=="prerequisite" then v.footer="PRÉREQUIS POUR LA SUITE"
-    elseif a.levelFit and a.levelFit.keep=="almostDone" then v.footer="PRESQUE FINI · PUIS ON AVANCE" end
+    if a.kind=="grind" then v.footer=B.T("Quêtes réévaluées à chaque progression") end
+    if a.kind=="rest" then v.footer=B.T("La boucle t'attend");v.color=colors.turnin end
+    if a.kind=="service" then v.footer=B.T("Reprise des quêtes après cette halte");v.color=colors.turnin end
+    if a.kind=="recovery" then v.title=B.T("Une nouvelle direction");v.footer=B.T("Ouvre un PNJ de quêtes à proximité");v.color=colors.recovery end
+    if a.kind=="corpse" then v.title=s.ghost and B.T("Rejoins ton corps") or B.T("Reviens quand tu es prêt");v.footer=B.T("La boucle reprend après résurrection") end
+    if a.kind=="done" then v.title=B.T("L'aventure continue.");v.detail=B.T("Niveau 60 atteint");v.footer=B.T("Objectif accompli") end
+    if a.itemStart then v.verb=B.T("OUVRE L'OBJET") end
+    if a.collection then v.footer=string.format(B.T("AVANT DE PARTIR · %d/%d quêtes prises"),a.collection.confirmed,a.collection.total) end
+    if a.levelFit and a.levelFit.keep=="prerequisite" then v.footer=B.T("PRÉREQUIS POUR LA SUITE")
+    elseif a.levelFit and a.levelFit.keep=="almostDone" then v.footer=B.T("PRESQUE FINI · PUIS ON AVANCE") end
     if B.Recovery.notice and B.Recovery.notice.untilAt>s.now then v.footer=B.Recovery.notice.text;v.color=colors.recovery end
-    if B.settings.paused then v.tag="PAUSE";v.footer="Clic droit pour reprendre";v.color=colors.pause end
+    if B.settings.paused then v.tag="PAUSE";v.footer=B.T("Clic droit pour reprendre");v.color=colors.pause end
     local badge,badgeColor=B.Journal:Badge()
     if badge then v.tag=badge;v.tagColor=badgeColor end
     if a.classPriority then
-        v.tag="CLASSE PRIORITAIRE";v.tagColor={0.74,0.66,1}
-        v.footer=B.Journal:IsClass(a.node) and "PROGRESSION DE CLASSE" or "PRÉREQUIS DE CLASSE"
+        v.tag=B.T("CLASSE PRIORITAIRE");v.tagColor={0.74,0.66,1}
+        v.footer=B.Journal:IsClass(a.node) and B.T("PROGRESSION DE CLASSE") or B.T("PRÉREQUIS DE CLASSE")
     end
     if a.service=="flight" then
-        v.tag="TRAJET AÉRIEN";v.tagColor=colors.turnin;v.verb="PARLE AU MAÎTRE DE VOL"
-        v.footer="À DÉCOUVRIR AVANT DE PARTIR"
+        v.tag=B.T("TRAJET AÉRIEN");v.tagColor=colors.turnin;v.verb=B.T("PARLE AU MAÎTRE DE VOL")
+        v.footer=B.T("À DÉCOUVRIR AVANT DE PARTIR")
     end
-    if B.settings.paused then v.tag="PAUSE";v.footer="Clic droit pour reprendre";v.tagColor=colors.pause end
+    if B.settings.paused then v.tag="PAUSE";v.footer=B.T("Clic droit pour reprendre");v.tagColor=colors.pause end
     return v
 end
 function U:Tooltip()
@@ -70,22 +70,22 @@ function U:Tooltip()
     if self.view.detail~="" then GameTooltip:AddLine(self.view.detail,1,1,1,true) end
     if a.note and a.note~=self.view.detail then GameTooltip:AddLine(a.note,0.8,0.85,0.90,true) end
     if a.tripIDs then
-        GameTooltip:AddLine("Quêtes de cette sortie",0.40,0.85,0.80,true)
+        GameTooltip:AddLine(B.T("Quêtes de cette sortie"),0.40,0.85,0.80,true)
         for _,q in ipairs(a.tripIDs) do
             local row=self.state.log[q];local n=B.Graph:Node(q)
-            local status=row and (row.ready and "À rendre" or "Dans le journal") or "À prendre"
+            local status=row and (row.ready and B.T("À rendre") or B.T("Dans le journal")) or B.T("À prendre")
             GameTooltip:AddLine(status.." · "..(n and n.name or tostring(q)),0.78,0.83,0.89,true)
         end
     elseif a.plan then
-        GameTooltip:AddLine(string.format("Boucle proposée · %d quête(s) · ~%d min",a.plan.quests,math.ceil(a.plan.seconds/60)),0.40,0.85,0.80,true)
+        GameTooltip:AddLine(string.format(B.T("Boucle proposée · %d quête(s) · ~%d min"),a.plan.quests,math.ceil(a.plan.seconds/60)),0.40,0.85,0.80,true)
         for i,t in ipairs(a.plan.steps) do if i<=6 then GameTooltip:AddLine(i..". "..(verbs[t.kind] or t.kind).." "..t.name,0.78,0.83,0.89,true) end end
     end
     local rate,eta=B.State:Pace()
-    if rate then GameTooltip:AddLine(string.format("%.0f XP/h · Prochain niveau ~%d min",rate,math.ceil((eta or 0)/60)),0.9,0.78,0.5,true) end
-    GameTooltip:AddLine("Source : "..a.confidence,0.62,0.68,0.76,true)
-    GameTooltip:AddLine("Glisser : déplacer · Clic droit : pause",0.62,0.68,0.76)
-    GameTooltip:AddLine("Passer : écarter la quête · Clic droit sur Passer : reprendre",0.62,0.68,0.76,true)
-    GameTooltip:AddLine("/fpl why : détails",0.62,0.68,0.76)
+    if rate then GameTooltip:AddLine(string.format(B.T("%.0f XP/h · Prochain niveau ~%d min"),rate,math.ceil((eta or 0)/60)),0.9,0.78,0.5,true) end
+    GameTooltip:AddLine(B.T("Source : ")..a.confidence,0.62,0.68,0.76,true)
+    GameTooltip:AddLine(B.T("Glisser : déplacer · Clic droit : pause"),0.62,0.68,0.76)
+    GameTooltip:AddLine(B.T("Passer : écarter la quête · Clic droit sur Passer : reprendre"),0.62,0.68,0.76,true)
+    GameTooltip:AddLine(B.T("/fpl why : détails"),0.62,0.68,0.76)
     GameTooltip:Show()
 end
 function U:Create()
@@ -113,15 +113,15 @@ function U:Create()
     self.skip=CreateFrame("Button",nil,f);self.skip:SetPoint("TOPLEFT",f,"TOPLEFT",266,-111);self.skip:SetSize(64,19)
     self.skip:RegisterForClicks("LeftButtonUp","RightButtonUp")
     local skipBG=self.skip:CreateTexture(nil,"BACKGROUND");skipBG:SetAllPoints(self.skip);skipBG:SetColorTexture(.17,.25,.30,.95)
-    self.skipLabel=font(self.skip,10,0,4,64,14);self.skipLabel:SetJustifyH("CENTER");self.skipLabel:SetText("Passer")
+    self.skipLabel=font(self.skip,10,0,4,64,14);self.skipLabel:SetJustifyH("CENTER");self.skipLabel:SetText(B.T("Passer"))
     self.skip:SetScript("OnEnter",function()
         skipBG:SetColorTexture(.25,.36,.42,1)
-        GameTooltip:SetOwner(self.skip,"ANCHOR_BOTTOM");GameTooltip:SetText("Passer l'étape")
-        GameTooltip:AddLine("Quête trop difficile en solo ? Clic gauche : mets-la de côté et recalcule le guidage.",.85,.9,.94,true)
-        GameTooltip:AddLine("Elle reste dans ton journal et ne revient pas automatiquement. Les haltes et camps d'XP sont reportés de 5 min.",.7,.78,.84,true)
+        GameTooltip:SetOwner(self.skip,"ANCHOR_BOTTOM");GameTooltip:SetText(B.T("Passer l'étape"))
+        GameTooltip:AddLine(B.T("Quête trop difficile en solo ? Clic gauche : mets-la de côté et recalcule le guidage."),.85,.9,.94,true)
+        GameTooltip:AddLine(B.T("Elle reste dans ton journal et ne revient pas automatiquement. Les haltes et camps d'XP sont reportés de 5 min."),.7,.78,.84,true)
         local _,last=B.Recovery:LastSkipped()
-        if last then GameTooltip:AddLine("Clic droit : réactiver "..last.name,.94,.76,.43,true) end
-        GameTooltip:AddLine("/fpl reprendre tout : réactiver les quêtes écartées",.62,.68,.76,true);GameTooltip:Show()
+        if last then GameTooltip:AddLine(B.T("Clic droit : réactiver ")..last.name,.94,.76,.43,true) end
+        GameTooltip:AddLine(B.T("/fpl reprendre tout : réactiver les quêtes écartées"),.62,.68,.76,true);GameTooltip:Show()
     end)
     self.skip:SetScript("OnLeave",function() skipBG:SetColorTexture(.17,.25,.30,.95);GameTooltip:Hide() end)
     self.skip:SetScript("OnClick",function(_,button)
@@ -144,7 +144,7 @@ function U:Render(a,s)
     self.action:SetText(v.title);self.verb:SetText(v.verb);self.verb:SetTextColor(c[1],c[2],c[3])
     self.progress:SetText(v.detail);self.loop:SetText(v.footer);self.loop:SetTextColor(c[1],c[2],c[3])
     local canSkip=B.Recovery:CanSkip(a);local showSkip=canSkip or B.Recovery:LastSkipped()~=nil
-    self.skip:SetShown(showSkip);self.skipLabel:SetText(canSkip and "Passer" or "Reprendre");self.loop:SetWidth(showSkip and 244 or 316)
+    self.skip:SetShown(showSkip);self.skipLabel:SetText(canSkip and B.T("Passer") or B.T("Reprendre"));self.loop:SetWidth(showSkip and 244 or 316)
     self.bar:SetWidth(math.max(1,316*v.fraction));self.bar:SetShown(v.fraction>0);self.bar:SetColorTexture(c[1],c[2],c[3],0.8)
 end
 function U:Tick()
@@ -158,7 +158,7 @@ function U:Tick()
     -- across disconnected world coordinates toward its remote destination.
     if leg and not leg.point and (leg.kind=="hearth" or leg.kind=="teleport") then
         local icon=leg.kind=="hearth" and B.Call(Ding.Compat.ItemIcon,6948) or (leg.spell and B.Call(Ding.Compat.SpellIcon,leg.spell))
-        self:Symbol(icon or mapTexture);self.distance:SetText("À utiliser")
+        self:Symbol(icon or mapTexture);self.distance:SetText(B.T("À utiliser"))
         self.verb:SetText(travelVerbs[leg.kind]);self.progress:SetText(leg.hint or "")
         self.routeHint=leg.hint;B.Navigation:Mark(nil);return
     end
@@ -172,13 +172,13 @@ function U:Tick()
         local dx,dy=target.wx-wx,target.wy-wy;local distance=math.sqrt(dx*dx+dy*dy)
         local facing=Ding.Compat.GetFacing()
         if facing then self:Symbol(arrowTexture);self.arrow:SetRotation(Ding.Arrow.Bearing(dx,dy)-facing)
-        else self:Symbol(mapTexture);self.progress:SetText("Orientation indisponible · consulte la carte") end
-        self.distance:SetText(distance<12 and "Sur place" or distance>=1000 and string.format("%.1f k yd",distance/1000) or string.format("%.0f yd",distance))
+        else self:Symbol(mapTexture);self.progress:SetText(B.T("Orientation indisponible · consulte la carte")) end
+        self.distance:SetText(distance<12 and B.T("Sur place") or distance>=1000 and string.format("%.1f k yd",distance/1000) or string.format("%.0f yd",distance))
     else
-        self:Symbol(mapTexture);self.distance:SetText("Carte")
-        self.verb:SetText("TRAJET À CONFIRMER")
-        self.progress:SetText(leg and leg.hint or "Aucun passage connu · recalcul en cours")
-        self.routeHint=leg and leg.hint or "Aucun passage connu vers cette destination."
+        self:Symbol(mapTexture);self.distance:SetText(B.T("Carte"))
+        self.verb:SetText(B.T("TRAJET À CONFIRMER"))
+        self.progress:SetText(leg and leg.hint or B.T("Aucun passage connu · recalcul en cours"))
+        self.routeHint=leg and leg.hint or B.T("Aucun passage connu vers cette destination.")
         if not leg and s then B.Navigation:Mark(nil);B.Travel.at=nil;B.Planner.signature=nil;B.dirty=true end
     end
 end

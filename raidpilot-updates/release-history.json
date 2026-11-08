@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.24",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.24",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.8.0 : français et anglais",
+      "details": "Un seul addon avec interface française et anglaise. Objets → Addons : Français, English ou Auto; /fpl lang fr/en/auto. Le choix recharge l’interface hors combat ou attend /reload en combat. Les installations existantes restent en français; les nouvelles suivent la langue du jeu. Traduit le guidage, les profils de classe et spécialisation, les conseils d’objets, le scan HDV et les contrôles de layer. Les noms de quêtes, PNJ et objets restent ceux du jeu; les demandes dans Général restent en anglais. Aucun changement des scores, des pièces HDV ou du panneau compact. Redémarrage complet de WoW requis pour charger le nouveau module. L’abonnement est en préparation et n’est pas activé par cette version."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.23",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "Carte et QuestPilot toujours visibles — Ctrl+Alt+I active/désactive les clics",
       "details": "Corrige la régression : carte et panneau QuestPilot restent visibles pendant le raid, y compris en mode clics désactivés. Ctrl+Alt+I active ou désactive seulement l'interaction (click-through) sans masquer la carte ni la liste des quêtes, et ne valide aucune étape. La liste QuestPilot s'affiche dès l'initialisation et reste positionnée sous la carte. Les règles existantes de visibilité automatique selon l'état du raid et le loot sont conservées."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.37",
-      "raidPilotVersion": "0.14.2.37",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "QuestPilot sous la carte et Ctrl+Alt+I ouvre/ferme",
-      "details": "Le panneau complet QuestPilot (liste des quêtes, étapes, bouton Fait, restauration et options) a été déplacé hors de la zone de carte dans une section défilante sous la carte, avec texte agrandi. Le raccourci global Ctrl+Alt+I bascule entre l'ouverture interactive carte+quêtes et la fermeture de l'interface, sans cocher d'étape. Les marqueurs des étapes terminées restent masqués, sauf objectifs encore à faire; les anciens contrôles restent accessibles."
     }
   ]
 }

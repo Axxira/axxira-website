@@ -7,7 +7,7 @@ function N:Choose(s,quest)
     if self.resting then
         if (not health or health>=0.65) and (not mana or mana>=0.50) then self.resting=nil
         elseif not (B.char.deferred.rest and B.char.deferred.rest>time()) then
-            return {kind="rest",key="rest",label="Reprends tes forces",note="La boucle reprend dès que tu es prêt.",confidence="LIVE",batch={}}
+            return {kind="rest",key="rest",label=B.T("Reprends tes forces"),note=B.T("La boucle reprend dès que tu es prêt."),confidence="LIVE",batch={}}
         end
     end
     local repair=s.durability and s.durability<0.30
@@ -29,8 +29,8 @@ function N:Choose(s,quest)
             if urgent or (travel<90 and detour<45) then
                 -- A nearby turn-in can free the bag and should not be interrupted.
                 if quest and quest.kind=="turnin" and direct<travel+30 then return quest end
-                return {kind="service",key=key,service=kind,label=repair and "Répare ton équipement" or "Libère de la place",
-                    note=(npc.name or "Marchand").." · "..(repair and "Réparation" or "Sacs presque pleins"),point=npc.point,
+                return {kind="service",key=key,service=kind,label=repair and B.T("Répare ton équipement") or B.T("Libère de la place"),
+                    note=(npc.name or B.T("Marchand")).." · "..(repair and B.T("Réparation") or B.T("Sacs presque pleins")),point=npc.point,
                     confidence="LIVE / POSITION DB",batch={},plan=quest and quest.plan}
             end
         end

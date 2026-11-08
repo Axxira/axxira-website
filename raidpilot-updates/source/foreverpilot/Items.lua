@@ -23,44 +23,44 @@ I.slots={INVTYPE_HEAD={1},INVTYPE_NECK={2},INVTYPE_SHOULDER={3},INVTYPE_CHEST={5
     INVTYPE_LEGS={7},INVTYPE_FEET={8},INVTYPE_WRIST={9},INVTYPE_HAND={10},INVTYPE_FINGER={11,12},INVTYPE_TRINKET={13,14},
     INVTYPE_CLOAK={15},INVTYPE_WEAPON={16},INVTYPE_WEAPONMAINHAND={16},INVTYPE_2HWEAPON={16},INVTYPE_WEAPONOFFHAND={17},
     INVTYPE_SHIELD={17},INVTYPE_HOLDABLE={17},INVTYPE_RANGED={18},INVTYPE_RANGEDRIGHT={18},INVTYPE_THROWN={18},INVTYPE_RELIC={18}}
-I.slotNames={[1]="tête",[2]="cou",[3]="épaules",[5]="torse",[6]="taille",[7]="jambes",[8]="pieds",[9]="poignets",[10]="mains",[11]="anneau 1",[12]="anneau 2",[13]="bijou 1",[14]="bijou 2",[15]="dos",[16]="main droite",[17]="main gauche",[18]="à distance"}
+I.slotNames={[1]=B.T("tête"),[2]=B.T("cou"),[3]=B.T("épaules"),[5]=B.T("torse"),[6]=B.T("taille"),[7]=B.T("jambes"),[8]=B.T("pieds"),[9]=B.T("poignets"),[10]=B.T("mains"),[11]=B.T("anneau 1"),[12]=B.T("anneau 2"),[13]=B.T("bijou 1"),[14]=B.T("bijou 2"),[15]=B.T("dos"),[16]=B.T("main droite"),[17]=B.T("main gauche"),[18]=B.T("à distance")}
 I.stats={
-    {"str","Force",{"ITEM_MOD_STRENGTH_SHORT"}}, {"agi","Agilité",{"ITEM_MOD_AGILITY_SHORT"}},
-    {"sta","Endurance",{"ITEM_MOD_STAMINA_SHORT"}}, {"int","Intelligence",{"ITEM_MOD_INTELLECT_SHORT"}},
-    {"spi","Esprit",{"ITEM_MOD_SPIRIT_SHORT"}}, {"armor","Armure",{"RESISTANCE0_NAME","ITEM_MOD_ARMOR_SHORT"}},
-    {"ap","Puissance d'attaque",{"ITEM_MOD_ATTACK_POWER_SHORT"}}, {"sp","Puissance des sorts",{"ITEM_MOD_SPELL_POWER_SHORT"}},
-    {"heal","Soins",{"ITEM_MOD_SPELL_HEALING_DONE_SHORT"}}, {"dps","DPS de l'arme",{"ITEM_MOD_DAMAGE_PER_SECOND_SHORT"}},
+    {"str",B.T("Force"),{"ITEM_MOD_STRENGTH_SHORT"}}, {"agi",B.T("Agilité"),{"ITEM_MOD_AGILITY_SHORT"}},
+    {"sta",B.T("Endurance"),{"ITEM_MOD_STAMINA_SHORT"}}, {"int",B.T("Intelligence"),{"ITEM_MOD_INTELLECT_SHORT"}},
+    {"spi",B.T("Esprit"),{"ITEM_MOD_SPIRIT_SHORT"}}, {"armor",B.T("Armure"),{"RESISTANCE0_NAME","ITEM_MOD_ARMOR_SHORT"}},
+    {"ap",B.T("Puissance d'attaque"),{"ITEM_MOD_ATTACK_POWER_SHORT"}}, {"sp",B.T("Puissance des sorts"),{"ITEM_MOD_SPELL_POWER_SHORT"}},
+    {"heal",B.T("Soins"),{"ITEM_MOD_SPELL_HEALING_DONE_SHORT"}}, {"dps",B.T("DPS de l'arme"),{"ITEM_MOD_DAMAGE_PER_SECOND_SHORT"}},
 }
 -- Deliberately modest leveling heuristics. No imported commercial scales.
 I.profiles={
-    melee={label="Mêlée",str=2,agi=1,sta=1,int=0,spi=.15,armor=.015,ap=.5,sp=0,heal=0,dps=3},
-    agile={label="Agilité",str=1,agi=2,sta=1,int=0,spi=.15,armor=.01,ap=.5,sp=0,heal=0,dps=3},
-    caster={label="Lanceur de sorts",str=0,agi=0,sta=.8,int=2,spi=1,armor=.005,ap=0,sp=2,heal=0,dps=0},
-    soin={label="Soins",str=0,agi=0,sta=.7,int=2,spi=1.8,armor=.005,ap=0,sp=1.5,heal=1.5,dps=0},
+    melee={label=B.T("Mêlée"),str=2,agi=1,sta=1,int=0,spi=.15,armor=.015,ap=.5,sp=0,heal=0,dps=3},
+    agile={label=B.T("Agilité"),str=1,agi=2,sta=1,int=0,spi=.15,armor=.01,ap=.5,sp=0,heal=0,dps=3},
+    caster={label=B.T("Lanceur de sorts"),str=0,agi=0,sta=.8,int=2,spi=1,armor=.005,ap=0,sp=2,heal=0,dps=0},
+    soin={label=B.T("Soins"),str=0,agi=0,sta=.7,int=2,spi=1.8,armor=.005,ap=0,sp=1.5,heal=1.5,dps=0},
     tank={label="Tank",str=1,agi=1,sta=2, int=0,spi=.1,armor=.04,ap=.3,sp=0,heal=0,dps=1},
-    feral={label="Druide farouche",str=1.5,agi=2,sta=1.2,int=.2,spi=.2,armor=.015,ap=.5,sp=0,heal=0,dps=0},
-    ours={label="Druide ours (tank)",str=1.5,agi=1.5,sta=2,int=.1,spi=.1,armor=.05,ap=.5,sp=0,heal=0,dps=0},
-    hybride={label="Druide polyvalent",str=1,agi=1,sta=1,int=1,spi=1,armor=.015,ap=.3,sp=1,heal=.5,dps=0},
-    chasseur={label="Chasseur",str=.2,agi=2,sta=1,int=.5,spi=.2,armor=.01,ap=.5,sp=0,heal=0,dps=0},
+    feral={label=B.T("Druide farouche"),str=1.5,agi=2,sta=1.2,int=.2,spi=.2,armor=.015,ap=.5,sp=0,heal=0,dps=0},
+    ours={label=B.T("Druide ours (tank)"),str=1.5,agi=1.5,sta=2,int=.1,spi=.1,armor=.05,ap=.5,sp=0,heal=0,dps=0},
+    hybride={label=B.T("Druide polyvalent"),str=1,agi=1,sta=1,int=1,spi=1,armor=.015,ap=.3,sp=1,heal=.5,dps=0},
+    chasseur={label=B.T("Chasseur"),str=.2,agi=2,sta=1,int=.5,spi=.2,armor=.01,ap=.5,sp=0,heal=0,dps=0},
 }
 -- Classic tree order, independent of localized names. Shared roles deliberately
 -- share modest leveling weights: these are not simulated spec-specific DPS scales.
 I.classes={
-    WARRIOR={label="Guerrier",{"Armes","melee"},{"Fureur","melee"},{"Protection","tank"}},
-    PALADIN={label="Paladin",{"Sacré","soin"},{"Protection","tank"},{"Vindicte","melee"}},
-    HUNTER={label="Chasseur",fallback="chasseur",{"Maîtrise des bêtes","chasseur"},{"Précision","chasseur"},{"Survie","chasseur"}},
-    ROGUE={label="Voleur",fallback="agile",{"Assassinat","agile"},{"Combat","agile"},{"Finesse","agile"}},
-    PRIEST={label="Prêtre",{"Discipline","soin"},{"Sacré","soin"},{"Ombre","caster"}},
-    SHAMAN={label="Chaman",{"Élémentaire","caster"},{"Amélioration","melee"},{"Restauration","soin"}},
-    MAGE={label="Mage",fallback="caster",{"Arcanes","caster"},{"Feu","caster"},{"Givre","caster"}},
-    WARLOCK={label="Démoniste",fallback="caster",{"Affliction","caster"},{"Démonologie","caster"},{"Destruction","caster"}},
-    DRUID={label="Druide",{"Équilibre","caster"},{"Farouche","feral"},{"Restauration","soin"}},
+    WARRIOR={label=B.T("Guerrier"),{B.T("Armes"),"melee"},{B.T("Fureur"),"melee"},{"Protection","tank"}},
+    PALADIN={label="Paladin",{B.T("Sacré"),"soin"},{"Protection","tank"},{B.T("Vindicte"),"melee"}},
+    HUNTER={label=B.T("Chasseur"),fallback="chasseur",{B.T("Maîtrise des bêtes"),"chasseur"},{B.T("Précision"),"chasseur"},{B.T("Survie"),"chasseur"}},
+    ROGUE={label=B.T("Voleur"),fallback="agile",{B.T("Assassinat"),"agile"},{"Combat","agile"},{B.T("Finesse"),"agile"}},
+    PRIEST={label=B.T("Prêtre"),{"Discipline","soin"},{B.T("Sacré"),"soin"},{B.T("Ombre"),"caster"}},
+    SHAMAN={label=B.T("Chaman"),{B.T("Élémentaire"),"caster"},{B.T("Amélioration"),"melee"},{B.T("Restauration"),"soin"}},
+    MAGE={label="Mage",fallback="caster",{B.T("Arcanes"),"caster"},{B.T("Feu"),"caster"},{B.T("Givre"),"caster"}},
+    WARLOCK={label=B.T("Démoniste"),fallback="caster",{"Affliction","caster"},{B.T("Démonologie"),"caster"},{"Destruction","caster"}},
+    DRUID={label=B.T("Druide"),{B.T("Équilibre"),"caster"},{B.T("Farouche"),"feral"},{B.T("Restauration"),"soin"}},
 }
 I.classOrder={"WARRIOR","PALADIN","HUNTER","ROGUE","PRIEST","SHAMAN","MAGE","WARLOCK","DRUID"}
 -- The nine races recognized by Ding's Forever import API. Include the live
 -- player race below if a later server patch introduces a different race.
-I.races={{"Human","Humain"},{"Dwarf","Nain"},{"NightElf","Elfe de la nuit"},{"Gnome","Gnome"},
-    {"Orc","Orc"},{"Scourge","Mort-vivant"},{"Tauren","Tauren"},{"Troll","Troll"},{"Skyborne","Skyborne"}}
+I.races={{"Human",B.T("Humain")},{"Dwarf",B.T("Nain")},{"NightElf",B.T("Elfe de la nuit")},{"Gnome","Gnome"},
+    {"Orc","Orc"},{"Scourge",B.T("Mort-vivant")},{"Tauren","Tauren"},{"Troll","Troll"},{"Skyborne","Skyborne"}}
 I.classWeights={
     PALADIN={tank={int=.5,sp=.75},melee={int=.25,sp=.25},soin={spi=.5}},
     SHAMAN={melee={int=.5,sp=.3},soin={spi=.5}},
@@ -70,17 +70,17 @@ I.profileEvents={CHARACTER_POINTS_CHANGED=true,PLAYER_TALENT_UPDATE=true,ACTIVE_
 function I:InvalidateProfile() self.talentCache=nil end
 function I:TalentTree()
     -- Read learned ranks, never recommended builds, preview points or a stance.
-    if self:Number(B.Call(GetNumTalentTabs))~=3 then return nil,"Talents non lisibles : choisis une spécialisation." end
+    if self:Number(B.Call(GetNumTalentTabs))~=3 then return nil,B.T("Talents non lisibles : choisis une spécialisation.") end
     local best,total,tied=nil,0,false
     for tab=1,3 do
         local count=self:Number(B.Call(GetNumTalents,tab))
-        if not count or count<1 or count>100 or count%1~=0 then return nil,"Talents non lisibles : choisis une spécialisation." end
+        if not count or count<1 or count>100 or count%1~=0 then return nil,B.T("Talents non lisibles : choisis une spécialisation.") end
         local spent=0
         for index=1,count do
             local data=B.Call(function() return {GetTalentInfo(tab,index)} end)
             local rank,maxRank=self:Number(self:Field(data,5)),self:Number(self:Field(data,6))
             if not rank or rank<0 or rank%1~=0 or not maxRank or maxRank<1 or maxRank>100 or rank>maxRank then
-                return nil,"Talents non lisibles : choisis une spécialisation."
+                return nil,B.T("Talents non lisibles : choisis une spécialisation.")
             end
             spent=spent+rank
         end
@@ -88,7 +88,7 @@ function I:TalentTree()
         elseif spent==total then tied=true end
     end
     if best and not tied then return best end
-    return nil,total==0 and "Pas encore de talents : choisis une spécialisation." or "Build mixte : choisis une spécialisation."
+    return nil,total==0 and B.T("Pas encore de talents : choisis une spécialisation.") or B.T("Build mixte : choisis une spécialisation.")
 end
 function I:AutoTree(class)
     local now=self:Number(B.Call(GetTime))
@@ -102,7 +102,7 @@ function I:AutoTree(class)
 end
 function I:ResolveProfile(class,selection,live)
     local def=self.classes[class]
-    if not def then return nil,nil,"Classe inconnue","Classe non prise en charge." end
+    if not def then return nil,nil,B.T("Classe inconnue"),B.T("Classe non prise en charge.") end
     local key,tree,reason=selection
     if selection=="auto" then
         if live then tree,reason=self:AutoTree(class) end
@@ -112,12 +112,12 @@ function I:ResolveProfile(class,selection,live)
         tree=owner==class and tonumber(index) or nil
         key=tree and def[tree][2] or nil
     end
-    local label=def.label..(tree and " · "..def[tree][1] or " · spé à préciser")
-    if not key or not self.profiles[key] then return nil,nil,label,reason or "Choisis une spécialisation dans Profil." end
+    local label=def.label..(tree and " · "..def[tree][1] or B.T(" · spé à préciser"))
+    if not key or not self.profiles[key] then return nil,nil,label,reason or B.T("Choisis une spécialisation dans Profil.") end
     local profile=B.Copy(self.profiles[key])
     for stat,weight in pairs(self.classWeights[class] and self.classWeights[class][key] or {}) do profile[stat]=weight end
     if selection~="auto" and not tree then label=def.label.." · "..profile.label end
-    if selection~="auto" then label=label.." (manuel)" end
+    if selection~="auto" then label=label..B.T(" (manuel)") end
     return profile,key,label,reason
 end
 function I:Profile()
@@ -132,10 +132,10 @@ function I:SetProfile(key)
     B.char.gearProfile=key;self:InvalidateProfile();return true
 end
 function I:SpecChoices(class,includeAuto)
-    local out=includeAuto and {{key="auto",label="Automatique · mes talents"}} or {}
+    local out=includeAuto and {{key="auto",label=B.T("Automatique · mes talents")}} or {}
     local def=self.classes[class];if not def then return out end
     for tab=1,3 do out[#out+1]={key="spec:"..class..":"..tab,label=def[tab][1]} end
-    if class=="DRUID" then out[#out+1]={key="ours",label="Farouche · ours tank"} end
+    if class=="DRUID" then out[#out+1]={key="ours",label=B.T("Farouche · ours tank")} end
     return out
 end
 function I:RaceChoices()
@@ -148,7 +148,7 @@ function I:RaceChoices()
     return out
 end
 function I:Priorities(profile)
-    if not profile then return "Choisis une spécialisation." end
+    if not profile then return B.T("Choisis une spécialisation.") end
     local rows={}
     for _,stat in ipairs(self.stats) do
         local weight=profile[stat[1]] or 0
@@ -195,31 +195,31 @@ function I:Equipped(slot)
     end
 end
 function I:Compare(link)
-    local info=self:Info(link);if not info then return {status="unknown",text="Données de l'objet à charger"} end
+    local info=self:Info(link);if not info then return {status="unknown",text=B.T("Données de l'objet à charger")} end
     local slots=self.slots[info.equipLoc];if not slots then return end
-    local result={info=info,status="unknown",text="Comparaison indisponible"}
+    local result={info=info,status="unknown",text=B.T("Comparaison indisponible")}
     local profile,_,label,reason=self:Profile();result.profile=label
-    if not profile then result.text=reason or "Choisis une spécialisation dans Profil.";return result end
-    if B.Call(InCombatLockdown)==true then result.text="Comparaison disponible hors combat";return result end
+    if not profile then result.text=reason or B.T("Choisis une spécialisation dans Profil.");return result end
+    if B.Call(InCombatLockdown)==true then result.text=B.T("Comparaison disponible hors combat");return result end
     local level=self:Number(B.Call(UnitLevel,"player"))
-    if info.minLevel and level and info.minLevel>level then result.status="unusable";result.text="À garder pour le niveau "..info.minLevel;return result end
+    if info.minLevel and level and info.minLevel>level then result.status="unusable";result.text=B.T("À garder pour le niveau ")..info.minLevel;return result end
     local usable=info.id and B.Call(C_PlayerInfo and C_PlayerInfo.CanUseItem,info.id)
-    if usable==false then result.status="unusable";result.text="Non utilisable par ce personnage actuellement";return result end
-    local stats=self:Stats(info.link);if not stats then result.text="Statistiques incomplètes : attends le chargement";return result end
+    if usable==false then result.status="unusable";result.text=B.T("Non utilisable par ce personnage actuellement");return result end
+    local stats=self:Stats(info.link);if not stats then result.text=B.T("Statistiques incomplètes : attends le chargement");return result end
     local score=self:Score(stats,profile);local best
     for _,slot in ipairs(slots) do
         local old=self:Equipped(slot)
-        if old==nil then result.text="Équipement porté non lisible";return result end
+        if old==nil then result.text=B.T("Équipement porté non lisible");return result end
         local oldInfo=old and self:Info(old)
         local oldStats=old and self:Stats(old) or {}
-        if old and (not oldInfo or not oldStats) then result.text="Équipement porté à charger";return result end
+        if old and (not oldInfo or not oldStats) then result.text=B.T("Équipement porté à charger");return result end
         local before=self:Score(oldStats,profile)
         if not best or before<best.before then best={slot=slot,old=old,info=oldInfo,stats=oldStats,before=before} end
     end
     -- Two-handers remove both hands; never compare them to the main hand alone.
     if info.equipLoc=="INVTYPE_2HWEAPON" then
         local off=self:Equipped(17)
-        if off==nil then result.text="Main gauche non lisible";return result end
+        if off==nil then result.text=B.T("Main gauche non lisible");return result end
         if off then
             local st=self:Stats(off);if not st then return result end
             best.before=best.before+self:Score(st,profile)
@@ -240,10 +240,10 @@ function I:Compare(link)
     local complex=usable~=true or unique==true or info.classID==2 or best.slot>=16 or info.equipLoc=="INVTYPE_TRINKET"
         or stats.extra or best.stats.extra or spell or oldSpell or (info.setID or 0)>0 or (best.info and (best.info.setID or 0)>0)
         or (info.quality or 0)>=3 or (best.info and (best.info.quality or 0)>=3)
-    if complex then result.status="compare";result.text="À COMPARER · effets / restrictions non évalués"
-    elseif result.gain>math.max(.5,math.abs(best.before)*.02) then result.status="upgrade";result.text="AMÉLIORATION ESTIMÉE"
-    elseif result.gain<-.5 then result.status="lower";result.text="Score inférieur pour ce profil"
-    else result.status="similar";result.text="Équivalent pour ce profil" end
+    if complex then result.status="compare";result.text=B.T("À COMPARER · effets / restrictions non évalués")
+    elseif result.gain>math.max(.5,math.abs(best.before)*.02) then result.status="upgrade";result.text=B.T("AMÉLIORATION ESTIMÉE")
+    elseif result.gain<-.5 then result.status="lower";result.text=B.T("Score inférieur pour ce profil")
+    else result.status="similar";result.text=B.T("Équivalent pour ce profil") end
     return result
 end
 function I:Bags()

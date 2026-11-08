@@ -96,7 +96,7 @@ function P:Action(n,kind,s,recovery)
             for _,item in ipairs(n.startItems) do
                 if Ding.Compat.ItemCount(item)>0 and s.map and s.x and s.y then
                     a.point={map=s.map,x=s.x,y=s.y};a.itemStart=item
-                    a.note="Ouvre dans tes sacs : "..(Ding.Data:ItemName(item) or tostring(item))
+                    a.note=B.T("Ouvre dans tes sacs : ")..(Ding.Data:ItemName(item) or tostring(item))
                     break
                 end
             end
@@ -107,7 +107,7 @@ function P:Action(n,kind,s,recovery)
     a.levelFit=B.Progression:Evaluate(n,kind,s,a)
     if a.levelFit.retire then return nil,"outleveled" end
     a.travel=B.Travel:Seconds(a.point,s)
-    if a.point.observed and reason~="LIVE" then a.confidence=kind=="accept" and "OBSERVÉ / À CONFIRMER" or "LIVE / POSITION OBSERVÉE" end
+    if a.point.observed and reason~="LIVE" then a.confidence=kind=="accept" and B.T("OBSERVÉ / À CONFIRMER") or B.T("LIVE / POSITION OBSERVÉE") end
     local xp,measured=B.Graph:XP(n,s);a.xp=xp;a.measuredXP=measured
     local remaining=1
     if kind=="complete" then
@@ -238,8 +238,8 @@ function P:Fallback(s)
             end
         end
     end
-    if cache.point then return {kind="grind",key="grind:"..cache.npc,point=cache.point,label=cache.name,confidence="RECOVERY",batch={},note="XP d'appoint. Les quêtes sont réévaluées automatiquement à chaque progression."} end
-    return {kind="recovery",key="recovery",confidence="RECOVERY",batch={},note="Aucune destination fiable trouvée. Ouvre un PNJ de quêtes : ses offres réelles seront analysées."}
+    if cache.point then return {kind="grind",key="grind:"..cache.npc,point=cache.point,label=cache.name,confidence="RECOVERY",batch={},note=B.T("XP d'appoint. Les quêtes sont réévaluées automatiquement à chaque progression.")} end
+    return {kind="recovery",key="recovery",confidence="RECOVERY",batch={},note=B.T("Aucune destination fiable trouvée. Ouvre un PNJ de quêtes : ses offres réelles seront analysées.")}
 end
 function P:Signature(s)
     local log={}

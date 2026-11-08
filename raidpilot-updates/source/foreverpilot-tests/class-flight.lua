@@ -25,7 +25,7 @@ B.char.skipped[94006]={};check(not B.Planner:Action(bear,'accept',s),'skip still
 B.char.unavailable[94006]={npc=1,level=s.level,signature=B.Recovery:Availability(94006,s)}
 check(not B.Planner:Action(bear,'accept',s),'unavailable class quest must not trap arrow');B.char.unavailable={}
 TEST.log[94006]={ready=true,objectives={}};s=state()
-local report=B.Journal:Refresh(s,false);check(report.rows[1].status=='class' and B.Journal:Badge()=='1 DE CLASSE','class journal priority')
+local report=B.Journal:Refresh(s,false);check(report.rows[1].status=='class' and B.Journal:Badge()=='1'..B.T(' DE CLASSE'),'class journal priority')
 TEST.log={};s=state()
 -- Exercise the real planner, batching, journey commitment and priority tier.
 local candidateFn=B.Planner.Candidates
@@ -41,7 +41,7 @@ B.char.trip={ids={normal.q},accepted={[normal.q]=true},level=16};B.Planner.curre
 local chosen=B.Planner:Plan(s)
 check(chosen.q==class.q and chosen.classPriority,'class priority must override XP and committed ordinary outing')
 B.UI:Create();B.UI:Render(chosen,s)
-check(B.UI.tag.text=='CLASSE PRIORITAIRE' and B.UI.frame.w==344 and B.UI.frame.h==132,'compact class UI')
+check(B.UI.tag.text==B.T('CLASSE PRIORITAIRE') and B.UI.frame.w==344 and B.UI.frame.h==132,'compact class UI')
 B.Planner.Candidates=function() return {normal} end;s.now=s.now+6;B.Planner.signature=nil
 check(B.Planner:Plan(s).q==normal.q,'ordinary quests resume after class candidate completes')
 B.Planner.Candidates=candidateFn
@@ -56,7 +56,7 @@ C_TaxiMap={GetTaxiNodesForMap=function() return {{position={x=.5,y=.5},faction=1
 local function choose() F.cache=nil;return F:Choose(s,quest) end
 local flight=choose();check(flight.service=='flight' and flight.confidence=='LIVE / POSITION DB','nearby undiscovered flight precedes departure')
 check(not B.char.flightDiscoveries[3615],'arrival must not count as learning')
-B.UI:Render(flight,s);check(B.UI.tag.text=='TRAJET AÉRIEN' and B.UI.verb.text=='PARLE AU MAÎTRE DE VOL','same compact guidance UI for flight')
+B.UI:Render(flight,s);check(B.UI.tag.text==B.T('TRAJET AÉRIEN') and B.UI.verb.text==B.T('PARLE AU MAÎTRE DE VOL'),'same compact guidance UI for flight')
 local leg=Ding.Travel.Leg;Ding.Travel.Leg=function() error('discovery must not take a flight') end;B.UI:Tick();Ding.Travel.Leg=leg
 s.combat=true;check(choose()==quest,'no combat diversion');s.combat=false
 s.taxi=true;check(choose()==quest,'no diversion during taxi');s.taxi=false
@@ -72,7 +72,7 @@ F:Event('TAXIMAP_OPENED');check(B.char.flightDiscoveries[3615] and choose()==que
 B.InitDB();check(B.char.flightDiscoveries[3615],'confirmation survives database reinit')
 local save=ForeverPilotLevelingCharDB;ForeverPilotLevelingCharDB={};B.InitDB();check(not B.char.flightDiscoveries[3615],'flight discovery isolated by character');ForeverPilotLevelingCharDB=save;B.InitDB()
 B.char.flightDiscoveries={};C_TaxiMap=nil;TEST.x=48;s=state();s.flights={};flight=choose()
-check(flight.service=='flight' and flight.confidence=='DATABASE' and flight.label:find('Vérifie'),'missing API remains unverified')
+check(flight.service=='flight' and flight.confidence=='DATABASE' and flight.label==B.T('Vérifie ce trajet aérien'),'missing API remains unverified')
 local conversation={kind='turnin',point={map=1413,x=48,y=50}};check(F:Choose(s,conversation)==conversation,'finish conversation already in reach')
 Ding.Services=services;B.Travel.reach=reach;F.cache=nil
 print('PASS: '..count..' class priority and nearby flight discovery checks')
