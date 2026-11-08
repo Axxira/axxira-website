@@ -7,6 +7,13 @@ internal sealed partial class LauncherForm
 {
     private bool _foreverInstalling;
 
+    private void SyncHabsStatus()
+    {
+        _surface.HabsEnabled = _habs.Enabled;
+        _surface.HabsStatus = _habs.Status;
+        _surface.Invalidate();
+    }
+
     private void RefreshForeverPilot()
     {
         try { _surface.Forever = ForeverPilotService.Inspect(); }
@@ -18,7 +25,8 @@ internal sealed partial class LauncherForm
     {
         if (action is not (LauncherAction.ForeverPilot or LauncherAction.LaunchBattleNet or
             LauncherAction.ChooseForeverFolder or LauncherAction.OpenForeverFolder or
-            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot)) return false;
+            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or
+            LauncherAction.ToggleHabsGoals or LauncherAction.PreviewHabsGoals)) return false;
         if (_foreverInstalling || _busy) return true;
         try
         {
@@ -27,6 +35,13 @@ internal sealed partial class LauncherForm
             var state = _surface.Forever;
             switch (action)
             {
+                case LauncherAction.ToggleHabsGoals:
+                    _habs.SetEnabled(!_habs.Enabled);
+                    break;
+                case LauncherAction.PreviewHabsGoals:
+                    _habs.Preview();
+                    WindowState = FormWindowState.Minimized;
+                    break;
                 case LauncherAction.ForeverPilot:
                     break;
                 case LauncherAction.RefreshForeverPilot:
@@ -94,6 +109,8 @@ internal sealed partial class LauncherSurface
 {
     internal ForeverPilotStatus Forever = new(null, null, false, null, null, false, null);
     internal string ForeverMessage = "Les addons se chargent à l'intérieur de World of Warcraft.";
+    internal bool HabsEnabled;
+    internal string HabsStatus = "Désactivé · Lumières visibles uniquement dans WoW";
     private static readonly Color ForeverAccent = Color.FromArgb(84, 224, 200);
 
     private void DrawForeverPilotPage(Graphics g)
@@ -144,11 +161,15 @@ internal sealed partial class LauncherSurface
             : "Dans le jeu, garde Ding et ForeverPilot_Leveling activés. Tape /fpl pour retrouver le guidage.";
         ForeverText(g, tip, 218, 550, 932, 42, 10, Muted);
         using (var fill = new SolidBrush(Panel2))
-        using (var shape = RoundedRect(new Rectangle(214, 608, 940, 70), 10))
+        using (var shape = RoundedRect(new Rectangle(214, 600, 940, 90), 10))
             g.FillPath(fill, shape);
-        ForeverText(g, "UN SEUL REPÈRE EN JEU", 236, 619, 650, 19, 9, ForeverAccent, true);
-        ForeverText(g, "Suis la flèche. « Passer » reporte une quête trop difficile. « Objets » ouvre les conseils.",
-            236, 646, 880, 23, 10, Color.FromArgb(210, 226, 230));
+        ForeverText(g, "LE BUT  ·  CANADIENS DE MONTRÉAL", 236, 610, 650, 20, 10, Color.FromArgb(255, 115, 133), true);
+        ForeverText(g, "Deux gyrophares + bande lumineuse · 10 secondes · Launcher ouvert, même réduit", 236, 636, 650, 20, 9, Muted);
+        ForeverText(g, HabsStatus, 236, 660, 650, 20, 9, HabsEnabled ? ForeverAccent : Muted);
+        ForeverButton(g, new Rectangle(914, 610, 218, 30), HabsEnabled ? "Lumières activées  ✓" : "Activer les lumières",
+            LauncherAction.ToggleHabsGoals, !Busy);
+        ForeverButton(g, new Rectangle(914, 650, 218, 30), "Tester dans WoW  →", LauncherAction.PreviewHabsGoals,
+            Forever.GamePath is not null && !Busy);
         ForeverText(g, ForeverMessage, 218, 702, 720, 43, 9, Muted);
         ForeverButton(g, new Rectangle(982, 704, 172, 32), "Choisir le dossier WoW", LauncherAction.ChooseForeverFolder, !Busy);
     }
