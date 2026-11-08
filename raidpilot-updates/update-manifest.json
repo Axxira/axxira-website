@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T14:05:00.7912879+00:00",
+  "publishedAt": "2026-11-08T14:29:05.5997572+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.24-b652889f7f3c/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "CD58B79358506D04F02503B3C232223B6E7054A7F9FF712ED5CC5932CEA3CB8F",
-    "sizeBytes": 234564528,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.25-2f87d6bafe97/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "F4A2CA7822BC47845046607376FD964B2339C3CC5968DE36821012BA8E81B455",
+    "sizeBytes": 234564527,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.24-b652889f7f3c/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "4D37BBB51525B31D70B1C528430E00546F027E17EBCE2906DC0069F3BC31F195",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.25-2f87d6bafe97/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "49470A3B84AA3A26899E5BAC0C5823083F361F32B2BD3B3432B41EE4E37DC1CB",
     "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.24",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.24-b652889f7f3c/RaidPilot-Launcher-v0.2.24-Windows-x64.zip",
-    "sha256": "D5F08BA49B42FF35F89906D55D69B294931EA96EA763228D908C5CC4274DF654",
-    "sizeBytes": 360605664,
-    "releaseNotes": "Un seul addon avec interface française et anglaise. Objets → Addons : Français, English ou Auto; /fpl lang fr/en/auto. Le choix recharge l’interface hors combat ou attend /reload en combat. Les installations existantes restent en français; les nouvelles suivent la langue du jeu. Traduit le guidage, les profils de classe et spécialisation, les conseils d’objets, le scan HDV et les contrôles de layer. Les noms de quêtes, PNJ et objets restent ceux du jeu; les demandes dans Général restent en anglais. Aucun changement des scores, des pièces HDV ou du panneau compact. Redémarrage complet de WoW requis pour charger le nouveau module. L’abonnement est en préparation et n’est pas activé par cette version."
+    "version": "0.2.25",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.25-2f87d6bafe97/RaidPilot-Launcher-v0.2.25-Windows-x64.zip",
+    "sha256": "214C6798B572764AC95184539538AAF04EB5B52D50C1C7A045249A73C33F3ED5",
+    "sizeBytes": 360611124,
+    "releaseNotes": "Nouveau bouton Options directement sur la flèche : langue Français/English/Auto avec application explicite hors combat, profil classe/spécialisation, pause, taille et position. Onglets Outils et Aide pour retrouver les objets, le scan HDV, ChangeLayer et les quêtes écartées. Bandeau de layer facultatif, affiché si un transfert demande attention. Le launcher RaidPilot reste une édition de test entièrement gratuite sans abonnement. Un ZIP ForeverPilot autonome est produit avec chaque publication pour CurseForge; validation CurseForge distincte. Redémarrage complet de WoW requis pour le nouveau module."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.25",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.25",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.8.1 : options claires et édition de test gratuite",
+      "details": "Nouveau bouton Options directement sur la flèche : langue Français/English/Auto avec application explicite hors combat, profil classe/spécialisation, pause, taille et position. Onglets Outils et Aide pour retrouver les objets, le scan HDV, ChangeLayer et les quêtes écartées. Bandeau de layer facultatif, affiché si un transfert demande attention. Le launcher RaidPilot reste une édition de test entièrement gratuite sans abonnement. Un ZIP ForeverPilot autonome est produit avec chaque publication pour CurseForge; validation CurseForge distincte. Redémarrage complet de WoW requis pour le nouveau module."
+    },
     {
       "component": "launcher",
       "version": "0.2.24",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — scan direct F8 depuis l'inventaire Tarkov",
       "details": "Ouverture rapide StashPilot par Ctrl+Alt+P. Le scanner est armé pour 90 secondes dès l'ouverture ou par le bouton « Scanner avec F8 » : le prochain screenshot manuel F8 créé dans le dossier EFT est lu avec l'OCR local et présenté dans une fenêtre de validation. Les captures F8 du recalage automatique RaidPilot ne sont pas utilisées pour ce scan. Bouton Annuler F8, fallback Choisir PNG, aucune reconnaissance d'icônes ni validation automatique des objets/quantités. Le menu de stash doit être visible lors de F8. Les besoins quêtes/planque restent soumis aux données confirmées."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.3.2",
-      "raidPilotVersion": "0.15.3.2",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — ouverture instantanée et interface plus rapide",
-      "details": "StashPilot s'ouvre désormais directement avec Ctrl+Alt+P, ou depuis le menu RaidPilot; une fenêtre déjà ouverte est ramenée au premier plan au lieu d'être dupliquée. Les actions suivent l'ordre Scanner PNG puis Analyser. Raccourcis Ctrl+Entrée pour analyser et Ctrl+S pour sauvegarder la progression localement. La reconnaissance OCR reste assistée et les objets doivent être confirmés manuellement."
     }
   ]
 }
