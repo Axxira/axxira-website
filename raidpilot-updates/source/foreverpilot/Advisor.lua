@@ -25,15 +25,15 @@ end
 function A:MarketTooltip(tip,link,info)
     local count,bound=self:ItemContext(tip)
     if bound or (info and info.bindType==1) then
-        tip:AddLine("HDV : non vendable (lié)",.65,.7,.75,true)
+        tip:AddLine(B.T("HDV : non vendable (lié)"),.65,.7,.75,true)
     else
         local p,stale=B.Market:Get(link)
         if p then
-            tip:AddLine("HDV : "..B.Market:Money(p.price)..(count and count>1 and " / unité" or ""),.94,.77,.43,true)
-            if count and count>1 then tip:AddLine("Pile de "..count.." : "..B.Market:Money(p.price*count),.94,.77,.43,true) end
-            tip:AddLine("Prix min. · "..B.Market:Age(p.at)..(stale and " · ANCIEN" or "")..(p.partial and " · partiel" or ""),.7,.75,.8,true)
+            tip:AddLine(B.T("HDV : ")..B.Market:Money(p.price)..(count and count>1 and B.T(" / unité") or ""),.94,.77,.43,true)
+            if count and count>1 then tip:AddLine(B.T("Pile de ")..count.." : "..B.Market:Money(p.price*count),.94,.77,.43,true) end
+            tip:AddLine(B.T("Prix min. · ")..B.Market:Age(p.at)..(stale and B.T(" · ANCIEN") or "")..(p.partial and B.T(" · partiel") or ""),.7,.75,.8,true)
         else
-            tip:AddLine("HDV : prix inconnu · scan requis",.65,.7,.75,true)
+            tip:AddLine(B.T("HDV : prix inconnu · scan requis"),.65,.7,.75,true)
         end
     end
     -- WoW already displays the vendor sell price in the base item tooltip.
@@ -41,7 +41,7 @@ end
 function A:UpgradeSummary(r)
     local yes=r.status=="upgrade"
     local no=r.status=="lower" or r.status=="similar" or r.status=="unusable"
-    local title="Upgrade : "..(yes and "OUI" or no and "NON" or "À VÉRIFIER")
+    local title=B.T("Upgrade : ")..(yes and B.T("OUI") or no and B.T("NON") or B.T("À VÉRIFIER"))
     local lines={};local gains,losses={},{}
     for _,v in ipairs(r.deltas or {}) do
         local value=v.value or tonumber(v.text:match("^([%+%-][%d%.]+)")) or 0
@@ -51,11 +51,11 @@ function A:UpgradeSummary(r)
         local out={};for i=1,math.min(2,#values) do out[i]=values[i] end
         return table.concat(out," · ")..(#values>2 and " …" or "")
     end
-    if #gains>0 then lines[#lines+1]="Gains : "..compact(gains) end
-    if #losses>0 then lines[#lines+1]="Pertes : "..compact(losses) end
+    if #gains>0 then lines[#lines+1]=B.T("Gains : ")..compact(gains) end
+    if #losses>0 then lines[#lines+1]=B.T("Pertes : ")..compact(losses) end
     if r.status=="unusable" then lines[#lines+1]=r.text
-    elseif not yes and not no then lines[#lines+1]=r.status=="compare" and "Effets ou restrictions à vérifier." or r.text
-    elseif #gains==0 and #losses==0 then lines[#lines+1]="Aucun gain de stats." end
+    elseif not yes and not no then lines[#lines+1]=r.status=="compare" and B.T("Effets ou restrictions à vérifier.") or r.text
+    elseif #gains==0 and #losses==0 then lines[#lines+1]=B.T("Aucun gain de stats.") end
     return title,lines,yes,no
 end
 function A:Tooltip(tip)
@@ -91,16 +91,16 @@ function A:InstallTooltips()
     end
 end
 function A:Audit()
-    local lines={"Guidage : Ding + ForeverPilot", "Comparaison : intégrée · profils de leveling", "Prix HDV : scan et recherches intégrés"}
+    local lines={B.T("Guidage : Ding + ForeverPilot"), B.T("Comparaison : intégrée · profils de leveling"), B.T("Prix HDV : scan et recherches intégrés")}
     for _,name in ipairs({"TankPilot","Polestar","Auctionator","Pawn","BugSack","!BugGrabber"}) do
         local exists=B.Call(C_AddOns and C_AddOns.DoesAddOnExist,name)
         local loaded=B.Call(C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded,name)
         if exists==nil then exists=B.Call(C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata,name,"Title")~=nil end
-        lines[#lines+1]=name.." : "..(loaded and "chargé" or exists and "installé, non chargé" or "absent")
+        lines[#lines+1]=name.." : "..(loaded and B.T("chargé") or exists and B.T("installé, non chargé") or B.T("absent"))
     end
-    lines[#lines+1]="Aucun addon d'objets supplémentaire obligatoire."
-    lines[#lines+1]="Polestar peut doubler le guidage ; ses réglages restent à ton choix."
-    lines[#lines+1]="BugSack + BugGrabber : utiles pour diagnostiquer les erreurs."
+    lines[#lines+1]=B.T("Aucun addon d'objets supplémentaire obligatoire.")
+    lines[#lines+1]=B.T("Polestar peut doubler le guidage ; ses réglages restent à ton choix.")
+    lines[#lines+1]=B.T("BugSack + BugGrabber : utiles pour diagnostiquer les erreurs.")
     return table.concat(lines,"\n")
 end
 function A:RefreshIfShown()
@@ -110,14 +110,14 @@ end
 function A:Render()
     if not self.frame then return end
     local _,_,label=B.Items:Profile()
-    self.profileButton.label:SetText("Profil : "..(label or "à choisir").."  ›")
+    self.profileButton.label:SetText(B.T("Profil : ")..(label or B.T("à choisir")).."  ›")
     local tab=self.tab or "gear"
     if tab=="market" then
-        self.body:SetText("PRIX CONSULTABLES PARTOUT\n\n"..(B.Market.status or "Ouvre l'hôtel des ventes, puis lance un scan.").."\n\n"..
-            tostring(B.Market.db and B.Market.db.count or 0).." variantes mémorisées pour ce personnage.\n\n"..
-            "Le survol d'un objet affiche le prix minimum observé, sa source et son âge.\n\n"..
-            "Les recherches faites dans l'HDV alimentent aussi l'historique. Les prix anciens ou partiels sont signalés.\n\n"..
-            "Un scan ne donne pas un prix permanent : le marché change. Les annonces ne sont pas des ventes réalisées.")
+        self.body:SetText(B.T("PRIX CONSULTABLES PARTOUT\n\n")..(B.Market.status or B.T("Ouvre l'hôtel des ventes, puis lance un scan.")).."\n\n"..
+            tostring(B.Market.db and B.Market.db.count or 0)..B.T(" variantes mémorisées pour ce personnage.\n\n")..
+            B.T("Le survol d'un objet affiche le prix minimum observé, sa source et son âge.\n\n")..
+            B.T("Les recherches faites dans l'HDV alimentent aussi l'historique. Les prix anciens ou partiels sont signalés.\n\n")..
+            B.T("Un scan ne donne pas un prix permanent : le marché change. Les annonces ne sont pas des ventes réalisées."))
     elseif tab=="addons" then self.body:SetText(self:Audit())
     else
         local rows={};local pending=0;local seen={}
@@ -136,7 +136,7 @@ function A:Render()
             return a.info.name<b.info.name
         end)
         local pages=math.max(1,math.ceil(#rows/3));self.page=math.min(self.page,pages)
-        local lines={"ÉQUIPEMENT DES SACS · "..self.page.."/"..pages,"Survole un objet pour les détails et son prix.",""}
+        local lines={B.T("ÉQUIPEMENT DES SACS · ")..self.page.."/"..pages,B.T("Survole un objet pour les détails et son prix."),""}
         for i=(self.page-1)*3+1,math.min(self.page*3,#rows) do
             local r=rows[i];lines[#lines+1]=r.info.name
             local title,details=self:UpgradeSummary(r)
@@ -144,29 +144,47 @@ function A:Render()
             for _,line in ipairs(details) do lines[#lines+1]=line end
             lines[#lines+1]=""
         end
-        if #rows==0 then lines[#lines+1]="Aucun équipement comparable dans les sacs." end
-        if pending>0 then lines[#lines+1]=pending.." objet(s) en cours de chargement." end
-        lines[#lines+1]="Conseil selon ta classe et ta spécialisation. Effets spéciaux non simulés."
+        if #rows==0 then lines[#lines+1]=B.T("Aucun équipement comparable dans les sacs.") end
+        if pending>0 then lines[#lines+1]=pending..B.T(" objet(s) en cours de chargement.") end
+        lines[#lines+1]=B.T("Conseil selon ta classe et ta spécialisation. Effets spéciaux non simulés.")
         self.body:SetText(table.concat(lines,"\n"));self.pages=pages
     end
     self.scan:SetShown(tab=="market");self.previous:SetShown(tab=="gear");self.next:SetShown(tab=="gear")
     self.profileButton:SetShown(tab=="gear")
+    for _,entry in ipairs(self.languageButtons or {}) do
+        entry.button:SetShown(tab=="addons")
+        entry.button.label:SetText((B.settings.language==entry.key and "• " or "")..entry.label)
+    end
 end
 function A:Create()
     if self.frame then return end
     local f=CreateFrame("Frame","ForeverPilotAdvisorFrame",UIParent);self.frame=f
     f:SetSize(470,465);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetClampedToScreen(true);f:SetFrameStrata("DIALOG");f:EnableMouse(true)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.98)
-    local title=text(f,17,20,18,390,24);title:SetText("ForeverPilot · Objets & HDV")
+    local title=text(f,17,20,18,390,24);title:SetText(B.T("ForeverPilot · Objets & HDV"))
     button(f,"×",430,12,28,function() f:Hide() end)
-    for i,t in ipairs({{"gear","Équipement"},{"market","Prix HDV"},{"addons","Addons"}}) do
+    for i,t in ipairs({{"gear",B.T("Équipement")},{"market",B.T("Prix HDV")},{"addons","Addons"}}) do
         local tab=t[1];button(f,t[2],20+(i-1)*145,52,135,function() self.tab=tab;self:Render() end)
     end
-    self.profileButton=button(f,"Profil",20,91,425,function() self:ToggleProfile() end)
+    self.profileButton=button(f,B.T("Profil"),20,91,425,function() self:ToggleProfile() end)
+    self.languageButtons={}
+    for i,entry in ipairs({{key="fr",label="Français"},{key="en",label="English"},{key="auto",label="Auto"}}) do
+        local key=entry.key
+        entry.button=button(f,entry.label,20+(i-1)*145,91,135,function() B.SetLanguage(key) end)
+        entry.button:SetScript("OnEnter",function()
+            GameTooltip:SetOwner(entry.button,"ANCHOR_BOTTOM")
+            GameTooltip:SetText("Français / English")
+            GameTooltip:AddLine(B.language=="en" and "Apply language and reload the interface. Auto follows the game language." or
+                "Appliquer la langue et recharger l'interface. Auto suit la langue du jeu.",.8,.9,.9,true)
+            GameTooltip:Show()
+        end)
+        entry.button:SetScript("OnLeave",function() GameTooltip:Hide() end)
+        self.languageButtons[i]=entry
+    end
     self.body=text(f,12,20,130,425,280)
-    self.scan=button(f,"Scanner l'HDV",20,422,200,function() B.Market:Scan();self:Render() end)
-    self.previous=button(f,"Précédent",20,422,130,function() self.page=math.max(1,self.page-1);self:Render() end)
-    self.next=button(f,"Suivant",315,422,130,function() self.page=math.min(self.pages or 1,self.page+1);self:Render() end)
+    self.scan=button(f,B.T("Scanner l'HDV"),20,422,200,function() B.Market:Scan();self:Render() end)
+    self.previous=button(f,B.T("Précédent"),20,422,130,function() self.page=math.max(1,self.page-1);self:Render() end)
+    self.next=button(f,B.T("Suivant"),315,422,130,function() self.page=math.min(self.pages or 1,self.page+1);self:Render() end)
     if UISpecialFrames then table.insert(UISpecialFrames,"ForeverPilotAdvisorFrame") end
     f:Hide()
 end
@@ -201,25 +219,25 @@ end
 function A:RenderProfile()
     local I=B.Items;local preview=self.profileMode=="preview"
     local class=preview and self.preview.class or B.Call(Ding.Compat.PlayerClass)
-    local def=I.classes[class];local raceName=B.Call(UnitRace,"player") or "Inconnue"
+    local def=I.classes[class];local raceName=B.Call(UnitRace,"player") or B.T("Inconnue")
     if preview then
-        raceName="Inconnue"
+        raceName=B.T("Inconnue")
         for _,r in ipairs(I:RaceChoices()) do if r.key==self.preview.race then raceName=r.label end end
     end
-    self.raceChoice.label:SetText("Race : "..raceName..(preview and "  ›" or " · détectée"))
-    self.classChoice.label:SetText("Classe : "..(def and def.label or "Inconnue")..(preview and "  ›" or " · détectée"))
+    self.raceChoice.label:SetText(B.T("Race : ")..raceName..(preview and "  ›" or B.T(" · détectée")))
+    self.classChoice.label:SetText(B.T("Classe : ")..(def and def.label or B.T("Inconnue"))..(preview and "  ›" or B.T(" · détectée")))
     self.raceChoice:SetEnabled(preview);self.classChoice:SetEnabled(preview)
     local selection=preview and self.preview.selection or self.liveSelection
-    local selectionLabel=I.profiles[selection] and I.profiles[selection].label or "À choisir"
+    local selectionLabel=I.profiles[selection] and I.profiles[selection].label or B.T("À choisir")
     for _,c in ipairs(I:SpecChoices(class,not preview)) do if c.key==selection then selectionLabel=c.label end end
-    self.specChoice.label:SetText("Spé : "..selectionLabel.."  ›")
+    self.specChoice.label:SetText(B.T("Spé : ")..selectionLabel.."  ›")
     local profile,_,label,reason=I:ResolveProfile(class,selection,not preview)
-    self.profileModeLabel:SetText(preview and "CONSULTER UN AUTRE PERSONNAGE" or "CONSEILS POUR MON PERSONNAGE")
-    self.profileInfo:SetText((label or "").."\n\nPriorités de comparaison :\n"..I:Priorities(profile)..
+    self.profileModeLabel:SetText(preview and B.T("CONSULTER UN AUTRE PERSONNAGE") or B.T("CONSEILS POUR MON PERSONNAGE"))
+    self.profileInfo:SetText((label or "")..B.T("\n\nPriorités de comparaison :\n")..I:Priorities(profile)..
         (reason and "\n\n"..reason or "")..(preview and
-        "\n\nAperçu des priorités. Tes objets gardent le profil de ton personnage connecté. Combinaisons race/classe et bonus raciaux non évalués." or
-        "\n\nAutomatique suit tes talents. Un choix manuel reste prioritaire jusqu'au retour en automatique."))
-    self.profileApply.label:SetText(preview and "Garder cet aperçu" or "Utiliser ce profil")
+        B.T("\n\nAperçu des priorités. Tes objets gardent le profil de ton personnage connecté. Combinaisons race/classe et bonus raciaux non évalués.") or
+        B.T("\n\nAutomatique suit tes talents. Un choix manuel reste prioritaire jusqu'au retour en automatique.")))
+    self.profileApply.label:SetText(preview and B.T("Garder cet aperçu") or B.T("Utiliser ce profil"))
     self.profileApply:SetEnabled(preview or selection=="auto" or profile~=nil)
 end
 function A:CreateProfile()
@@ -228,30 +246,30 @@ function A:CreateProfile()
     f:SetSize(430,478);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetClampedToScreen(true)
     f:SetFrameStrata("DIALOG");f:SetFrameLevel((self.frame and self.frame:GetFrameLevel() or 0)+5);f:EnableMouse(true)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.99)
-    text(f,17,20,16,350,26):SetText("ForeverPilot · Profil")
+    text(f,17,20,16,350,26):SetText(B.T("ForeverPilot · Profil"))
     button(f,"×",390,10,28,function() f:Hide() end)
-    self.liveModeButton=button(f,"Mon personnage",20,52,190,function() self.profileMode="live";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
-    self.previewModeButton=button(f,"Autre personnage",220,52,190,function() self.profileMode="preview";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
+    self.liveModeButton=button(f,B.T("Mon personnage"),20,52,190,function() self.profileMode="live";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
+    self.previewModeButton=button(f,B.T("Autre personnage"),220,52,190,function() self.profileMode="preview";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
     self.profileModeLabel=text(f,10,20,88,390,18);self.profileModeLabel:SetTextColor(.3,.85,.8)
     self.raceChoice=button(f,"Race",20,110,390,function()
         if self.profileMode~="preview" then return end
-        self:ProfileChoices("Choisir une race",B.Items:RaceChoices(),self.preview.race,function(key) self.preview.race=key end)
+        self:ProfileChoices(B.T("Choisir une race"),B.Items:RaceChoices(),self.preview.race,function(key) self.preview.race=key end)
     end)
-    self.classChoice=button(f,"Classe",20,144,390,function()
+    self.classChoice=button(f,B.T("Classe"),20,144,390,function()
         if self.profileMode~="preview" then return end
         local choices={};for _,class in ipairs(B.Items.classOrder) do choices[#choices+1]={key=class,label=B.Items.classes[class].label} end
-        self:ProfileChoices("Choisir une classe",choices,self.preview.class,function(key)
+        self:ProfileChoices(B.T("Choisir une classe"),choices,self.preview.class,function(key)
             self.preview.class=key;self.preview.selection="spec:"..key..":1"
         end)
     end)
-    self.specChoice=button(f,"Spécialisation",20,178,390,function()
+    self.specChoice=button(f,B.T("Spécialisation"),20,178,390,function()
         local preview=self.profileMode=="preview";local class=preview and self.preview.class or B.Call(Ding.Compat.PlayerClass)
-        self:ProfileChoices("Choisir une spécialisation",B.Items:SpecChoices(class,not preview),preview and self.preview.selection or self.liveSelection,function(key)
+        self:ProfileChoices(B.T("Choisir une spécialisation"),B.Items:SpecChoices(class,not preview),preview and self.preview.selection or self.liveSelection,function(key)
             if preview then self.preview.selection=key else self.liveSelection=key end
         end)
     end)
     self.profileInfo=text(f,12,20,218,390,208)
-    self.profileApply=button(f,"Utiliser ce profil",20,440,390,function()
+    self.profileApply=button(f,B.T("Utiliser ce profil"),20,440,390,function()
         if self.profileMode=="preview" then B.char.gearPreview=B.Copy(self.preview)
         elseif not B.Items:SetProfile(self.liveSelection) then return end
         f:Hide();self:RefreshIfShown()
@@ -279,7 +297,7 @@ function A:Init()
     B.Market:Init();self:InstallTooltips()
     if B.AuctionUI then B.AuctionUI:Init() end
     local f=B.UI.frame
-    self.openButton=button(f,"Objets",173,6,54,function() self:Toggle() end)
+    self.openButton=button(f,B.T("Objets"),173,6,54,function() self:Toggle() end)
     local events=CreateFrame("Frame");self.events=events
     for _,e in ipairs({"AUCTION_HOUSE_SHOW","AUCTION_HOUSE_CLOSED","REPLICATE_ITEM_LIST_UPDATE","COMMODITY_SEARCH_RESULTS_UPDATED","COMMODITY_SEARCH_RESULTS_ADDED","ITEM_SEARCH_RESULTS_UPDATED","ITEM_SEARCH_RESULTS_ADDED","BAG_UPDATE_DELAYED","PLAYER_EQUIPMENT_CHANGED","GET_ITEM_INFO_RECEIVED","PLAYER_REGEN_ENABLED"}) do pcall(events.RegisterEvent,events,e) end
     for e in pairs(B.Items.profileEvents) do pcall(events.RegisterEvent,events,e) end
@@ -291,6 +309,6 @@ function A:Init()
                 self.refreshPending=true;C_Timer.After(.25,function() self.refreshPending=false;B.Call(self.RefreshIfShown,self) end)
             end
         end)
-        if not ok then self.lastError=tostring(err);B.Market:Cancel("Prix indisponibles : voir /fpl debug.") end
+        if not ok then self.lastError=tostring(err);B.Market:Cancel(B.T("Prix indisponibles : voir /fpl debug.")) end
     end)
 end

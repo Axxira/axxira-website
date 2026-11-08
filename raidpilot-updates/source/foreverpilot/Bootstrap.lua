@@ -1,5 +1,5 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.7.0", modules = {}, dirty = true }
+local B = { version = "1.8.0", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 function B.List(v) if type(v)=="table" then return v elseif type(v)=="number" then return {v} end return {} end
 function B.Copy(v)
@@ -33,6 +33,7 @@ function B.InitDB()
     B.settings=B.db.brain; B.settings.characters=B.settings.characters or {}
     if B.settings.enabled==nil then B.settings.enabled=true end
     if B.settings.shown==nil then B.settings.shown=true end
+    if B.settings.language==nil then B.settings.language=B.language or "fr" end
     -- Forever permits characters with the same first name on the same realm.
     -- WoW's per-character saved-variable scope is the identity boundary, even
     -- when UnitGUID is absent/protected. Never reuse the legacy name-keyed

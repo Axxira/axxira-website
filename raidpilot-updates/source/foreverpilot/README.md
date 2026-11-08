@@ -1,4 +1,30 @@
-# ForeverPilot Brain v1.7.0
+# ForeverPilot Brain v1.8.0
+
+## Français / English (1.8.0)
+
+One addon, two interface languages. Open **Items → Addons** and choose **English**,
+**Français** or **Auto**. The choice reloads the interface out of combat; during
+combat it is saved and applied with `/reload` later. You can also use
+`/fpl lang en`, `/fpl lang fr` or `/fpl lang auto`.
+
+A fresh installation follows the game language (French or English fallback).
+Existing installations keep French until you choose another language. Guidance,
+gear profiles, auction prices, layer controls and explanations are translated.
+Quest, NPC and item names remain game data. General-chat layer requests stay in
+English in both modes. English command aliases include `items`, `ah`, `profile`
+and `unskip [all or quest ID]`. Changing language never changes a gear profile,
+quest choice, item score or auction-price identity.
+
+Un seul addon, deux langues. **Objets → Addons → Français / English / Auto**
+permet de choisir. Le bouton recharge l'interface hors combat; en combat, le
+choix est enregistré et s'applique au prochain `/reload`. Les installations
+existantes gardent le français. Les nouvelles suivent la langue du jeu, avec
+l'anglais comme repli. Les noms des quêtes, PNJ et objets restent ceux du jeu.
+Les demandes de layer dans Général restent en anglais. La flèche garde sa taille.
+
+Cette version ajoute les langues. L'abonnement Fast XP + suivi de classe prévu
+à 9,99 CAD/mois n'est pas encore activé ni vendu : l'encaissement et l'activation
+nécessitent encore leur raccordement. Aucun changement des droits GPL existants.
 
 Assistant de leveling dynamique pour WoW Forever. Nécessite **Ding** activé.
 L'installation locale se trouve dans `_forever_/Interface/AddOns/ForeverPilot_Leveling`.

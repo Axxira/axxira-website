@@ -58,8 +58,8 @@ function F:Choose(s,quest)
     local direct=quest and quest.point and B.Travel:Distance(quest.point,s)
     if direct and direct<20 and (quest.kind=="accept" or quest.kind=="turnin") then return quest end
     return {kind="service",service="flight",key=pick.key,flightNPC=pick.npc.npc,walkOnly=true,
-        label=pick.status=="undiscovered" and "Débloque ce trajet aérien" or "Vérifie ce trajet aérien",
-        note="Parle à "..(pick.npc.name or "ce maître de vol"),point=pick.npc.point,
+        label=pick.status=="undiscovered" and B.T("Débloque ce trajet aérien") or B.T("Vérifie ce trajet aérien"),
+        note=B.T("Parle à ")..(pick.npc.name or B.T("ce maître de vol")),point=pick.npc.point,
         confidence=pick.status=="undiscovered" and "LIVE / POSITION DB" or "DATABASE",
         batch={},plan=quest and quest.plan,tripIDs=quest and quest.tripIDs}
 end

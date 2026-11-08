@@ -34,7 +34,7 @@ function R:Tick(s,a)
         list[#list+1]={point=B.Copy(a.point),target=a.target and a.target.name,untilAt=s.now+600}
         if #list>=3 then B.char.deferred[a.key]=time()+300 end
         while #list>6 do table.remove(list,1) end
-        self.notice={text="Progression bloquée · nouvel itinéraire",untilAt=s.now+15}
+        self.notice={text=B.T("Progression bloquée · nouvel itinéraire"),untilAt=s.now+15}
         B.Trace("recovery",a.key..":noProgress");self.watch=nil;B.dirty=true
         self.revision=(self.revision or 0)+1
     end
@@ -95,11 +95,11 @@ function R:Defer(action)
     if action.q then
         B.char.skipSequence=(B.char.skipSequence or 0)+1
         B.char.skipped[action.q]={name=action.node and action.node.name or tostring(action.q),at=time(),order=B.char.skipSequence,point=B.Copy(action.point)}
-        self.notice={text="Quête mise de côté",untilAt=B.Now()+12}
-        B.Print("Quête mise de côté : "..B.char.skipped[action.q].name..". Journal conservé. Clic droit sur Passer pour la reprendre.")
+        self.notice={text=B.T("Quête mise de côté"),untilAt=B.Now()+12}
+        B.Print(B.T("Quête mise de côté : ")..B.char.skipped[action.q].name..B.T(". Journal conservé. Clic droit sur Passer pour la reprendre."))
     else
         B.char.deferred[action.key]=time()+300
-        self.notice={text="Étape reportée · 5 min",untilAt=B.Now()+12}
+        self.notice={text=B.T("Étape reportée · 5 min"),untilAt=B.Now()+12}
     end
     B.Trace("defer",action.key)
     self:Replan()
@@ -126,8 +126,8 @@ function R:Resume(q)
         B.char.skipped={}
     elseif row then B.char.skipped[q]=nil
     else return false end
-    self.notice={text="Quête(s) réactivée(s)",untilAt=B.Now()+12}
-    B.Print(q=="all" and "Quêtes écartées réactivées." or "Quête réactivée : "..row.name..". Le guidage recalcule son intérêt.")
+    self.notice={text=B.T("Quête(s) réactivée(s)"),untilAt=B.Now()+12}
+    B.Print(q=="all" and B.T("Quêtes écartées réactivées.") or B.T("Quête réactivée : ")..row.name..B.T(". Le guidage recalcule son intérêt."))
     B.Trace("resume",q);self:Replan()
     return true
 end

@@ -22,16 +22,16 @@ function U:Refresh()
     self.button:SetEnabled(ready);self.title:SetText(title)
     self.title:SetTextColor(ready and .95 or .64,ready and .94 or .71,ready and .81 or .74)
     self.background:SetColorTexture(ready and .10 or .08,ready and .25 or .14,ready and .27 or .16,.97)
-    local message=M.status or "Prêt · lance un scan pour mémoriser les prix."
+    local message=M.status or B.T("Prêt · lance un scan pour mémoriser les prix.")
     if M.pending or M.job then message=M.status or reason
     elseif not ready then
         local count=M.db and M.db.count or 0
         local seconds=M:CooldownRemaining()
         if seconds>0 then
-            message=count.." variantes mémorisées · "..string.format("prochain scan %d:%02d",math.floor(seconds/60),seconds%60)
-            if M.db and M.db.lastScanPartial then message=message.." · partiel" end
+            message=count..B.T(" variantes mémorisées · ")..string.format(B.T("prochain scan %d:%02d"),math.floor(seconds/60),seconds%60)
+            if M.db and M.db.lastScanPartial then message=message..B.T(" · partiel") end
             -- Keep refusals/timeouts visible even while the server cooldown is active.
-            if M.status and (M.status:find("répondu") or M.status:find("refusé") or M.status:find("vide")) then message=M.status end
+            if M.status and (M.status:find(B.T("répondu")) or M.status:find(B.T("refusé")) or M.status:find(B.T("vide"))) then message=M.status end
         else message=reason or message end
     end
     self.status:SetText("ForeverPilot · "..message)
@@ -54,13 +54,13 @@ function U:Attach()
     self.status=label(footer,10)
     f:SetScript("OnClick",function()
         local ok,err=pcall(B.Market.Scan,B.Market)
-        if not ok then self.lastError=tostring(err);B.Market:Cancel("Scan indisponible : voir /fpl debug.") end
+        if not ok then self.lastError=tostring(err);B.Market:Cancel(B.T("Scan indisponible : voir /fpl debug.")) end
         self:Refresh()
     end)
     f:SetScript("OnEnter",function()
-        GameTooltip:SetOwner(f,"ANCHOR_BOTTOMRIGHT");GameTooltip:SetText("ForeverPilot · Scan HDV")
-        GameTooltip:AddLine(B.Market.status or "Mémorise les prix des annonces actuellement proposées.",.8,.9,.9,true)
-        GameTooltip:AddLine("Laisse l'HDV ouvert jusqu'à la fin. Les prix se consultent en survolant les objets.",.8,.9,.9,true)
+        GameTooltip:SetOwner(f,"ANCHOR_BOTTOMRIGHT");GameTooltip:SetText(B.T("ForeverPilot · Scan HDV"))
+        GameTooltip:AddLine(B.Market.status or B.T("Mémorise les prix des annonces actuellement proposées."),.8,.9,.9,true)
+        GameTooltip:AddLine(B.T("Laisse l'HDV ouvert jusqu'à la fin. Les prix se consultent en survolant les objets."),.8,.9,.9,true)
         GameTooltip:Show()
     end)
     f:SetScript("OnLeave",function() GameTooltip:Hide() end)
