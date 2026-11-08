@@ -1,5 +1,5 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.4.1", modules = {}, dirty = true }
+local B = { version = "1.4.2", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 function B.List(v) if type(v)=="table" then return v elseif type(v)=="number" then return {v} end return {} end
 function B.Copy(v)

@@ -22,6 +22,7 @@ function B.SetEnabled(enabled)
             Ding.Panel:Update()
         end
     end
+    if B.AuctionUI then B.AuctionUI:SyncEnabled() end
 end
 function B.Guard(fn)
     local ok,err=pcall(fn)
@@ -141,6 +142,7 @@ function B.Snapshot()
     snapshot.journal=B.Copy(B.Journal.current)
     snapshot.storage=B.char.storage;snapshot.guid=B.char.guid
     snapshot.advisorError=B.Advisor and B.Advisor.lastError
+    snapshot.auctionUIError=B.AuctionUI and B.AuctionUI.lastError
     snapshot.skipped=B.Copy(B.char.skipped)
 end
 function B.SkipCurrent()

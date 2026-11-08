@@ -133,6 +133,14 @@ jobs:
           node raidpilot-updates/source/launcher/Tests/test-release-history.cjs
           if ($LASTEXITCODE -ne 0) { throw "Le registre de notes de version a échoué aux tests." }
 
+      - name: Test ForeverPilot addon
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          npm ci --ignore-scripts --prefix raidpilot-updates/source/foreverpilot-tests
+          npm test --prefix raidpilot-updates/source/foreverpilot-tests
+
       - name: Generate RaidPilot icon
         shell: pwsh
         run: |

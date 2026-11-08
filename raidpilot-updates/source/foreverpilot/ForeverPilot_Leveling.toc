@@ -2,7 +2,7 @@
 ## Title: ForeverPilot |cff48D7E8Brain 1-60|r
 ## Notes: Dynamic quest planning, live validation, recovery, batching and arrow-first guidance. GPLv3.
 ## Author: ForeverPilot Project
-## Version: 1.4.1
+## Version: 1.4.2
 ## Dependencies: Ding
 ## SavedVariables: ForeverPilotLevelingDB
 ## SavedVariablesPerCharacter: ForeverPilotLevelingCharDB
@@ -24,5 +24,6 @@ Navigation.lua
 UI.lua
 Items.lua
 Market.lua
+AuctionUI.lua
 Advisor.lua
 Main.lua
