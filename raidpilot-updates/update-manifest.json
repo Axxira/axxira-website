@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T01:14:03.9764784+00:00",
+  "publishedAt": "2026-11-08T01:45:58.4669569+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.18-3e55ddeaabfd/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "7C7B73909A92A028756EA87DA602DF53BE9055D459C22EC068DA80ACFB13B6A3",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.19-d1e31f83dd77/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "DBF9B489ADD326C54ED7E9B5874D7F82B5FF475242A7AE8809B48766102C5AA0",
     "sizeBytes": 234564529,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.18-3e55ddeaabfd/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "D7BC321D9FCBCCC212EA9281F69B09EAB7F1759D3AD38151B1CA8342347C497A",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.19-d1e31f83dd77/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "5FF04CDDC68D767799DEEDEE886A38139E1CB5719F5B6BC52DE8DC43E93C830F",
     "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.18",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.18-3e55ddeaabfd/RaidPilot-Launcher-v0.2.18-Windows-x64.zip",
-    "sha256": "032C5D3769A81801B69785C399CBB1DB01A5230DC8D173F978B6F444C0B21984",
-    "sizeBytes": 351248755,
-    "releaseNotes": "Option LE BUT dans la page ForeverPilot : deux gyrophares rouges animés, un bandeau lumineux rouge, blanc et bleu et un panneau à DEL pendant 10 secondes. Le launcher lit les buts de Montréal dans le flux public de la LNH et affiche la célébration uniquement lorsque la fenêtre WoW Forever sélectionnée est active. Activer les lumières puis laisser le launcher ouvert, même réduit. Un bouton Tester dans WoW permet un aperçu identifié. Aucun ancien but au démarrage ou après une longue coupure, aucun doublon; les tentatives de tirs de barrage sont exclues. Masquage immédiat hors de WoW, aucune interception des clics. Actualisation du match toutes les 20 secondes : le délai dépend de la publication LNH et peut différer de la télévision. Nécessite WoW en mode fenêtré ou plein écran sans bordure. Aucun son, saisie dans le jeu ni accès à sa mémoire. Option désactivée par défaut. ForeverPilot_Leveling reste en version 1.4.2."
+    "version": "0.2.19",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.19-d1e31f83dd77/RaidPilot-Launcher-v0.2.19-Windows-x64.zip",
+    "sha256": "527A42F18C436EB9C57FE93A899D3AE8A7C2AB60B84B63F89F974F07478E4098",
+    "sizeBytes": 360578121,
+    "releaseNotes": "Corrige les installations sur un nouveau PC : le launcher inclut maintenant Ding v1.8.1 officiel et ForeverPilot_Leveling 1.4.2. Le bouton Installer ForeverPilot + Ding installe les deux addons, jeu fermé. Si ForeverPilot est déjà présent, Installer / réparer Ding complète la dépendance manquante ou cassée. Le contrôle vérifie tous les modules Ding, son édition Forever et sa flèche; la seule présence de Ding.toc ne suffit plus. Un Ding existant valide est conservé. Les versions remplacées sont sauvegardées et les deux addons sont restaurés ensemble si une étape échoue. Une version plus récente de ForeverPilot est préservée lors de la réparation de Ding. Ding est récupéré depuis sa publication officielle avec empreinte SHA-256 fixe; code source, licence GPLv3, crédits et licences des polices sont inclus. Un essai automatique installe le vrai package sur une installation vierge et compare chaque fichier. Après installation, activer Ding et ForeverPilot_Leveling à la sélection du personnage. Le bridge ForeverPilot et WTF sont conservés. Lumières LE BUT : corrige les buts ajoutés tardivement au détail LNH après des actions plus récentes et les buts gagnants publiés après la fin du match. Suivi toutes les 10 secondes en direct, effet de 10 secondes inchangé. Le launcher conserve le résultat de la dernière alerte et un diagnostic local borné pour distinguer réception du but, WoW hors premier plan et erreur d’affichage. Aucun rattrapage des anciens buts au démarrage ou après une longue coupure."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.19",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.19",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot : Ding inclus et détection des buts corrigée",
+      "details": "Corrige les installations sur un nouveau PC : le launcher inclut maintenant Ding v1.8.1 officiel et ForeverPilot_Leveling 1.4.2. Le bouton Installer ForeverPilot + Ding installe les deux addons, jeu fermé. Si ForeverPilot est déjà présent, Installer / réparer Ding complète la dépendance manquante ou cassée. Le contrôle vérifie tous les modules Ding, son édition Forever et sa flèche; la seule présence de Ding.toc ne suffit plus. Un Ding existant valide est conservé. Les versions remplacées sont sauvegardées et les deux addons sont restaurés ensemble si une étape échoue. Une version plus récente de ForeverPilot est préservée lors de la réparation de Ding. Ding est récupéré depuis sa publication officielle avec empreinte SHA-256 fixe; code source, licence GPLv3, crédits et licences des polices sont inclus. Un essai automatique installe le vrai package sur une installation vierge et compare chaque fichier. Après installation, activer Ding et ForeverPilot_Leveling à la sélection du personnage. Le bridge ForeverPilot et WTF sont conservés. Lumières LE BUT : corrige les buts ajoutés tardivement au détail LNH après des actions plus récentes et les buts gagnants publiés après la fin du match. Suivi toutes les 10 secondes en direct, effet de 10 secondes inchangé. Le launcher conserve le résultat de la dernière alerte et un diagnostic local borné pour distinguer réception du but, WoW hors premier plan et erreur d’affichage. Aucun rattrapage des anciens buts au démarrage ou après une longue coupure."
+    },
     {
       "component": "launcher",
       "version": "0.2.18",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "CORTEX V2 — mémoire visuelle des lieux et contrôle d'identité des repères",
       "details": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.0.1",
-      "raidPilotVersion": "0.15.0.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "CORTEX — différencie horodatage F8 réel et correction visuelle silencieuse",
-      "details": "Correctif de sûreté de la première version CORTEX : la fréquence des screenshots en mouvement utilise maintenant exclusivement le dernier F8 natif connu du superviseur. Une relocalisation visuelle, même confirmée, ne peut plus remettre à zéro l'horloge du vrai F8 dans la planification CORTEX. Le moteur reste désactivable pour comparaison. 17 tests de CORTEX couvrent notamment l'absence de fuite entre cartes/raids et cette distinction de temps."
     }
   ]
 }
