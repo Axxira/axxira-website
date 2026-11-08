@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T00:58:53.8854138+00:00",
+  "publishedAt": "2026-11-08T01:14:03.9764784+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.17-9022f4250ef1/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "1C0EC1A6C6FF5D9A0808AB45D55E22EA357607FF3A5BABA4EE05FAC24A5B13B8",
-    "sizeBytes": 234564528,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.18-3e55ddeaabfd/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "7C7B73909A92A028756EA87DA602DF53BE9055D459C22EC068DA80ACFB13B6A3",
+    "sizeBytes": 234564529,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.17-9022f4250ef1/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "2083C551ACA6E390C98CB5797FAE0AF78934EDBC8760C8DDB8870E0E7EFEA021",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.18-3e55ddeaabfd/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "D7BC321D9FCBCCC212EA9281F69B09EAB7F1759D3AD38151B1CA8342347C497A",
     "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.17",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.17-9022f4250ef1/RaidPilot-Launcher-v0.2.17-Windows-x64.zip",
-    "sha256": "FB3D2C1B2127A2179950DA818F8C0C45E5211D4E2152359E305EE173A2BF5EEC",
-    "sizeBytes": 351236313,
-    "releaseNotes": "Le survol des objets affiche le prix HDV par unité et par pile, l'âge du relevé, les données partielles et les objets liés. Le bouton Scanner HDV apparaît dans la barre de titre de l'hôtel des ventes. Le bas de la fenêtre affiche l'attente du serveur, la progression, les variantes mémorisées, les résultats partiels et les messages d'échec. Le compte à rebours de 15 minutes persiste après un rechargement. Les commandes et le panneau Objets restent disponibles. Le scan mémorise des prix consultables au survol des objets; il ne remplit pas les résultats de recherche Blizzard. Aucun achat, vente ou annulation automatique. Tests Lua du chargement à la demande, des clics, délais, fermeture, erreurs serveur et de la réactivation. Le launcher fournit ForeverPilot_Leveling 1.4.2; appliquer sa mise à jour dans le menu ForeverPilot, jeu fermé. Ding reste nécessaire."
+    "version": "0.2.18",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.18-3e55ddeaabfd/RaidPilot-Launcher-v0.2.18-Windows-x64.zip",
+    "sha256": "032C5D3769A81801B69785C399CBB1DB01A5230DC8D173F978B6F444C0B21984",
+    "sizeBytes": 351248755,
+    "releaseNotes": "Option LE BUT dans la page ForeverPilot : deux gyrophares rouges animés, un bandeau lumineux rouge, blanc et bleu et un panneau à DEL pendant 10 secondes. Le launcher lit les buts de Montréal dans le flux public de la LNH et affiche la célébration uniquement lorsque la fenêtre WoW Forever sélectionnée est active. Activer les lumières puis laisser le launcher ouvert, même réduit. Un bouton Tester dans WoW permet un aperçu identifié. Aucun ancien but au démarrage ou après une longue coupure, aucun doublon; les tentatives de tirs de barrage sont exclues. Masquage immédiat hors de WoW, aucune interception des clics. Actualisation du match toutes les 20 secondes : le délai dépend de la publication LNH et peut différer de la télévision. Nécessite WoW en mode fenêtré ou plein écran sans bordure. Aucun son, saisie dans le jeu ni accès à sa mémoire. Option désactivée par défaut. ForeverPilot_Leveling reste en version 1.4.2."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.18",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.18",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot : les lumières de but des Canadiens dans WoW",
+      "details": "Option LE BUT dans la page ForeverPilot : deux gyrophares rouges animés, un bandeau lumineux rouge, blanc et bleu et un panneau à DEL pendant 10 secondes. Le launcher lit les buts de Montréal dans le flux public de la LNH et affiche la célébration uniquement lorsque la fenêtre WoW Forever sélectionnée est active. Activer les lumières puis laisser le launcher ouvert, même réduit. Un bouton Tester dans WoW permet un aperçu identifié. Aucun ancien but au démarrage ou après une longue coupure, aucun doublon; les tentatives de tirs de barrage sont exclues. Masquage immédiat hors de WoW, aucune interception des clics. Actualisation du match toutes les 20 secondes : le délai dépend de la publication LNH et peut différer de la télévision. Nécessite WoW en mode fenêtré ou plein écran sans bordure. Aucun son, saisie dans le jeu ni accès à sa mémoire. Option désactivée par défaut. ForeverPilot_Leveling reste en version 1.4.2."
+    },
     {
       "component": "launcher",
       "version": "0.2.17",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "CORTEX — différencie horodatage F8 réel et correction visuelle silencieuse",
       "details": "Correctif de sûreté de la première version CORTEX : la fréquence des screenshots en mouvement utilise maintenant exclusivement le dernier F8 natif connu du superviseur. Une relocalisation visuelle, même confirmée, ne peut plus remettre à zéro l'horloge du vrai F8 dans la planification CORTEX. Le moteur reste désactivable pour comparaison. 17 tests de CORTEX couvrent notamment l'absence de fuite entre cartes/raids et cette distinction de temps."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.0.0",
-      "raidPilotVersion": "0.15.0.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "CORTEX Core — fusion de confiance, apprentissage des écarts F8 et navigation adaptive",
-      "details": "Première phase de CORTEX : superviseur local connecté aux mouvements, aux corrections visuelles réellement appliquées et à l'audit exact F8. Il suit la session carte/raid/fenêtre, rejette les observations périmées ou incohérentes, comptabilise les corrections visuelles corroborées et retient la dérive réelle observée aux F8 sans enregistrer de coordonnées. Une erreur F8 importante bloque temporairement l'espacement des captures; une nouvelle confiance exige deux mesures correctes. Deux corrections visuelles indépendantes sont nécessaires pour l'intervalle maximal de 12 s. Mode CORTEX désactivable depuis le menu pour comparer avec l'ancien moteur. Il ne s'agit pas encore d'un modèle neuronal ou d'un SLAM complet; précision à confirmer en raid."
     }
   ]
 }
