@@ -126,7 +126,7 @@ function I:Compare(link)
     result.replaced=best.old;result.deltas={}
     for _,s in ipairs(self.stats) do
         local diff=(stats[s[1]] or 0)-(best.stats[s[1]] or 0)
-        if diff~=0 then result.deltas[#result.deltas+1]={text=string.format("%+g %s",diff,s[2]),weight=math.abs(diff*(profile[s[1]] or 0))} end
+        if diff~=0 then result.deltas[#result.deltas+1]={text=string.format("%+g %s",diff,s[2]),value=diff,weight=math.abs(diff*(profile[s[1]] or 0))} end
     end
     table.sort(result.deltas,function(a,b) if a.weight==b.weight then return a.text<b.text end;return a.weight>b.weight end)
     local spell=B.Call(C_Item and C_Item.GetItemSpell or GetItemSpell,info.link)

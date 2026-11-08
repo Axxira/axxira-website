@@ -1,4 +1,4 @@
-# ForeverPilot Brain v1.6.0
+# ForeverPilot Brain v1.6.1
 
 Assistant de leveling dynamique pour WoW Forever. Nécessite **Ding** activé.
 L'installation locale se trouve dans `_forever_/Interface/AddOns/ForeverPilot_Leveling`.
@@ -9,6 +9,19 @@ et combat lui-même. La flèche indique une destination, pas un chemin qui conto
 automatiquement les obstacles.
 
 ## Utilisation
+
+### Objets : verdict simple et pièces (1.6.1)
+
+Le survol commence par **Upgrade : OUI / NON**, avec les gains et pertes de stats
+par rapport à l'équipement porté. Le profil reste visible dans l'en-tête; les points
+internes de score sont retirés de l'infobulle et de la liste des sacs.
+Une donnée manquante ou un effet non évalué reste **À VÉRIFIER**.
+Le calcul du conseil n'est pas modifié par cette simplification.
+
+Les valeurs HDV utilisent les icônes natives or, argent et cuivre. La valeur de la
+pile apparaît seulement pour plusieurs objets. L'âge du prix et les scans partiels
+restent signalés. Aucun prix de vente HDV pour les objets liés; le prix marchand
+n'est plus ajouté une deuxième fois par ForeverPilot.
 
 ### Quêtes de classe et trajets aériens (1.6.0)
 

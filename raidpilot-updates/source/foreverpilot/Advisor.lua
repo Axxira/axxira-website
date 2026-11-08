@@ -26,19 +26,38 @@ end
 function A:MarketTooltip(tip,link,info)
     local count,bound=self:ItemContext(tip)
     if bound or (info and info.bindType==1) then
-        tip:AddLine("HDV : objet lié · non vendable",.65,.7,.75,true)
+        tip:AddLine("HDV : non vendable (lié)",.65,.7,.75,true)
     else
         local p,stale=B.Market:Get(link)
         if p then
-            tip:AddLine("HDV / unité : "..B.Market:Money(p.price),.94,.77,.43,true)
-            if count and count>1 then tip:AddLine("HDV / pile de "..count.." : "..B.Market:Money(p.price*count),.94,.77,.43,true) end
-            tip:AddLine("Minimum observé · "..B.Market:Age(p.at)..(stale and " · ANCIEN" or "")..(p.partial and " · partiel" or ""),.7,.75,.8,true)
+            tip:AddLine("HDV : "..B.Market:Money(p.price)..(count and count>1 and " / unité" or ""),.94,.77,.43,true)
+            if count and count>1 then tip:AddLine("Pile de "..count.." : "..B.Market:Money(p.price*count),.94,.77,.43,true) end
+            tip:AddLine("Prix min. · "..B.Market:Age(p.at)..(stale and " · ANCIEN" or "")..(p.partial and " · partiel" or ""),.7,.75,.8,true)
         else
-            tip:AddLine("HDV : prix inconnu",.65,.7,.75,true)
-            tip:AddLine("Aucun prix observé pour cette variante. Scanne l'HDV ou recherche cet objet.",.58,.65,.7,true)
+            tip:AddLine("HDV : prix inconnu · scan requis",.65,.7,.75,true)
         end
     end
-    if info and info.vendor then tip:AddLine("Marchand / unité : "..B.Market:Money(info.vendor),.75,.8,.85,true) end
+    -- WoW already displays the vendor sell price in the base item tooltip.
+end
+function A:UpgradeSummary(r)
+    local yes=r.status=="upgrade"
+    local no=r.status=="lower" or r.status=="similar" or r.status=="unusable"
+    local title="Upgrade : "..(yes and "OUI" or no and "NON" or "À VÉRIFIER")
+    local lines={};local gains,losses={},{}
+    for _,v in ipairs(r.deltas or {}) do
+        local value=v.value or tonumber(v.text:match("^([%+%-][%d%.]+)")) or 0
+        if value>0 then gains[#gains+1]=v.text elseif value<0 then losses[#losses+1]=v.text end
+    end
+    local function compact(values)
+        local out={};for i=1,math.min(2,#values) do out[i]=values[i] end
+        return table.concat(out," · ")..(#values>2 and " …" or "")
+    end
+    if #gains>0 then lines[#lines+1]="Gains : "..compact(gains) end
+    if #losses>0 then lines[#lines+1]="Pertes : "..compact(losses) end
+    if r.status=="unusable" then lines[#lines+1]=r.text
+    elseif not yes and not no then lines[#lines+1]=r.status=="compare" and "Effets ou restrictions à vérifier." or r.text
+    elseif #gains==0 and #losses==0 then lines[#lines+1]="Aucun gain de stats." end
+    return title,lines,yes,no
 end
 function A:Tooltip(tip)
     if self.busy or not B.settings or not B.settings.enabled then return end
@@ -49,21 +68,15 @@ function A:Tooltip(tip)
     self.busy=true
     local ok,err=pcall(function()
         local info=B.Call(B.Items.Info,B.Items,link)
-        tip:AddLine(" ");tip:AddLine("ForeverPilot · Objets",.4,.85,.8)
-        self:MarketTooltip(tip,link,info)
-        -- Missing comparison data must not hide a perfectly usable market price.
         local r=B.Call(B.Items.Compare,B.Items,link)
+        tip:AddLine(" ");tip:AddLine("ForeverPilot"..(r and r.profile and " · "..r.profile or ""),.4,.85,.8)
+        -- Missing comparison data must not hide a perfectly usable market price.
         if r then
-            local green=r.status=="upgrade"
-            tip:AddLine(r.text,green and .4 or .9,green and .9 or .77,green and .65 or .5,true)
-            if r.profile then
-                tip:AddLine(r.profile..(r.gain and string.format(" · %+.1f points estimés",r.gain) or ""),.7,.78,.84,true)
-                if r.slot then tip:AddLine("Comparé à : "..(B.Items.slotNames[r.slot] or r.slot),.7,.78,.84,true) end
-            end
-            local d={};for i,v in ipairs(r.deltas or {}) do if i<=3 then d[#d+1]=v.text end end
-            if #d>0 then tip:AddLine(table.concat(d," · "),.8,.85,.9,true) end
-            tip:AddLine("Score indicatif ; effets spéciaux non simulés.",.58,.65,.7,true)
+            local title,lines,yes,no=self:UpgradeSummary(r)
+            tip:AddLine(title,yes and .4 or .94,yes and .9 or no and .60 or .77,yes and .65 or .43,true)
+            for _,line in ipairs(lines) do tip:AddLine(line,.8,.85,.9,true) end
         end
+        self:MarketTooltip(tip,link,info)
     end)
     self.busy=false
     if not ok then self.lastError=tostring(err) end
@@ -124,9 +137,9 @@ function A:Render()
         local lines={"ÉQUIPEMENT DES SACS · "..self.page.."/"..pages,"Survole un objet pour les détails et son prix.",""}
         for i=(self.page-1)*3+1,math.min(self.page*3,#rows) do
             local r=rows[i];lines[#lines+1]=r.info.name
-            lines[#lines+1]=r.text..(r.gain and string.format(" (%+.1f pts)",r.gain) or "")
-            local d={};for j,v in ipairs(r.deltas or {}) do if j<=2 then d[#d+1]=v.text end end
-            if #d>0 then lines[#lines+1]=table.concat(d," · ") end
+            local title,details=self:UpgradeSummary(r)
+            lines[#lines+1]=title
+            for _,line in ipairs(details) do lines[#lines+1]=line end
             lines[#lines+1]=""
         end
         if #rows==0 then lines[#lines+1]="Aucun équipement comparable dans les sacs." end
