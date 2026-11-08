@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T03:31:12.0843002+00:00",
+  "publishedAt": "2026-11-08T04:40:18.5134883+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.20-a8e90f14dda5/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "791C1197CC573B9840CA6AD9EC90E77857AA2C08198F3DAA5B43B7F2049ACC85",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.21-842ca3593709/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "5ABEEA039AE30E9DF27CA9D5354F265E34ABBDF9994541B35D0117CF4C721F4B",
     "sizeBytes": 234564527,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.20-a8e90f14dda5/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "2C7929C5F2875B4CBE023641CDAA7C421751B12442076CD8176C465113D28710",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.21-842ca3593709/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "3D0E24675B2A998599B9A8832C99CAAAF3286CE9FED8E448350203C446726BF1",
     "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.20",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.20-a8e90f14dda5/RaidPilot-Launcher-v0.2.20-Windows-x64.zip",
-    "sha256": "0E7D080C5B5317CAC6ECA86040CCBA7D8F652F60FF1B0A50E749B69C717AF493",
-    "sizeBytes": 360585713,
-    "releaseNotes": "Ajoute un bouton discret sous le guidage et un panneau facultatif accessible avec /fpl layers. Recherche sur demande de volontaires ForeverPilot dans la même zone, via son propre canal et la guilde; un seul volontaire est sélectionné. Le mode Aider les autres est facultatif et désactivé par défaut. Les invitations sont acceptées manuellement dans WoW. Le bouton Demander dans Général prépare un message modifiable, sans l’envoyer. Lorsqu’un transfert est déjà proposé par WoW, Changer maintenant permet de le confirmer hors combat. Seule la confirmation serveur affiche un succès; rejoindre un groupe ne prouve pas un changement. Gestion des délais, combat, instances, annulation, refus serveur et anti-spam persistant après rechargement. Aucun départ de groupe automatique, aucun numéro de layer inventé. Code original, sans copie de ChangeLayer. Les utilisateurs doivent avoir ForeverPilot 1.5.0 et activer l’aide pour répondre à la recherche. Ding reste inclus; le bridge ForeverPilot est préservé. Appliquer la mise à jour dans la page ForeverPilot du launcher, jeu fermé."
+    "version": "0.2.21",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.21-842ca3593709/RaidPilot-Launcher-v0.2.21-Windows-x64.zip",
+    "sha256": "39A2E1919F40479ADA7C91AD9DAB3B3E432D2458B72AC1F1333B1E5D24379C41",
+    "sizeBytes": 360589128,
+    "releaseNotes": "Les quêtes de classe de Ding passent en priorité dans la flèche, avec leurs prérequis et les restrictions de race et de niveau. Les chaînes de classe Forever utilisent aussi les liens explicites du guide lorsque la base est incomplète; les offres réelles du PNJ restent prioritaires. Les quêtes indisponibles, trop difficiles ou mises de côté ne bloquent pas le guidage. À proximité d'un nouveau village, une halte courte propose le maître de vol allié ou neutre encore non confirmé. Ouvrir sa carte confirme le trajet et reprend les quêtes; aucun vol automatique. Le panneau conserve sa taille. Le bouton Changer de layer utilise maintenant ChangeLayer, sans exiger ForeverPilot chez les volontaires. Le launcher télécharge ChangeLayer intact depuis CurseForge, avec contrôle SHA-256 et sauvegarde. Demande dans Général en anglais. Redémarrer complètement WoW via Battle.net après installation, puis activer Ding, ForeverPilot_Leveling et ChangeLayer. Ding reste inclus; le bridge et les réglages personnels sont préservés."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.21",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.21",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot 1.6.0 : classe, maîtres de vol et ChangeLayer",
+      "details": "Les quêtes de classe de Ding passent en priorité dans la flèche, avec leurs prérequis et les restrictions de race et de niveau. Les chaînes de classe Forever utilisent aussi les liens explicites du guide lorsque la base est incomplète; les offres réelles du PNJ restent prioritaires. Les quêtes indisponibles, trop difficiles ou mises de côté ne bloquent pas le guidage. À proximité d'un nouveau village, une halte courte propose le maître de vol allié ou neutre encore non confirmé. Ouvrir sa carte confirme le trajet et reprend les quêtes; aucun vol automatique. Le panneau conserve sa taille. Le bouton Changer de layer utilise maintenant ChangeLayer, sans exiger ForeverPilot chez les volontaires. Le launcher télécharge ChangeLayer intact depuis CurseForge, avec contrôle SHA-256 et sauvegarde. Demande dans Général en anglais. Redémarrer complètement WoW via Battle.net après installation, puis activer Ding, ForeverPilot_Leveling et ChangeLayer. Ding reste inclus; le bridge et les réglages personnels sont préservés."
+    },
     {
       "component": "launcher",
       "version": "0.2.20",
@@ -253,16 +263,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — progression conservée localement entre les sessions",
       "details": "Le conseiller StashPilot possède maintenant une sauvegarde locale versionnée et atomique de l'inventaire et des objectifs saisis/confirmés. Boutons explicites Sauvegarder et Charger, restauration automatique au démarrage si le fichier est valide. Le fichier reste dans %LOCALAPPDATA%/RaidPilot, pas de transmission réseau, limites de taille et gestion des données corrompues. Le scan automatique d'inventaire, planque et quêtes n'est pas encore implémenté; aucune vente automatique n'est effectuée."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.2.0",
-      "raidPilotVersion": "0.15.2.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — premier conseiller de quêtes, planque et inventaire",
-      "details": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
     }
   ]
 }
