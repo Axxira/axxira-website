@@ -9,6 +9,11 @@ end
 function P:ClassPriority(n,s)
     return B.Journal:IsClass(n) or (n.classPrerequisite and B.Progression:Unlock(n,s,false,true)) or false
 end
+function P:ClassPriorityHere(a,s)
+    if not self:ClassPriority(a.node,s) then return false end
+    return not not (s.log[a.q] or (B.Validator.npc and B.Validator.offers[a.q])
+        or (a.travel<=300 and B.Travel:Distance(a.point,s)))
+end
 function P:SafePoints(target,s,q)
     local points={}
     for _,p in ipairs(target.points or {}) do
@@ -107,6 +112,10 @@ function P:Action(n,kind,s,recovery)
     a.levelFit=B.Progression:Evaluate(n,kind,s,a)
     if a.levelFit.retire then return nil,"outleveled" end
     a.travel=B.Travel:Seconds(a.point,s)
+    -- Keep distant class offers in the candidate set, without interrupting a
+    -- local outing for an unconfirmed pickup on another continent. Held class
+    -- chains and real offers retain their strict priority.
+    a.classPriority=self:ClassPriorityHere(a,s)
     if a.point.observed and reason~="LIVE" then a.confidence=kind=="accept" and B.T("OBSERVÉ / À CONFIRMER") or B.T("LIVE / POSITION OBSERVÉE") end
     local xp,measured=B.Graph:XP(n,s);a.xp=xp;a.measuredXP=measured
     local remaining=1
@@ -128,6 +137,8 @@ function P:Action(n,kind,s,recovery)
     a.score=xp/(a.travel+a.work+1)*(1+math.min(0.3,count(n.next)*0.06))/(1+risk)
     a.risk=risk
     a.score=a.score*a.levelFit.factor
+    a.reward=B.Items:QuestReward(n.id)
+    if a.reward then a.score=a.score*(1+a.reward.bonus) end
     if kind=="accept" then a.score=a.score*0.8 end
     if recovery then a.score=a.score*1.15;a.confidence="RECOVERY" end
     a.note=a.note or context and context.step.note
@@ -178,10 +189,27 @@ function P:Candidates(s)
     self.blocked=blocked
     return out
 end
+-- Compare two complete itineraries, not just distance to the next NPC.
+-- Ready XP has already been earned: banking it must not repeatedly send the
+-- player away from useful objectives and back over the same road.
+function P:BeforeReturn(hub,field,s)
+    if hub.kind~="turnin" or field.kind~="complete" or s.count>=s.limit-1 or hub.travel<45
+        or field.travel>180 or (field.work or 300)>900 or field.q==hub.q then return end
+    local finish=B.Travel:Nearest(B.Graph:Locations(field.node,"turnin"),field.point)
+    if not finish then return end
+    if not B.Travel:Distance(s,hub.point) or not B.Travel:Distance(s,field.point)
+        or not B.Travel:Distance(finish,hub.point) then return end
+    local backtrack=B.Travel:Between(s,hub.point,s,true)+B.Travel:Between(hub.point,field.point,s)
+        +B.Travel:Between(field.point,finish,s)
+    local together=B.Travel:Between(s,field.point,s,true)+B.Travel:Between(field.point,finish,s)
+        +B.Travel:Between(finish,hub.point,s)
+    local saved=backtrack-together
+    if saved>=45 then return saved end
+end
 function P:Batch(actions,s)
     local top={};for i=1,math.min(60,#actions) do top[i]=actions[i] end
     for _,a in ipairs(top) do
-        a.batch={};a.returnPenalty=1;local unique={[a.q]=true};local bonus=0
+        a.batch={};a.returnPenalty=1;a.beforeReturn=nil;local unique={[a.q]=true};local bonus=0
         for _,b in ipairs(top) do
             if not unique[b.q] and b~=a and ((a.kind=="turnin" and b.kind=="turnin") or (a.kind~="turnin" and b.kind~="turnin")) then
                 local d=B.Travel:Distance(a.point,b.point)
@@ -192,14 +220,17 @@ function P:Batch(actions,s)
             end
         end
         a.score=a.score+bonus
-        -- Penalize returning to a hub while useful field work remains on the way.
+        -- Account for the subsequent trip back into the field, including its
+        -- own turn-in. Unknown continent transfers never become a saving.
         if a.kind=="turnin" and s.count<s.limit-1 then
             for _,b in ipairs(top) do
-                local d=B.Travel:Distance(b.point,s)
-                if b.kind=="complete" and d and d<250 and b.travel<a.travel and a.travel>60 then
-                    a.returnPenalty=0.42;a.score=a.score*a.returnPenalty;break
+                local saved=self:BeforeReturn(a,b,s)
+                if saved and (not a.beforeReturn or saved>a.beforeReturn.seconds) then
+                    a.beforeReturn={q=b.q,seconds=saved}
+                    a.returnPenalty=math.max(.15,math.min(.42,(b.work or 300)/((b.work or 300)+saved)))
                 end
             end
+            a.score=a.score*a.returnPenalty
         end
     end
     table.sort(top,better)

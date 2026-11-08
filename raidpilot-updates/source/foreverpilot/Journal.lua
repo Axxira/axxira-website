@@ -29,6 +29,8 @@ function J:Classify(q,s)
         status="abandon";reason=B.T("Quête de métier optionnelle, exclue du leveling rapide.")
     elseif n and n.fast then
         status="fast";reason=B.T("Incluse dans le parcours de leveling de ton personnage.")
+    elseif n and B.Graph:LocalOpportunity(n,s) then
+        status="fast";reason=B.T("Quête locale ajoutée : boucle solo courte, adaptée à ton niveau.")
     elseif not n then
         status="unknown";reason=B.T("Données manquantes : impossible d'exclure une quête de classe ou un prérequis.")
     else

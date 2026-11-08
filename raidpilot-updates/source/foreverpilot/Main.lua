@@ -100,6 +100,7 @@ end
 local f=CreateFrame("Frame")
 for _,ev in ipairs({"PLAYER_LOGIN","PLAYER_ENTERING_WORLD","PLAYER_XP_UPDATE","PLAYER_LEVEL_UP","QUEST_LOG_UPDATE","QUEST_ACCEPTED","QUEST_TURNED_IN","QUEST_REMOVED","QUEST_WATCH_UPDATE","ZONE_CHANGED_NEW_AREA","BAG_UPDATE_DELAYED","GOSSIP_SHOW","GOSSIP_CLOSED","QUEST_GREETING","QUEST_DETAIL","QUEST_PROGRESS","QUEST_COMPLETE","QUEST_FINISHED","PLAYER_DEAD","PLAYER_ALIVE","PLAYER_UNGHOST","TAXIMAP_OPENED","HEARTHSTONE_BOUND","PLAYER_LOGOUT"}) do pcall(f.RegisterEvent,f,ev) end
 for _,ev in ipairs({"MERCHANT_CLOSED","UPDATE_INVENTORY_DURABILITY","UNIT_HEALTH","UNIT_POWER_UPDATE","ZONE_CHANGED","ZONE_CHANGED_INDOORS","TAXI_NODE_STATUS_CHANGED"}) do pcall(f.RegisterEvent,f,ev) end
+for _,ev in ipairs({"GET_ITEM_INFO_RECEIVED","PLAYER_EQUIPMENT_CHANGED"}) do pcall(f.RegisterEvent,f,ev) end
 f:SetScript("OnEvent",function(_,event,...)
     local q,xp=...
     if (event=="UNIT_HEALTH" or event=="UNIT_POWER_UPDATE") and q~="player" then return end
@@ -115,6 +116,11 @@ f:SetScript("OnEvent",function(_,event,...)
             return
         end
         if not B.settings.enabled or B.premiumBlocked then return end
+        if event=="QUEST_DETAIL" or event=="QUEST_COMPLETE" then B.Knowledge.rewardDialog=true;B.Knowledge:ReadRewards(true)
+        elseif event=="QUEST_FINISHED" or event=="GOSSIP_CLOSED" then B.Knowledge.rewardDialog=nil
+        elseif event=="QUEST_LOG_UPDATE" then B.Knowledge:ReadRewards(false)
+        elseif event=="GET_ITEM_INFO_RECEIVED" then B.Knowledge:ReadRewards(B.Knowledge.rewardDialog) end
+        if event=="GET_ITEM_INFO_RECEIVED" or event=="PLAYER_EQUIPMENT_CHANGED" then B.Planner.signature=nil end
         if event=="TAXIMAP_OPENED" or event=="TAXI_NODE_STATUS_CHANGED" or event=="ZONE_CHANGED" or event=="ZONE_CHANGED_INDOORS" or event=="ZONE_CHANGED_NEW_AREA" then B.FlightPaths:Event(event) end
         if event=="QUEST_TURNED_IN" then
             if type(q)=="number" then
