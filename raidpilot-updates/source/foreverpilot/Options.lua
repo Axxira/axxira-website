@@ -49,6 +49,16 @@ function O:Render()
     self.layerShortcut.label:SetText(B.settings.layerShortcut and B.T("Raccourci layer : affiché") or B.T("Raccourci layer : masqué"));self.layerShortcut:Paint(B.settings.layerShortcut)
     local canResume=B.Recovery and B.Recovery:LastSkipped()~=nil
     self.resume:Paint(false,canResume)
+    local free=B.distribution=="raidpilot-test"
+    local active=B.HasPremium()
+    self.accessTitle:SetText(free and B.T("Édition RaidPilot : tout est gratuit") or active and B.T("ForeverPilot Premium actif") or B.T("Activer Fast XP et le suivi de classe"))
+    self.accessDetails:SetText(free and B.T("Toutes les fonctions sont incluses dans ton édition de test. Aucun abonnement ni connexion ne sont nécessaires.") or active and B.T("Ton accès est chargé. Le compagnon vérifie le renouvellement lorsque tu l'ouvres. Garde-le ouvert pour actualiser l'accès.") or B.T("1. Ouvre le portail ci-dessous.\n2. Abonne-toi sur PayPal et garde ta clé personnelle.\n3. Ouvre le compagnon Windows, colle ta clé, puis reconnecte-toi à WoW."))
+    self.accessLink:SetShown(not free);self.copyLink:SetShown(not free)
+end
+function O:MaybeWelcome()
+    if not B.char or not B.settings or not B.settings.enabled or B.char.welcomeSeen or B.Call(InCombatLockdown)==true or B.Call(UnitIsDeadOrGhost,"player")==true then return end
+    self:Toggle(B.premiumBlocked and "subscription" or "general")
+    B.char.welcomeSeen=true
 end
 function O:Create()
     if self.frame then return end
@@ -61,9 +71,9 @@ function O:Create()
     text(f,11,20,43,440,17,B.T("Réglages, profil et outils au même endroit."),true)
     button(f,"×",467,16,32,function() f:Hide() end)
     self.pages={};self.tabs={}
-    for i,entry in ipairs({{"general",B.T("Général")},{"tools",B.T("Outils")},{"help",B.T("Aide")}}) do
+    for i,entry in ipairs({{"general",B.T("Général")},{"tools",B.T("Outils")},{"help",B.T("Aide")},{"subscription",B.T("Abonnement")}}) do
         local key=entry[1]
-        self.tabs[key]=button(f,entry[2],20+(i-1)*164,74,152,function() self.tab=key;self:Render() end)
+        self.tabs[key]=button(f,entry[2],20+(i-1)*122,74,114,function() self.tab=key;self:Render() end)
         local p=CreateFrame("Frame",nil,f);p:SetPoint("TOPLEFT",f,"TOPLEFT",0,0);p:SetSize(520,550);self.pages[key]=p
     end
     local p=self.pages.general
@@ -127,6 +137,14 @@ function O:Create()
     button(p,B.T("Recalculer le guidage"),270,462,230,function()
         B.Recovery:Reset();B.Planner.current=nil;B.Guard(B.Update);self:Render()
     end)
+    p=self.pages.subscription
+    self.accessTitle=text(p,16,20,132,480,50)
+    self.accessDetails=text(p,12,20,198,480,148,"",true)
+    self.accessLink=CreateFrame("EditBox",nil,p,"InputBoxTemplate");self.accessLink:SetPoint("TOPLEFT",p,"TOPLEFT",25,-365);self.accessLink:SetSize(470,30)
+    self.accessLink:SetAutoFocus(false);self.accessLink:SetFontObject(ChatFontNormal);self.accessLink:SetText(B.subscriptionURL)
+    self.accessLink:SetScript("OnEscapePressed",function(box) box:ClearFocus() end)
+    self.copyLink=button(p,B.T("Sélectionner le lien (Ctrl+C)"),20,410,480,function() self.accessLink:SetText(B.subscriptionURL);self.accessLink:SetFocus();self.accessLink:HighlightText() end)
+    text(p,11,20,465,480,45,B.T("Les outils HDV et layers restent accessibles. Ding fournit le guide de base."),true)
     text(f,10,20,526,480,16,"ForeverPilot "..B.version.."  ·  Français / English",true)
     if UISpecialFrames then table.insert(UISpecialFrames,"ForeverPilotOptionsFrame") end
     for _,event in ipairs({"PLAYER_REGEN_ENABLED","PLAYER_REGEN_DISABLED","PLAYER_TALENT_UPDATE","PLAYER_LEVEL_UP"}) do pcall(f.RegisterEvent,f,event) end

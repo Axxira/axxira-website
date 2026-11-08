@@ -53,6 +53,19 @@ for(const language of ['en','fr']){
  assert(B.Market:Money(20405):find("GoldIcon",1,true) and B.Market:Money(20405):find("CopperIcon",1,true))
  B.UI:Create();B.Options:Toggle()
  local O=B.Options
+ assert(B.distribution=="raidpilot-test" and B.HasPremium() and B.HasPremium("class"))
+ ForeverPilotAccess={environment="sandbox",expires=0};assert(B.HasPremium())
+ B.distribution="public"
+ assert(not B.HasPremium() and not B.HasPremium("class"))
+ ForeverPilotAccess={environment="sandbox",expires=time()+1000,fastXP=true,classGuidance=true};assert(not B.HasPremium())
+ ForeverPilotAccess={environment="live",expires=time()+1000,fastXP=true,classGuidance=false};assert(B.HasPremium() and not B.HasPremium("class"))
+ ForeverPilotAccess.expires=time()-1;assert(not B.HasPremium())
+ ForeverPilotAccess.expires=0/0;assert(not B.HasPremium())
+ B.distribution="raidpilot-test";ForeverPilotAccess=nil
+ O.frame:Hide();B.char.welcomeSeen=nil;TEST.combat=true;O:MaybeWelcome();assert(not O.frame:IsShown() and not B.char.welcomeSeen)
+ TEST.combat=false;O:MaybeWelcome();assert(O.frame:IsShown() and B.char.welcomeSeen)
+ O.frame:Hide();O:MaybeWelcome();assert(not O.frame:IsShown())
+ O:Toggle()
  assert(O.frame:IsShown() and O.pages.general:IsShown() and not O.pages.help:IsShown())
  assert(O.languages.auto.label.text==${JSON.stringify(english?'Auto · game language':'Auto · langue du jeu')})
  local other=B.language=="en" and "fr" or "en"
@@ -71,7 +84,7 @@ for(const language of ['en','fr']){
  O:Toggle();assert(not O.frame:IsShown())
  O:Toggle();assert(O.tab=="general" and O.frame:IsShown())
  assert(not B.UI.tag:IsShown())
- `,'localized behavior '+language);checks+=16;
+ `,'localized behavior '+language);checks+=28;
 }
 // Format arguments must retain their order and types in all translated messages.
 const source=fs.readFileSync(path.join(addon,'Locale.lua'),'utf8');

@@ -23,6 +23,16 @@ The CurseForge upload is currently performed through the signed-in author portal
 No upload token has been configured in GitHub. Never describe this step as
 automatic until a securely stored token and a verified upload workflow exist.
 
-The public CAD 9.99/month subscription is still in preparation. No payment gate
-is active in v1.8.1. Do not activate billing before payment verification and
-activation work end to end. The RaidPilot test edition remains free afterward.
+From v1.9.0 the standalone public package changes only the Bootstrap distribution
+marker from `raidpilot-test` to `public`. The launcher payload keeps `raidpilot-test`
+and always grants all features, even offline or with expired access. The packaging
+script checks the marker and the exact transformed bytes. Never install the public
+package into the RaidPilot test payload.
+
+The public CAD 9.99/month service lives in source/subscriptions; its Windows companion
+lives in source/foreverpilot-companion. CI validates both and releases the standalone
+companion ZIP. Complete sandbox payment, signed activation, cancellation and refund
+checks before enabling production checkout. Production checkout also requires the
+verified companion release URL. Do not describe a sandbox charge as a real payment.
+The local Lua client is modifiable GPL code, not tamperproof DRM. Keep private keys,
+accounts and test receipts outside the public repository and all client archives.

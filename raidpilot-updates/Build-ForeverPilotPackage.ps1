@@ -13,14 +13,23 @@ New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $zipPath = Join-Path (Resolve-Path $OutputDirectory).Path "ForeverPilot-v$version.zip"
 if (Test-Path -LiteralPath $zipPath) { throw 'Refusing to overwrite an existing publication archive.' }
 Add-Type -AssemblyName System.IO.Compression
+function Get-PackageBytes([string]$Relative) {
+    $bytes = [IO.File]::ReadAllBytes((Join-Path $addonRoot $Relative))
+    if ($Relative -eq 'Bootstrap.lua') {
+        $text = [Text.Encoding]::UTF8.GetString($bytes)
+        $marker = 'B.distribution = "raidpilot-test"'
+        if (($text.Split($marker)).Count -ne 2) { throw 'Distribution marker missing or duplicated.' }
+        $bytes = [Text.Encoding]::UTF8.GetBytes($text.Replace($marker, 'B.distribution = "public"'))
+    }
+    return ,$bytes
+}
 $stream = [IO.File]::Open($zipPath, [IO.FileMode]::CreateNew)
 $archive = [IO.Compression.ZipArchive]::new($stream, [IO.Compression.ZipArchiveMode]::Create)
 try {
     foreach ($relative in $expected) {
         $entry = $archive.CreateEntry(('ForeverPilot_Leveling/' + $relative.Replace('\','/')), [IO.Compression.CompressionLevel]::Optimal)
-        $inputStream = [IO.File]::OpenRead((Join-Path $addonRoot $relative))
         $outputStream = $entry.Open()
-        try { $inputStream.CopyTo($outputStream) } finally { $inputStream.Dispose(); $outputStream.Dispose() }
+        try { $bytes=Get-PackageBytes $relative; $outputStream.Write($bytes,0,$bytes.Length) } finally { $outputStream.Dispose() }
     }
 } finally { $archive.Dispose(); $stream.Dispose() }
 $check = [IO.Compression.ZipFile]::OpenRead($zipPath)
@@ -31,7 +40,8 @@ try {
         $relative = $entry.FullName.Substring('ForeverPilot_Leveling/'.Length)
         $entryStream=$entry.Open()
         try { $actual=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($entryStream)) } finally { $entryStream.Dispose() }
-        if ($actual -ne (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $addonRoot $relative)).Hash) { throw "Archive differs: $relative" }
+        $expectedHash=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([byte[]](Get-PackageBytes $relative)))
+        if ($actual -ne $expectedHash) { throw "Archive differs: $relative" }
     }
 } finally { $check.Dispose() }
 [pscustomobject]@{Version=$version;Path=$zipPath;Files=$expected.Count;SHA256=(Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash}

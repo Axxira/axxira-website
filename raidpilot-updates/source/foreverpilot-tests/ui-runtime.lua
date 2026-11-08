@@ -19,6 +19,11 @@ function methods:SetPoint(anchor,parent,relative,x,y) self.x=x;self.y=-y;self.an
 function methods:GetPoint() return self.anchor,nil,nil,self.x,-self.y end
 function methods:SetFont(name,size,flags) self.font=name;self.fontSize=size;self.flags=flags end
 function methods:SetText(text) self.text=text end
+function methods:SetAutoFocus(value) self.autoFocus=value end
+function methods:SetFontObject(value) self.fontObject=value end
+function methods:SetFocus() self.focused=true end
+function methods:ClearFocus() self.focused=false end
+function methods:HighlightText() self.highlighted=true end
 function methods:SetTextColor(r,g,b,a) self.color={r,g,b,a or 1} end
 function methods:SetColorTexture(r,g,b,a) self.fill={r,g,b,a or 1} end
 function methods:SetTexture(path) self.texture=path end

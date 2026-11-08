@@ -199,6 +199,7 @@ end
 function I:Compare(link)
     local info=self:Info(link);if not info then return {status="unknown",text=B.T("Données de l'objet à charger")} end
     local slots=self.slots[info.equipLoc];if not slots then return end
+    if not B.HasPremium("class") then return {info=info,status="premium",text=B.T("Conseils de classe : Options > Abonnement.")} end
     local result={info=info,status="unknown",text=B.T("Comparaison indisponible")}
     local profile,_,label,reason=self:Profile();result.profile=label
     if not profile then result.text=reason or B.T("Choisis une spécialisation dans Profil.");return result end

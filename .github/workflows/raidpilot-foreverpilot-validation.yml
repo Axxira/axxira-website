@@ -9,6 +9,9 @@ on:
       - "raidpilot-updates/source/launcher/**"
       - "raidpilot-updates/source/foreverpilot/**"
       - "raidpilot-updates/source/foreverpilot-tests/**"
+      - "raidpilot-updates/source/foreverpilot-companion/**"
+      - "raidpilot-updates/source/subscriptions/**"
+      - "raidpilot-updates/Build-ForeverPilotPackage.ps1"
       - "raidpilot-updates/release-history.json"
       - "raidpilot-updates/Restore-DingAddon.ps1"
       - "raidpilot-updates/Ding-NOTICE.txt"
@@ -27,6 +30,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
@@ -40,6 +46,14 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           npm ci --ignore-scripts --prefix raidpilot-updates/source/foreverpilot-tests
           npm test --prefix raidpilot-updates/source/foreverpilot-tests
+      - name: Verify subscription lifecycle and companion signatures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          node --test raidpilot-updates/source/subscriptions/test/*.test.mjs
+          dotnet run --project raidpilot-updates/source/foreverpilot-companion/ForeverPilot.Companion.csproj -c Release -- --self-test
+          ./raidpilot-updates/Build-ForeverPilotPackage.ps1 -OutputDirectory validation-public-addon
       - name: Validate notes, installer and launcher regressions
         shell: pwsh
         run: |

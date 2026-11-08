@@ -39,6 +39,10 @@ jobs:
         run: |
           & ./raidpilot-updates/Restore-LocalMapAssets.ps1
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
       - name: Install .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -147,6 +151,14 @@ jobs:
           npm ci --ignore-scripts --prefix raidpilot-updates/source/foreverpilot-tests
           npm test --prefix raidpilot-updates/source/foreverpilot-tests
 
+      - name: Verify subscription lifecycle and companion signatures
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          node --test raidpilot-updates/source/subscriptions/test/*.test.mjs
+          dotnet run --project raidpilot-updates/source/foreverpilot-companion/ForeverPilot.Companion.csproj -c Release -- --self-test
+
       - name: Generate RaidPilot icon
         shell: pwsh
         run: |
@@ -205,6 +217,9 @@ jobs:
 
           dotnet restore (Join-Path $src "launcher\RaidPilot.Launcher.csproj") -r win-x64
           dotnet publish (Join-Path $src "launcher\RaidPilot.Launcher.csproj") -c Release -r win-x64 --self-contained true --no-restore -o (Join-Path $out "launcher")
+
+          dotnet publish (Join-Path $src "foreverpilot-companion/ForeverPilot.Companion.csproj") -c Release -r win-x64 --self-contained true -o (Join-Path $out "companion")
+          Copy-Item -LiteralPath (Join-Path $src "foreverpilot-companion/README.md") -Destination (Join-Path $out "companion/COMMENCE-ICI.md")
 
           Get-ChildItem -LiteralPath $out -Filter *.pdb -File -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
           if (Get-ChildItem -LiteralPath $out -Directory -Recurse -Force | Where-Object Name -in @("UserData", "Screenshots", "logs")) { throw "Données personnelles inattendues dans la publication." }
@@ -265,6 +280,10 @@ jobs:
           Compress-Archive -Path (Join-Path $out "beacon\*") -DestinationPath $beaconZip -CompressionLevel Optimal
           Compress-Archive -Path (Join-Path $out "launcher\*") -DestinationPath $launcherZip -CompressionLevel Optimal
 
+          $companionZip = Join-Path $assets "ForeverPilot-Companion-v1.0.0-Windows-x64.zip"
+          Compress-Archive -Path (Join-Path $out "companion/*") -DestinationPath $companionZip -CompressionLevel Optimal
+          "COMPANION_ZIP=$companionZip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
           "RP_ZIP=$rpZip" | Out-File -FilePath $env:GITHUB_ENV -Append
           "BEACON_ZIP=$beaconZip" | Out-File -FilePath $env:GITHUB_ENV -Append
           "LAUNCHER_ZIP=$launcherZip" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -293,7 +312,7 @@ jobs:
           $repo = $env:GITHUB_REPOSITORY
           $entry = (Get-Content -LiteralPath "raidpilot-updates/release-history.json" -Raw | ConvertFrom-Json).entries[0]
           $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`n$($entry.summary)`n`n$($entry.details)`n`nPublication immuable : les archives et leur SHA-256 sont vérifiés avant activation du manifeste Stable."
-          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP $env:FOREVERPILOT_ZIP --repo $repo --target $env:GITHUB_SHA --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
+          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP $env:FOREVERPILOT_ZIP $env:COMPANION_ZIP --repo $repo --target $env:GITHUB_SHA --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
 
       - name: Update Stable manifest
         shell: pwsh
