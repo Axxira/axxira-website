@@ -85,7 +85,7 @@ L:Event("SHARD_TRANSFER_CANCELLED");check(not L:Pending() and L.state=="idle","s
 function StaticPopup_Visible(which) if which=="SHARD_TRANSFER_IMMEDIATE" then return 1 end end
 check(L:Pending(),"pending native popup recovered after reload")
 function StaticPopup_Visible() end
-reset();L:DraftGeneral();check(#drafts==1 and drafts[1]:sub(1,3)=="/3 " and #sent==0,"General uses actual channel and prepares only a draft")
+reset();L:DraftGeneral();check(#drafts==1 and drafts[1]=="/3 Could someone invite me to change layers in The Barrens? Thanks!" and #sent==0,"General uses actual channel and prepares only an English draft")
 reset();L:Receive("1|Q|111-1|1413|Horde","GUILD","Other Player")
 check(#sent==0,"helper off by default")
 L:SetHelper(true);L:Receive("1|Q|111-1|1413|Horde","GUILD","Other Player")

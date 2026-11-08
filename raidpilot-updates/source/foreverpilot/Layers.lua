@@ -166,9 +166,9 @@ function L:DraftGeneral()
     end
     if type(fn)~="function" or not id then self:Notify("unavailable","Rejoins le canal Général, puis demande une invitation pour changer de layer.");return end
     if self:Busy() then self:Stop() end
-    local zone=clean(B.Call(GetRealZoneText)) or "cette zone"
+    local zone=clean(B.Call(GetRealZoneText)) or "this zone"
     zone=zone:gsub("[|%c]","")
-    local ok=pcall(fn,"/"..id.." Quelqu'un peut m'inviter pour changer de layer dans "..zone.." ? Merci !")
+    local ok=pcall(fn,"/"..id.." Could someone invite me to change layers in "..zone.."? Thanks!")
     if ok then self:Notify("draft","Message préparé dans Général. Entrée pour l'envoyer, Échap pour annuler.") end
 end
 function L:Event(event,...)

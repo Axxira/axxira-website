@@ -21,7 +21,7 @@ dans WoW. **Aider les autres : OUI** permet d'envoyer une invitation à un deman
 de la même zone, seulement lorsque tu es solo, vivant et hors combat/instance.
 Cette option est désactivée par défaut et enregistrée par personnage.
 
-Sans volontaire, **Demander dans Général** prépare un message modifiable que tu
+Sans volontaire, **Demander dans Général** prépare un message en anglais modifiable que tu
 envoies toi-même avec Entrée. Aucun message automatique dans Général. Si WoW
 propose déjà un transfert, **Changer maintenant** permet de le confirmer hors combat.
 `/fpl layers` ouvre aussi les contrôles. Ouvrir le panneau n'envoie aucune demande.
