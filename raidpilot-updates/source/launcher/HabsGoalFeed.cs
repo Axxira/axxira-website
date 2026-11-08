@@ -76,8 +76,9 @@ internal sealed class HabsGoalTracker
     private DateTimeOffset _lastSuccess;
     private readonly HashSet<string> _seen = new(StringComparer.Ordinal);
     private readonly HashSet<int> _seenIds = [];
+    internal string Decision { get; private set; } = "reset";
 
-    internal void Reset() { _game = 0; _order = 0; _seen.Clear(); _seenIds.Clear(); }
+    internal void Reset() { _game = 0; _order = 0; _seen.Clear(); _seenIds.Clear(); Decision = "reset"; }
 
     internal bool Observe(HabsSnapshot snapshot, DateTimeOffset now)
     {
@@ -86,9 +87,14 @@ internal sealed class HabsGoalTracker
         var fresh = snapshot.Goals.Any(g => g.Order > _order && !_seen.Contains(g.Identity) && !_seenIds.Contains(g.EventId));
         foreach (var goal in snapshot.Goals) { _seen.Add(goal.Identity); _seenIds.Add(goal.EventId); }
         _game = snapshot.GameId;
-        _order = Math.Max(_order, snapshot.LastOrder);
+        // Only baseline against ALL plays at startup/reconnect. During live monitoring a
+        // goal can be inserted behind already-published faceoffs/shots (e.g. order 438
+        // arrives after 447). Advancing this watermark on every play silently lost it.
+        _order = Math.Max(_order, baseline ? snapshot.LastOrder : snapshot.Goals.Select(g => g.Order).DefaultIfEmpty().Max());
         _lastSuccess = now;
-        return !baseline && fresh && (HabsGoalFeed.IsLive(snapshot.State) || snapshot.State is "FINAL" or "OFF");
+        var celebrate = !baseline && fresh && (HabsGoalFeed.IsLive(snapshot.State) || snapshot.State is "FINAL" or "OFF");
+        Decision = baseline ? "baseline" : celebrate ? "new-goal" : "no-new-goal";
+        return celebrate;
     }
 }
 

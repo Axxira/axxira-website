@@ -12,6 +12,7 @@ internal sealed class HabsGoalService : IDisposable
     private DateTimeOffset _nextPoll, _nextSettings;
     private bool _polling, _disposed;
     private int _generation, _failures;
+    private string? _lastGoalStatus;
     internal bool Enabled { get; private set; }
     internal string Status { get; private set; } = "Désactivé · Lumières visibles uniquement dans WoW";
     internal event Action? Changed;
@@ -19,9 +20,16 @@ internal sealed class HabsGoalService : IDisposable
     internal HabsGoalService(Func<string?> gamePath)
     {
         _overlay = new HabsGoalOverlay(gamePath);
-        _overlay.PreviewStatus += SetStatus;
+        _overlay.PreviewStatus += text => { HabsGoalDiagnostics.Write("preview " + text); SetStatus(text); };
+        _overlay.GoalStatus += text =>
+        {
+            _lastGoalStatus = $"{DateTime.Now:HH:mm:ss} {text}";
+            HabsGoalDiagnostics.Write("display " + text);
+            SetStatus(_lastGoalStatus);
+        };
         try { _ownsMonitor = _mutex.WaitOne(0); }
         catch (AbandonedMutexException) { _ownsMonitor = true; }
+        HabsGoalDiagnostics.Write($"start version={typeof(HabsGoalService).Assembly.GetName().Version} owner={_ownsMonitor}");
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("ForeverPilot-GoalLights/1.0");
         ApplyEnabled(HabsGoalSettingsStore.Load().Enabled);
         _timer.Tick += async (_, _) =>
@@ -31,6 +39,7 @@ internal sealed class HabsGoalService : IDisposable
             {
                 try { _ownsMonitor = _mutex.WaitOne(0); }
                 catch (AbandonedMutexException) { _ownsMonitor = true; }
+                if (_ownsMonitor) HabsGoalDiagnostics.Write("monitor acquired");
             }
             if (now >= _nextSettings)
             {
@@ -54,6 +63,8 @@ internal sealed class HabsGoalService : IDisposable
         Enabled = enabled;
         _generation++;
         _tracker.Reset();
+        _lastGoalStatus = null;
+        HabsGoalDiagnostics.Write("enabled=" + enabled);
         _nextPoll = DateTimeOffset.MinValue;
         if (!enabled) _overlay.Stop();
         SetStatus(!enabled ? "Désactivé · Lumières visibles uniquement dans WoW"
@@ -81,6 +92,7 @@ internal sealed class HabsGoalService : IDisposable
             {
                 _tracker.Reset();
                 _nextPoll = DateTimeOffset.UtcNow.AddMinutes(2);
+                HabsGoalDiagnostics.Write("poll no-current-game");
                 SetStatus("En veille · Aucun match en direct · Garde le launcher ouvert");
             }
             else
@@ -88,10 +100,14 @@ internal sealed class HabsGoalService : IDisposable
                 var json = await _http.GetStringAsync($"https://api-web.nhle.com/v1/gamecenter/{game.Id}/play-by-play", _stop.Token);
                 if (_disposed || generation != _generation) return;
                 var snapshot = HabsGoalFeed.ParseGame(json, game.Id);
-                if (_tracker.Observe(snapshot, DateTimeOffset.UtcNow)) _overlay.Celebrate(snapshot.ScoreLine);
+                var celebrate = _tracker.Observe(snapshot, DateTimeOffset.UtcNow);
+                HabsGoalDiagnostics.Write($"poll game={snapshot.GameId} state={snapshot.State} score={snapshot.Score} lastOrder={snapshot.LastOrder} goals={string.Join(',', snapshot.Goals.Select(g => $"{g.EventId}:{g.Order}"))} decision={_tracker.Decision}");
+                if (celebrate) _overlay.Celebrate(snapshot.ScoreLine);
                 var live = HabsGoalFeed.IsLive(snapshot.State);
-                _nextPoll = DateTimeOffset.UtcNow.AddSeconds(live || snapshot.State == "PRE" ? 20 : 120);
-                SetStatus($"{snapshot.ScoreLine} · {(live ? "En direct" : snapshot.State == "PRE" ? "Avant-match" : "Match terminé")} · WoW seulement");
+                // Finals must remain below the tracker's reconnect cutoff, otherwise a
+                // winning goal published just after FINAL would be silently re-baselined.
+                _nextPoll = DateTimeOffset.UtcNow.AddSeconds(live ? 10 : snapshot.State == "PRE" ? 20 : 60);
+                SetStatus($"{snapshot.ScoreLine} · {(_lastGoalStatus ?? (live ? "En direct" : snapshot.State == "PRE" ? "Avant-match" : "Match terminé"))}");
             }
             _failures = 0;
         }
@@ -102,6 +118,7 @@ internal sealed class HabsGoalService : IDisposable
             {
                 _failures = Math.Min(_failures + 1, 4);
                 _nextPoll = DateTimeOffset.UtcNow.AddSeconds(20 * _failures);
+                HabsGoalDiagnostics.Write($"poll-error type={e.GetType().Name} retrySeconds={20 * _failures}");
                 SetStatus("Données LNH indisponibles · Nouvelle tentative automatique");
             }
         }
@@ -114,6 +131,7 @@ internal sealed class HabsGoalService : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        HabsGoalDiagnostics.Write("stop");
         _generation++;
         _timer.Stop();
         _timer.Dispose();

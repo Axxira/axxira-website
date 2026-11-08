@@ -61,6 +61,48 @@ internal static class HabsGoalTests
             Check(tracker.Observe(Snap(12, 20, G(1, 19)) with { State = "OFF" }, now.AddSeconds(20)), "winning goal missed");
             Check(!tracker.Observe(Snap(12, 20, G(1, 19)) with { State = "OFF" }, now.AddSeconds(40)), "final goal replayed");
         });
+        run("Lumières : 2–0 vers 3–0, détail du but publié après les actions suivantes", () =>
+        {
+            var tracker = new HabsGoalTracker();
+            var first = new HabsGoal(133, 88, "1:05:56");
+            var second = new HabsGoal(270, 177, "1:13:06");
+            var third = new HabsGoal(584, 438, "2:12:57");
+            tracker.Observe(Snap(2026020268, 435, first, second), now);
+            Check(!tracker.Observe(Snap(2026020268, 447, first, second) with { Score = 3 }, now.AddSeconds(10)), "unconfirmed score celebrated");
+            Check(tracker.Observe(Snap(2026020268, 450, first, second, third), now.AddSeconds(20)), "late 3–0 goal missed");
+            Check(!tracker.Observe(Snap(2026020268, 455, first, second, third), now.AddSeconds(30)), "late goal replayed");
+        });
+        run("Lumières : démarrage et reprise avec détail de but incomplet", () =>
+        {
+            var tracker = new HabsGoalTracker();
+            tracker.Observe(Snap(12, 30, G(1, 10)) with { Score = 2 }, now);
+            Check(!tracker.Observe(Snap(12, 40, G(1, 10), G(2, 25)), now.AddSeconds(10)), "delayed startup goal replayed");
+            Check(tracker.Observe(Snap(12, 60, G(1, 10), G(2, 25), G(3, 50)), now.AddSeconds(20)), "next goal lost");
+            tracker.Observe(Snap(12, 100, G(1, 10), G(2, 25), G(3, 50)) with { Score = 4 }, now.AddMinutes(3));
+            Check(!tracker.Observe(Snap(12, 110, G(1, 10), G(2, 25), G(3, 50), G(4, 95)), now.AddMinutes(3).AddSeconds(10)), "delayed outage goal replayed");
+        });
+        run("Lumières : but gagnant retardé après le passage à FINAL", () =>
+        {
+            var tracker = new HabsGoalTracker();
+            tracker.Observe(Snap(12, 100, G(1, 10)), now);
+            Check(!tracker.Observe(Snap(12, 120, G(1, 10)) with { State = "FINAL", Score = 2 }, now.AddSeconds(10)), "unconfirmed final goal");
+            Check(tracker.Observe(Snap(12, 125, G(1, 10), G(2, 115)) with { State = "OFF" }, now.AddSeconds(70)), "delayed winner missed");
+        });
+        run("Lumières : diagnostic local borné et panne d'écriture sans interruption", () =>
+        {
+            var root = Path.Combine(Path.GetTempPath(), "habs-log-test-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(root);
+            try
+            {
+                var path = Path.Combine(root, "test.log");
+                File.WriteAllText(path, new string('a', HabsGoalDiagnostics.MaxBytes));
+                HabsGoalDiagnostics.Write("new-goal\r\ndisplay", path);
+                Check(new FileInfo(path + ".previous").Length == HabsGoalDiagnostics.MaxBytes, "rotation lost history");
+                Check(File.ReadAllLines(path).Length == 1 && File.ReadAllText(path).Contains("new-goal  display"), "multiline event");
+                HabsGoalDiagnostics.Write("must not throw", root); // A directory cannot be a log file.
+            }
+            finally { Directory.Delete(root, true); }
+        });
         run("Lumières : dix secondes et fondus bornés", () =>
         {
             Check(HabsGoalPresentation.Visible(0) && HabsGoalPresentation.Visible(9.999), "premature end");

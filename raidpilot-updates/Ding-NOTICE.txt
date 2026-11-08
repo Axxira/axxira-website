@@ -1,0 +1,10 @@
+Ding! v1.8.1 for WoW Forever, by moust4ki and contributors.
+Original source and release: https://github.com/moust4ki/DingGuideWoWForever/tree/v1.8.1
+Official archive: https://github.com/moust4ki/DingGuideWoWForever/releases/download/v1.8.1/Ding-v1.8.1-forever.zip
+Archive SHA-256: D9707C45F42DC95429129E4F476E07D37EE90D6E07E6E84256B390EF685285EA
+
+Redistributed as a separate addon under the GNU General Public License v3.
+Original Lua source, routes, data, assets, LICENSE, DB/CREDITS.md and font notices are included unchanged.
+See LICENSE for the full license. See DB/CREDITS.md for Questie, QuestieDB and cMaNGOS attribution.
+This notice is the only added file. RaidPilot does not claim authorship of Ding.
+ForeverPilot_Leveling is a separate GPLv3 addon depending on Ding.

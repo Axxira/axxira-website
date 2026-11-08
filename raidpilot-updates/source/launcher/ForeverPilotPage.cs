@@ -45,7 +45,9 @@ internal sealed partial class LauncherForm
                 case LauncherAction.ForeverPilot:
                     break;
                 case LauncherAction.RefreshForeverPilot:
-                    _surface.ForeverMessage = "Installation vérifiée. L'activation des addons se contrôle dans le jeu.";
+                    _surface.ForeverMessage = state.Ready
+                        ? "Fichiers vérifiés. Active Ding et ForeverPilot_Leveling dans le jeu."
+                        : state.Problem ?? "Installation à compléter avec le bouton Installer.";
                     break;
                 case LauncherAction.LaunchBattleNet:
                     if (state.BattleNetPath is null)
@@ -76,14 +78,14 @@ internal sealed partial class LauncherForm
                     if (state.BundledVersion is null) throw new InvalidOperationException("Le package ForeverPilot est absent ou incomplet.");
                     _foreverInstalling = true;
                     SetBusy(true);
-                    _surface.ForeverMessage = "Sauvegarde et installation de ForeverPilot…";
+                    _surface.ForeverMessage = "Sauvegarde et installation de ForeverPilot et Ding…";
                     _surface.Invalidate();
                     try
                     {
                         var backup = await Task.Run(() => ForeverPilotService.Install(state.GamePath, ForeverPilotService.BundlePath));
                         _surface.ForeverMessage = backup.Length > 0
-                            ? "Addon installé. Version précédente conservée dans Interface / ForeverPilotBackups."
-                            : "Addon installé. Active Ding et ForeverPilot_Leveling à la sélection du personnage.";
+                            ? "Addons installés avec sauvegarde. Active Ding et ForeverPilot_Leveling dans le jeu."
+                            : "ForeverPilot et Ding installés. Active les deux à la sélection du personnage.";
                     }
                     finally
                     {
@@ -148,16 +150,17 @@ internal sealed partial class LauncherSurface
 
         ForeverButton(g, new Rectangle(214, 488, 300, 46), "Ouvrir Battle.net  →", LauncherAction.LaunchBattleNet,
             Forever.BattleNetPath is not null && !Busy, primary: true);
-        var installText = Forever.Version is null ? "Installer l'addon" : Forever.UpdateAvailable ? "Mettre l'addon à jour" : "Réinstaller l'addon";
+        var installText = Forever.Version is null ? "Installer ForeverPilot + Ding" : !Forever.DingInstalled ? "Installer / réparer Ding"
+            : Forever.UpdateAvailable ? "Mettre l'addon à jour" : "Réinstaller l'addon";
         ForeverButton(g, new Rectangle(530, 488, 250, 46), installText, LauncherAction.InstallForeverPilot,
             Forever.GamePath is not null && Forever.BundledVersion is not null && !Forever.GameRunning && !Busy &&
-            (Forever.Version is null || Version.Parse(Forever.Version) <= Version.Parse(Forever.BundledVersion)));
+            (!Forever.DingInstalled || Forever.Version is null || Version.Parse(Forever.Version) <= Version.Parse(Forever.BundledVersion)));
         ForeverButton(g, new Rectangle(796, 488, 170, 46), "Dossier AddOns", LauncherAction.OpenForeverFolder,
             Forever.GamePath is not null && !Busy);
         ForeverButton(g, new Rectangle(982, 488, 172, 46), "Vérifier", LauncherAction.RefreshForeverPilot, !Busy);
 
         var tip = Forever.GameRunning ? "WoW est ouvert : ferme le jeu avant d'installer une mise à jour de l'addon."
-            : !Forever.DingInstalled ? "Ding est nécessaire. Installe-le, puis active Ding et ForeverPilot_Leveling dans le jeu."
+            : !Forever.DingInstalled ? "Ding est inclus : clique sur Installer, puis active Ding et ForeverPilot_Leveling dans le jeu."
             : "Dans le jeu, garde Ding et ForeverPilot_Leveling activés. Tape /fpl pour retrouver le guidage.";
         ForeverText(g, tip, 218, 550, 932, 42, 10, Muted);
         using (var fill = new SolidBrush(Panel2))

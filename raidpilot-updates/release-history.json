@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.19",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.19",
+      "date": "2026-11-07",
+      "summary": "ForeverPilot : Ding inclus et détection des buts corrigée",
+      "details": "Corrige les installations sur un nouveau PC : le launcher inclut maintenant Ding v1.8.1 officiel et ForeverPilot_Leveling 1.4.2. Le bouton Installer ForeverPilot + Ding installe les deux addons, jeu fermé. Si ForeverPilot est déjà présent, Installer / réparer Ding complète la dépendance manquante ou cassée. Le contrôle vérifie tous les modules Ding, son édition Forever et sa flèche; la seule présence de Ding.toc ne suffit plus. Un Ding existant valide est conservé. Les versions remplacées sont sauvegardées et les deux addons sont restaurés ensemble si une étape échoue. Une version plus récente de ForeverPilot est préservée lors de la réparation de Ding. Ding est récupéré depuis sa publication officielle avec empreinte SHA-256 fixe; code source, licence GPLv3, crédits et licences des polices sont inclus. Un essai automatique installe le vrai package sur une installation vierge et compare chaque fichier. Après installation, activer Ding et ForeverPilot_Leveling à la sélection du personnage. Le bridge ForeverPilot et WTF sont conservés. Lumières LE BUT : corrige les buts ajoutés tardivement au détail LNH après des actions plus récentes et les buts gagnants publiés après la fin du match. Suivi toutes les 10 secondes en direct, effet de 10 secondes inchangé. Le launcher conserve le résultat de la dernière alerte et un diagnostic local borné pour distinguer réception du but, WoW hors premier plan et erreur d’affichage. Aucun rattrapage des anciens buts au démarrage ou après une longue coupure."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.18",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "Reader visuel 160×90 — fusion de rotation avec Raw Input, contrôles renforcés",
       "details": "Le capteur visuel 160×90 déjà présent peut désormais contribuer à la calibration de rotation (yaw) lorsqu'il observe une rotation pure confirmée par les mouvements de souris horodatés. Les images anciennes ou trop lentes, les changements de fenêtre, les déplacements même brefs entre captures, la visée ADS, les interactions (notamment le maintien de F) et les signaux contradictoires sont ignorés. Les corrections restent bornées par VisualYawCalibration et la capture 64×36 sert de repli lorsqu'aucun signal V2 fiable n'est récent. Capture Windows Graphics Capture toujours désactivée par défaut et uniquement activable par l'utilisateur; le mode visuel GDI reste local. Aucune lecture de la mémoire EFT, aucune injection et aucune collecte d'images sur disque. Les pixels ne donnent pas de distance absolue en mètres : le suivi des coordonnées reste estimé entre deux F8, à valider par le diagnostic CSV. Sept tests ajoutés pour vérifier la fraîcheur des images et le filtrage des actions."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.31",
-      "raidPilotVersion": "0.14.2.31",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Localisation — journal de dérive enrichi et mesures souris/ADS",
-      "details": "Mode diagnostic F8 enrichi : compteurs et amplitudes de souris hors visée et ADS, distances estimées marche/sprint/marche lente, gains de rotation appliqués, statut de validité du segment et horodatage de capture. Les anciennes colonnes du CSV sont conservées; les anciens fichiers sont archivés en .legacy pour éviter de mélanger les formats. Ne collecte ni touches individuelles, ni captures, ni identifiants. Les mesures sont indicatives et ne corrigent pas encore les coordonnées automatiquement; elles permettront de distinguer erreur de cap, vitesse et mouvement non observé. La protection de la touche F reste en place."
     }
   ]
 }

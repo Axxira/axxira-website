@@ -17,7 +17,9 @@ internal sealed class HabsGoalOverlay : Form
     private DateTimeOffset _nextWindowCheck;
     private bool _isGame;
     private bool _previewRunning;
+    private bool _celebrationRunning;
     internal event Action<string>? PreviewStatus;
+    internal event Action<string>? GoalStatus;
 
     internal HabsGoalOverlay(Func<string?> gamePath)
     {
@@ -51,16 +53,29 @@ internal sealed class HabsGoalOverlay : Form
 
     internal void Celebrate(string caption)
     {
-        if (!TryGameBounds(out _)) return; // Consume goals while outside WoW, never replay on return.
+        if (!TryGameBounds(out _))
+        {
+            GoalStatus?.Invoke("but reçu · WoW hors premier plan");
+            return; // Consume goals while outside WoW, never replay on return.
+        }
         _previewUntil = default;
+        _previewRunning = false;
+        _celebrationRunning = true;
         _caption = caption;
         _animation.Restart();
         _timer.Start();
+        GoalStatus?.Invoke("but reçu · effet lancé dans WoW");
         TickFrame();
     }
 
     internal void Stop()
     {
+        if (_celebrationRunning)
+        {
+            GoalStatus?.Invoke(_animation.Elapsed.TotalSeconds >= HabsGoalPresentation.DurationSeconds
+                ? "but · effet terminé (10 s)" : "but · effet interrompu hors WoW");
+            _celebrationRunning = false;
+        }
         if (_previewRunning)
         {
             PreviewStatus?.Invoke(_animation.Elapsed.TotalSeconds >= HabsGoalPresentation.DurationSeconds
@@ -104,7 +119,9 @@ internal sealed class HabsGoalOverlay : Form
         }
         catch (System.ComponentModel.Win32Exception e)
         {
+            var wasGoal = _celebrationRunning;
             Stop();
+            if (wasGoal) GoalStatus?.Invoke("but reçu · erreur d'affichage " + e.NativeErrorCode);
             PreviewStatus?.Invoke("Affichage indisponible · Code " + e.NativeErrorCode);
         }
     }
