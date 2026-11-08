@@ -11,6 +11,7 @@ function B.SetEnabled(enabled)
         if Ding.Arrow.frame then Ding.Arrow.frame:Hide() end
         B.UI.frame:SetShown(B.settings.shown~=false);B.dirty=true
     else
+        if B.Options and B.Options.frame then B.Options.frame:Hide() end
         if B.Advisor and B.Advisor.frame then B.Advisor.frame:Hide() end
         if B.Advisor and B.Advisor.profileFrame then B.Advisor.profileFrame:Hide() end
         if B.Market then B.Market:Cancel() end
@@ -191,6 +192,8 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="objets" or msg=="gear" or msg=="items" then B.Advisor:Toggle("gear")
     elseif msg=="hdv" or msg=="ah" then B.Advisor:Toggle("market")
     elseif msg=="addons" then B.Advisor:Toggle("addons")
+    elseif msg=="options" or msg=="settings" then B.Options:Toggle()
+    elseif msg=="help" or msg=="aide" then B.Options:Toggle("help")
     elseif msg=="layers" or msg=="layer" then B.LayerUI:Toggle()
     elseif msg=="scan" then B.Market:Scan();B.Print(B.Market.status);B.Advisor:RefreshIfShown()
     elseif msg=="profil" or msg=="profile" then B.Advisor:ToggleProfile()

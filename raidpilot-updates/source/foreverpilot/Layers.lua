@@ -101,6 +101,7 @@ function L:SyncEnabled()
 end
 function L:Init()
     if self.frame then return end
+    self.detail=B.T("Utilise le réseau ChangeLayer pour trouver une invitation.")
     if B.char.layerHelper then B.Call(LeaveChannelByName,"ForeverPilotLayers");B.char.layerHelper=false end
     local f=CreateFrame("Frame");self.frame=f
     for _,ev in ipairs({"SHARD_TRANSFER","SHARD_TRANSFER_IMMINENT","SHARD_TRANSFER_CANCELLED"}) do pcall(f.RegisterEvent,f,ev) end

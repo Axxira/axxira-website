@@ -139,7 +139,7 @@ internal sealed partial class LauncherSurface
         ForeverText(g, "WORLD OF WARCRAFT  /  FOREVER", 244, 84, 630, 20, 9, ForeverAccent, true);
         ForeverText(g, "ForeverPilot", 242, 113, 680, 55, 32, Color.White, true);
         ForeverText(g, "Ton cap vers le niveau 60.", 245, 176, 680, 28, 14, Color.FromArgb(210, 231, 230));
-        ForeverText(g, "Quêtes adaptées · Flèche de guidage · Conseils d'équipement", 245, 217, 690, 25, 10, Muted);
+        ForeverText(g, "Édition de test · Toutes les fonctions gratuites · Aucun abonnement requis", 245, 217, 690, 25, 10, Muted);
 
         var statusTitle = Forever.Ready ? "INSTALLATION PRÊTE" : "INSTALLATION À VÉRIFIER";
         var accent = Forever.Ready ? ForeverAccent : Amber;
@@ -170,7 +170,7 @@ internal sealed partial class LauncherSurface
 
         var tip = Forever.GameRunning ? "WoW est ouvert : ferme le jeu avant d'installer une mise à jour de l'addon."
             : !Forever.DingInstalled ? "Ding est inclus : clique sur Installer, puis active Ding et ForeverPilot_Leveling dans le jeu."
-            : "Dans le jeu, garde Ding et ForeverPilot_Leveling activés. Tape /fpl pour retrouver le guidage.";
+            : "Dans le jeu : Options pour la langue et le profil. Garde Ding et ForeverPilot_Leveling activés.";
         ForeverText(g, tip, 218, 544, 932, 22, 9, Muted);
         ForeverText(g, "Layers : réseau public ChangeLayer par Foofi · téléchargement officiel CurseForge", 218, 575, 690, 20, 9, Muted);
         ForeverButton(g, new Rectangle(914, 566, 240, 30), ChangeLayerVersion is null ? "Installer ChangeLayer" : "ChangeLayer " + ChangeLayerVersion + " installé",

@@ -57,10 +57,12 @@ I.classes={
     DRUID={label=B.T("Druide"),{B.T("Équilibre"),"caster"},{B.T("Farouche"),"feral"},{B.T("Restauration"),"soin"}},
 }
 I.classOrder={"WARRIOR","PALADIN","HUNTER","ROGUE","PRIEST","SHAMAN","MAGE","WARLOCK","DRUID"}
+B.LocalizeLabels(I.slotNames);B.LocalizeLabels(I.stats);B.LocalizeLabels(I.profiles);B.LocalizeLabels(I.classes)
 -- The nine races recognized by Ding's Forever import API. Include the live
 -- player race below if a later server patch introduces a different race.
 I.races={{"Human",B.T("Humain")},{"Dwarf",B.T("Nain")},{"NightElf",B.T("Elfe de la nuit")},{"Gnome","Gnome"},
     {"Orc","Orc"},{"Scourge",B.T("Mort-vivant")},{"Tauren","Tauren"},{"Troll","Troll"},{"Skyborne","Skyborne"}}
+B.LocalizeLabels(I.races)
 I.classWeights={
     PALADIN={tank={int=.5,sp=.75},melee={int=.25,sp=.25},soin={spi=.5}},
     SHAMAN={melee={int=.5,sp=.3},soin={spi=.5}},

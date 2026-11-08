@@ -1,5 +1,5 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.8.0", modules = {}, dirty = true }
+local B = { version = "1.8.1", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 function B.List(v) if type(v)=="table" then return v elseif type(v)=="number" then return {v} end return {} end
 function B.Copy(v)
@@ -27,6 +27,7 @@ function B.Trace(kind, message)
     if #t>80 then table.remove(t,1) end
 end
 function B.InitDB()
+    B.InitLocale()
     ForeverPilotLevelingDB = type(ForeverPilotLevelingDB)=="table" and ForeverPilotLevelingDB or {}
     B.db=ForeverPilotLevelingDB
     B.db.brain=B.db.brain or {characters={},shown=true,enabled=true}

@@ -1,14 +1,9 @@
 -- Original interface translations. Quest, NPC and item names remain game data.
 local B=ForeverPilotLeveling
-local saved=type(ForeverPilotLevelingDB)=="table" and ForeverPilotLevelingDB.brain
-local selected=type(saved)=="table" and saved.language
-local gameLocale=B.Call(GetLocale)
--- Keep existing French installations familiar; a fresh installation follows WoW.
-if selected~="fr" and selected~="en" then
-    if selected~="auto" and type(saved)=="table" then selected="fr"
-    else selected=type(gameLocale)=="string" and gameLocale:sub(1,2)=="fr" and "fr" or (gameLocale and "en" or "fr") end
-end
-B.language=selected
+-- SavedVariables are restored after the addon files execute. Resolve the saved
+-- choice at initialization, before creating any frames, not while loading this file.
+B.language="fr"
+local labelTables={}
 local en={
     ["\n\nAperçu des priorités. Tes objets gardent le profil de ton personnage connecté. Combinaisons race/classe et bonus raciaux non évalués."]="\n\nPriority preview. Your items still use your current character's profile. Race/class combinations and racial bonuses are not evaluated.",
     ["\n\nAutomatique suit tes talents. Un choix manuel reste prioritaire jusqu'au retour en automatique."]="\n\nAutomatic follows your talents. A manual choice takes priority until you switch back to automatic.",
@@ -391,10 +386,71 @@ local en={
     ["à distance"]="ranged",
     ["à l'instant"]="just now",
     ["épaules"]="shoulders",
+    ["Changement disponible après le combat."]="Language changes are available after combat.",
+    ["Appliquer recharge l'interface. Aucun choix de quête ou de profil n'est modifié."]="Apply reloads the interface. Your quests and profile stay the same.",
+    ["Auto suit la langue du jeu. Les noms de quêtes et d'objets restent ceux du jeu."]="Auto follows the game language. Quest and item names stay in the game's language.",
+    ["Choisis ta spécialisation"]="Choose your specialization",
+    ["Spécialisation à préciser pour des conseils adaptés."]="Choose a specialization for relevant gear advice.",
+    ["Les conseils d'objets suivent ce profil."]="Gear advice follows this profile.",
+    ["Reprendre le guidage"]="Resume guidance",
+    ["Mettre en pause"]="Pause guidance",
+    ["Position : verrouillée"]="Position: locked",
+    ["Position : déplaçable"]="Position: movable",
+    ["Raccourci layer : affiché"]="Layer shortcut: shown",
+    ["Raccourci layer : masqué"]="Layer shortcut: hidden",
+    ["Réglages, profil et outils au même endroit."]="Settings, profile and tools in one place.",
+    ["Général"]="General",
+    ["Outils"]="Tools",
+    ["Aide"]="Help",
+    ["Auto · langue du jeu"]="Auto · game language",
+    ["Appliquer la langue"]="Apply language",
+    ["Modifier le profil"]="Edit profile",
+    ["La prochaine étape se choisit automatiquement."]="Your next step is selected automatically.",
+    ["Taille du panneau"]="Panel size",
+    ["L'essentiel, sans encombrer la flèche."]="Useful tools, without crowding your guidance.",
+    ["Upgrade oui/non, gains et pertes selon ta spécialisation."]="Upgrade yes/no, gains and losses for your specialization.",
+    ["Hôtel des ventes"]="Auction house",
+    ["Lance un scan à l'HDV, puis consulte les prix dans tes sacs."]="Scan at the auction house, then check prices from your bags.",
+    ["Ouvre ChangeLayer ou prépare une demande dans Général."]="Open ChangeLayer or prepare a request in General chat.",
+    ["Reprendre les quêtes écartées"]="Resume skipped quests",
+    ["Passer met une quête de côté sans l'abandonner dans ton journal."]="Skip sets a quest aside without abandoning it in your quest log.",
+    ["1. Suis la flèche"]="1. Follow the arrow",
+    ["Va au point indiqué et termine l'objectif. ForeverPilot réévalue la suite quand tu progresses."]="Go to the destination and finish the objective. ForeverPilot reassesses your next step as you progress.",
+    ["2. Prends les quêtes indiquées"]="2. Accept the suggested quests",
+    ["Ouvre le dialogue du PNJ : le guidage vérifie les quêtes offertes et celles de ton journal."]="Open the NPC dialogue: guidance checks the quests offered against your quest log.",
+    ["3. Termine la boucle"]="3. Finish the quest loop",
+    ["NE RENTRE PAS ENCORE : continue les objectifs proches. RETOUR HUB : rapporte les quêtes terminées."]="STAY OUT FOR NOW: finish nearby objectives. RETURN TO HUB: turn in your completed quests.",
+    ["4. Une quête trop difficile ?"]="4. Quest too difficult?",
+    ["Clique Passer. Tu peux reprendre les quêtes écartées dans Options > Outils."]="Click Skip. You can resume skipped quests in Options > Tools.",
+    ["Vérifier les addons"]="Check addons",
+    ["Recalculer le guidage"]="Recalculate guidance",
+    ["Langue, profil, taille et aide."]="Language, profile, size and help.",
 }
 function B.T(text)
     if B.language=="en" then return en[text] or text end
     return text
+end
+function B.LocalizeLabels(labels)
+    -- Only explicit, addon-owned display tables. Never traverse live quest data,
+    -- item links, saved profiles, route keys or other addons' UI.
+    labelTables[#labelTables+1]={target=labels,source=B.Copy(labels)}
+end
+function B.InitLocale()
+    local saved=type(ForeverPilotLevelingDB)=="table" and ForeverPilotLevelingDB.brain
+    local selected=type(saved)=="table" and saved.language
+    local gameLocale=B.Call(GetLocale)
+    if selected~="fr" and selected~="en" then
+        if selected~="auto" and type(saved)=="table" then selected="fr"
+        else selected=type(gameLocale)=="string" and gameLocale:sub(1,2)=="fr" and "fr" or (gameLocale and "en" or "fr") end
+    end
+    B.language=selected
+    local function apply(target,source)
+        for key,value in pairs(source) do
+            if type(value)=="table" then apply(target[key],value)
+            elseif type(value)=="string" then target[key]=B.T(value) end
+        end
+    end
+    for _,entry in ipairs(labelTables) do apply(entry.target,entry.source) end
 end
 function B.SetLanguage(language)
     if language~="fr" and language~="en" and language~="auto" then return false end

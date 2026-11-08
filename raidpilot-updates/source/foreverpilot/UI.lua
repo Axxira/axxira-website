@@ -3,6 +3,7 @@ local U={width=344,height=132};B.UI=U
 local verbs={accept=B.T("PRENDS"),complete=B.T("TERMINE"),turnin=B.T("RENDS"),grind=B.T("XP D'APPOINT"),corpse=B.T("RETOUR AU CORPS"),done=B.T("NIVEAU 60"),recovery=B.T("RÉORIENTATION"),service=B.T("FAIS UNE HALTE"),rest=B.T("RÉCUPÈRE")}
 local colors={normal={0.40,0.85,0.80},turnin={0.94,0.76,0.43},recovery={1,0.65,0.36},pause={0.60,0.65,0.72}}
 local travelVerbs={fly=B.T("PRENDS LE VOL"),hearth=B.T("PIERRE DE FOYER"),boat=B.T("PRENDS LE BATEAU"),zeppelin=B.T("PRENDS LE ZEPPELIN"),tram=B.T("PRENDS LE TRAM"),passage=B.T("SUIS LE PASSAGE"),teleport=B.T("TÉLÉPORTATION")}
+B.LocalizeLabels(verbs);B.LocalizeLabels(travelVerbs)
 local arrowTexture="Interface\\AddOns\\Ding\\Media\\Textures\\arrow_halo_gold"
 local mapTexture="Interface\\Icons\\INV_Misc_Map_01"
 function U:Symbol(texture)
@@ -98,8 +99,10 @@ function U:Create()
     bg:SetTexture("Interface\\AddOns\\ForeverPilot_Leveling\\Media\\Panel")
     bg:SetTexCoord(0,368/512,0,156/256)
     self.accent=rect(f,14,29,316,1,0.40,0.85,0.80,0.22)
-    self.header=font(f,10,14,12,165,14);self.header:SetText("F O R E V E R P I L O T");self.header:SetTextColor(0.73,0.81,0.87)
+    self.header=font(f,11,14,12,145,14);self.header:SetText("FOREVERPILOT");self.header:SetTextColor(0.73,0.81,0.87)
     self.tag=font(f,9,190,12,140,14);self.tag:SetJustifyH("RIGHT")
+    -- Confidence remains in the tooltip; the header is reserved for clear controls.
+    self.tag:Hide()
     self.arrow=f:CreateTexture(nil,"ARTWORK");self.arrow:SetSize(42,42);self.arrow:SetPoint("TOPLEFT",f,"TOPLEFT",24,-39)
     self.arrow:SetTexture("Interface\\AddOns\\Ding\\Media\\Textures\\arrow_halo_gold")
     self.distance=font(f,11,9,86,72,16);self.distance:SetJustifyH("CENTER")

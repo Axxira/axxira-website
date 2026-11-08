@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.25",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.25",
+      "date": "2026-11-08",
+      "summary": "ForeverPilot 1.8.1 : options claires et édition de test gratuite",
+      "details": "Nouveau bouton Options directement sur la flèche : langue Français/English/Auto avec application explicite hors combat, profil classe/spécialisation, pause, taille et position. Onglets Outils et Aide pour retrouver les objets, le scan HDV, ChangeLayer et les quêtes écartées. Bandeau de layer facultatif, affiché si un transfert demande attention. Le launcher RaidPilot reste une édition de test entièrement gratuite sans abonnement. Un ZIP ForeverPilot autonome est produit avec chaque publication pour CurseForge; validation CurseForge distincte. Redémarrage complet de WoW requis pour le nouveau module."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.24",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "QuestPilot Pro — grandes cartes de quêtes scannées pour le raid en cours",
       "details": "QuestPilot affiche uniquement les quêtes signalées par le scan TAB → TÂCHES → F8 pour le raid courant. La sélection et les validations manuelles temporaires sont réinitialisées au début et à la fin d'un raid sans effacer les preuves de quête terminée issues des journaux EFT. Une nouvelle détection de liste remplace la sélection précédente. Le panneau sous la carte devient plus haut et présente des cartes lisibles, avec typographie agrandie, boutons Fait et restauration. Ctrl+Alt+I ne change que le mode interactif, pas la visibilité de la carte et du panneau. Le panneau QuestPilot dispose d'un bouton de barre d'outils Afficher/Masquer et d'un bouton Fermer; seul le panneau est masqué, jamais la carte. Ctrl+Alt+I continue de basculer les clics et ne force pas la réouverture du panneau caché."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.38",
-      "raidPilotVersion": "0.14.2.38",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Carte et QuestPilot toujours visibles — Ctrl+Alt+I active/désactive les clics",
-      "details": "Corrige la régression : carte et panneau QuestPilot restent visibles pendant le raid, y compris en mode clics désactivés. Ctrl+Alt+I active ou désactive seulement l'interaction (click-through) sans masquer la carte ni la liste des quêtes, et ne valide aucune étape. La liste QuestPilot s'affiche dès l'initialisation et reste positionnée sous la carte. Les règles existantes de visibilité automatique selon l'état du raid et le loot sont conservées."
     }
   ]
 }

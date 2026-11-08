@@ -3,6 +3,7 @@ local B=ForeverPilotLeveling
 local J={};B.Journal=J
 local classBits={1,2,4,8,16,64,128,256,1024}
 local labels={abandon=B.T("À ABANDONNER"),class=B.T("CLASSE · À CONSERVER"),prerequisite=B.T("PRÉREQUIS · À CONSERVER"),fast=B.T("PARCOURS RAPIDE"),unknown=B.T("À VÉRIFIER · CONSERVER"),skipped=B.T("MISE DE CÔTÉ · CONSERVÉE")}
+B.LocalizeLabels(labels)
 local colors={abandon={1,0.65,0.36},class={0.74,0.66,1},prerequisite={0.40,0.85,0.80},fast={0.40,0.85,0.80},unknown={0.94,0.76,0.43},skipped={0.69,0.76,0.84}}
 local order={class=1,abandon=2,skipped=3,unknown=4,prerequisite=5,fast=6}
 function J:IsClass(n)

@@ -1,30 +1,38 @@
-# ForeverPilot Brain v1.8.0
+# ForeverPilot Brain v1.8.1
 
-## Français / English (1.8.0)
+## Options · Français / English
 
-One addon, two interface languages. Open **Items → Addons** and choose **English**,
-**Français** or **Auto**. The choice reloads the interface out of combat; during
-combat it is saved and applied with `/reload` later. You can also use
-`/fpl lang en`, `/fpl lang fr` or `/fpl lang auto`.
+Open **Options** on the guidance panel. Language is the first setting: choose
+**Français**, **English** or **Auto**, then **Apply language**. Applying reloads
+the interface and is unavailable during combat. Choosing a language alone does
+not reload anything. Quest and item names stay in the game's language.
 
-A fresh installation follows the game language (French or English fallback).
-Existing installations keep French until you choose another language. Guidance,
-gear profiles, auction prices, layer controls and explanations are translated.
-Quest, NPC and item names remain game data. General-chat layer requests stay in
-English in both modes. English command aliases include `items`, `ah`, `profile`
-and `unskip [all or quest ID]`. Changing language never changes a gear profile,
-quest choice, item score or auction-price identity.
+**General** also shows your current class/spec profile, pause/resume, panel size,
+position lock and the optional layer shortcut. **Tools** opens equipment advice,
+auction prices, layer changes and skipped quests. **Help** explains the four
+basic steps. The arrow keeps its compact size; the layer bar appears only when
+enabled or a transfer needs attention. Commands: /fpl options, /fpl help.
 
-Un seul addon, deux langues. **Objets → Addons → Français / English / Auto**
-permet de choisir. Le bouton recharge l'interface hors combat; en combat, le
-choix est enregistré et s'applique au prochain `/reload`. Les installations
-existantes gardent le français. Les nouvelles suivent la langue du jeu, avec
-l'anglais comme repli. Les noms des quêtes, PNJ et objets restent ceux du jeu.
-Les demandes de layer dans Général restent en anglais. La flèche garde sa taille.
+Ouvre **Options** sur le panneau de guidage. La langue est le premier réglage :
+**Français**, **English** ou **Auto**, puis **Appliquer la langue**. L'application
+recharge l'interface et attend la fin du combat. Un simple choix ne recharge rien.
+Le profil, la pause, la taille et les raccourcis sont accessibles au même endroit.
+**Outils** regroupe les objets, l'HDV, les layers et la reprise des quêtes écartées.
+**Aide** explique les quatre étapes essentielles.
 
-Cette version ajoute les langues. L'abonnement Fast XP + suivi de classe prévu
-à 9,99 CAD/mois n'est pas encore activé ni vendu : l'encaissement et l'activation
-nécessitent encore leur raccordement. Aucun changement des droits GPL existants.
+Cette version ajoute un module : un redémarrage complet de WoW est nécessaire.
+
+## Distribution
+
+The RaidPilot launcher edition is the free testing edition. All features remain
+available without a subscription. Never enable a payment requirement in that
+channel. Every release must also prepare a CurseForge addon ZIP; a publication
+receipt must distinguish upload from moderation approval. Ding remains required.
+
+La version distribuée par le launcher RaidPilot reste gratuite et complète pour
+les tests. Les mises à jour sont aussi destinées à CurseForge. L'abonnement public
+Fast XP + suivi de classe à 9,99 CAD/mois reste en préparation : aucun paiement
+ni blocage d'accès n'est activé dans cette version. Les droits GPL sont préservés.
 
 Assistant de leveling dynamique pour WoW Forever. Nécessite **Ding** activé.
 L'installation locale se trouve dans `_forever_/Interface/AddOns/ForeverPilot_Leveling`.
