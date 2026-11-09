@@ -233,8 +233,9 @@ function P:Batch(actions,s)
             a.score=a.score*a.returnPenalty
         end
     end
-    table.sort(top,better)
-    return top
+    -- Limit pair scoring, not the available journal/zone quests.
+    table.sort(actions,better)
+    return actions
 end
 function P:Fallback(s)
     -- The old guide cursor may be in a different level bracket. Derive a recovery
@@ -305,7 +306,7 @@ function P:Plan(s)
             if a.key==old.key and a.score>=winner.score*0.88 and not (winner.kind=="turnin" and winner.travel<8) then winner=a;break end
         end
     end
-    winner=B.Journey:Choose(winner,choices,s) or self:Fallback(s)
+    winner=B.Journey:Choose(winner,actions,s) or self:Fallback(s)
     winner=B.FlightPaths:Choose(s,winner)
     winner=B.Needs:Choose(s,winner)
     if not old or old.key~=winner.key then B.Trace("decision",winner.key);winner.since=s.now else winner.since=old.since end

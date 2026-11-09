@@ -15,10 +15,10 @@ local chosen=B.Journey:Choose(hub,{hub,field},s)
 assert(chosen==field,'saved trip returned to hub despite nearby held work')
 s.count=20;B.Planner:Batch({hub,field},s)
 assert(hub.returnPenalty==1,'full journal prevented return')
-assert(B.Journey:Choose(hub,{hub,field},s)==hub,'full journal trapped in field')
+assert(B.Journey:Choose(hub,{hub,field},s)==field,'full journal sent player home before finishing zone work')
 B.char.trip={ids={field.q},accepted={[field.q]=true}};B.Planner.current=field
-assert(B.Journey:Choose(hub,{hub,field},s)==hub,'full journal ignored a ready quest outside the saved outing')
-print('PASS outings: field work beyond 250 yards, refresh saved outing, full journal escape')
+assert(B.Journey:Choose(hub,{hub,field},s)==field,'ready quest outside the outing interrupted full-journal field work')
+print('PASS outings: field work beyond 250 yards, refresh saved outing, full journal does not force backtracking')
 
 s.count=2
 local original=B.Copy(field.point)
@@ -44,7 +44,7 @@ assert(B.Graph:LocalOpportunity(n,s) and B.char.opportunities[n.id],'actual pick
 B.Validator:Close();n.targets[1].points={{map=1421,x=90,y=50}}
 assert(B.Graph:LocalOpportunity(n,s),'held opportunity lost simply by walking away')
 B.char.opportunities=nil
-assert(not B.Graph:LocalOpportunity(n,s),'long local detour admitted')
+assert(B.Graph:LocalOpportunity(n,s),'zone work excluded by the old four-minute walk limit')
 n.targets[1].points={{map=1421,x=52,y=50}};n.profession=true
 assert(not B.Graph:LocalOpportunity(n,s),'profession admitted');n.profession=nil
 n.manual=true;assert(not B.Graph:LocalOpportunity(n,s),'manual quest auto-added');n.manual=nil
@@ -53,7 +53,7 @@ assert(not B.Graph:LocalOpportunity(n,s),'group quest auto-added');n.routes={}
 n.level=14;assert(not B.Graph:LocalOpportunity(n,s),'obsolete quest admitted');n.level=18
 s.log[n.id].objectives={{objectiveType=14,finished=false}}
 assert(not B.Graph:LocalOpportunity(n,s),'live profession requirement ignored')
-s.log[n.id].objectives={};n.ends={}
+s.log[n.id].objectives={};n.ends={};B.char.opportunities=nil
 assert(not B.Graph:LocalOpportunity(n,s),'unknown turn-in admitted')
 print('PASS local quests: live proof, actual pickup, durable character selection, level/solo/profession/travel guards')
 local class=action(90003,'accept',20);class.node.raw={requiredClasses=1024};class.travel=1800
@@ -68,6 +68,89 @@ print('PASS class routes: nearby/held/live priority retained, distant unconfirme
 s.log={[field.q]={objectives={}}};B.char.trip={ids={class.q},accepted={}};B.Planner.current=class
 field.node.ends={hub.point}
 assert(B.Journey:Choose(field,{field,class},s)==field,'old unconfirmed distant pickup locked the outing')
+
+-- Player scenario: collect a whole village before leaving, finish the zone,
+-- then hand in together. Eight quests exceeds both previous outing caps.
+B.Journey:Reset();B.Planner.current=nil;s.log={};s.count=0
+local zone={}
+for i=1,8 do
+ local a=action(91000+i,'accept',50+(i-1)*2)
+ a.node.starts={a.point};a.node.targets={{kind='kill',points={{map=1421,x=85,y=50}}}}
+ zone[i]=a
+end
+local first=B.Journey:Choose(zone[1],zone,s)
+assert(first.collection.total==8 and first.collection.confirmed==0,'not all village quests included before departure')
+B.Planner.current=first;zone[8].score=9999
+assert(B.Journey:Choose(zone[8],zone,s).q==first.q,'pickup not stable before log confirmation')
+for i=1,8 do
+ local q=91000+i;s.log[q]={objectives={}};s.count=i
+ local held=action(q,'complete',85);held.node=zone[i].node;zone[i]=held
+ local a=B.Journey:Choose(held,zone,s)
+ if i<8 then assert(a.kind=='accept' and a.collection.confirmed==i,'departed before all pickups confirmed')
+ else assert(a.kind=='complete' and a.outing.remaining==8,'did not start the full zone after collection') end
+ B.Planner.current=a
+end
+local savedTrip=B.Copy(B.char.trip);B.char.trip=B.Copy(savedTrip)
+for i=1,7 do
+ s.log[91000+i].ready=true;zone[i]=action(91000+i,'turnin',10)
+end
+s.count=20;zone[8].travel=400
+local a=B.Journey:Choose(zone[1],zone,s)
+assert(a.q==91008 and a.kind=='complete' and a.outing.remaining==1,'returned with distant zone work unfinished after reload/full journal')
+local remote=action(91999,'accept',50);remote.node.targets={{points={{map=1421,x=85,y=50}}}};remote.travel=300
+-- Recalculate the player location after departure; the village is no longer beside us.
+s.x=85;B.Planner.current=a;zone[#zone+1]=remote
+a=B.Journey:Choose(remote,zone,s)
+assert(a.q==91008,'left field work for a new pickup back in the village')
+s.log[91008].ready=true;zone[8]=action(91008,'turnin',10)
+a=B.Journey:Choose(zone[1],zone,s)
+assert(a.kind=='turnin' and a.outing.phase=='return' and a.outing.ready==8,'did not return after all zone objectives finished')
+assert(B.UI:View(a,s).footer==string.format(B.T('RETOUR HUB · %d à rendre'),8),'return phase/count missing from compact UI')
+-- An unavailable action is removed; completed and excluded quests cannot trap it.
+B.Journey:Reset();s.x=50;s.count=0;s.log={};B.Planner.current=nil
+local one,two=action(92001,'accept',50),action(92002,'accept',51)
+one.node.targets={{points={{map=1421,x=70,y=50}}}};two.node.targets=one.node.targets
+B.Journey:Choose(one,{one,two},s)
+s.log[one.q]={objectives={}};one.kind='complete';one.key='complete:'..one.q;one.point={map=1421,x=70,y=50};s.count=1
+a=B.Journey:Choose(one,{one},s)
+assert(a==one and #a.tripIDs==1,'unavailable companion prevented departure')
+local nearby=action(92003,'turnin',50);nearby.travel=2;s.log[nearby.q]={ready=true,objectives={}}
+a=B.Journey:Choose(nearby,{one,nearby},s)
+assert(a==nearby and a.outing.nearby and a.outing.remaining==1,'nearby hand-in reset the unfinished outing')
+assert(B.UI:View(a,s).footer==B.T('REMETS ICI · PUIS ON CONTINUE'),'nearby hand-in misleadingly requested hub return')
+assert(B.Journey:Choose(one,{one},s)==one,'did not resume field work after nearby hand-in')
+-- Journal capacity, foreign-zone errands and the top-60 search window.
+B.Journey:Reset();B.Planner.current=nil;s.log={};s.count=18
+local picks={};for i=1,8 do picks[i]=action(93000+i,'accept',50+i);picks[i].node.targets={{points={{map=1421,x=70,y=50}}}} end
+a=B.Journey:Choose(picks[1],picks,s)
+assert(#a.tripIDs==2,'pickup reservation exceeds remaining journal capacity')
+B.Journey:Reset();s.count=1;s.log={[one.q]={objectives={}}};one.travel=300
+local village={one};for _,p in ipairs(picks) do village[#village+1]=p end
+a=B.Journey:Choose(one,village,s)
+assert(a.kind=='accept' and a.collection.total==9,'existing field quest prevented collecting the whole village before departure')
+-- Return round: hand-ins across the same village finish before newly acquired work.
+B.Journey:Reset();s.log={[one.q]={objectives={}},[nearby.q]={ready=true,objectives={}}};s.count=2
+nearby.travel=40;nearby.point={map=1421,x=57,y=50}
+B.char.trip={schema=2,zone=1421,hub={map=1421,x=50,y=50},phase='return',ids={nearby.q},accepted={[nearby.q]=true}}
+a=B.Journey:Choose(one,{one,nearby},s)
+assert(a==nearby,'departed return hub before grouped hand-ins were finished')
+B.Journey:Reset();s.count=0;picks[2].node.targets={{points={{map=9999,x=50,y=50}}}}
+s.log={}
+a=B.Journey:Choose(picks[1],picks,s)
+for _,q in ipairs(a.tripIDs) do assert(q~=picks[2].q,'foreign-zone errand added to local pickup batch') end
+local many={};for i=1,70 do many[i]=action(94000+i,'complete',70) end
+assert(#B.Planner:Batch(many,s)==70,'quest list truncated to beam search window')
+-- Zone catalog suggestions remain unconfirmed until the server offers them.
+local catalog=action(95001,'accept',50).node
+catalog.starts={{map=1421,x=50,y=50}};catalog.ends=catalog.starts
+catalog.targets={{points={{map=1421,x=90,y=50}}}}
+catalog.routes={{kind='accept',guide={pack='ding-zones'},step={}}}
+B.Validator.offers={};B.Validator.npc=nil;B.char.opportunities=nil;s.log={}
+assert(B.Graph:LocalOpportunity(catalog,s),'known solo zone catalog quest requires prior NPC visit')
+assert(not B.char.opportunities and not s.log[catalog.id],'catalog suggestion fabricated pickup')
+catalog.targets={{points={{map=9999,x=90,y=50}}}}
+assert(not B.Graph:LocalOpportunity(catalog,s),'zone catalog imported unknown foreign destination')
+print('PASS zone batch: eight pickups, real confirmation, full journal, reload, distant last objective, late pickup, grouped return, unavailable quest, nearby hand-in, capacity, foreign zone, 70 candidates, catalog confidence, compact UI')
 
 -- Actual Items:Compare path: no mock verdicts, no class-only reward weights.
 TEST.class='DRUID';TEST.level=18;TEST.combat=false

@@ -132,8 +132,8 @@ function G:XP(n,s)
     local over=s.level-level
     return base*(over>5 and math.max(0.1,1-(over-5)*0.2) or 1),false
 end
--- Open zone guides are a catalog, not automatically a fast route. Admit a
--- small, solo, local loop only after the quest is held or really offered.
+-- Expand the outing from the open zone catalog. This is a DATABASE candidate,
+-- not proof of availability or pickup; Validator and the live log remain final.
 function G:LocalOpportunity(n,s)
     if not s or n.profession or n.manual or not B.Planner:Solo(n) then return false end
     for _,o in ipairs(s.log[n.id] and s.log[n.id].objectives or {}) do
@@ -142,18 +142,28 @@ function G:LocalOpportunity(n,s)
     local level=n.level>0 and n.level or s.level
     if level<s.level-2 or level>s.level+2 or n.min>s.level then return false end
     if s.log[n.id] and B.char.opportunities and B.char.opportunities[n.id] then return true end
-    if not s.log[n.id] and not (B.Validator.npc and B.Validator.offers[n.id]) then return false end
-    local targets=self:Locations(n,"complete");if #targets==0 then return false end
-    local origin=s;local seconds=0
+    local catalog=false
+    for _,r in ipairs(n.routes) do
+        if r.kind=="accept" and r.guide and r.guide.pack=="ding-zones" then catalog=true;break end
+    end
+    if not s.log[n.id] and not (B.Validator.npc and B.Validator.offers[n.id]) and not catalog then return false end
+    if catalog and not s.log[n.id] then
+        local giver=B.Travel:Nearest(self:Locations(n,"accept"),s)
+        if not giver or giver.map~=s.map or not B.Travel:Reachable(giver,s) then return false end
+    end
+    local targets=self:Locations(n,"complete");if #targets==0 and not catalog then return false end
+    local origin=s
     for _,t in ipairs(targets) do
-        local p=B.Travel:Nearest(B.Planner:SafePoints(t,s,n.id),origin)
+        local localPoints={}
+        for _,p in ipairs(B.Planner:SafePoints(t,s,n.id)) do if p.map==s.map then localPoints[#localPoints+1]=p end end
+        local p=B.Travel:Nearest(localPoints,origin)
         local d=p and B.Travel:Distance(origin,p)
         if not d or not B.Travel:Reachable(p,s) then return false end
-        seconds=seconds+d/7;origin=p
+        origin=p
     end
     local finish=B.Travel:Nearest(self:Locations(n,"turnin"),origin)
     local d=finish and B.Travel:Distance(origin,finish)
-    if not d or not B.Travel:Reachable(finish,s) or seconds+d/7>240 then return false end
+    if not d or finish.map~=s.map or not B.Travel:Reachable(finish,s) then return false end
     if s.log[n.id] then
         B.char.opportunities=B.char.opportunities or {}
         B.char.opportunities[n.id]=true

@@ -1,4 +1,4 @@
-# ForeverPilot 1.9.1 · Français / English
+# ForeverPilot 1.10.0 · Français / English
 
 Assistant de leveling pour **WoW Forever**, interface 16001. **Ding est obligatoire**
 et doit rester activé. ChangeLayer est facultatif. Le joueur se déplace et combat
@@ -39,10 +39,17 @@ Portail officiel : https://foreverpilot-subscriptions.tyronixstudio.workers.dev
 
 Journal réellement confirmé, offres du PNJ, prérequis, niveau, classe, quêtes terminées,
 objectifs voisins, trajets connus, apprentissage et exclusions par personnage.
-Les sorties regroupent aussi les objectifs proches déjà pris. Avant de rendre une
-quête, le guide compare les trajets complets pour éviter de repartir aussitôt au même
-endroit. Des boucles solo courtes, réellement offertes ou présentes au journal,
-peuvent compléter la route. Un journal plein et un PNJ tout proche permettent de rendre.
+Les sorties suivent trois phases : **préparation → objectifs de zone → remises groupées**.
+Avant de partir, le guide regroupe les quêtes faisables du village (jusqu'à 700 yards
+du point de départ), dans la limite du journal, et vérifie chaque prise dans le journal.
+Les quêtes solo adaptées du catalogue de la zone peuvent compléter le parcours;
+une proposition de la base n'est jamais considérée comme une offre confirmée du PNJ.
+Tous les objectifs éligibles déjà pris dans cette zone rejoignent la sortie, sans
+limite artificielle de quatre ou six quêtes. Un journal plein ne force plus un retour
+si du travail reste en zone. Un PNJ déjà à côté permet une remise sans interrompre
+la sortie. Les nouvelles prises au village attendent le retour; une prise rencontrée
+sur place peut être intégrée. Les quêtes indisponibles, de groupe, trop basses ou
+mises de côté ne bloquent pas la boucle. Les besoins de repos/entretien restent prioritaires.
 Les quêtes de classe proches, déjà prises ou réellement offertes sont prioritaires;
 une prise lointaine non confirmée reste candidate sans imposer un détour immédiat. Un maître de vol proche
 est proposé pour découverte/vérification; sa carte doit être ouverte pour confirmation.
@@ -95,13 +102,20 @@ and nearby flight masters are prioritized when available and feasible. Live game
 takes priority over route data. Neither the simulator nor UI checks establish a complete
 real-world 1–60 playthrough. Montreal goal lights require the Windows launcher.
 
-Outings include useful nearby held quests and compare complete return itineraries.
-Short solo loops can join with live offer/journal evidence and known destinations.
+Outings follow **collect → zone objectives → grouped turn-ins**. Collect eligible
+village quests within 700 yards of the pickup anchor, up to actual journal capacity.
+Every pickup needs live journal confirmation. Suitable solo zone-catalog quests
+can join as DATABASE suggestions; an NPC's real offers always take precedence.
+All eligible held objectives in the zone participate, with no four/six-quest cap.
+A full journal does not force a return while zone work remains. Hand in at an NPC
+already beside you, then continue. New village pickups wait until the return;
+pickups encountered on the spot can join. Unavailable, group, obsolete and skipped
+quests do not lock the outing. Rest and maintenance needs may still interrupt it.
 Nearby, held and live-offered class quests keep priority; distant unconfirmed pickups
 remain candidates without forcing a detour. Observed rare rewards may add a small,
 capped preference based on actual class/spec and equipped stats. Compare effects
 manually; weapons and unknown effects receive no guessed bonus. This is not a complete
-rare-reward catalog or a measured XP/hour claim. Updating from 1.9.0 only needs a reload
+rare-reward catalog or a measured XP/hour claim. Updating from 1.9.1 only needs a reload
 outside combat; no new files are loaded.
 
 ## Source, licences et crédits
