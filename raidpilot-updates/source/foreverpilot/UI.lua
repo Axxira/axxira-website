@@ -47,13 +47,19 @@ function U:View(a,s)
     if a.collection then v.footer=string.format(B.T("AVANT DE PARTIR · %d/%d quêtes prises"),a.collection.confirmed,a.collection.total) end
     if a.levelFit and a.levelFit.keep=="prerequisite" then v.footer=B.T("PRÉREQUIS POUR LA SUITE")
     elseif a.levelFit and a.levelFit.keep=="almostDone" then v.footer=B.T("PRESQUE FINI · PUIS ON AVANCE") end
+    if a.outing then
+        if a.collection then v.footer=string.format(B.T("PRÉPARATION · %d/%d prises"),a.collection.confirmed,a.collection.total)
+        elseif a.outing.nearby then v.footer=B.T("REMETS ICI · PUIS ON CONTINUE")
+        elseif a.outing.remaining>0 then v.footer=string.format(B.T("RESTE EN ZONE · %d à terminer"),a.outing.remaining)
+        else v.footer=string.format(B.T("RETOUR HUB · %d à rendre"),a.outing.ready) end
+    end
     if B.Recovery.notice and B.Recovery.notice.untilAt>s.now then v.footer=B.Recovery.notice.text;v.color=colors.recovery end
     if B.settings.paused then v.tag="PAUSE";v.footer=B.T("Clic droit pour reprendre");v.color=colors.pause end
     local badge,badgeColor=B.Journal:Badge()
     if badge then v.tag=badge;v.tagColor=badgeColor end
     if a.classPriority then
         v.tag=B.T("CLASSE PRIORITAIRE");v.tagColor={0.74,0.66,1}
-        v.footer=B.Journal:IsClass(a.node) and B.T("PROGRESSION DE CLASSE") or B.T("PRÉREQUIS DE CLASSE")
+        if not a.outing then v.footer=B.Journal:IsClass(a.node) and B.T("PROGRESSION DE CLASSE") or B.T("PRÉREQUIS DE CLASSE") end
     end
     if a.service=="flight" then
         v.tag=B.T("TRAJET AÉRIEN");v.tagColor=colors.turnin;v.verb=B.T("PARLE AU MAÎTRE DE VOL")

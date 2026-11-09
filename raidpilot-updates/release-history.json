@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.28",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.28",
+      "date": "2026-11-09",
+      "summary": "ForeverPilot 1.10.0 : préparer et terminer les sorties de zone",
+      "details": "Préparation des quêtes faisables du village avec confirmation réelle dans le journal, puis tous les objectifs éligibles de la zone avant les remises groupées. Suppression des limites de quatre/six quêtes et du retour imposé par un journal plein. Catalogue de quêtes solo adaptées intégré, offres réelles prioritaires. Les prises lointaines au village attendent le retour; les PNJ déjà à côté permettent une remise sans détour. Phases et compteurs compacts FR/EN. Classes, prérequis, exclusions et capacité du journal préservés. Aucun gain XP/h réel encore mesuré. Aucun nouveau fichier : recharger hors combat. RaidPilot reste entièrement gratuit. CurseForge soumis à modération."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.27",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "Intelligence Engine V2 — observations indépendantes et protection des arrêts",
       "details": "Le moteur de confiance exige trois images distinctes cohérentes avant de confirmer un arrêt. Il ne compte jamais deux fois une même image, réinitialise sa session lors du changement de fenêtre EFT, refuse les captures anciennes ou lentes et conserve le modèle de base en cas d'information non fiable. La localisation reste estimative entre les positions F8; le correctif nécessite une validation en jeu."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.41",
-      "raidPilotVersion": "0.14.2.41",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Intelligence Engine — fusion prudente des capteurs et détection d'informations contradictoires",
-      "details": "Ajoute un moteur de décision déterministe après la fusion des capteurs visuels V2 et de mouvement. Les captures anciennes, lentes, non fiables ou contradictoires ne peuvent plus valider un faux arrêt; la couche conserve le modèle existant par défaut et journalise les décisions et compteurs fiables/rejetés dans le diagnostic de précision. Aucune lecture mémoire EFT, aucune coordonnée absolue inventée. L'amélioration du positionnement doit être mesurée par diagnostics F8 en situation réelle."
     }
   ]
 }
