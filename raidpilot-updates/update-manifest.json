@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-08T23:45:17.3075588+00:00",
+  "publishedAt": "2026-11-09T18:49:42.5230132+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.27-ee1389ab8deb/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "EC3D4DACE341CCF8E7CF63CA74EAFCFD8C4D41FA035B65D986BACD603090CF5E",
-    "sizeBytes": 234564527,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.28-186672724d91/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "B4064813EBF48A6C7C13E07C13A82C432170291C45C3E816C7852DD0F1E2B2E4",
+    "sizeBytes": 234564528,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.27-ee1389ab8deb/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "1EE813C8E1BE017A05A91B9B2EC9C11DA23002AB45D362A07F52A8237B56560B",
-    "sizeBytes": 58332829,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.28-186672724d91/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "FF01A5ABBF4A1C1F6DD4E80AD28CDE8F1679D2DF3D04D5230984548A04B4F76C",
+    "sizeBytes": 58332828,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.27",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.27-ee1389ab8deb/RaidPilot-Launcher-v0.2.27-Windows-x64.zip",
-    "sha256": "5B051A573B02F7CFDF1137DBFE7423118A75EDB629FCA804AF60EB70750E2F40",
-    "sizeBytes": 360607979,
-    "releaseNotes": "Compare les deux trajets complets avant un retour, intègre les quêtes proches déjà prises à la sortie et libère les anciennes prises lointaines. Les quêtes de classe proches, prises ou réellement offertes restent prioritaires. Ajoute les courtes boucles solo confirmées dans le journal ou au PNJ, avec contrôles de niveau et destination. Les récompenses rares observées peuvent favoriser une quête si leurs statistiques conviennent à la classe et spécialisation; bonus limité, effets complexes à comparer manuellement. Aucun catalogue complet de récompenses bleues, aucune promesse de gain XP/h. Interface compacte FR/EN, aucun nouveau fichier à charger. Édition RaidPilot entièrement gratuite. CurseForge reste soumis à modération."
+    "version": "0.2.28",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.28-186672724d91/RaidPilot-Launcher-v0.2.28-Windows-x64.zip",
+    "sha256": "85FA94C6BBD52D044AC66A0937DF8098DF829CBBF8A63988FF04F42BBC0975E0",
+    "sizeBytes": 360609132,
+    "releaseNotes": "Préparation des quêtes faisables du village avec confirmation réelle dans le journal, puis tous les objectifs éligibles de la zone avant les remises groupées. Suppression des limites de quatre/six quêtes et du retour imposé par un journal plein. Catalogue de quêtes solo adaptées intégré, offres réelles prioritaires. Les prises lointaines au village attendent le retour; les PNJ déjà à côté permettent une remise sans détour. Phases et compteurs compacts FR/EN. Classes, prérequis, exclusions et capacité du journal préservés. Aucun gain XP/h réel encore mesuré. Aucun nouveau fichier : recharger hors combat. RaidPilot reste entièrement gratuit. CurseForge soumis à modération."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.28",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.28",
+      "date": "2026-11-09",
+      "summary": "ForeverPilot 1.10.0 : préparer et terminer les sorties de zone",
+      "details": "Préparation des quêtes faisables du village avec confirmation réelle dans le journal, puis tous les objectifs éligibles de la zone avant les remises groupées. Suppression des limites de quatre/six quêtes et du retour imposé par un journal plein. Catalogue de quêtes solo adaptées intégré, offres réelles prioritaires. Les prises lointaines au village attendent le retour; les PNJ déjà à côté permettent une remise sans détour. Phases et compteurs compacts FR/EN. Classes, prérequis, exclusions et capacité du journal préservés. Aucun gain XP/h réel encore mesuré. Aucun nouveau fichier : recharger hors combat. RaidPilot reste entièrement gratuit. CurseForge soumis à modération."
+    },
     {
       "component": "launcher",
       "version": "0.2.27",
@@ -253,16 +263,6 @@
       "date": "2026-10-26",
       "summary": "StashPilot — catalogue et comparaison d'icônes en version test",
       "details": "Ajoute un catalogue consultable d'objets Tarkov et une comparaison visuelle assistée depuis la capture F8. Les références sont téléchargées au besoin et conservées localement. Le prototype examine au maximum 120 premières références, et les suggestions doivent être confirmées par le joueur. La segmentation automatique de tout l'inventaire et la reconnaissance exhaustive ne sont pas disponibles. Aucun objet n'est vendu automatiquement."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.4.2",
-      "raidPilotVersion": "0.15.4.2",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — interface minimale et validation de scan F8",
-      "details": "StashPilot montre désormais les objets et leurs décisions en quatre colonnes seulement : objet, quantité, décision, raison. Les réglages d'inventaire et de besoins sont déplacés dans une fenêtre secondaire. En menu Tarkov, F8 lance l'OCR local puis une seule fenêtre permet de corriger et confirmer les noms/quantités reconnus avant de remplacer la liste du dernier scan et de sauvegarder localement. Aucun objet sans besoin confirmé ne reçoit un conseil de vente. L'OCR ne reconnaît pas les icônes seules, et le scan doit être vérifié manuellement avant confirmation. Aucun achat ni vente automatique."
     }
   ]
 }
