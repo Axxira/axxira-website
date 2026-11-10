@@ -2,7 +2,7 @@
   "name": "foreverpilot-regressions",
   "private": true,
   "scripts": {
-    "test": "node run.cjs && node run-class-flight.cjs && node run-class-flight.cjs --en && node run-outing.cjs && node run-outing.cjs --en && node run-locale.cjs"
+    "test": "node run.cjs && node run-class-flight.cjs && node run-class-flight.cjs --en && node run-outing.cjs && node run-outing.cjs --en && node run-locale.cjs && node run-npc-recovery.cjs && node run-npc-recovery.cjs --en"
   },
   "dependencies": {
     "fengari": "0.1.5"

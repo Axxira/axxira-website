@@ -1,4 +1,4 @@
-# ForeversPilot FastXp 1.10.1 · Français / English
+# ForeversPilot FastXp 1.10.2 · Français / English
 
 Assistant de leveling pour **WoW Forever**, interface 16001. **Ding est obligatoire**
 et doit rester activé. ChangeLayer est facultatif. Le joueur se déplace et combat
@@ -16,6 +16,25 @@ lui-même : aucune quête abandonnée, aucun objet acheté, vendu ou équipé au
 
 **Options** regroupe langue, profil, pause, taille, position, objets, HDV, layers et aide.
 Les noms de quêtes, PNJ et objets restent ceux du jeu. Les demandes de layer sont en anglais.
+
+**PNJ sans quête :** une fois arrivé, **Absent ?** remplace temporairement Passer.
+Clic gauche : signaler et recalculer, sans abandon; clic droit : écarter durablement.
+`/fpl absent` fait le même signalement. Après 45 secondes consécutives près du PNJ
+ciblé, à portée confirmée, immobile, sans dialogue et hors combat/pause/AFK,
+une prise toujours non confirmée est reportée 30 minutes. Ce report n'est pas une
+preuve d'indisponibilité définitive; une offre réelle ou un prérequis changé le lève.
+La chaîne Scout Support → Valuable Vantages est rétablie prudemment quand absente
+de la base. Les offres réelles priment toujours. Autres prérequis Forever encore
+incomplets; aucune validation complète du parcours 1–60.
+
+**NPC has no quest:** at the destination, **Missing?** temporarily replaces Skip.
+Left click reports the problem and replans without abandoning; right click skips
+until restored manually. `/fpl unavailable` also reports it. An unconfirmed pickup
+at a selected NPC within confirmed interaction range is deferred for 30 minutes
+after 45 consecutive stationary seconds without a dialog, outside combat/pause/AFK.
+A real offer or prerequisite change clears this temporary report. The missing
+Scout Support → Valuable Vantages link is conservatively restored; live offers win.
+Other Forever prerequisites remain incomplete; this is not a certified 1–60 route.
 
 ## Deux éditions
 

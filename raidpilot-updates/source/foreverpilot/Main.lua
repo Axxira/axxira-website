@@ -132,7 +132,7 @@ f:SetScript("OnEvent",function(_,event,...)
             B.Recovery:Invalidate(q)
         elseif event=="QUEST_DETAIL" then
             local id=Ding.Compat.DialogQuestID();local npc=Ding.Compat.NpcUnitID()
-            if id then B.Knowledge:Offer(id,npc,B.State:Refresh(),B.Call(GetTitleText)) end
+            B.Validator:Detail(id,npc,B.State:Refresh())
         elseif event=="QUEST_PROGRESS" or event=="QUEST_COMPLETE" then
             local id=Ding.Compat.DialogQuestID()
             if id then B.Knowledge:Position(id,"turnin",Ding.Compat.NpcUnitID(),B.State:Refresh()) end
@@ -170,6 +170,12 @@ function B.SkipCurrent()
         else B.Print(B.T("Aucune quête ou étape à passer.")) end
     end)
 end
+function B.ReportUnavailable()
+    B.Guard(function()
+        if B.Recovery:Unavailable(B.Planner.current,B.State:Refresh()) then B.Update()
+        else B.Print(B.T("Signale la quête seulement une fois arrivé au PNJ.")) end
+    end)
+end
 function B.ResumeSkipped(q)
     B.Guard(function()
         if B.Recovery:Resume(q) then B.Update()
@@ -201,6 +207,7 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     if msg=="" and B.premiumBlocked then B.Options:Toggle()
     elseif msg=="" then B.settings.shown=not B.UI.frame:IsShown();B.UI.frame:SetShown(B.settings.shown)
     elseif msg=="skip" or msg=="next" or msg=="passer" then B.SkipCurrent()
+    elseif msg=="absent" or msg=="unavailable" then B.ReportUnavailable()
     elseif msg=="reprendre" or msg=="unskip" then B.ResumeSkipped()
     elseif msg=="reprendre tout" or msg=="unskip all" then B.ResumeSkipped("all")
     elseif msg:match("^reprendre%s+%d+$") or msg:match("^unskip%s+%d+$") then B.ResumeSkipped(tonumber(msg:match("(%d+)$")))

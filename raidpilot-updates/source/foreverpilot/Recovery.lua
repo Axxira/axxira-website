@@ -16,6 +16,7 @@ function R:Avoided(q,p,s,target)
     return false
 end
 function R:Tick(s,a)
+    self:TickPickup(s,a)
     if B.settings.paused or s.afk or s.dead or s.taxi or not a or a.kind~="complete" or not a.q then self.watch=nil;return end
     local sig=self:Signature(s.log[a.q]);local w=self.watch
     if not w or w.key~=a.key or w.signature~=sig then
@@ -39,9 +40,38 @@ function R:Tick(s,a)
         self.revision=(self.revision or 0)+1
     end
 end
+function R:CanReportUnavailable(a,s)
+    if not a or a.kind~="accept" or not a.q or a.itemStart or not a.point or not a.point.npc or not s or s.log[a.q] or s:IsDone(a.q) then return false end
+    if B.Validator.dialogQuest==a.q or (B.Validator.npc and B.Validator.offers[a.q]) then return false end
+    local d=B.Travel:Distance(a.point,s)
+    return d~=nil and d<=25
+end
+function R:Unavailable(a,s,reason)
+    if not self:CanReportUnavailable(a,s) then return false end
+    -- Missing interaction is not proof of a universal quest restriction. Keep
+    -- it character-local and temporary, cleared by a real offer or prerequisite.
+    self:Block(a.q,a.point.npc,s,reason or "reportedUnavailable",1800)
+    self.notice={text=B.T("Prise non confirmée · autre étape"),untilAt=s.now+20}
+    B.Print(B.T("Quête indisponible ici : ")..(a.node and a.node.name or tostring(a.q))..B.T(". Guidage recalculé; journal conservé. Nouvelle vérification dans 30 min, ou dès qu'un prérequis change."))
+    self:Replan();return true
+end
+function R:TickPickup(s,a)
+    local v=B.Validator
+    if B.settings.paused or s.afk or s.dead or s.taxi or s.combat or s.moving or (s.count and s.limit and s.count>=s.limit)
+        or not self:CanReportUnavailable(a,s) or v.npc or v.dialogOpen
+        or s.targetNpc~=a.point.npc or s.targetNear~=true then self.pickupWatch=nil;return end
+    local w=self.pickupWatch
+    if not w or w.key~=a.key then self.pickupWatch={key=a.key,last=s.now,active=0};return end
+    -- Count consecutive nearby, stationary observations only, never elapsed
+    -- time across pause, combat, tab-away stalls or a quest-reading dialog.
+    local dt=s.now-w.last;w.last=s.now
+    if dt<0 or dt>6 then w.active=0;return end
+    w.active=w.active+dt
+    if w.active>=45 then self:Unavailable(a,s,"pickupUnconfirmed") end
+end
 function R:Reset()
     if B.Journey then B.Journey:Reset() end
-    self.avoid={};self.watch=nil;self.notice=nil;B.char.deferred={};self:Invalidate()
+    self.avoid={};self.watch=nil;self.pickupWatch=nil;self.notice=nil;B.char.deferred={};self:Invalidate()
 end
 function R:Prerequisite(n,s)
     local function holds(q) return q<0 and s.log[-q]~=nil or q>0 and s:IsDone(q) end
@@ -56,17 +86,17 @@ function R:Prerequisite(n,s)
         return best and best.id or math.abs(n.any[1]),n.any[1]<0
     end
 end
-function R:Block(q,npc,s,reason)
+function R:Block(q,npc,s,reason,duration)
     local signature=self:Availability(q,s)
     local previous=B.char.unavailable[q]
-    if previous and previous.signature==signature and previous.npc==npc then return end
-    B.char.unavailable[q]={npc=npc,reason=reason or "notOffered",at=time(),level=s.level,signature=signature}
+    if previous and previous.signature==signature and previous.npc==npc and (not previous.expires or previous.expires>time()) then return end
+    B.char.unavailable[q]={npc=npc,reason=reason or "notOffered",at=time(),level=s.level,signature=signature,expires=duration and time()+duration or nil}
     B.Trace("recovery",q..":"..(reason or "notOffered"));B.dirty=true
     self.revision=(self.revision or 0)+1
 end
 function R:IsBlocked(q,s)
     local r=B.char.unavailable[q]
-    if r and r.level==s.level then
+    if r and (not r.expires or r.expires>time()) and r.level==s.level then
         r.signature=r.signature or self:Availability(q,s)
         if r.signature==self:Availability(q,s) then return true end
     end
@@ -133,7 +163,7 @@ function R:Resume(q)
 end
 function R:Replan()
     if B.Journey then B.Journey:Reset() end
-    self.watch=nil
+    self.watch=nil;self.pickupWatch=nil
     B.Planner.current=nil;B.Planner.signature=nil;B.Planner.actions={};B.Planner.farm=nil
     B.Travel.at=nil;B.dirty=true
     self.revision=(self.revision or 0)+1

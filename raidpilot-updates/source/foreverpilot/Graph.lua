@@ -1,5 +1,9 @@
 local B=ForeverPilotLeveling
 local G={nodes={},routes={},count=0,classQuests={}}; B.Graph=G
+-- Conservative chain repair: Scout Support delivers Darthalia's orders to
+-- Masoj before Valuable Vantages. Ding 1.8.1 omits this link. Do not infer
+-- prerequisites from arbitrary route order; a real offer still overrides it.
+local missingParents={[98095]=98094}
 function G:Node(q)
     if self.nodes[q] then return self.nodes[q] end
     if not Ding.Data:QuestExists(q) then return nil end
@@ -9,6 +13,9 @@ function G:Node(q)
         any=B.List(one),all=B.List(all),exclusive=B.List(raw.exclusiveTo),next={},routes={},
         starters=Ding.Data:StarterNpcs(q),finishers=Ding.Data:FinisherNpcs(q),
         startItems=raw.startedBy and raw.startedBy[3] or {}, raw=raw}
+    if missingParents[q] and #n.any==0 and #n.all==0 then
+        n.all={missingParents[q]};n.prerequisiteRepair=true
+    end
     -- These open-data profession introductions are optional, not prerequisites
     -- for leveling. Live Mining objectives require skill 20, not killing or
     -- merely visiting the trainer listed as a creature in the export.
