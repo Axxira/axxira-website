@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-10T18:50:23.5031677+00:00",
+  "publishedAt": "2026-11-10T19:10:45.3500524+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.32-bd3ee0be5da6/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "2B99140945181881DB9959F14A7DC620A855ED1724D95A31276FDCBD9FFE335F",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.33-11d731ce21c5/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "10F0C8899FE9C62DDF78685902FB3615EC2C9D8C5EA6AB3BC15CA907C04B59C1",
     "sizeBytes": 234574475,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.32-bd3ee0be5da6/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "5A6A01A6D4151149E545EB233C21C15CBADAD21C9122B3B701614FD1C7753E23",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.33-11d731ce21c5/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "D29EBC0035EDAA3123034EF17F2F78C8721EB79B68CDD4E88E166F262F6BC8F5",
     "sizeBytes": 58342775,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.32",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.32-bd3ee0be5da6/RaidPilot-Launcher-v0.2.32-Windows-x64.zip",
-    "sha256": "C6821E5E06AC305F3F675ECE330FF0C4C6D071C3FCF2C13359B2B9E8112020AF",
-    "sizeBytes": 360680490,
-    "releaseNotes": "Préparation de Scout Support avant Valuable Vantages; offre réelle prioritaire. Bouton Absent ? au PNJ et report temporaire de 30 minutes quand la prise reste non confirmée, sans abandon ni exclusion définitive. Détection prudente après 45 secondes consécutives, PNJ ciblé à portée confirmée, hors combat, pause, déplacement, AFK et dialogue. Un prérequis changé ou une offre réelle lève le report. Dialogue direct reconnu sans confondre offre et prise. Français/anglais, réglages conservés. Aucun gain XP/h ni parcours 1–60 complet validé. RaidPilot reste entièrement gratuit."
+    "version": "0.2.33",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.33-11d731ce21c5/RaidPilot-Launcher-v0.2.33-Windows-x64.zip",
+    "sha256": "272DF1AF45864DB07300B14000187422F43A2363F24EA4B6BDFE4BA7ECC70C06",
+    "sizeBytes": 360683157,
+    "releaseNotes": "Temps de travail inclus même quand les objectifs ne sont pas cartographiés; suites réellement utiles seulement dans le bonus de chaîne. Plusieurs ordres de sortie comparés avec retour au village, priorité de classe et stabilité de la flèche conservées. Quêtes sans objectifs connus exclues des ajouts opportunistes ordinaires. XP/h de session hors pause/AFK; déplacements et morts restent comptés. FR/EN, aucun reset ni abandon. Tests simulés; aucun gain XP/h réel ou optimalité 1–60 garantis. RaidPilot reste entièrement gratuit."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.33",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.33",
+      "date": "2026-11-10",
+      "summary": "ForeversPilot FastXp 1.10.3 : efficacité des sorties",
+      "details": "Temps de travail inclus même quand les objectifs ne sont pas cartographiés; suites réellement utiles seulement dans le bonus de chaîne. Plusieurs ordres de sortie comparés avec retour au village, priorité de classe et stabilité de la flèche conservées. Quêtes sans objectifs connus exclues des ajouts opportunistes ordinaires. XP/h de session hors pause/AFK; déplacements et morts restent comptés. FR/EN, aucun reset ni abandon. Tests simulés; aucun gain XP/h réel ou optimalité 1–60 garantis. RaidPilot reste entièrement gratuit."
+    },
     {
       "component": "launcher",
       "version": "0.2.32",
@@ -253,16 +263,6 @@
       "date": "2026-10-28",
       "summary": "CORTEX V4.2 — F8 adaptatif fondé sur des écarts réels, 4/6/8/12 s (test)",
       "details": "Corrige la situation où les F8 restent autour de 4 secondes même après plusieurs raids : l'apprentissage V3 redémarre à chaque session et la mémoire V4 ne conservait que les mauvaises zones. V4.2 mémorise désormais de façon bornée, localement et pendant 7 jours, des comptes de F8 natifs comparables Precision V2 faibles/forts par carte (sans coordonnées ni images). Après au moins 6 bonnes comparaisons historiques et 2 de la session, il peut choisir prudemment 6 s; après 14 bonnes et 4 récentes, jusqu'à 8 s. Les 12 s nécessitent toujours des repères visuels indépendants. Mauvaise santé GPS, forte incertitude, mauvais écart F8, secteur risqué ou action dangereuse annulent immédiatement l'extension. Le diagnostic et l'export indiquent les comparaisons acceptées/rejetées. Le mode CORTEX V4 reste expérimental, activable manuellement. Aucune amélioration réelle en raid n'est affirmée sans mesures."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.6.1",
-      "raidPilotVersion": "0.15.6.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-26",
-      "summary": "CORTEX V4.1 — récupération visuelle progressive et fiabilité F8 (test)",
-      "details": "Améliore CORTEX V4 expérimental. Après deux images de repères locaux cohérentes, séparées d'au moins 250 ms, les corrections de récupération restent limitées à six petits pas d'au plus 0,75 m et 6° chacun; en cas de contradiction ou de dépassement, un recalage F8 natif est requis. Les boucles sont comptées seulement après correction effectivement appliquée. Nouveau contrôleur de fiabilité visuelle : apprend à partir d'intervalles F8 natifs comparables suivant des corrections locales appliquées (16 exemples maximum; calibration à partir de 4), et ne peut que réduire le plafond F8 vers 8 ou 4 secondes lorsque les erreurs sont élevées. Diagnostics et export F8 enrichis. CORTEX V4 reste une option de test, désactivée par défaut. Aucune revendication de SLAM neuronal, de précision absolue ou de gains mesurés en raid avant essais."
     }
   ]
 }
