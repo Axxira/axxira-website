@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.29",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.29",
+      "date": "2026-11-10",
+      "summary": "DungeonMapPilot 0.3.0 : cartes et parcours FR/EN, gratuits dans RaidPilot",
+      "details": "Nouveau bouton Cartes donjons dans ForeverPilot : installe DungeonMapPilot avec sauvegarde, jeu fermé. Édition RaidPilot entièrement gratuite et hors ligne. 25 instances / 63 plans de référence; deux parcours guidés FR/EN (Cavernes des Lamentations et Ragefeu), étapes manuelles, prérequis et repères personnels par personnage. Pas de GPS sur les plans de référence, couverture complète non validée. Offre publique séparée 5,99 CAD/mois; compagnon Windows dédié. Leveling, Ding, bridge, Farm et réglages conservés. Aucun paiement réel effectué pour les tests."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.28",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "Intelligence V2 — repli sur les entrées lors de captures visuelles répétées",
       "details": "Corrige la fusion de mouvement : une même trame visuelle ne conserve plus une décision de mouvement antérieure lorsque les entrées de déplacement ont évolué. Le moteur se replie sur les entrées actuelles et journalise le refus. Aucune coordonnée absolue n'est inventée; la précision doit être validée dans un raid réel."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.42",
-      "raidPilotVersion": "0.14.2.42",
-      "beaconVersion": "0.3.9",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Intelligence Engine V2 — observations indépendantes et protection des arrêts",
-      "details": "Le moteur de confiance exige trois images distinctes cohérentes avant de confirmer un arrêt. Il ne compte jamais deux fois une même image, réinitialise sa session lors du changement de fenêtre EFT, refuse les captures anciennes ou lentes et conserve le modèle de base en cas d'information non fiable. La localisation reste estimative entre les positions F8; le correctif nécessite une validation en jeu."
     }
   ]
 }

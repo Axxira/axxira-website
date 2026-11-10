@@ -9,6 +9,7 @@ using RaidPilot.Overlay;
 
 var failures = new List<string>();
 int testCount = 0;
+DungeonMapTests.Run(Run, Require);
 Run("comparaison de versions", () =>
 {
     Require(UpdateService.IsNewer("0.10.2", "0.11.0"), "0.11.0 devrait être plus récent");

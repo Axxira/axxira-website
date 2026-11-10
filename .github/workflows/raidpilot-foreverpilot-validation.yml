@@ -12,6 +12,8 @@ on:
       - "raidpilot-updates/source/foreverpilot-companion/**"
       - "raidpilot-updates/source/subscriptions/**"
       - "raidpilot-updates/Build-ForeverPilotPackage.ps1"
+      - "raidpilot-updates/Build-DungeonMapPilotPackage.ps1"
+      - "raidpilot-updates/source/dungeonmappilot*/**"
       - "raidpilot-updates/release-history.json"
       - "raidpilot-updates/Restore-DingAddon.ps1"
       - "raidpilot-updates/Ding-NOTICE.txt"
@@ -53,6 +55,9 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           node --test raidpilot-updates/source/subscriptions/test/*.test.mjs
           dotnet run --project raidpilot-updates/source/foreverpilot-companion/ForeverPilot.Companion.csproj -c Release -- --self-test
+          node raidpilot-updates/source/dungeonmappilot-tests/run.cjs
+          node --test raidpilot-updates/source/dungeonmappilot-subscriptions/test/*.test.mjs
+          dotnet run --project raidpilot-updates/source/dungeonmappilot-companion/DungeonMapPilot.Companion.csproj -c Release -- --self-test
           ./raidpilot-updates/Build-ForeverPilotPackage.ps1 -OutputDirectory validation-public-addon
       - name: Validate notes, installer and launcher regressions
         shell: pwsh
