@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-10T17:21:46.0434690+00:00",
+  "publishedAt": "2026-11-10T18:50:23.5031677+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.31-e8cd38144615/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "6539FD97FBA79BFF44A00833803FD73A354003F64E8A24CA44732B80702E5D68",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.32-bd3ee0be5da6/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "2B99140945181881DB9959F14A7DC620A855ED1724D95A31276FDCBD9FFE335F",
     "sizeBytes": 234574475,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.31-e8cd38144615/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "1113AFDA8D6D71B7606BF83FB07606056AF112119F32EF3B3A9DA0C4BEF7BBC4",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.32-bd3ee0be5da6/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "5A6A01A6D4151149E545EB233C21C15CBADAD21C9122B3B701614FD1C7753E23",
     "sizeBytes": 58342775,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.31",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.31-e8cd38144615/RaidPilot-Launcher-v0.2.31-Windows-x64.zip",
-    "sha256": "DBDB596F6B531D07722487D17B169577FB35E4E043871159AEACB4B6644FBE15",
-    "sizeBytes": 360678379,
-    "releaseNotes": "Après mise à jour et redémarrage du launcher, ForeverPilot est automatiquement installé ou réparé dans le dossier WoW déjà choisi, ou celui où ForeverPilot est déjà présent. Ding est ajouté ou réparé si nécessaire. Si WoW est ouvert, le launcher attend sa fermeture et reprend sans nouveau clic tant qu’il reste ouvert. Première utilisation sans dossier choisi ni addon : choisir le dossier une fois. Sauvegarde avant remplacement, réglages des personnages et ancien bridge conservés, aucune rétrogradation. Versions incluse et installée clairement séparées; fichiers incohérents détectés même avec le même numéro de version. Une erreur est affichée avec une action de reprise, sans boucle d’échecs. Active Ding! + ForeversPilot FastXp dans WoW; AI Bridge et Farm ne sont pas requis. Lua inchangé en 1.10.1, approuvé sur CurseForge. RaidPilot reste gratuit."
+    "version": "0.2.32",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.32-bd3ee0be5da6/RaidPilot-Launcher-v0.2.32-Windows-x64.zip",
+    "sha256": "C6821E5E06AC305F3F675ECE330FF0C4C6D071C3FCF2C13359B2B9E8112020AF",
+    "sizeBytes": 360680490,
+    "releaseNotes": "Préparation de Scout Support avant Valuable Vantages; offre réelle prioritaire. Bouton Absent ? au PNJ et report temporaire de 30 minutes quand la prise reste non confirmée, sans abandon ni exclusion définitive. Détection prudente après 45 secondes consécutives, PNJ ciblé à portée confirmée, hors combat, pause, déplacement, AFK et dialogue. Un prérequis changé ou une offre réelle lève le report. Dialogue direct reconnu sans confondre offre et prise. Français/anglais, réglages conservés. Aucun gain XP/h ni parcours 1–60 complet validé. RaidPilot reste entièrement gratuit."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.32",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.32",
+      "date": "2026-11-10",
+      "summary": "ForeversPilot FastXp 1.10.2 : récupération des PNJ sans quête",
+      "details": "Préparation de Scout Support avant Valuable Vantages; offre réelle prioritaire. Bouton Absent ? au PNJ et report temporaire de 30 minutes quand la prise reste non confirmée, sans abandon ni exclusion définitive. Détection prudente après 45 secondes consécutives, PNJ ciblé à portée confirmée, hors combat, pause, déplacement, AFK et dialogue. Un prérequis changé ou une offre réelle lève le report. Dialogue direct reconnu sans confondre offre et prise. Français/anglais, réglages conservés. Aucun gain XP/h ni parcours 1–60 complet validé. RaidPilot reste entièrement gratuit."
+    },
     {
       "component": "launcher",
       "version": "0.2.31",
@@ -253,16 +263,6 @@
       "date": "2026-10-26",
       "summary": "CORTEX V4.1 — récupération visuelle progressive et fiabilité F8 (test)",
       "details": "Améliore CORTEX V4 expérimental. Après deux images de repères locaux cohérentes, séparées d'au moins 250 ms, les corrections de récupération restent limitées à six petits pas d'au plus 0,75 m et 6° chacun; en cas de contradiction ou de dépassement, un recalage F8 natif est requis. Les boucles sont comptées seulement après correction effectivement appliquée. Nouveau contrôleur de fiabilité visuelle : apprend à partir d'intervalles F8 natifs comparables suivant des corrections locales appliquées (16 exemples maximum; calibration à partir de 4), et ne peut que réduire le plafond F8 vers 8 ou 4 secondes lorsque les erreurs sont élevées. Diagnostics et export F8 enrichis. CORTEX V4 reste une option de test, désactivée par défaut. Aucune revendication de SLAM neuronal, de précision absolue ou de gains mesurés en raid avant essais."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.6.0",
-      "raidPilotVersion": "0.15.6.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-26",
-      "summary": "CORTEX V4 expérimental — fusion visuelle, récupération et mémoire spatiale",
-      "details": "V4 est un mode facultatif, désactivé par défaut dans le menu Windows, pour comparer sans perturber CORTEX V3. Réutilise les deux banques de repères visuels locaux et persistants (basse et haute résolution); confronte chaque proposition de relocalisation à l'incertitude du déplacement avant l'application et limite le gain. Les grands retours sur lieu connu requièrent deux corroborations locales séparées temporellement; les cas ambigus sollicitent un F8 natif via les garde-fous habituels. Un atlas local de secteurs d'erreurs F8 comparables est mémorisé pendant 30 jours et peut seulement réduire les intervalles admissibles. Rapport CORTEX V4 exportable contenant cadence native, erreurs F8 et mesures de récupération, sans capture ni coordonnées précises. Ne constitue pas un SLAM neuronal ni une garantie de localisation parfaite. Gains en raid non encore démontrés; voir CORTEX-V4.md."
     }
   ]
 }
