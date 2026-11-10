@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-09T18:49:42.5230132+00:00",
+  "publishedAt": "2026-11-10T14:04:55.3980011+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.28-186672724d91/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "B4064813EBF48A6C7C13E07C13A82C432170291C45C3E816C7852DD0F1E2B2E4",
-    "sizeBytes": 234564528,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.29-30b259f8d630/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "9CECD8370BDC885355B43B9785ADB926EDF13913431191E193BBE7F43AE42295",
+    "sizeBytes": 234564529,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.28-186672724d91/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "FF01A5ABBF4A1C1F6DD4E80AD28CDE8F1679D2DF3D04D5230984548A04B4F76C",
-    "sizeBytes": 58332828,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.29-30b259f8d630/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "21DAA8293F50B8E4CC0CE169FFA58FD7BC668992A2AFE8456FF67B7C5EF44920",
+    "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.28",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.28-186672724d91/RaidPilot-Launcher-v0.2.28-Windows-x64.zip",
-    "sha256": "85FA94C6BBD52D044AC66A0937DF8098DF829CBBF8A63988FF04F42BBC0975E0",
-    "sizeBytes": 360609132,
-    "releaseNotes": "Préparation des quêtes faisables du village avec confirmation réelle dans le journal, puis tous les objectifs éligibles de la zone avant les remises groupées. Suppression des limites de quatre/six quêtes et du retour imposé par un journal plein. Catalogue de quêtes solo adaptées intégré, offres réelles prioritaires. Les prises lointaines au village attendent le retour; les PNJ déjà à côté permettent une remise sans détour. Phases et compteurs compacts FR/EN. Classes, prérequis, exclusions et capacité du journal préservés. Aucun gain XP/h réel encore mesuré. Aucun nouveau fichier : recharger hors combat. RaidPilot reste entièrement gratuit. CurseForge soumis à modération."
+    "version": "0.2.29",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.29-30b259f8d630/RaidPilot-Launcher-v0.2.29-Windows-x64.zip",
+    "sha256": "CE227FD0611C96BC6AA3CB453D8AF58694007239480F2B2E6861B79DCA7A357C",
+    "sizeBytes": 360643568,
+    "releaseNotes": "Nouveau bouton Cartes donjons dans ForeverPilot : installe DungeonMapPilot avec sauvegarde, jeu fermé. Édition RaidPilot entièrement gratuite et hors ligne. 25 instances / 63 plans de référence; deux parcours guidés FR/EN (Cavernes des Lamentations et Ragefeu), étapes manuelles, prérequis et repères personnels par personnage. Pas de GPS sur les plans de référence, couverture complète non validée. Offre publique séparée 5,99 CAD/mois; compagnon Windows dédié. Leveling, Ding, bridge, Farm et réglages conservés. Aucun paiement réel effectué pour les tests."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.29",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.29",
+      "date": "2026-11-10",
+      "summary": "DungeonMapPilot 0.3.0 : cartes et parcours FR/EN, gratuits dans RaidPilot",
+      "details": "Nouveau bouton Cartes donjons dans ForeverPilot : installe DungeonMapPilot avec sauvegarde, jeu fermé. Édition RaidPilot entièrement gratuite et hors ligne. 25 instances / 63 plans de référence; deux parcours guidés FR/EN (Cavernes des Lamentations et Ragefeu), étapes manuelles, prérequis et repères personnels par personnage. Pas de GPS sur les plans de référence, couverture complète non validée. Offre publique séparée 5,99 CAD/mois; compagnon Windows dédié. Leveling, Ding, bridge, Farm et réglages conservés. Aucun paiement réel effectué pour les tests."
+    },
     {
       "component": "launcher",
       "version": "0.2.28",
@@ -253,16 +263,6 @@
       "date": "2026-10-26",
       "summary": "Carte — affichage des étages plus clair (test)",
       "details": "Première amélioration visuelle inspirée par la lisibilité de Tarkov Navigator : indicateur d'étage plus lisible et infobulle des niveaux réellement présents dans le catalogue local. Cartes actuelles et coordonnées conservées; aucun fond cartographique tiers copié ou remplacé. CORTEX, QuestPilot et le repérage ne sont pas modifiés. Les nouveaux fonds d'étages restent à préparer et tester."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.4.3",
-      "raidPilotVersion": "0.15.4.3",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-26",
-      "summary": "StashPilot — catalogue et comparaison d'icônes en version test",
-      "details": "Ajoute un catalogue consultable d'objets Tarkov et une comparaison visuelle assistée depuis la capture F8. Les références sont téléchargées au besoin et conservées localement. Le prototype examine au maximum 120 premières références, et les suggestions doivent être confirmées par le joueur. La segmentation automatique de tout l'inventaire et la reconnaissance exhaustive ne sont pas disponibles. Aucun objet n'est vendu automatiquement."
     }
   ]
 }
