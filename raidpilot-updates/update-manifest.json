@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-10T14:04:55.3980011+00:00",
+  "publishedAt": "2026-11-10T15:06:02.8773622+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.29-30b259f8d630/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "9CECD8370BDC885355B43B9785ADB926EDF13913431191E193BBE7F43AE42295",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.30-a4182b974a27/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "D150363A0DFC61923971E4C6C1FFC8F190259DC105EB3E0292495E09800F7E28",
     "sizeBytes": 234564529,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.29-30b259f8d630/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "21DAA8293F50B8E4CC0CE169FFA58FD7BC668992A2AFE8456FF67B7C5EF44920",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.30-a4182b974a27/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "4F691BD2C7717F88B94DC29E3CE4394BBA90154892478F02DBE423F419547F46",
     "sizeBytes": 58332829,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.29",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.29-30b259f8d630/RaidPilot-Launcher-v0.2.29-Windows-x64.zip",
-    "sha256": "CE227FD0611C96BC6AA3CB453D8AF58694007239480F2B2E6861B79DCA7A357C",
-    "sizeBytes": 360643568,
-    "releaseNotes": "Nouveau bouton Cartes donjons dans ForeverPilot : installe DungeonMapPilot avec sauvegarde, jeu fermé. Édition RaidPilot entièrement gratuite et hors ligne. 25 instances / 63 plans de référence; deux parcours guidés FR/EN (Cavernes des Lamentations et Ragefeu), étapes manuelles, prérequis et repères personnels par personnage. Pas de GPS sur les plans de référence, couverture complète non validée. Offre publique séparée 5,99 CAD/mois; compagnon Windows dédié. Leveling, Ding, bridge, Farm et réglages conservés. Aucun paiement réel effectué pour les tests."
+    "version": "0.2.30",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.30-a4182b974a27/RaidPilot-Launcher-v0.2.30-Windows-x64.zip",
+    "sha256": "1910F1D23AEB9524B99BB3B688449D19D300A6E90EEE5E178635604283909516",
+    "sizeBytes": 360644861,
+    "releaseNotes": "Les neuf classes et 27 arbres sont accessibles dans Profil. Aperçu séparé du personnage réel; conseils objets adaptés à sa classe et spécialisation, anciens profils incompatibles ignorés. Options indépendant du module objets, avec raccourci si le guidage est masqué, désactivé ou sans accès Premium. Nouveau nom affiché ForeversPilot FastXp; dossiers, réglages, Ding et bridge conservés. FR/EN. RaidPilot entièrement gratuit. Aucun nouvel addon ni fichier à charger; /reload hors combat. Conseils statistiques estimés, effets complexes à vérifier."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.30",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.30",
+      "date": "2026-11-10",
+      "summary": "ForeversPilot FastXp 1.10.1 : neuf classes et Options accessible",
+      "details": "Les neuf classes et 27 arbres sont accessibles dans Profil. Aperçu séparé du personnage réel; conseils objets adaptés à sa classe et spécialisation, anciens profils incompatibles ignorés. Options indépendant du module objets, avec raccourci si le guidage est masqué, désactivé ou sans accès Premium. Nouveau nom affiché ForeversPilot FastXp; dossiers, réglages, Ding et bridge conservés. FR/EN. RaidPilot entièrement gratuit. Aucun nouvel addon ni fichier à charger; /reload hors combat. Conseils statistiques estimés, effets complexes à vérifier."
+    },
     {
       "component": "launcher",
       "version": "0.2.29",
@@ -253,16 +263,6 @@
       "date": "2026-10-26",
       "summary": "CORTEX V3 expérimental — apprentissage de dérive et recalages F8 adaptatifs",
       "details": "CORTEX V3 ajoute une calibration locale à partir des résidus réels de captures F8 comparables (24 mesures maximum en mémoire, activation de la calibration après 6 mesures). Le modèle estime de manière prudente la dérive à 8 et 12 secondes et peut limiter la cadence à 4 ou 8 secondes si l'écart augmente. Quand les mesures sont suffisamment fiables et un repère visuel local a réellement été appliqué, une courte grâce de 5 à 9 secondes peut maintenir un intervalle de 8 secondes, jamais 12 sans deux repères récents distincts. Le diagnostic indique les raisons de limitation, les risques empiriques et la cadence F8 réellement observée. Les protections de visée, action, changement de session et repli sont conservées. Aucun réseau neuronal, aucune garantie de précision absolue ni gain de captures mesuré en raid réel à ce stade."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.4.4",
-      "raidPilotVersion": "0.15.4.4",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-26",
-      "summary": "Carte — affichage des étages plus clair (test)",
-      "details": "Première amélioration visuelle inspirée par la lisibilité de Tarkov Navigator : indicateur d'étage plus lisible et infobulle des niveaux réellement présents dans le catalogue local. Cartes actuelles et coordonnées conservées; aucun fond cartographique tiers copié ou remplacé. CORTEX, QuestPilot et le repérage ne sont pas modifiés. Les nouveaux fonds d'étages restent à préparer et tester."
     }
   ]
 }
