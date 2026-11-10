@@ -995,6 +995,7 @@ internal enum LauncherAction
     RefreshForeverPilot,
     InstallForeverPilot,
     InstallChangeLayer,
+    InstallDungeonMaps,
     ToggleHabsGoals,
     PreviewHabsGoals,
     Home,

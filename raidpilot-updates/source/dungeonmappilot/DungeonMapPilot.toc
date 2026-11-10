@@ -1,0 +1,19 @@
+## Interface: 16001
+## Title: |cffE5BD73DungeonMapPilot|r
+## Notes: Dungeon and raid reference maps, floors, zoom and personal markers. Local alpha.
+## Notes-frFR: Cartes de donjons et raids, étages, zoom et repères personnels. Alpha locale.
+## Author: ForeverPilot Project
+## Version: 0.3.0
+## OptionalDeps: DungeonMapPilot_Access
+## SavedVariablesPerCharacter: DungeonMapPilotCharDB
+Core.lua
+Access.lua
+Locale.lua
+ReferenceMaps.lua
+Catalog.lua
+Model.lua
+RouteData.lua
+Routes.lua
+UI.lua
+RouteUI.lua
+Main.lua

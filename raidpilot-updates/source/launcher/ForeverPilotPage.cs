@@ -25,7 +25,7 @@ internal sealed partial class LauncherForm
     {
         if (action is not (LauncherAction.ForeverPilot or LauncherAction.LaunchBattleNet or
             LauncherAction.ChooseForeverFolder or LauncherAction.OpenForeverFolder or
-            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or LauncherAction.InstallChangeLayer or
+            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or LauncherAction.InstallChangeLayer or LauncherAction.InstallDungeonMaps or
             LauncherAction.ToggleHabsGoals or LauncherAction.PreviewHabsGoals)) return false;
         if (_foreverInstalling || _busy) return true;
         try
@@ -35,6 +35,14 @@ internal sealed partial class LauncherForm
             var state = _surface.Forever;
             switch (action)
             {
+                case LauncherAction.InstallDungeonMaps:
+                    if (state.GamePath is null) throw new InvalidOperationException("Choisis d'abord ton dossier WoW Forever.");
+                    _foreverInstalling = true; SetBusy(true);
+                    _surface.ForeverMessage = "Sauvegarde et installation des cartes gratuites…"; _surface.Invalidate();
+                    try { await Task.Run(() => DungeonMapService.Install(state.GamePath, DungeonMapService.BundlePath));
+                        _surface.ForeverMessage = "DungeonMapPilot installé gratuitement. Relance WoW et tape /dmp. FR/EN dans Langue."; }
+                    finally { _foreverInstalling = false; SetBusy(false); RefreshForeverPilot(); }
+                    break;
                 case LauncherAction.InstallChangeLayer:
                     if (state.GamePath is null) throw new InvalidOperationException("Choisis d'abord ton dossier WoW Forever.");
                     _foreverInstalling = true; SetBusy(true);
@@ -139,7 +147,9 @@ internal sealed partial class LauncherSurface
         ForeverText(g, "WORLD OF WARCRAFT  /  FOREVER", 244, 84, 630, 20, 9, ForeverAccent, true);
         ForeverText(g, "ForeverPilot", 242, 113, 680, 55, 32, Color.White, true);
         ForeverText(g, "Ton cap vers le niveau 60.", 245, 176, 680, 28, 14, Color.FromArgb(210, 231, 230));
-        ForeverText(g, "Édition de test · Toutes les fonctions gratuites · Aucun abonnement requis", 245, 217, 690, 25, 10, Muted);
+        ForeverButton(g, new Rectangle(890, 215, 242, 34), "Cartes donjons · gratuit", LauncherAction.InstallDungeonMaps,
+            Forever.GamePath is not null && !Forever.GameRunning && !Busy && Directory.Exists(DungeonMapService.BundlePath));
+        ForeverText(g, "Édition de test · Toutes les fonctions gratuites · Aucun abonnement requis", 245, 217, 630, 25, 10, Muted);
 
         var statusTitle = Forever.Ready ? "INSTALLATION PRÊTE" : "INSTALLATION À VÉRIFIER";
         var accent = Forever.Ready ? ForeverAccent : Amber;

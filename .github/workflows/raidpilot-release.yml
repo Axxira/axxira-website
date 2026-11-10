@@ -12,6 +12,8 @@ on:
       - "raidpilot-updates/public-catalogues.json"
       - "raidpilot-updates/Ding-NOTICE.txt"
       - "raidpilot-updates/Build-ForeverPilotPackage.ps1"
+      - "raidpilot-updates/Build-DungeonMapPilotPackage.ps1"
+      - "raidpilot-updates/source/dungeonmappilot*/**"
       - ".github/workflows/raidpilot-release.yml"
   workflow_dispatch:
 
@@ -158,6 +160,9 @@ jobs:
           $PSNativeCommandUseErrorActionPreference = $true
           node --test raidpilot-updates/source/subscriptions/test/*.test.mjs
           dotnet run --project raidpilot-updates/source/foreverpilot-companion/ForeverPilot.Companion.csproj -c Release -- --self-test
+          node raidpilot-updates/source/dungeonmappilot-tests/run.cjs
+          node --test raidpilot-updates/source/dungeonmappilot-subscriptions/test/*.test.mjs
+          dotnet run --project raidpilot-updates/source/dungeonmappilot-companion/DungeonMapPilot.Companion.csproj -c Release -- --self-test
 
       - name: Generate RaidPilot icon
         shell: pwsh
@@ -220,6 +225,10 @@ jobs:
 
           dotnet publish (Join-Path $src "foreverpilot-companion/ForeverPilot.Companion.csproj") -c Release -r win-x64 --self-contained true -o (Join-Path $out "companion")
           Copy-Item -LiteralPath (Join-Path $src "foreverpilot-companion/README.md") -Destination (Join-Path $out "companion/COMMENCE-ICI.md")
+          dotnet publish (Join-Path $src "dungeonmappilot-companion/DungeonMapPilot.Companion.csproj") -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o (Join-Path $out "maps-companion")
+          Copy-Item -LiteralPath (Join-Path $src "dungeonmappilot-companion/README.md") -Destination (Join-Path $out "maps-companion/COMMENCE-ICI.md")
+          & (Join-Path $out "maps-companion/DungeonMapPilot.Companion.exe") --self-test
+          if ($LASTEXITCODE -ne 0) { throw 'Maps companion self-test failed' }
 
           Get-ChildItem -LiteralPath $out -Filter *.pdb -File -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
           if (Get-ChildItem -LiteralPath $out -Directory -Recurse -Force | Where-Object Name -in @("UserData", "Screenshots", "logs")) { throw "Données personnelles inattendues dans la publication." }
@@ -283,6 +292,12 @@ jobs:
           $companionZip = Join-Path $assets "ForeverPilot-Companion-v1.0.0-Windows-x64.zip"
           Compress-Archive -Path (Join-Path $out "companion/*") -DestinationPath $companionZip -CompressionLevel Optimal
           "COMPANION_ZIP=$companionZip" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $mapsCompanionZip = Join-Path $assets "DungeonMapPilot-Companion-v1.0.0-Windows-x64.zip"
+          Compress-Archive -LiteralPath (Join-Path $out "maps-companion/DungeonMapPilot.Companion.exe"),(Join-Path $out "maps-companion/COMMENCE-ICI.md") -DestinationPath $mapsCompanionZip -CompressionLevel Optimal
+          "MAPS_COMPANION_ZIP=$mapsCompanionZip" | Out-File -FilePath $env:GITHUB_ENV -Append
+          & ./raidpilot-updates/Build-DungeonMapPilotPackage.ps1 -Edition public -OutputRoot release-assets
+          $mapsZip = (Get-ChildItem -LiteralPath release-assets/DungeonMapPilot-v0.3.0-public-candidate -Filter *.zip).FullName
+          "MAPS_ZIP=$mapsZip" | Out-File -FilePath $env:GITHUB_ENV -Append
 
           "RP_ZIP=$rpZip" | Out-File -FilePath $env:GITHUB_ENV -Append
           "BEACON_ZIP=$beaconZip" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -312,7 +327,7 @@ jobs:
           $repo = $env:GITHUB_REPOSITORY
           $entry = (Get-Content -LiteralPath "raidpilot-updates/release-history.json" -Raw | ConvertFrom-Json).entries[0]
           $notes = "RaidPilot Stable`n- Launcher v$env:LAUNCHER_VERSION`n- Overlay v$env:RP_VERSION`n- Beacon v$env:BEACON_VERSION`n`n$($entry.summary)`n`n$($entry.details)`n`nPublication immuable : les archives et leur SHA-256 sont vérifiés avant activation du manifeste Stable."
-          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP $env:FOREVERPILOT_ZIP $env:COMPANION_ZIP --repo $repo --target $env:GITHUB_SHA --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
+          gh release create $env:RELEASE_TAG $env:RP_ZIP $env:BEACON_ZIP $env:LAUNCHER_ZIP $env:FOREVERPILOT_ZIP $env:COMPANION_ZIP $env:MAPS_ZIP $env:MAPS_COMPANION_ZIP --repo $repo --target $env:GITHUB_SHA --title "RaidPilot Stable · RP $env:RP_VERSION · Launcher $env:LAUNCHER_VERSION" --notes $notes
 
       - name: Update Stable manifest
         shell: pwsh
