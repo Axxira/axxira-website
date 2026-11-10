@@ -6,6 +6,39 @@ namespace RaidPilot.Launcher;
 internal sealed partial class LauncherForm
 {
     private bool _foreverInstalling;
+    private readonly ForeverPilotAutoUpdate _foreverAutoUpdate = new();
+    private readonly System.Windows.Forms.Timer _foreverInstallTimer = new() { Interval = 10000 };
+    private string? _foreverAutoNotice;
+
+    private async Task TryAutoInstallForeverPilotAsync()
+    {
+        if (IsDisposed || Disposing || _busy || _foreverInstalling || _backgroundUpdateCheckInProgress) return;
+        RefreshForeverPilot();
+        var state = _surface.Forever;
+        if (!state.NeedsAutomaticInstall) return;
+        _foreverInstalling = true;
+        SetBusy(true);
+        try
+        {
+            var result = await Task.Run(() => _foreverAutoUpdate.Run(state, ForeverPilotService.Inspect,
+                () => ForeverPilotService.Install(state.GamePath!, ForeverPilotService.BundlePath)));
+            if (IsDisposed || Disposing) return;
+            _surface.Forever = result.State;
+            _surface.ForeverAutoState = result.Kind;
+            if (result.Message.Length > 0 && result.Message != _foreverAutoNotice)
+            {
+                _foreverAutoNotice = result.Message;
+                _surface.ForeverMessage = result.Message;
+                SetStatus(result.Message, result.Kind == "failed" ? LauncherStatus.Error
+                    : result.Kind == "installed" ? LauncherStatus.Success : LauncherStatus.Update);
+            }
+        }
+        finally
+        {
+            _foreverInstalling = false;
+            if (!IsDisposed && !Disposing) { SetBusy(false); RefreshForeverPilot(); }
+        }
+    }
 
     private void SyncHabsStatus()
     {
@@ -61,7 +94,9 @@ internal sealed partial class LauncherForm
                 case LauncherAction.ForeverPilot:
                     break;
                 case LauncherAction.RefreshForeverPilot:
+                    _foreverAutoUpdate.Retry();
                     _surface.ForeverMessage = state.NextStep;
+                    await TryAutoInstallForeverPilotAsync();
                     break;
                 case LauncherAction.LaunchBattleNet:
                     if (state.BattleNetPath is null)
@@ -74,13 +109,20 @@ internal sealed partial class LauncherForm
                     using (var dialog = new FolderBrowserDialog { Description = "Choisis World of Warcraft ou son dossier _forever_",
                         UseDescriptionForTitle = true, InitialDirectory = state.GamePath ?? "", ShowNewFolderButton = false })
                     {
-                        if (dialog.ShowDialog(this) == DialogResult.OK)
+                        _foreverInstalling = true;
+                        try
                         {
-                            ForeverPilotService.SaveGamePath(dialog.SelectedPath);
-                            _surface.ForeverMessage = "Dossier WoW Forever enregistré.";
-                            RefreshForeverPilot();
+                            if (dialog.ShowDialog(this) == DialogResult.OK)
+                            {
+                                ForeverPilotService.SaveGamePath(dialog.SelectedPath);
+                                _surface.ForeverMessage = "Dossier WoW Forever enregistré.";
+                                RefreshForeverPilot();
+                                _foreverAutoUpdate.Retry();
+                            }
                         }
+                        finally { _foreverInstalling = false; }
                     }
+                    await TryAutoInstallForeverPilotAsync();
                     break;
                 case LauncherAction.OpenForeverFolder:
                     var folder = state.GamePath is null ? null : Path.Combine(state.GamePath, "Interface", "AddOns");
@@ -90,6 +132,8 @@ internal sealed partial class LauncherForm
                 case LauncherAction.InstallForeverPilot:
                     if (state.GamePath is null) throw new InvalidOperationException("Choisis d'abord ton dossier WoW Forever.");
                     if (state.BundledVersion is null) throw new InvalidOperationException("Le package ForeverPilot est absent ou incomplet.");
+                    ForeverPilotService.SaveGamePath(state.GamePath);
+                    _foreverAutoUpdate.Retry();
                     _foreverInstalling = true;
                     SetBusy(true);
                     _surface.ForeverMessage = "Sauvegarde et installation de ForeverPilot et Ding…";
@@ -125,6 +169,7 @@ internal sealed partial class LauncherSurface
 {
     internal ForeverPilotStatus Forever = new(null, null, false, null, null, false, null);
     internal string ForeverMessage = "Les addons se chargent à l'intérieur de World of Warcraft.";
+    internal string ForeverAutoState = "";
     internal string? ChangeLayerVersion;
     internal bool HabsEnabled;
     internal string HabsStatus = "Désactivé · Lumières visibles uniquement dans WoW";
@@ -149,7 +194,8 @@ internal sealed partial class LauncherSurface
             Forever.GamePath is not null && !Forever.GameRunning && !Busy && Directory.Exists(DungeonMapService.BundlePath));
         ForeverText(g, "Édition de test · Toutes les fonctions gratuites · Aucun abonnement requis", 245, 217, 630, 25, 10, Muted);
 
-        var statusTitle = Forever.StatusTitle;
+        var autoFailed = ForeverAutoState == "failed" && !Forever.Ready;
+        var statusTitle = autoFailed ? "INSTALLATION AUTO BLOQUÉE · ACTION NÉCESSAIRE" : Forever.StatusTitle;
         var accent = Forever.Ready ? ForeverAccent : Amber;
         using (var fill = new SolidBrush(Panel))
         using (var shape = RoundedRect(new Rectangle(214, 282, 940, 187), 12))
@@ -174,7 +220,10 @@ internal sealed partial class LauncherSurface
             Forever.GamePath is not null && !Busy);
         ForeverButton(g, new Rectangle(982, 488, 172, 46), "Vérifier", LauncherAction.RefreshForeverPilot, !Busy);
 
-        var tip = Forever.GameRunning && !Forever.Ready ? "WoW est ouvert : ferme le jeu, puis clique sur Installer dans WoW. La mise à jour du launcher seule ne suffit pas."
+        var tip = autoFailed ? "Consulte le message ci-dessous, puis clique sur Vérifier pour reprendre l'installation."
+            : Forever.NeedsAutomaticInstall && Forever.GameRunning ? "Ferme WoW : l'installation se fera automatiquement. Garde le launcher ouvert."
+            : Forever.Ready ? "Mises à jour automatiques dans ce dossier · Active Ding! et ForeversPilot FastXp dans WoW."
+            : !Forever.AutoManaged ? "Première utilisation : choisis ton dossier WoW ou clique sur Installer dans WoW. Les mises à jour suivantes seront automatiques."
             : Forever.NextStep;
         ForeverText(g, tip, 218, 544, 932, 22, 9, Muted);
         ForeverText(g, "Layers : réseau public ChangeLayer par Foofi · téléchargement officiel CurseForge", 218, 575, 690, 20, 9, Muted);
@@ -190,7 +239,7 @@ internal sealed partial class LauncherSurface
             LauncherAction.ToggleHabsGoals, !Busy);
         ForeverButton(g, new Rectangle(914, 650, 218, 30), "Tester dans WoW  →", LauncherAction.PreviewHabsGoals,
             Forever.GamePath is not null && !Busy);
-        ForeverText(g, ForeverMessage, 218, 702, 720, 43, 9, Muted);
+        ForeverText(g, ForeverMessage, 218, 702, 720, 43, 9, autoFailed ? Amber : Muted);
         ForeverButton(g, new Rectangle(982, 704, 172, 32), "Choisir le dossier WoW", LauncherAction.ChooseForeverFolder, !Busy);
     }
 

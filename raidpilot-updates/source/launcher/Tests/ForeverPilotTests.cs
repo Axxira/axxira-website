@@ -31,6 +31,88 @@ internal static class ForeverPilotTests
 
     internal static void Run(Action<string, Action> run)
     {
+        run("ForeverPilot auto : dossier non choisi sans addon ne déclenche aucune installation", () => WithFixture((game, bundle) =>
+        {
+            var state = ForeverPilotService.InspectAt(game, bundle, null, false);
+            Require(!state.NeedsAutomaticInstall, "première installation non demandée");
+            var result = new ForeverPilotAutoUpdate().Run(state, () => state, () => throw new Exception("installation inattendue"));
+            Require(result.Kind == "idle", "première utilisation non respectée");
+            Require(!ForeverPilotService.InspectAt(null, bundle, null, false, selected: true).NeedsAutomaticInstall, "dossier absent accepté");
+        }));
+        run("ForeverPilot auto : dossier choisi installe automatiquement addon et Ding", () => WithFixture((game, bundle) =>
+        {
+            Directory.Delete(Path.Combine(game, "Interface", "AddOns", "Ding"), true);
+            ForeverPilotStatus Inspect() => ForeverPilotService.InspectAt(game, bundle, null, false, selected: true);
+            var result = new ForeverPilotAutoUpdate().Run(Inspect(), Inspect,
+                () => ForeverPilotService.Install(game, bundle, () => false, Path.Combine(Path.GetDirectoryName(bundle)!, "Ding")));
+            Require(result.Kind == "installed" && result.State.Ready, "première copie choisie non installée");
+            Require(File.ReadAllText(Path.Combine(game, "WTF", "settings.lua")) == "keep settings", "WTF perdu");
+        }));
+        run("ForeverPilot auto : ancienne installation mise à jour une seule fois avec sauvegarde", () => WithFixture((game, bundle) =>
+        {
+            var target = Path.Combine(game, "Interface", "AddOns", ForeverPilotService.AddonName);
+            WriteAddon(target, "1.3.0");
+            ForeverPilotStatus Inspect() => ForeverPilotService.InspectAt(game, bundle, null, false);
+            var updater = new ForeverPilotAutoUpdate(); int calls = 0; string backup = "";
+            string Install() { calls++; return backup = ForeverPilotService.Install(game, bundle, () => false); }
+            Require(updater.Run(Inspect(), Inspect, Install).Kind == "installed", "mise à jour non installée");
+            Require(updater.Run(Inspect(), Inspect, Install).Kind == "idle" && calls == 1, "réinstallation répétée");
+            Require(ForeverPilotService.ReadVersion(backup) == "1.3.0", "sauvegarde absente");
+        }));
+        run("ForeverPilot auto : attend WoW puis installe à sa fermeture sans nouveau clic", () => WithFixture((game, bundle) =>
+        {
+            bool running = true; int calls = 0;
+            ForeverPilotStatus Inspect() => ForeverPilotService.InspectAt(game, bundle, null, running, selected: true);
+            var updater = new ForeverPilotAutoUpdate();
+            string Install() { calls++; return ForeverPilotService.Install(game, bundle, () => running); }
+            Require(updater.Run(Inspect(), Inspect, Install).Kind == "waiting" && calls == 0, "copie pendant le jeu");
+            running = false;
+            Require(updater.Run(Inspect(), Inspect, Install).Kind == "installed" && calls == 1, "attente non reprise");
+        }));
+        run("ForeverPilot auto : WoW démarre pendant la préparation puis fermeture et reprise", () => WithFixture((game, bundle) =>
+        {
+            bool running = false; int checks = 0;
+            ForeverPilotStatus Inspect() => ForeverPilotService.InspectAt(game, bundle, null, running, selected: true);
+            var updater = new ForeverPilotAutoUpdate();
+            var result = updater.Run(Inspect(), Inspect,
+                () => ForeverPilotService.Install(game, bundle, () => running = ++checks > 1));
+            Require(result.Kind == "waiting" && result.State.Version is null, "course avec lancement WoW ignorée");
+            running = false;
+            Require(updater.Run(Inspect(), Inspect, () => ForeverPilotService.Install(game, bundle, () => false)).Kind == "installed", "reprise bloquée");
+        }));
+        run("ForeverPilot auto : erreur visible sans boucle, retry explicite", () => WithFixture((game, bundle) =>
+        {
+            ForeverPilotStatus Inspect() => ForeverPilotService.InspectAt(game, bundle, null, false, selected: true);
+            var updater = new ForeverPilotAutoUpdate(); int calls = 0;
+            string Fail() { calls++; throw new UnauthorizedAccessException(); }
+            Require(updater.Run(Inspect(), Inspect, Fail).Kind == "failed", "erreur cachée");
+            Require(updater.Run(Inspect(), Inspect, Fail).Message.Contains("administrateur") && calls == 1, "échecs répétés");
+            updater.Retry();
+            Require(updater.Run(Inspect(), Inspect, () => ForeverPilotService.Install(game, bundle, () => false)).Kind == "installed", "retry sans effet");
+        }));
+        run("ForeverPilot auto : état après copie vérifié avant annonce de succès", () => WithFixture((game, bundle) =>
+        {
+            ForeverPilotStatus Inspect() => ForeverPilotService.InspectAt(game, bundle, null, false, selected: true);
+            var result = new ForeverPilotAutoUpdate().Run(Inspect(), Inspect, () => "");
+            Require(result.Kind == "failed" && !result.State.Ready, "faux succès");
+        }));
+        run("ForeverPilot auto : même version incohérente réparée, bridge préservé", () => WithFixture((game, bundle) =>
+        {
+            var target = Path.Combine(game, "Interface", "AddOns", ForeverPilotService.AddonName);
+            WriteAddon(target, "1.4.1"); File.WriteAllText(Path.Combine(target, "Main.lua"), "-- old");
+            ForeverPilotStatus Inspect() => ForeverPilotService.InspectAt(game, bundle, null, false);
+            var result = new ForeverPilotAutoUpdate().Run(Inspect(), Inspect, () => ForeverPilotService.Install(game, bundle, () => false));
+            Require(result.Kind == "installed" && result.State.Ready, "réparation auto absente");
+            Require(File.ReadAllText(Path.Combine(game, "Interface", "AddOns", "ForeverPilot", "bridge.lua")) == "keep bridge", "bridge changé");
+        }));
+        run("ForeverPilot auto : version plus récente protégée et package incomplet refusé", () => WithFixture((game, bundle) =>
+        {
+            var target = Path.Combine(game, "Interface", "AddOns", ForeverPilotService.AddonName);
+            WriteAddon(target, "9.0.0"); File.Delete(Path.Combine(target, "Main.lua"));
+            Require(!ForeverPilotService.InspectAt(game, bundle, null, false).NeedsAutomaticInstall, "version plus récente écrasée");
+            File.Delete(Path.Combine(bundle, "Main.lua"));
+            Require(!ForeverPilotService.InspectAt(game, bundle, null, false, selected: true).NeedsAutomaticInstall, "package incomplet utilisé");
+        }));
         run("ForeverPilot : détecter la bonne édition et ignorer l'ancien bridge", () => WithFixture((game, bundle) =>
         {
             Require(ForeverPilotService.NormalizeGamePath(Path.GetDirectoryName(game)) == game, "root WoW non reconnu");

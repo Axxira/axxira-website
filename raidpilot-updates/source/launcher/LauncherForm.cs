@@ -60,13 +60,22 @@ internal sealed partial class LauncherForm : Form
             await CheckUpdatesAsync(showErrors: false, background: true);
             await TryAutoInstallWhenIdleAsync();
         };
+        _foreverInstallTimer.Tick += async (_, _) => await TryAutoInstallForeverPilotAsync();
 
         Shown += OnShown;
         Activated += (_, _) => RefreshForeverPilot();
+        FormClosing += (_, e) =>
+        {
+            if (!_foreverInstalling) return;
+            e.Cancel = true;
+            SetStatus("ForeverPilot : installation en cours, fermeture disponible dans quelques instants.", LauncherStatus.Info);
+        };
         FormClosed += (_, _) =>
         {
             _automaticUpdateTimer.Stop();
             _automaticUpdateTimer.Dispose();
+            _foreverInstallTimer.Stop();
+            _foreverInstallTimer.Dispose();
             _updates.Dispose();
             _habs.Dispose();
         };
@@ -111,7 +120,11 @@ internal sealed partial class LauncherForm : Form
             SetStatus("Source de mises à jour désactivée.", LauncherStatus.Info);
         }
 
-        _automaticUpdateTimer.Start();
+        if (!IsDisposed && !Disposing)
+        {
+            await TryAutoInstallForeverPilotAsync();
+            if (!IsDisposed && !Disposing) { _automaticUpdateTimer.Start(); _foreverInstallTimer.Start(); }
+        }
     }
 
     private async void OnActionRequested(object? sender, LauncherAction action)
@@ -136,6 +149,7 @@ internal sealed partial class LauncherForm : Form
                 _surface.ActiveSection = LauncherSection.Update;
                 _surface.Invalidate();
                 await CheckUpdatesAsync(showErrors: true);
+                await TryAutoInstallForeverPilotAsync();
                 break;
 
             case LauncherAction.Play:

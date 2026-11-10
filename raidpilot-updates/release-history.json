@@ -8,8 +8,8 @@
       "beaconVersion": "0.3.10",
       "launcherVersion": "0.2.31",
       "date": "2026-11-10",
-      "summary": "ForeversPilot : installer la mise à jour dans WoW, pas seulement dans le launcher",
-      "details": "La page distingue la version installée dans le dossier WoW et la version incluse dans RaidPilot. Une ancienne version ne dit plus installation prête. Le bouton Installer dans WoW devient prioritaire lorsque nécessaire; fermer WoW puis installer et activer Ding! + ForeversPilot FastXp. Bridge AI et Farm ne sont pas requis. Les fichiers sont comparés au paquet même si le numéro de version est identique; la réparation garde une sauvegarde et préserve les réglages. Aucune installation automatique ni activation présumée dans le jeu. Addon Lua inchangé en 1.10.1, déjà envoyé sur CurseForge; RaidPilot reste entièrement gratuit."
+      "summary": "ForeversPilot : les mises à jour s’installent automatiquement dans WoW",
+      "details": "Après mise à jour et redémarrage du launcher, ForeverPilot est automatiquement installé ou réparé dans le dossier WoW déjà choisi, ou celui où ForeverPilot est déjà présent. Ding est ajouté ou réparé si nécessaire. Si WoW est ouvert, le launcher attend sa fermeture et reprend sans nouveau clic tant qu’il reste ouvert. Première utilisation sans dossier choisi ni addon : choisir le dossier une fois. Sauvegarde avant remplacement, réglages des personnages et ancien bridge conservés, aucune rétrogradation. Versions incluse et installée clairement séparées; fichiers incohérents détectés même avec le même numéro de version. Une erreur est affichée avec une action de reprise, sans boucle d’échecs. Active Ding! + ForeversPilot FastXp dans WoW; AI Bridge et Farm ne sont pas requis. Lua inchangé en 1.10.1, approuvé sur CurseForge. RaidPilot reste gratuit."
     },
     {
       "component": "launcher",

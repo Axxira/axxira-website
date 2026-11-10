@@ -6,13 +6,16 @@ using Microsoft.Win32;
 namespace RaidPilot.Launcher;
 
 internal sealed record ForeverPilotStatus(string? GamePath, string? Version, bool DingInstalled,
-    string? BundledVersion, string? BattleNetPath, bool GameRunning, string? Problem)
+    string? BundledVersion, string? BattleNetPath, bool GameRunning, string? Problem, bool AutoManaged = false)
 {
     // Files on disk are not proof that the player enabled or loaded the addon.
     internal bool Ready => GamePath is not null && Version is not null && DingInstalled && Problem is null && !UpdateAvailable;
     internal bool UpdateAvailable => BundledVersion is not null &&
         (Version is null || System.Version.Parse(BundledVersion) > System.Version.Parse(Version));
+    internal bool NeedsAutomaticInstall => AutoManaged && GamePath is not null && BundledVersion is not null && !Ready &&
+        (!DingInstalled || Version is null || System.Version.Parse(Version) <= System.Version.Parse(BundledVersion));
     internal string StatusTitle => GamePath is null ? "DOSSIER WOW À CHOISIR"
+        : NeedsAutomaticInstall && GameRunning ? "MISE À JOUR AUTO · EN ATTENTE DE FERMETURE DE WOW"
         : Version is null ? "ADDON NON INSTALLÉ DANS WOW"
         : Problem is not null ? "INSTALLATION À RÉPARER"
         : UpdateAvailable ? "MISE À JOUR À INSTALLER DANS WOW"
@@ -20,12 +23,52 @@ internal sealed record ForeverPilotStatus(string? GamePath, string? Version, boo
     internal string NextStep => GamePath is null ? "Choisis le dossier _forever_ utilisé par ton Battle.net."
         : Problem is not null ? Problem
         : Version is null ? "La version incluse dans le launcher n'est pas encore installée dans ce dossier WoW."
-        : UpdateAvailable ? "Le launcher est à jour, mais WoW contient encore l'ancien addon. Clique sur Installer dans WoW."
+        : UpdateAvailable ? "La mise à jour sera installée automatiquement dans WoW quand le jeu sera fermé."
         : "Dans WoW : active Ding! et ForeversPilot FastXp pour ton personnage. Bridge AI et Farm ne sont pas nécessaires.";
     internal string InstallLabel => Version is null ? "Installer dans WoW + Ding"
         : !DingInstalled ? "Installer / réparer Ding"
         : Problem is not null ? "Réparer l'addon dans WoW"
         : UpdateAvailable ? "Installer la mise à jour dans WoW" : "Réinstaller dans WoW";
+}
+
+internal sealed record ForeverPilotAutoResult(string Kind, string Message, ForeverPilotStatus State);
+
+/// <summary>One installer per launcher session; failures require retry, a changed installation, or restart.</summary>
+internal sealed class ForeverPilotAutoUpdate
+{
+    private string? _failedKey;
+    private string? _failure;
+    internal void Retry() { _failedKey = null; _failure = null; }
+    internal ForeverPilotAutoResult Run(ForeverPilotStatus state, Func<ForeverPilotStatus> inspect, Func<string> install)
+    {
+        if (!state.NeedsAutomaticInstall) return new("idle", "", state);
+        if (state.GameRunning) return Waiting(state);
+        var key = $"{state.GamePath}|{state.Version}|{state.BundledVersion}|{state.DingInstalled}|{state.Problem}";
+        if (key == _failedKey) return new("failed", _failure!, state);
+        try
+        {
+            var backup = install(); // Installer rechecks WoW immediately before replacing folders.
+            var after = inspect();
+            if (!after.Ready) throw new InvalidDataException("La vérification après installation a échoué. Clique sur Vérifier pour réessayer.");
+            Retry();
+            return new("installed", "ForeverPilot v" + after.Version + " installé automatiquement dans WoW" +
+                (backup.Length > 0 ? " avec sauvegarde. " : ". ") +
+                "Relance WoW avec Ding! et ForeversPilot FastXp activés.", after);
+        }
+        catch (Exception e)
+        {
+            var after = state;
+            try { after = inspect(); } catch { /* Keep the original failure and last known state. */ }
+            if (after.GameRunning) return Waiting(after);
+            _failedKey = key;
+            _failure = e is UnauthorizedAccessException
+                ? "Installation automatique bloquée : accès refusé. Relance RaidPilot comme administrateur, puis clique sur Vérifier."
+                : "Installation automatique non terminée : " + e.Message + " Clique sur Vérifier pour réessayer.";
+            return new("failed", _failure, after);
+        }
+    }
+    private static ForeverPilotAutoResult Waiting(ForeverPilotStatus state) => new("waiting",
+        "ForeverPilot : installation automatique après fermeture de WoW. Garde le launcher ouvert.", state);
 }
 
 /// <summary>Installs our addon and missing/broken Ding. Preserves healthy Ding, WTF and the legacy bridge.</summary>
@@ -50,10 +93,10 @@ internal static class ForeverPilotService
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "World of Warcraft", "_forever_") };
         // A saved choice must not silently switch to a different installation if its disk is absent.
         var game = selected is not null ? NormalizeGamePath(selected) : defaults.Select(NormalizeGamePath).FirstOrDefault(p => p is not null);
-        return InspectAt(game, BundlePath, FindBattleNet(), IsGameRunning());
+        return InspectAt(game, BundlePath, FindBattleNet(), IsGameRunning(), selected: selected is not null);
     }
 
-    internal static ForeverPilotStatus InspectAt(string? game, string bundle, string? battleNet, bool running)
+    internal static ForeverPilotStatus InspectAt(string? game, string bundle, string? battleNet, bool running, bool selected = false)
     {
         var addon = game is null ? null : Path.Combine(game, "Interface", "AddOns", AddonName);
         var version = addon is null ? null : ReadVersion(addon);
@@ -79,7 +122,8 @@ internal static class ForeverPilotService
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
             { problem = "Vérification des fichiers impossible : " + e.Message; }
         }
-        return new(game, version, ding, bundled, battleNet, running, problem);
+        return new(game, version, ding, bundled, battleNet, running, problem,
+            selected || (addon is not null && Directory.Exists(addon)));
     }
 
     private static bool MatchesBundle(string installed, string bundle)
