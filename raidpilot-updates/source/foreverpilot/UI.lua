@@ -83,6 +83,7 @@ function U:Tooltip()
     end
     if self.view.detail~="" then GameTooltip:AddLine(self.view.detail,1,1,1,true) end
     if a.note and a.note~=self.view.detail then GameTooltip:AddLine(a.note,0.8,0.85,0.90,true) end
+    if a.uncertainWork then GameTooltip:AddLine(B.T("Objectifs non cartographiés : durée prudente, parcours à confirmer."),0.94,0.76,0.43,true) end
     if a.tripIDs then
         GameTooltip:AddLine(B.T("Quêtes de cette sortie"),0.40,0.85,0.80,true)
         for _,q in ipairs(a.tripIDs) do
@@ -96,6 +97,10 @@ function U:Tooltip()
     end
     local rate,eta=B.State:Pace()
     if rate then GameTooltip:AddLine(string.format(B.T("%.0f XP/h · Prochain niveau ~%d min"),rate,math.ceil((eta or 0)/60)),0.9,0.78,0.5,true) end
+    if rate then
+        local state=B.State
+        GameTooltip:AddLine(string.format(B.T("Session hors pause/AFK : %d min · déplacement hors combat %d%% · mort %d%%"),math.floor(state.elapsed/60),math.floor((state.travelSeconds or 0)*100/state.elapsed),math.floor((state.deadSeconds or 0)*100/state.elapsed)),0.75,0.83,0.89,true)
+    end
     GameTooltip:AddLine(B.T("Source : ")..a.confidence,0.62,0.68,0.76,true)
     GameTooltip:AddLine(B.T("Glisser : déplacer · Clic droit : pause"),0.62,0.68,0.76)
     GameTooltip:AddLine(B.T("Passer : écarter la quête · Clic droit sur Passer : reprendre"),0.62,0.68,0.76,true)

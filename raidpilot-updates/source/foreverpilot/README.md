@@ -1,10 +1,27 @@
-# ForeversPilot FastXp 1.10.2 · Français / English
+# ForeversPilot FastXp 1.10.3 · Français / English
 
 Assistant de leveling pour **WoW Forever**, interface 16001. **Ding est obligatoire**
 et doit rester activé. ChangeLayer est facultatif. Le joueur se déplace et combat
 lui-même : aucune quête abandonnée, aucun objet acheté, vendu ou équipé automatiquement.
 
 ## Commencer
+
+**Efficacité des sorties (1.10.3)** : comparaison bornée de plusieurs ordres
+d'objectifs, retour au village compris, priorité de classe et stabilité conservées.
+Un objectif non cartographié garde un coût de travail prudent; il n'est pas ajouté
+automatiquement comme quête locale ordinaire. Les suites trop haut niveau, exclues,
+déjà faites ou dépendantes d'autres prérequis ne gonflent plus le score. L'infobulle
+mesure XP/h hors pause/AFK, avec déplacement et mort inclus dans le temps joué.
+Estimations de trajet, pas recherche de chemin parmi les obstacles ni garantie
+d'optimalité. Aucun gain XP/h réel ni parcours complet 1–60 mesuré.
+
+**Outing efficiency (1.10.3):** bounded comparison of objective orders including
+the return to the hub, preserving class priority and direction stability. Unmapped
+objectives keep a conservative work cost and are not automatically batched as
+ordinary local quests. Unusable follow-ups no longer inflate the chain score.
+The tooltip measures session XP/hour excluding pause/AFK; travel and death remain
+part of elapsed play. Travel estimates are not obstacle pathfinding or a guarantee
+of optimality. No measured in-game XP/hour gain or complete 1–60 run is claimed.
 
 1. Installe Ding et ForeverPilot_Leveling, puis redémarre complètement WoW.
 2. L'accueil apparaît au premier chargement hors combat. Dans **Options → Général**,

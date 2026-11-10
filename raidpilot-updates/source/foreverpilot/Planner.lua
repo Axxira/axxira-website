@@ -1,6 +1,5 @@
 local B=ForeverPilotLeveling
 local P={};B.Planner=P
-local function count(t) local n=0 for _ in pairs(t) do n=n+1 end return n end
 local function better(a,b)
     if not not a.classPriority~=not not b.classPriority then return not not a.classPriority end
     if a.score==b.score then return a.key<b.key end
@@ -134,7 +133,7 @@ function P:Action(n,kind,s,recovery)
     end
     local deaths=B.char.learning[n.id] and B.char.learning[n.id].deaths or 0
     local risk=math.max(0,n.level-s.level)*0.18+math.min(1,deaths*0.2)
-    a.score=xp/(a.travel+a.work+1)*(1+math.min(0.3,count(n.next)*0.06))/(1+risk)
+    a.score=xp/(a.travel+a.work+1)*(1+math.min(0.3,B.Progression:ChainCount(n,s)*0.06))/(1+risk)
     a.risk=risk
     a.score=a.score*a.levelFit.factor
     a.reward=B.Items:QuestReward(n.id)

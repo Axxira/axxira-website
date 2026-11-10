@@ -2,7 +2,7 @@
 ## Title: ForeversPilot |cff48D7E8FastXp|r
 ## Notes: Dynamic quest planning, live validation, recovery, batching and arrow-first guidance. GPLv3.
 ## Author: ForeverPilot Project
-## Version: 1.10.2
+## Version: 1.10.3
 ## Dependencies: Ding
 ## OptionalDeps: ChangeLayer, ForeverPilot_Access
 ## SavedVariables: ForeverPilotLevelingDB
