@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.31",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.31",
+      "date": "2026-11-10",
+      "summary": "ForeversPilot : les mises à jour s’installent automatiquement dans WoW",
+      "details": "Après mise à jour et redémarrage du launcher, ForeverPilot est automatiquement installé ou réparé dans le dossier WoW déjà choisi, ou celui où ForeverPilot est déjà présent. Ding est ajouté ou réparé si nécessaire. Si WoW est ouvert, le launcher attend sa fermeture et reprend sans nouveau clic tant qu’il reste ouvert. Première utilisation sans dossier choisi ni addon : choisir le dossier une fois. Sauvegarde avant remplacement, réglages des personnages et ancien bridge conservés, aucune rétrogradation. Versions incluse et installée clairement séparées; fichiers incohérents détectés même avec le même numéro de version. Une erreur est affichée avec une action de reprise, sans boucle d’échecs. Active Ding! + ForeversPilot FastXp dans WoW; AI Bridge et Farm ne sont pas requis. Lua inchangé en 1.10.1, approuvé sur CurseForge. RaidPilot reste gratuit."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.30",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "F8 intelligent en mouvement activé au premier lancement",
       "details": "Active par défaut les recalages F8 mobiles pour les installations sans préférence sauvegardée, avec intervalle minimal de quatre secondes, raccourci de capture dédié F6–F12 et première ancre exacte requise. Respecte le refus explicite déjà enregistré. Bloque toute capture automatique lorsque F, R, tir ou visée sont actifs. La précision reste à mesurer en raid; aucun ennemi n'est détecté directement."
-    },
-    {
-      "component": "beacon",
-      "version": "0.3.10",
-      "raidPilotVersion": "0.14.2.43",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Beacon — captures F8 au repos hors interaction et combat",
-      "details": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
     }
   ]
 }
