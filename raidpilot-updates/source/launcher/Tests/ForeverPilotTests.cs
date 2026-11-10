@@ -39,7 +39,7 @@ internal static class ForeverPilotTests
             Directory.CreateDirectory(retail); File.WriteAllText(Path.Combine(retail, "Wow.exe"), "");
             Require(ForeverPilotService.NormalizeGamePath(retail) is null, "Retail accepté");
             var state = ForeverPilotService.InspectAt(game, bundle, null, false);
-            Require(state.Version is null && !state.Ready && state.DingInstalled, "bridge confondu avec addon leveling");
+            Require(state.Version is null && state.BundledVersion == "1.4.1" && !state.Ready && state.DingInstalled, "version fournie confondue avec addon installé");
         }));
         run("ForeverPilot : installation complète, Ding et bridge conservés", () => WithFixture((game, bundle) =>
         {
@@ -53,7 +53,8 @@ internal static class ForeverPilotTests
         {
             var target = Path.Combine(game, "Interface", "AddOns", ForeverPilotService.AddonName);
             WriteAddon(target, "1.3.0");
-            Require(ForeverPilotService.InspectAt(game, bundle, null, false).UpdateAvailable, "update non détectée");
+            var old = ForeverPilotService.InspectAt(game, bundle, null, false);
+            Require(old.UpdateAvailable && !old.Ready, "ancienne installation déclarée prête malgré la mise à jour disponible");
             var backup = ForeverPilotService.Install(game, bundle, () => false);
             Require(ForeverPilotService.ReadVersion(backup) == "1.3.0", "sauvegarde absente");
             Require(ForeverPilotService.ReadVersion(target) == "1.4.1", "update non installée");
@@ -79,6 +80,29 @@ internal static class ForeverPilotTests
             WriteAddon(target, "1.4.1"); File.Delete(Path.Combine(target, "Main.lua"));
             var state = ForeverPilotService.InspectAt(game, bundle, null, false);
             Require(!state.Ready && state.Problem is not null, "addon cassé déclaré prêt");
+        }));
+        run("ForeverPilot : même version mais code obsolète détecté et réparé sans perte des réglages", () => WithFixture((game, bundle) =>
+        {
+            var target = Path.Combine(game, "Interface", "AddOns", ForeverPilotService.AddonName);
+            ForeverPilotService.Install(game, bundle, () => false);
+            File.WriteAllText(Path.Combine(target, "Main.lua"), "-- obsolete code without Options");
+            var broken = ForeverPilotService.InspectAt(game, bundle, null, false);
+            Require(broken.Version == broken.BundledVersion && !broken.UpdateAvailable && !broken.Ready && broken.Problem is not null,
+                "même TOC avec ancien code déclaré prêt");
+            var backup = ForeverPilotService.Install(game, bundle, () => false);
+            Require(File.ReadAllText(Path.Combine(backup, "Main.lua")).Contains("obsolete code"), "ancienne copie non sauvegardée");
+            Require(ForeverPilotService.InspectAt(game, bundle, null, false).Ready, "réparation non reconnue");
+            Require(File.ReadAllText(Path.Combine(game, "WTF", "settings.lua")) == "keep settings", "réglages perdus");
+        }));
+        run("ForeverPilot : fins de ligne compatibles et fichiers locaux supplémentaires conservés", () => WithFixture((game, bundle) =>
+        {
+            var target = Path.Combine(game, "Interface", "AddOns", ForeverPilotService.AddonName);
+            File.WriteAllText(Path.Combine(bundle, "Main.lua"), "-- first\n-- second\n");
+            ForeverPilotService.Install(game, bundle, () => false);
+            File.WriteAllText(Path.Combine(target, "Main.lua"), "-- first\r\n-- second\r\n");
+            File.WriteAllText(Path.Combine(target, "local-note.txt"), "keep local note");
+            Require(ForeverPilotService.InspectAt(game, bundle, null, false).Ready, "différence CRLF déclarée erreur");
+            Require(File.ReadAllText(Path.Combine(target, "local-note.txt")) == "keep local note", "diagnostic modifie les fichiers");
         }));
         run("ForeverPilot : package cassé laisse l'installation intacte", () => WithFixture((game, bundle) =>
         {

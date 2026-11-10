@@ -8,9 +8,24 @@ namespace RaidPilot.Launcher;
 internal sealed record ForeverPilotStatus(string? GamePath, string? Version, bool DingInstalled,
     string? BundledVersion, string? BattleNetPath, bool GameRunning, string? Problem)
 {
-    internal bool Ready => GamePath is not null && Version is not null && DingInstalled && Problem is null;
+    // Files on disk are not proof that the player enabled or loaded the addon.
+    internal bool Ready => GamePath is not null && Version is not null && DingInstalled && Problem is null && !UpdateAvailable;
     internal bool UpdateAvailable => BundledVersion is not null &&
         (Version is null || System.Version.Parse(BundledVersion) > System.Version.Parse(Version));
+    internal string StatusTitle => GamePath is null ? "DOSSIER WOW À CHOISIR"
+        : Version is null ? "ADDON NON INSTALLÉ DANS WOW"
+        : Problem is not null ? "INSTALLATION À RÉPARER"
+        : UpdateAvailable ? "MISE À JOUR À INSTALLER DANS WOW"
+        : "FICHIERS INSTALLÉS · À ACTIVER DANS WOW";
+    internal string NextStep => GamePath is null ? "Choisis le dossier _forever_ utilisé par ton Battle.net."
+        : Problem is not null ? Problem
+        : Version is null ? "La version incluse dans le launcher n'est pas encore installée dans ce dossier WoW."
+        : UpdateAvailable ? "Le launcher est à jour, mais WoW contient encore l'ancien addon. Clique sur Installer dans WoW."
+        : "Dans WoW : active Ding! et ForeversPilot FastXp pour ton personnage. Bridge AI et Farm ne sont pas nécessaires.";
+    internal string InstallLabel => Version is null ? "Installer dans WoW + Ding"
+        : !DingInstalled ? "Installer / réparer Ding"
+        : Problem is not null ? "Réparer l'addon dans WoW"
+        : UpdateAvailable ? "Installer la mise à jour dans WoW" : "Réinstaller dans WoW";
 }
 
 /// <summary>Installs our addon and missing/broken Ding. Preserves healthy Ding, WTF and the legacy bridge.</summary>
@@ -54,7 +69,40 @@ internal static class ForeverPilotService
         string? bundled = null;
         try { ValidateAddon(bundle); bundled = ReadVersion(bundle); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException) { }
+        if (problem is null && addon is not null && version is not null && version == bundled)
+        {
+            try
+            {
+                if (!MatchesBundle(addon, bundle))
+                    problem = "Même numéro de version, mais fichiers différents du launcher. Clique sur Réparer l'addon dans WoW.";
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
+            { problem = "Vérification des fichiers impossible : " + e.Message; }
+        }
         return new(game, version, ding, bundled, battleNet, running, problem);
+    }
+
+    private static bool MatchesBundle(string installed, string bundle)
+    {
+        // Check our own distributed files only. Extra local files and WTF stay untouched.
+        foreach (var source in Directory.EnumerateFiles(bundle, "*", SearchOption.AllDirectories))
+        {
+            RejectLinkedPath(source);
+            var target = SafeChild(installed, Path.GetRelativePath(bundle, source));
+            RejectLinkedPath(target);
+            if (!File.Exists(target)) return false;
+            var extension = Path.GetExtension(source).ToLowerInvariant();
+            if (extension is ".lua" or ".toc" or ".md" or ".txt")
+            {
+                if (File.ReadAllText(source).Replace("\r\n", "\n") != File.ReadAllText(target).Replace("\r\n", "\n")) return false;
+            }
+            else
+            {
+                using var first = File.OpenRead(source); using var second = File.OpenRead(target);
+                if (!SHA256.HashData(first).SequenceEqual(SHA256.HashData(second))) return false;
+            }
+        }
+        return true;
     }
 
     internal static string? NormalizeGamePath(string? path)

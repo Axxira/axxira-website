@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.31",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.31",
+      "date": "2026-11-10",
+      "summary": "ForeversPilot : installer la mise à jour dans WoW, pas seulement dans le launcher",
+      "details": "La page distingue la version installée dans le dossier WoW et la version incluse dans RaidPilot. Une ancienne version ne dit plus installation prête. Le bouton Installer dans WoW devient prioritaire lorsque nécessaire; fermer WoW puis installer et activer Ding! + ForeversPilot FastXp. Bridge AI et Farm ne sont pas requis. Les fichiers sont comparés au paquet même si le numéro de version est identique; la réparation garde une sauvegarde et préserve les réglages. Aucune installation automatique ni activation présumée dans le jeu. Addon Lua inchangé en 1.10.1, déjà envoyé sur CurseForge; RaidPilot reste entièrement gratuit."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.30",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-24",
       "summary": "F8 intelligent en mouvement activé au premier lancement",
       "details": "Active par défaut les recalages F8 mobiles pour les installations sans préférence sauvegardée, avec intervalle minimal de quatre secondes, raccourci de capture dédié F6–F12 et première ancre exacte requise. Respecte le refus explicite déjà enregistré. Bloque toute capture automatique lorsque F, R, tir ou visée sont actifs. La précision reste à mesurer en raid; aucun ennemi n'est détecté directement."
-    },
-    {
-      "component": "beacon",
-      "version": "0.3.10",
-      "raidPilotVersion": "0.14.2.43",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-24",
-      "summary": "Beacon — captures F8 au repos hors interaction et combat",
-      "details": "La capture de recalage automatique existante exige toujours une situation stable, une fenêtre Tarkov active et une incertitude nécessitant un recalage. Elle est désormais bloquée pendant l'appui sur F, les boutons de tir/visée ou R (rechargement). Il ne s'agit pas d'une détection fiable d'absence d'ennemis. Les captures automatiques associées au recalage suivent les règles existantes de nettoyage local."
     }
   ]
 }

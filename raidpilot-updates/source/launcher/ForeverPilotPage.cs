@@ -61,9 +61,7 @@ internal sealed partial class LauncherForm
                 case LauncherAction.ForeverPilot:
                     break;
                 case LauncherAction.RefreshForeverPilot:
-                    _surface.ForeverMessage = state.Ready
-                        ? "Fichiers vérifiés. Active Ding et ForeverPilot_Leveling dans le jeu."
-                        : state.Problem ?? "Installation à compléter avec le bouton Installer.";
+                    _surface.ForeverMessage = state.NextStep;
                     break;
                 case LauncherAction.LaunchBattleNet:
                     if (state.BattleNetPath is null)
@@ -99,9 +97,9 @@ internal sealed partial class LauncherForm
                     try
                     {
                         var backup = await Task.Run(() => ForeverPilotService.Install(state.GamePath, ForeverPilotService.BundlePath));
-                        _surface.ForeverMessage = backup.Length > 0
-                            ? "Addons installés avec sauvegarde. Active Ding et ForeverPilot_Leveling dans le jeu."
-                            : "ForeverPilot et Ding installés. Active les deux à la sélection du personnage.";
+                        _surface.ForeverMessage = "v" + state.BundledVersion + " installée dans WoW" +
+                            (backup.Length > 0 ? " avec sauvegarde. " : ". ") +
+                            "Relance WoW et active Ding! + ForeversPilot FastXp à la sélection du personnage.";
                     }
                     finally
                     {
@@ -151,36 +149,33 @@ internal sealed partial class LauncherSurface
             Forever.GamePath is not null && !Forever.GameRunning && !Busy && Directory.Exists(DungeonMapService.BundlePath));
         ForeverText(g, "Édition de test · Toutes les fonctions gratuites · Aucun abonnement requis", 245, 217, 630, 25, 10, Muted);
 
-        var statusTitle = Forever.Ready ? "INSTALLATION PRÊTE" : "INSTALLATION À VÉRIFIER";
+        var statusTitle = Forever.StatusTitle;
         var accent = Forever.Ready ? ForeverAccent : Amber;
         using (var fill = new SolidBrush(Panel))
         using (var shape = RoundedRect(new Rectangle(214, 282, 940, 187), 12))
             g.FillPath(fill, shape);
         ForeverText(g, statusTitle, 238, 302, 560, 22, 10, accent, true);
-        ForeverText(g, "ForeversPilot FastXp", 238, 339, 210, 22, 10, Muted);
+        ForeverText(g, "Version installée dans WoW", 238, 339, 225, 22, 10, Muted);
         ForeverText(g, Forever.Version is null ? "Non installé" : "v" + Forever.Version, 238, 367, 210, 32, 18, Color.White, true);
         ForeverText(g, "Dépendance Ding", 476, 339, 210, 22, 10, Muted);
         ForeverText(g, Forever.DingInstalled ? "Présente" : "Manquante", 476, 367, 210, 32, 18,
             Forever.DingInstalled ? ForeverAccent : Amber, true);
-        ForeverText(g, "Version fournie", 714, 339, 210, 22, 10, Muted);
+        ForeverText(g, "Version incluse dans le launcher", 714, 339, 300, 22, 10, Muted);
         ForeverText(g, Forever.BundledVersion is null ? "Indisponible" : "v" + Forever.BundledVersion, 714, 367, 210, 32, 18, Color.White, true);
-        ForeverText(g, Forever.Problem ?? Forever.GamePath ?? "Sélectionne ton installation WoW Forever pour commencer.",
+        ForeverText(g, Forever.GamePath ?? "Sélectionne ton installation WoW Forever pour commencer.",
             238, 425, 880, 23, 9, Forever.Problem is null ? Muted : Amber);
 
-        ForeverButton(g, new Rectangle(214, 488, 300, 46), "Ouvrir Battle.net  →", LauncherAction.LaunchBattleNet,
-            Forever.BattleNetPath is not null && !Busy, primary: true);
-        var installText = Forever.Version is null ? "Installer ForeverPilot + Ding" : !Forever.DingInstalled ? "Installer / réparer Ding"
-            : Forever.UpdateAvailable ? "Mettre l'addon à jour" : "Réinstaller l'addon";
-        ForeverButton(g, new Rectangle(530, 488, 250, 46), installText, LauncherAction.InstallForeverPilot,
+        ForeverButton(g, new Rectangle(214, 488, 300, 46), Forever.InstallLabel, LauncherAction.InstallForeverPilot,
             Forever.GamePath is not null && Forever.BundledVersion is not null && !Forever.GameRunning && !Busy &&
-            (!Forever.DingInstalled || Forever.Version is null || Version.Parse(Forever.Version) <= Version.Parse(Forever.BundledVersion)));
+            (!Forever.DingInstalled || Forever.Version is null || Version.Parse(Forever.Version) <= Version.Parse(Forever.BundledVersion)), primary: !Forever.Ready);
+        ForeverButton(g, new Rectangle(530, 488, 250, 46), "Ouvrir Battle.net  →", LauncherAction.LaunchBattleNet,
+            Forever.BattleNetPath is not null && !Busy, primary: Forever.Ready);
         ForeverButton(g, new Rectangle(796, 488, 170, 46), "Dossier AddOns", LauncherAction.OpenForeverFolder,
             Forever.GamePath is not null && !Busy);
         ForeverButton(g, new Rectangle(982, 488, 172, 46), "Vérifier", LauncherAction.RefreshForeverPilot, !Busy);
 
-        var tip = Forever.GameRunning ? "WoW est ouvert : ferme le jeu avant d'installer une mise à jour de l'addon."
-            : !Forever.DingInstalled ? "Ding est inclus : clique sur Installer, puis active Ding et ForeverPilot_Leveling dans le jeu."
-            : "Dans le jeu : Options pour la langue et le profil. Garde Ding et ForeverPilot_Leveling activés.";
+        var tip = Forever.GameRunning && !Forever.Ready ? "WoW est ouvert : ferme le jeu, puis clique sur Installer dans WoW. La mise à jour du launcher seule ne suffit pas."
+            : Forever.NextStep;
         ForeverText(g, tip, 218, 544, 932, 22, 9, Muted);
         ForeverText(g, "Layers : réseau public ChangeLayer par Foofi · téléchargement officiel CurseForge", 218, 575, 690, 20, 9, Muted);
         ForeverButton(g, new Rectangle(914, 566, 240, 30), ChangeLayerVersion is null ? "Installer ChangeLayer" : "ChangeLayer " + ChangeLayerVersion + " installé",
