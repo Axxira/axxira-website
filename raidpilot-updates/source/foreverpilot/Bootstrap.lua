@@ -1,5 +1,5 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.10.1", modules = {}, dirty = true }
+local B = { version = "1.10.2", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 -- The CurseForge packager changes this one marker. RaidPilot always remains free.
 B.distribution = "raidpilot-test"

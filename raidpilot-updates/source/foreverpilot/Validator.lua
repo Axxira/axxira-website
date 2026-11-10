@@ -23,7 +23,14 @@ function V:Eligible(n,s,kind)
     return true,"DATABASE"
 end
 function V:Close()
-    self.generation=self.generation+1;self.npc=nil;self.offers={};self.checks={}
+    self.generation=self.generation+1;self.npc=nil;self.dialogQuest=nil;self.dialogOpen=nil;self.offers={};self.checks={}
+end
+function V:Detail(q,npc,s)
+    self:Close();self.dialogOpen=true;self.dialogQuest=q;self.npc=npc
+    if type(q)~="number" then return end
+    self.offers[q]=true;B.char.unavailable[q]=nil
+    B.Knowledge:Offer(q,npc,s,B.Call(GetTitleText))
+    self.revision=(self.revision or 0)+1;B.dirty=true
 end
 function V:Observe(kind,token)
     if token~=self.generation or not self.npc or Ding.Compat.NpcUnitID()~=self.npc then return end

@@ -17,6 +17,8 @@ function S:Refresh()
     s.map,s.x,s.y=C.GetPlayerMapPosition(); s.continent,s.wx,s.wy=C.GetPlayerWorld()
     s.dead=C.IsDeadOrGhost(); s.ghost=C.IsGhost(); s.combat=B.Call(UnitAffectingCombat,"player")
     s.afk=B.Call(UnitIsAFK,"player") or false
+    s.targetNpc=B.Call(C.UnitNpcID,"target")
+    s.targetNear=B.Call(CheckInteractDistance,"target",3)
     s.speed=B.Call(GetUnitSpeed,"player") or 0
     local health,maxHealth=B.Call(UnitHealth,"player"),B.Call(UnitHealthMax,"player")
     if health and maxHealth and maxHealth>0 then s.health=health/maxHealth end

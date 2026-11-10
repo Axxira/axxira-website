@@ -132,6 +132,11 @@ function U:Create()
     self.skipLabel=font(self.skip,10,0,4,64,14);self.skipLabel:SetJustifyH("CENTER");self.skipLabel:SetText(B.T("Passer"))
     self.skip:SetScript("OnEnter",function()
         skipBG:SetColorTexture(.25,.36,.42,1)
+        if self.reportUnavailable then
+            GameTooltip:SetOwner(self.skip,"ANCHOR_BOTTOM");GameTooltip:SetText(B.T("PNJ sans quête ?"))
+            GameTooltip:AddLine(B.T("Clic gauche : signaler l'absence et recalculer. Aucun abandon. Clic droit : mettre la quête de côté durablement."),.85,.9,.94,true)
+            GameTooltip:Show();return
+        end
         GameTooltip:SetOwner(self.skip,"ANCHOR_BOTTOM");GameTooltip:SetText(B.T("Passer l'étape"))
         GameTooltip:AddLine(B.T("Quête trop difficile en solo ? Clic gauche : mets-la de côté et recalcule le guidage."),.85,.9,.94,true)
         GameTooltip:AddLine(B.T("Elle reste dans ton journal et ne revient pas automatiquement. Les haltes et camps d'XP sont reportés de 5 min."),.7,.78,.84,true)
@@ -142,7 +147,9 @@ function U:Create()
     self.skip:SetScript("OnLeave",function() skipBG:SetColorTexture(.17,.25,.30,.95);GameTooltip:Hide() end)
     self.skip:SetScript("OnClick",function(_,button)
         GameTooltip:Hide()
-        if button=="RightButton" or not B.Recovery:CanSkip(B.Planner.current) then B.ResumeSkipped() else B.SkipCurrent() end
+        if self.reportUnavailable then
+            if button=="RightButton" then B.SkipCurrent() else B.ReportUnavailable() end
+        elseif button=="RightButton" or not B.Recovery:CanSkip(B.Planner.current) then B.ResumeSkipped() else B.SkipCurrent() end
     end)
     f:SetScript("OnDragStart",function() if not B.settings.locked then f:StartMoving() end end)
     f:SetScript("OnDragStop",function() f:StopMovingOrSizing();local p,_,_,x,y=f:GetPoint();B.settings.point=p;B.settings.x=x;B.settings.y=y end)
@@ -161,7 +168,8 @@ function U:Render(a,s)
     self.action:SetText(v.title);self.verb:SetText(v.verb);self.verb:SetTextColor(c[1],c[2],c[3])
     self.progress:SetText(v.detail);self.loop:SetText(v.footer);self.loop:SetTextColor(c[1],c[2],c[3])
     local canSkip=B.Recovery:CanSkip(a);local showSkip=canSkip or B.Recovery:LastSkipped()~=nil
-    self.skip:SetShown(showSkip);self.skipLabel:SetText(canSkip and B.T("Passer") or B.T("Reprendre"));self.loop:SetWidth(showSkip and 244 or 316)
+    self.reportUnavailable=B.Recovery:CanReportUnavailable(a,s)
+    self.skip:SetShown(showSkip);self.skipLabel:SetText(self.reportUnavailable and B.T("Absent ?") or canSkip and B.T("Passer") or B.T("Reprendre"));self.loop:SetWidth(showSkip and 244 or 316)
     self.bar:SetWidth(math.max(1,316*v.fraction));self.bar:SetShown(v.fraction>0);self.bar:SetColorTexture(c[1],c[2],c[3],0.8)
 end
 function U:Tick()
