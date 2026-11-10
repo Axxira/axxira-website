@@ -17,6 +17,7 @@ function methods:SetWidth(w) self.w=w end
 function methods:SetHeight(h) self.h=h end
 function methods:SetPoint(anchor,parent,relative,x,y) self.x=x;self.y=-y;self.anchor=anchor end
 function methods:GetPoint() return self.anchor,nil,nil,self.x,-self.y end
+function methods:ClearAllPoints() self.anchor=nil;self.x=nil;self.y=nil end
 function methods:SetFont(name,size,flags) self.font=name;self.fontSize=size;self.flags=flags end
 function methods:SetText(text) self.text=text end
 function methods:SetAutoFocus(value) self.autoFocus=value end

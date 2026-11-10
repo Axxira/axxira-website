@@ -161,7 +161,7 @@ function A:Create()
     local f=CreateFrame("Frame","ForeverPilotAdvisorFrame",UIParent);self.frame=f
     f:SetSize(470,465);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetClampedToScreen(true);f:SetFrameStrata("DIALOG");f:EnableMouse(true)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.98)
-    local title=text(f,17,20,18,390,24);title:SetText(B.T("ForeverPilot · Objets & HDV"))
+    local title=text(f,17,20,18,390,24);title:SetText(B.T("ForeversPilot FastXp · Objets & HDV"))
     button(f,"×",430,12,28,function() f:Hide() end)
     self.tabButtons={}
     for i,t in ipairs({{"gear",B.T("Équipement")},{"market",B.T("Prix HDV")},{"addons","Addons"}}) do
@@ -206,15 +206,15 @@ function A:ProfileChoices(title,choices,selected,callback)
 end
 function A:RenderProfile()
     local I=B.Items;local preview=self.profileMode=="preview"
-    local class=preview and self.preview.class or B.Call(Ding.Compat.PlayerClass)
+    local class=preview and self.preview.class or I:PlayerClass()
     local def=I.classes[class];local raceName=B.Call(UnitRace,"player") or B.T("Inconnue")
     if preview then
         raceName=B.T("Inconnue")
         for _,r in ipairs(I:RaceChoices()) do if r.key==self.preview.race then raceName=r.label end end
     end
     self.raceChoice.label:SetText(B.T("Race : ")..raceName..(preview and "  ›" or B.T(" · détectée")))
-    self.classChoice.label:SetText(B.T("Classe : ")..(def and def.label or B.T("Inconnue"))..(preview and "  ›" or B.T(" · détectée")))
-    self.raceChoice:SetEnabled(preview);self.classChoice:SetEnabled(preview)
+    self.classChoice.label:SetText(B.T("Classe : ")..(def and def.label or B.T("Inconnue"))..B.T(" · voir les 9 classes ›"))
+    self.raceChoice:SetEnabled(preview);self.classChoice:SetEnabled(true)
     local selection=preview and self.preview.selection or self.liveSelection
     local selectionLabel=I.profiles[selection] and I.profiles[selection].label or B.T("À choisir")
     for _,c in ipairs(I:SpecChoices(class,not preview)) do if c.key==selection then selectionLabel=c.label end end
@@ -234,7 +234,7 @@ function A:CreateProfile()
     f:SetSize(430,478);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetClampedToScreen(true)
     f:SetFrameStrata("DIALOG");f:SetFrameLevel((self.frame and self.frame:GetFrameLevel() or 0)+5);f:EnableMouse(true)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.99)
-    text(f,17,20,16,350,26):SetText(B.T("ForeverPilot · Profil"))
+    text(f,17,20,16,350,26):SetText(B.T("ForeversPilot FastXp · Profil"))
     button(f,"×",390,10,28,function() f:Hide() end)
     self.liveModeButton=button(f,B.T("Mon personnage"),20,52,190,function() self.profileMode="live";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
     self.previewModeButton=button(f,B.T("Autre personnage"),220,52,190,function() self.profileMode="preview";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
@@ -244,14 +244,17 @@ function A:CreateProfile()
         self:ProfileChoices(B.T("Choisir une race"),B.Items:RaceChoices(),self.preview.race,function(key) self.preview.race=key end)
     end)
     self.classChoice=button(f,B.T("Classe"),20,144,390,function()
-        if self.profileMode~="preview" then return end
-        local choices={};for _,class in ipairs(B.Items.classOrder) do choices[#choices+1]={key=class,label=B.Items.classes[class].label} end
-        self:ProfileChoices(B.T("Choisir une classe"),choices,self.preview.class,function(key)
+        local liveClass=B.Items:PlayerClass()
+        local selected=self.profileMode=="preview" and self.preview.class or liveClass
+        self:ProfileChoices(B.T("Toutes les classes"),B.Items:ClassChoices(),selected,function(key)
+            if self.profileMode~="preview" and key==liveClass then return end
+            -- A foreign class is a clearly labelled preview, never the live gear profile.
+            self.profileMode="preview"
             self.preview.class=key;self.preview.selection="spec:"..key..":1"
         end)
     end)
     self.specChoice=button(f,B.T("Spécialisation"),20,178,390,function()
-        local preview=self.profileMode=="preview";local class=preview and self.preview.class or B.Call(Ding.Compat.PlayerClass)
+        local preview=self.profileMode=="preview";local class=preview and self.preview.class or B.Items:PlayerClass()
         self:ProfileChoices(B.T("Choisir une spécialisation"),B.Items:SpecChoices(class,not preview),preview and self.preview.selection or self.liveSelection,function(key)
             if preview then self.preview.selection=key else self.liveSelection=key end
         end)
@@ -269,9 +272,9 @@ end
 function A:ToggleProfile()
     self:CreateProfile()
     if self.profileFrame:IsShown() then self.profileFrame:Hide();return end
-    local I=B.Items;local class=B.Call(Ding.Compat.PlayerClass)
+    local I=B.Items;local class=I:PlayerClass()
     local _,race=B.Call(UnitRace,"player")
-    self.liveSelection=B.char.gearProfile or "auto";self.profileMode="live"
+    self.liveSelection=I:ProfileSelection();self.profileMode="live"
     local saved=type(B.char.gearPreview)=="table" and B.char.gearPreview or {}
     self.preview=B.Copy(saved)
     if not I.classes[self.preview.class] then self.preview.class=I.classes[class] and class or "WARRIOR" end
@@ -286,11 +289,6 @@ function A:Init()
     if B.AuctionUI then B.AuctionUI:Init() end
     local f=B.UI.frame
     self.openButton=button(f,B.T("Objets"),170,3,66,function() if B.Options.frame then B.Options.frame:Hide() end;self:Toggle() end)
-    self.optionsButton=button(f,"Options",244,3,86,function() B.Options:Toggle() end)
-    self.optionsButton:SetScript("OnEnter",function()
-        GameTooltip:SetOwner(self.optionsButton,"ANCHOR_BOTTOM");GameTooltip:SetText("Options · Français / English")
-        GameTooltip:AddLine(B.T("Langue, profil, taille et aide."),.8,.9,.9,true);GameTooltip:Show()
-    end)
     local events=CreateFrame("Frame");self.events=events
     for _,e in ipairs({"AUCTION_HOUSE_SHOW","AUCTION_HOUSE_CLOSED","REPLICATE_ITEM_LIST_UPDATE","COMMODITY_SEARCH_RESULTS_UPDATED","COMMODITY_SEARCH_RESULTS_ADDED","ITEM_SEARCH_RESULTS_UPDATED","ITEM_SEARCH_RESULTS_ADDED","BAG_UPDATE_DELAYED","PLAYER_EQUIPMENT_CHANGED","GET_ITEM_INFO_RECEIVED","PLAYER_REGEN_ENABLED"}) do pcall(events.RegisterEvent,events,e) end
     for e in pairs(B.Items.profileEvents) do pcall(events.RegisterEvent,events,e) end

@@ -41,6 +41,15 @@ for(const language of ['en','fr']){
  local p,key=B.Items:ResolveProfile("DRUID","spec:DRUID:2",false)
  assert(key=="feral" and p.agi==2 and p.int==.2)
  assert(B.Items.classes.DRUID[2][1]==${JSON.stringify(english?'Feral':'Farouche')})
+ B.Advisor:ToggleProfile();B.Advisor.classChoice.scripts.OnClick()
+ assert(B.Advisor.classChoice.enabled and #B.Items:ClassChoices()==9)
+ assert(B.Advisor.choiceTitle.text==${JSON.stringify(english?'All classes':'Toutes les classes')})
+ assert(B.Advisor.choiceButtons.WARRIOR.label.text==${JSON.stringify(english?'Warrior':'Guerrier')})
+ B.Advisor.choiceButtons.WARRIOR.scripts.OnClick()
+ assert(B.Advisor.profileMode=='preview' and B.Advisor.preview.class=='WARRIOR')
+ B.Advisor.specChoice.scripts.OnClick()
+ assert(B.Advisor.choiceButtons['spec:WARRIOR:2'].label.text==${JSON.stringify(english?'Fury':'Fureur')})
+ B.Advisor.profileFrame:Hide()
  local verdict,details=B.Advisor:UpgradeSummary({status="lower",deltas={{value=3,text="+3 "..B.T("Intelligence")},{value=-1,text="-1 "..B.T("Force")}}})
  assert(verdict==${JSON.stringify(english?'Upgrade: NO':'Upgrade : NON')})
  assert(details[1]==${JSON.stringify(english?'Gains: +3 Intellect':'Gains : +3 Intelligence')})
@@ -51,17 +60,33 @@ for(const language of ['en','fr']){
  assert(v.verb==${JSON.stringify(english?'COMPLETE':'TERMINE')})
  assert(v.footer==${JSON.stringify(english?'STAY OUT FOR NOW':'NE RENTRE PAS ENCORE')})
  assert(B.Market:Money(20405):find("GoldIcon",1,true) and B.Market:Money(20405):find("CopperIcon",1,true))
+ B.Options:SyncEntryPoints()
+ assert(B.Options.shortcut:IsShown()) -- Before the guide or Advisor has initialized.
  B.UI:Create();B.Options:Toggle()
  local O=B.Options
+ assert(O.headerButton and not O.shortcut:IsShown())
+ local initMarket=B.Market.Init
+ B.Market.Init=function() error('simulated auction failure') end
+ assert(not pcall(B.Advisor.Init,B.Advisor))
+ B.Market.Init=initMarket
+ O.frame:Hide();O.headerButton.scripts.OnClick();assert(O.frame:IsShown())
+ B.UI.frame:Hide();B.UI.frame.scripts.OnHide()
+ assert(O.shortcut:IsShown())
+ B.settings.enabled=false;O:SyncEntryPoints();O.frame:Hide()
+ O.shortcut.scripts.OnClick();assert(O.frame:IsShown())
+ B.settings.enabled=true
  assert(B.distribution=="raidpilot-test" and B.HasPremium() and B.HasPremium("class"))
  ForeverPilotAccess={environment="sandbox",expires=0};assert(B.HasPremium())
  B.distribution="public"
  assert(not B.HasPremium() and not B.HasPremium("class"))
+ O:SyncEntryPoints();assert(O.shortcut:IsShown())
+ O.frame:Hide();O.shortcut.scripts.OnClick();assert(O.frame:IsShown() and not B.HasPremium())
  ForeverPilotAccess={environment="sandbox",expires=time()+1000,fastXP=true,classGuidance=true};assert(not B.HasPremium())
  ForeverPilotAccess={environment="live",expires=time()+1000,fastXP=true,classGuidance=false};assert(B.HasPremium() and not B.HasPremium("class"))
  ForeverPilotAccess.expires=time()-1;assert(not B.HasPremium())
  ForeverPilotAccess.expires=0/0;assert(not B.HasPremium())
  B.distribution="raidpilot-test";ForeverPilotAccess=nil
+ B.UI.frame:Show();B.UI.frame.scripts.OnShow();assert(not O.shortcut:IsShown())
  O.frame:Hide();B.char.welcomeSeen=nil;TEST.combat=true;O:MaybeWelcome();assert(not O.frame:IsShown() and not B.char.welcomeSeen)
  TEST.combat=false;O:MaybeWelcome();assert(O.frame:IsShown() and B.char.welcomeSeen)
  O.frame:Hide();O:MaybeWelcome();assert(not O.frame:IsShown())
@@ -84,7 +109,7 @@ for(const language of ['en','fr']){
  O:Toggle();assert(not O.frame:IsShown())
  O:Toggle();assert(O.tab=="general" and O.frame:IsShown())
  assert(not B.UI.tag:IsShown())
- `,'localized behavior '+language);checks+=28;
+ `,'localized behavior '+language);checks+=42;
 }
 // Format arguments must retain their order and types in all translated messages.
 const source=fs.readFileSync(path.join(addon,'Locale.lua'),'utf8');

@@ -1,7 +1,8 @@
 local B=ForeverPilotLeveling;local I,A=B.Items,B.Advisor
-local old={char=B.char,level=UnitLevel,race=UnitRace,combat=InCombatLockdown,item=C_Item,player=C_PlayerInfo,link=GetInventoryItemLink,texture=GetInventoryItemTexture,class=Ding.Compat.PlayerClass,tabs=GetNumTalentTabs,num=GetNumTalents,talent=GetTalentInfo,time=GetTime,ui=B.UI,settings=B.settings}
+local old={char=B.char,level=UnitLevel,race=UnitRace,unitClass=UnitClass,combat=InCombatLockdown,item=C_Item,player=C_PlayerInfo,link=GetInventoryItemLink,texture=GetInventoryItemTexture,class=Ding.Compat.PlayerClass,tabs=GetNumTalentTabs,num=GetNumTalents,talent=GetTalentInfo,time=GetTime,ui=B.UI,settings=B.settings}
 local class,spent,clock,reads='DRUID',{0,7,0},10,0
 B.char={gearProfile='auto'};Ding.Compat.PlayerClass=function() return class end
+UnitClass=function() return I.classes[class] and I.classes[class].label,class end
 UnitRace=function() return 'Tauren','Tauren',6 end
 UnitLevel=function() return 16 end;InCombatLockdown=function() return false end
 GetTime=function() return clock end
@@ -46,6 +47,35 @@ for c,trees in pairs(expected) do
   check(I:SetProfile('auto'),'return to auto failed')
  end
 end
+-- A legacy druid role must never be applied to another player's equipment.
+for c in pairs(expected) do
+ build(c,{0,31,0})
+ if c~='DRUID' then
+  B.char.gearProfile='feral'
+  local profile,key,label=I:Profile()
+  check(profile and key~='feral' and label:find(I.classes[c].label,1,true),'saved druid role contaminated '..c)
+  check(not I:SetProfile('feral') and not I:SetProfile('ours') and not I:SetProfile('hybride'),'foreign legacy role accepted for '..c)
+  check(not I:ResolveProfile(c,'feral',false),'preview accepted druid weights for '..c)
+ end
+ B.char.gearProfile='spec:DRUID:2'
+ check(I:ProfileSelection()==(c=='DRUID' and 'spec:DRUID:2' or 'auto'),'foreign spec not normalized for '..c)
+ I:SetProfile('auto')
+end
+for _,case in ipairs({{'DRUID',2,'lower'},{'WARRIOR',1,'lower'},{'ROGUE',2,'lower'},
+ {'MAGE',3,'upgrade'},{'WARLOCK',1,'upgrade'},{'PRIEST',2,'upgrade'},
+ {'PALADIN',1,'upgrade'},{'SHAMAN',1,'upgrade'},{'HUNTER',1,'upgrade'}}) do
+ build(case[1],{0,0,0});I:SetProfile('spec:'..case[1]..':'..case[2])
+ check(I:Compare('item:70101').status==case[3],'same item not evaluated for '..case[1]..' specialization')
+end
+-- Read the actual client class even if a compatibility provider is stale.
+build('MAGE',{0,0,31});B.char.gearProfile='feral'
+Ding.Compat.PlayerClass=function() return 'DRUID' end
+check(I:PlayerClass()=='MAGE' and select(2,I:Profile())=='caster','live class lost to stale compatibility data')
+UnitClass=nil
+check(I:PlayerClass()=='DRUID','compatible class fallback failed when native API missing')
+Ding.Compat.PlayerClass=function() return class end
+UnitClass=function() return I.classes[class] and I.classes[class].label,class end
+B.char.gearProfile='auto'
 build('DRUID',{0,7,0})
 local r=I:Compare('item:70101')
 check(r.status=='lower' and r.profile:find('Farouche') and A:UpgradeSummary(r)=='Upgrade : NON','reported feral belt regression')
@@ -84,7 +114,12 @@ for _,event in ipairs({'CHARACTER_POINTS_CHANGED','PLAYER_TALENT_UPDATE','ACTIVE
 end
 -- Real selector callbacks; preview must never change live upgrades or identity.
 A:Toggle('gear');A.profileButton.scripts.OnClick()
-check(A.profileFrame:IsShown() and A.raceChoice.enabled==false and A.classChoice.enabled==false,'live identity should be detected')
+check(A.profileFrame:IsShown() and A.raceChoice.enabled==false and A.classChoice.enabled==true,'all-class browser must be available in live mode')
+A.classChoice.scripts.OnClick()
+local classCount=0;for key in pairs(A.choiceButtons) do classCount=classCount+1;check(expected[key],'unexpected class in selector') end
+check(classCount==9,'not all nine classes visible from live profile')
+A.choiceButtons.DRUID.scripts.OnClick()
+check(A.profileMode=='live','choosing live class should preserve live mode')
 A.specChoice.scripts.OnClick();A.choiceButtons['spec:DRUID:2'].scripts.OnClick()
 check(B.char.gearProfile=='auto','draft choice applied before confirmation')
 A.profileApply.scripts.OnClick();check(B.char.gearProfile=='spec:DRUID:2','manual specialization not saved')
@@ -96,6 +131,10 @@ check(A.profileInfo.text:find('Sacré',1,true) and A.profileInfo.text:find('Aper
 check(I:Compare('item:70101').status=='lower','preview contaminated live tooltip')
 A.profileApply.scripts.OnClick()
 check(B.char.gearPreview.class=='PALADIN' and B.char.gearPreview.race=='Human' and B.char.gearProfile=='spec:DRUID:2','preview save contaminated current profile')
+A.profileButton.scripts.OnClick();A.classChoice.scripts.OnClick();A.choiceButtons.MAGE.scripts.OnClick()
+check(A.profileMode=='preview' and A.preview.class=='MAGE' and I:PlayerClass()=='DRUID','direct class browser changed real identity')
+A.specChoice.scripts.OnClick();check(A.choiceButtons['spec:MAGE:3'] and not A.choiceButtons['spec:DRUID:2'],'foreign specs still visible after class change')
+A.choiceFrame:Hide();A.profileFrame:Hide()
 A.profileButton.scripts.OnClick();A.previewModeButton.scripts.OnClick()
 check(A.preview.class=='PALADIN' and A.preview.selection=='spec:PALADIN:1','preview not remembered')
 A.liveModeButton.scripts.OnClick();A.specChoice.scripts.OnClick();A.choiceButtons.auto.scripts.OnClick();A.profileApply.scripts.OnClick()
@@ -108,5 +147,5 @@ check(#I:SpecChoices('DRUID',true)==5 and #I:SpecChoices('MAGE',false)==3,'spec 
 B.char={gearProfile='auto'};A.profileFrame:Hide();A:ToggleProfile()
 check(A.preview.class=='DRUID' and A.preview.race=='FutureRace','saved preview leaked into a different character')
 A.profileFrame:Hide();A.frame:Hide()
-B.char=old.char;B.UI=old.ui;B.settings=old.settings;UnitLevel=old.level;UnitRace=old.race;InCombatLockdown=old.combat;C_Item=old.item;C_PlayerInfo=old.player;GetInventoryItemLink=old.link;GetInventoryItemTexture=old.texture;Ding.Compat.PlayerClass=old.class;GetNumTalentTabs=old.tabs;GetNumTalents=old.num;GetTalentInfo=old.talent;GetTime=old.time;I:InvalidateProfile()
+B.char=old.char;B.UI=old.ui;B.settings=old.settings;UnitLevel=old.level;UnitRace=old.race;UnitClass=old.unitClass;InCombatLockdown=old.combat;C_Item=old.item;C_PlayerInfo=old.player;GetInventoryItemLink=old.link;GetInventoryItemTexture=old.texture;Ding.Compat.PlayerClass=old.class;GetNumTalentTabs=old.tabs;GetNumTalents=old.num;GetTalentInfo=old.talent;GetTime=old.time;I:InvalidateProfile()
 print('PASS equipment profiles: '..checks..' checks; 27 specs, belt regression, manual/auto, talents, character isolation and selector/preview')

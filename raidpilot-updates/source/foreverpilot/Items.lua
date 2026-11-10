@@ -109,6 +109,9 @@ end
 function I:ResolveProfile(class,selection,live)
     local def=self.classes[class]
     if not def then return nil,nil,B.T("Classe inconnue"),B.T("Classe non prise en charge.") end
+    if not self:IsSelectionForClass(class,selection) then
+        return nil,nil,def.label,B.T("Ce profil ne correspond pas à cette classe. Choisis sa spécialisation.")
+    end
     local key,tree,reason=selection
     if selection=="auto" then
         if live then tree,reason=self:AutoTree(class) end
@@ -126,15 +129,38 @@ function I:ResolveProfile(class,selection,live)
     if selection~="auto" then label=label..B.T(" (manuel)") end
     return profile,key,label,reason
 end
+function I:PlayerClass()
+    -- The live character is authoritative; browsing another class never changes it.
+    local _,class=B.Call(UnitClass,"player")
+    if self.classes[class] then return class end
+    class=B.Call(Ding.Compat.PlayerClass)
+    if self.classes[class] then return class end
+end
+function I:IsSelectionForClass(class,selection)
+    local def=self.classes[class]
+    if not def then return false end
+    if selection=="auto" then return true end
+    if type(selection)~="string" then return false end
+    local owner,index=selection:match("^spec:([A-Z]+):([123])$")
+    if owner then return owner==class and def[tonumber(index)]~=nil end
+    -- Keep compatible legacy choices, but never let e.g. feral score a mage's gear.
+    for tab=1,3 do if selection==def[tab][2] then return true end end
+    return class=="DRUID" and (selection=="ours" or selection=="hybride")
+end
+function I:ProfileSelection()
+    local selection=B.char and B.char.gearProfile or "auto"
+    return self:IsSelectionForClass(self:PlayerClass(),selection) and selection or "auto"
+end
+function I:ClassChoices()
+    local out={}
+    for _,class in ipairs(self.classOrder) do out[#out+1]={key=class,label=self.classes[class].label} end
+    return out
+end
 function I:Profile()
-    return self:ResolveProfile(B.Call(Ding.Compat.PlayerClass),B.char and B.char.gearProfile or "auto",true)
+    return self:ResolveProfile(self:PlayerClass(),self:ProfileSelection(),true)
 end
 function I:SetProfile(key)
-    if key~="auto" and not self.profiles[key] then
-        local class,tab
-        if type(key)=="string" then class,tab=key:match("^spec:([A-Z]+):([123])$") end
-        if class~=B.Call(Ding.Compat.PlayerClass) or not self.classes[class] or not tab then return false end
-    end
+    if not self:IsSelectionForClass(self:PlayerClass(),key) then return false end
     B.char.gearProfile=key;self:InvalidateProfile();return true
 end
 function I:SpecChoices(class,includeAuto)
