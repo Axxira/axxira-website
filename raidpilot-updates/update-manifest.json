@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-10T15:06:02.8773622+00:00",
+  "publishedAt": "2026-11-10T17:21:46.0434690+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.30-a4182b974a27/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "D150363A0DFC61923971E4C6C1FFC8F190259DC105EB3E0292495E09800F7E28",
-    "sizeBytes": 234564529,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.31-e8cd38144615/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "6539FD97FBA79BFF44A00833803FD73A354003F64E8A24CA44732B80702E5D68",
+    "sizeBytes": 234574475,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.30-a4182b974a27/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "4F691BD2C7717F88B94DC29E3CE4394BBA90154892478F02DBE423F419547F46",
-    "sizeBytes": 58332829,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.31-e8cd38144615/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "1113AFDA8D6D71B7606BF83FB07606056AF112119F32EF3B3A9DA0C4BEF7BBC4",
+    "sizeBytes": 58342775,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.30",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.30-a4182b974a27/RaidPilot-Launcher-v0.2.30-Windows-x64.zip",
-    "sha256": "1910F1D23AEB9524B99BB3B688449D19D300A6E90EEE5E178635604283909516",
-    "sizeBytes": 360644861,
-    "releaseNotes": "Les neuf classes et 27 arbres sont accessibles dans Profil. Aperçu séparé du personnage réel; conseils objets adaptés à sa classe et spécialisation, anciens profils incompatibles ignorés. Options indépendant du module objets, avec raccourci si le guidage est masqué, désactivé ou sans accès Premium. Nouveau nom affiché ForeversPilot FastXp; dossiers, réglages, Ding et bridge conservés. FR/EN. RaidPilot entièrement gratuit. Aucun nouvel addon ni fichier à charger; /reload hors combat. Conseils statistiques estimés, effets complexes à vérifier."
+    "version": "0.2.31",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.31-e8cd38144615/RaidPilot-Launcher-v0.2.31-Windows-x64.zip",
+    "sha256": "DBDB596F6B531D07722487D17B169577FB35E4E043871159AEACB4B6644FBE15",
+    "sizeBytes": 360678379,
+    "releaseNotes": "Après mise à jour et redémarrage du launcher, ForeverPilot est automatiquement installé ou réparé dans le dossier WoW déjà choisi, ou celui où ForeverPilot est déjà présent. Ding est ajouté ou réparé si nécessaire. Si WoW est ouvert, le launcher attend sa fermeture et reprend sans nouveau clic tant qu’il reste ouvert. Première utilisation sans dossier choisi ni addon : choisir le dossier une fois. Sauvegarde avant remplacement, réglages des personnages et ancien bridge conservés, aucune rétrogradation. Versions incluse et installée clairement séparées; fichiers incohérents détectés même avec le même numéro de version. Une erreur est affichée avec une action de reprise, sans boucle d’échecs. Active Ding! + ForeversPilot FastXp dans WoW; AI Bridge et Farm ne sont pas requis. Lua inchangé en 1.10.1, approuvé sur CurseForge. RaidPilot reste gratuit."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.31",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.31",
+      "date": "2026-11-10",
+      "summary": "ForeversPilot : les mises à jour s’installent automatiquement dans WoW",
+      "details": "Après mise à jour et redémarrage du launcher, ForeverPilot est automatiquement installé ou réparé dans le dossier WoW déjà choisi, ou celui où ForeverPilot est déjà présent. Ding est ajouté ou réparé si nécessaire. Si WoW est ouvert, le launcher attend sa fermeture et reprend sans nouveau clic tant qu’il reste ouvert. Première utilisation sans dossier choisi ni addon : choisir le dossier une fois. Sauvegarde avant remplacement, réglages des personnages et ancien bridge conservés, aucune rétrogradation. Versions incluse et installée clairement séparées; fichiers incohérents détectés même avec le même numéro de version. Une erreur est affichée avec une action de reprise, sans boucle d’échecs. Active Ding! + ForeversPilot FastXp dans WoW; AI Bridge et Farm ne sont pas requis. Lua inchangé en 1.10.1, approuvé sur CurseForge. RaidPilot reste gratuit."
+    },
     {
       "component": "launcher",
       "version": "0.2.30",
@@ -253,16 +263,6 @@
       "date": "2026-10-26",
       "summary": "CORTEX V4 expérimental — fusion visuelle, récupération et mémoire spatiale",
       "details": "V4 est un mode facultatif, désactivé par défaut dans le menu Windows, pour comparer sans perturber CORTEX V3. Réutilise les deux banques de repères visuels locaux et persistants (basse et haute résolution); confronte chaque proposition de relocalisation à l'incertitude du déplacement avant l'application et limite le gain. Les grands retours sur lieu connu requièrent deux corroborations locales séparées temporellement; les cas ambigus sollicitent un F8 natif via les garde-fous habituels. Un atlas local de secteurs d'erreurs F8 comparables est mémorisé pendant 30 jours et peut seulement réduire les intervalles admissibles. Rapport CORTEX V4 exportable contenant cadence native, erreurs F8 et mesures de récupération, sans capture ni coordonnées précises. Ne constitue pas un SLAM neuronal ni une garantie de localisation parfaite. Gains en raid non encore démontrés; voir CORTEX-V4.md."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.5.0",
-      "raidPilotVersion": "0.15.5.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-26",
-      "summary": "CORTEX V3 expérimental — apprentissage de dérive et recalages F8 adaptatifs",
-      "details": "CORTEX V3 ajoute une calibration locale à partir des résidus réels de captures F8 comparables (24 mesures maximum en mémoire, activation de la calibration après 6 mesures). Le modèle estime de manière prudente la dérive à 8 et 12 secondes et peut limiter la cadence à 4 ou 8 secondes si l'écart augmente. Quand les mesures sont suffisamment fiables et un repère visuel local a réellement été appliqué, une courte grâce de 5 à 9 secondes peut maintenir un intervalle de 8 secondes, jamais 12 sans deux repères récents distincts. Le diagnostic indique les raisons de limitation, les risques empiriques et la cadence F8 réellement observée. Les protections de visée, action, changement de session et repli sont conservées. Aucun réseau neuronal, aucune garantie de précision absolue ni gain de captures mesuré en raid réel à ce stade."
     }
   ]
 }
