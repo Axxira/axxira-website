@@ -145,7 +145,7 @@ internal sealed partial class LauncherSurface
         }
         DrawCompassGlyph(g, new Rectangle(987, 106, 92, 92), Color.FromArgb(255, 203, 78));
         ForeverText(g, "WORLD OF WARCRAFT  /  FOREVER", 244, 84, 630, 20, 9, ForeverAccent, true);
-        ForeverText(g, "ForeverPilot", 242, 113, 680, 55, 32, Color.White, true);
+        ForeverText(g, "ForeversPilot FastXp", 242, 113, 680, 55, 32, Color.White, true);
         ForeverText(g, "Ton cap vers le niveau 60.", 245, 176, 680, 28, 14, Color.FromArgb(210, 231, 230));
         ForeverButton(g, new Rectangle(890, 215, 242, 34), "Cartes donjons · gratuit", LauncherAction.InstallDungeonMaps,
             Forever.GamePath is not null && !Forever.GameRunning && !Busy && Directory.Exists(DungeonMapService.BundlePath));
@@ -157,7 +157,7 @@ internal sealed partial class LauncherSurface
         using (var shape = RoundedRect(new Rectangle(214, 282, 940, 187), 12))
             g.FillPath(fill, shape);
         ForeverText(g, statusTitle, 238, 302, 560, 22, 10, accent, true);
-        ForeverText(g, "ForeverPilot", 238, 339, 210, 22, 10, Muted);
+        ForeverText(g, "ForeversPilot FastXp", 238, 339, 210, 22, 10, Muted);
         ForeverText(g, Forever.Version is null ? "Non installé" : "v" + Forever.Version, 238, 367, 210, 32, 18, Color.White, true);
         ForeverText(g, "Dépendance Ding", 476, 339, 210, 22, 10, Muted);
         ForeverText(g, Forever.DingInstalled ? "Présente" : "Manquante", 476, 367, 210, 32, 18,

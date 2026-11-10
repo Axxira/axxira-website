@@ -112,7 +112,7 @@ function U:Create()
     bg:SetTexture("Interface\\AddOns\\ForeverPilot_Leveling\\Media\\Panel")
     bg:SetTexCoord(0,368/512,0,156/256)
     self.accent=rect(f,14,29,316,1,0.40,0.85,0.80,0.22)
-    self.header=font(f,11,14,12,145,14);self.header:SetText("FOREVERPILOT");self.header:SetTextColor(0.73,0.81,0.87)
+    self.header=font(f,10,14,12,150,14);self.header:SetText("ForeversPilot FastXp");self.header:SetTextColor(0.73,0.81,0.87)
     self.tag=font(f,9,190,12,140,14);self.tag:SetJustifyH("RIGHT")
     -- Confidence remains in the tooltip; the header is reserved for clear controls.
     self.tag:Hide()
@@ -150,6 +150,7 @@ function U:Create()
     f:SetScript("OnEnter",function() self:Tooltip() end)
     f:SetScript("OnLeave",function() GameTooltip:Hide() end)
     f:SetShown(B.settings.shown~=false)
+    if B.Options then B.Options:SyncEntryPoints() end
 end
 function U:Render(a,s)
     if not self.frame then return end

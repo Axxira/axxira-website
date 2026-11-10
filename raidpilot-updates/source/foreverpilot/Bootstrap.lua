@@ -1,5 +1,5 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.10.0", modules = {}, dirty = true }
+local B = { version = "1.10.1", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 -- The CurseForge packager changes this one marker. RaidPilot always remains free.
 B.distribution = "raidpilot-test"
@@ -29,7 +29,7 @@ function B.Public(value)
     return value
 end
 function B.Now() return GetTime() end
-function B.Print(s) if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("|cff48d7e8ForeverPilot|r "..s) end end
+function B.Print(s) if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage("|cff48d7e8ForeversPilot FastXp|r "..s) end end
 function B.Trace(kind, message)
     if not B.char then return end
     local t=B.char.trace; t[#t+1]={at=time(),kind=kind,message=tostring(message)}

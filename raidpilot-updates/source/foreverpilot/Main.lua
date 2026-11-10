@@ -27,6 +27,7 @@ function B.SetEnabled(enabled)
     end
     if B.AuctionUI then B.AuctionUI:SyncEnabled() end
     if B.Layers then B.Layers:Safe(B.Layers.SyncEnabled) end
+    if B.Options then B.Options:SyncEntryPoints() end
 end
 function B.Guard(fn)
     local ok,err=pcall(fn)
@@ -84,6 +85,7 @@ end
 local function init()
     if initialized then return end
     B.InitDB()
+    if B.Options then B.Options:SyncEntryPoints() end
     if not (Ding and Ding.Data and Ding.Data.available) then B.Print(B.T("Données Ding indisponibles."));return end
     B.Graph:Build();B.UI:Create()
     if B.Advisor then
@@ -185,7 +187,12 @@ end)
 SLASH_FOREVERPILOTLEVELING1="/fpl"
 SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     msg=(msg or ""):lower():match("^%s*(.-)%s*$")
-    if not initialized then B.Print(B.T("Chargement en attente de Ding."));return end
+    if not initialized then
+        if B.settings and (msg=="options" or msg=="settings" or msg=="help" or msg=="aide") then
+            B.Options:Toggle((msg=="help" or msg=="aide") and "help" or nil)
+        else B.Print(B.T("Chargement en attente de Ding.")) end
+        return
+    end
     local language=msg:match("^lang%s+(%a+)$") or msg:match("^langue%s+(%a+)$") or msg:match("^language%s+(%a+)$")
     if language then
         if not B.SetLanguage(language) then B.Print("/fpl lang fr | en | auto") end

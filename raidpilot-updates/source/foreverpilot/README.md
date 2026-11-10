@@ -1,4 +1,4 @@
-# ForeverPilot 1.10.0 · Français / English
+# ForeversPilot FastXp 1.10.1 · Français / English
 
 Assistant de leveling pour **WoW Forever**, interface 16001. **Ding est obligatoire**
 et doit rester activé. ChangeLayer est facultatif. Le joueur se déplace et combat
@@ -131,3 +131,9 @@ des dépendances. L'abonnement ne retire pas les droits GPL sur le code reçu. L
 est ouvert et modifiable : le contrôle local n'est pas un mécanisme inviolable. Le service
 vérifie les paiements et le compagnon vérifie les signatures avant l'activation normale.
 L'ancien addon `ForeverPilot` est un bridge indépendant, jamais remplacé par ce produit.
+
+## 1.10.1
+
+FR : les neuf classes sont accessibles depuis Profil. Choisir une autre classe ouvre un aperçu isolé; les conseils du personnage réel suivent sa classe et sa spécialisation. Les anciens profils incompatibles sont ignorés. Options reste accessible quand le guidage est masqué, désactivé ou sans accès Premium, et ne dépend plus du module objets. Nom affiché : ForeversPilot FastXp; dossier et réglages conservés. Conseils statistiques estimés, effets complexes à vérifier.
+
+EN: all nine classes are accessible in Profile. Choosing another class opens an isolated preview; actual equipment advice follows the player class and specialization. Incompatible legacy profiles are ignored. Options remains available with hidden, disabled or locked guidance, independently of the equipment module. Display name: ForeversPilot FastXp; existing folder and settings preserved. Stat-based estimates; complex effects still require review.

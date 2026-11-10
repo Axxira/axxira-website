@@ -28,6 +28,30 @@ end
 function O:CloseFor(fn)
     self.frame:Hide();GameTooltip:Hide();fn()
 end
+-- Settings remain reachable even when guidance is hidden, unavailable or stopped.
+-- This entry point must not depend on the equipment/auction module initializing.
+function O:SyncEntryPoints()
+    if not B.settings then return end
+    local guide=B.UI and B.UI.frame
+    if not self.shortcut then
+        self.shortcut=button(UIParent,"ForeversPilot FastXp · Options",0,0,244,function() self:Toggle() end)
+        self.shortcut:SetFrameStrata("MEDIUM");self.shortcut:SetClampedToScreen(true)
+    end
+    if guide and not self.headerButton then
+        self.headerButton=button(guide,"Options",244,3,86,function() self:Toggle() end)
+        self.headerButton:SetScript("OnEnter",function()
+            GameTooltip:SetOwner(self.headerButton,"ANCHOR_BOTTOM");GameTooltip:SetText("Options · Français / English")
+            GameTooltip:AddLine(B.T("Langue, profil, taille et aide."),.8,.9,.9,true);GameTooltip:Show()
+        end)
+        self.headerButton:HookScript("OnLeave",function() GameTooltip:Hide() end)
+        guide:HookScript("OnShow",function() self:SyncEntryPoints() end)
+        guide:HookScript("OnHide",function() self:SyncEntryPoints() end)
+    end
+    self.shortcut:ClearAllPoints()
+    self.shortcut:SetPoint(B.settings.point or "TOP",UIParent,B.settings.point or "TOP",B.settings.x or 0,B.settings.y or -90)
+    self.shortcut:SetScale(B.settings.scale or 1)
+    self.shortcut:SetShown(not guide or not guide:IsShown())
+end
 function O:Render()
     if not self.frame then return end
     for key,p in pairs(self.pages) do p:SetShown(key==self.tab);self.tabs[key]:Paint(key==self.tab) end
@@ -67,7 +91,7 @@ function O:Create()
     f:SetFrameStrata("DIALOG");f:EnableMouse(true)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.99)
     local accent=f:CreateTexture(nil,"ARTWORK");accent:SetPoint("TOPLEFT",f,"TOPLEFT",0,0);accent:SetSize(520,2);accent:SetColorTexture(.4,.85,.8,1)
-    text(f,17,20,18,410,24,"ForeverPilot")
+    text(f,17,20,18,410,24,"ForeversPilot FastXp")
     text(f,11,20,43,440,17,B.T("Réglages, profil et outils au même endroit."),true)
     button(f,"×",467,16,32,function() f:Hide() end)
     self.pages={};self.tabs={}

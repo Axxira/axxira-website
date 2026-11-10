@@ -1184,7 +1184,7 @@ internal sealed partial class LauncherSurface : Control
         DrawNavItem(g, LauncherAction.CheckUpdates, LauncherSection.Update, navStart + 47, "↻", "Mise à jour");
         DrawNavItem(g, LauncherAction.Play, LauncherSection.Play, navStart + 94, "▶", "Jouer");
         DrawNavItem(g, LauncherAction.Squad, LauncherSection.Squad, navStart + 141, "♟", "Escouade");
-        DrawNavItem(g, LauncherAction.ForeverPilot, LauncherSection.ForeverPilot, navStart + 188, "➤", "ForeverPilot");
+        DrawNavItem(g, LauncherAction.ForeverPilot, LauncherSection.ForeverPilot, navStart + 188, "➤", "ForeversPilot FastXp");
         DrawNavItem(g, LauncherAction.Settings, LauncherSection.Settings, navStart + 235, "⚙", "Paramètres");
         DrawNavItem(g, LauncherAction.ReleaseNotes, LauncherSection.ReleaseNotes, navStart + 282, "▤", "Notes de version");
         DrawNavItem(g, LauncherAction.Help, LauncherSection.Help, navStart + 329, "?", "Aide");
