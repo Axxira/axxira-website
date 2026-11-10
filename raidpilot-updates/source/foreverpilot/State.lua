@@ -50,7 +50,19 @@ function S:Refresh()
     end
     local prev=self.current
     s.moving=s.speed>0 or (prev and prev.continent==s.continent and prev.wx and s.wx and ((s.wx-prev.wx)^2+(s.wy-prev.wy)^2)>4) or false
-    if prev and s.xp and prev.xp then
+    s.paceEligible=B.settings.enabled and not B.settings.paused and not s.afk
+    if not prev then self.elapsed=0;self.gained=0;self.travelSeconds=0;self.deadSeconds=0 end
+    local dt=prev and s.now-prev.now or 0
+    -- Pause/AFK transitions and long observation gaps count neither XP nor time.
+    -- Death, taxi and stationary play remain real leveling costs, not hidden time.
+    if prev and prev.paceEligible and s.paceEligible and dt>=0 and dt<=10 then
+        self.elapsed=(self.elapsed or 0)+dt
+        if s.dead and prev.dead then self.deadSeconds=(self.deadSeconds or 0)+dt
+        elseif not s.combat and not prev.combat and (s.moving or s.taxi) and (prev.moving or prev.taxi) then
+            self.travelSeconds=(self.travelSeconds or 0)+dt
+        end
+    end
+    if prev and prev.paceEligible and s.paceEligible and dt>=0 and dt<=10 and s.xp and prev.xp then
         local delta=s.xp-prev.xp
         if s.level==prev.level+1 then delta=(prev.maxXP or 0)-prev.xp+s.xp end
         if delta>0 and s.level<=prev.level+1 then self.gained=(self.gained or 0)+delta end
@@ -59,7 +71,7 @@ function S:Refresh()
     return s
 end
 function S:Pace()
-    local s=self.current; local elapsed=s and s.now-(self.started or s.now) or 0
+    local s=self.current; local elapsed=self.elapsed or 0
     if elapsed<60 or not self.gained or self.gained<=0 then return nil end
     local rate=self.gained*3600/elapsed
     return rate, s.maxXP and s.xp and (s.maxXP-s.xp)/rate*3600

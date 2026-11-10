@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.33",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.33",
+      "date": "2026-11-10",
+      "summary": "ForeversPilot FastXp 1.10.3 : efficacité des sorties",
+      "details": "Temps de travail inclus même quand les objectifs ne sont pas cartographiés; suites réellement utiles seulement dans le bonus de chaîne. Plusieurs ordres de sortie comparés avec retour au village, priorité de classe et stabilité de la flèche conservées. Quêtes sans objectifs connus exclues des ajouts opportunistes ordinaires. XP/h de session hors pause/AFK; déplacements et morts restent comptés. FR/EN, aucun reset ni abandon. Tests simulés; aucun gain XP/h réel ou optimalité 1–60 garantis. RaidPilot reste entièrement gratuit."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.32",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "CORTEX Core — fusion de confiance, apprentissage des écarts F8 et navigation adaptive",
       "details": "Première phase de CORTEX : superviseur local connecté aux mouvements, aux corrections visuelles réellement appliquées et à l'audit exact F8. Il suit la session carte/raid/fenêtre, rejette les observations périmées ou incohérentes, comptabilise les corrections visuelles corroborées et retient la dérive réelle observée aux F8 sans enregistrer de coordonnées. Une erreur F8 importante bloque temporairement l'espacement des captures; une nouvelle confiance exige deux mesures correctes. Deux corrections visuelles indépendantes sont nécessaires pour l'intervalle maximal de 12 s. Mode CORTEX désactivable depuis le menu pour comparer avec l'ancien moteur. Il ne s'agit pas encore d'un modèle neuronal ou d'un SLAM complet; précision à confirmer en raid."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.14.2.45",
-      "raidPilotVersion": "0.14.2.45",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "F8 adaptatif silencieux — 4 à 12 s selon les repères visuels fiables",
-      "details": "Le recalage exact pendant la marche conserve 4 s lorsque la vision manque, que la position devient incertaine ou que la santé GPS est orange/rouge. Des corrections visuelles locales, indépendantes et réellement appliquées (consensus de repères, confiance ≥ 0,90 et faible résidu) permettent d'espacer les F8 à 8 ou 12 s, réduisant sons et notifications du jeu. F, tir, visée et rechargement bloquent toujours les captures. Le suivi par images reste local, sans coordonnées inventées; les tests en raid doivent vérifier l'équilibre précision/discrétion."
     }
   ]
 }

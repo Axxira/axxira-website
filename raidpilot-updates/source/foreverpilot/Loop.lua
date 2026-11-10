@@ -22,7 +22,11 @@ function L:Project(a,s)
     end
     local work=a.kind=="complete" and a.work or B.Learning:Duration(a.q,300)
     local piece=work/math.max(1,#targets)
-    if a.kind=="accept" then tasks[#tasks+1]=task(a,"accept",a.point,a.node.manual and 45 or 20)
+    -- Missing objective locations are uncertainty, never evidence of an instant
+    -- delivery. Charge the work estimate without inventing a waypoint. Once the
+    -- server marks a real delivery ready, its normal 15-second turn-in applies.
+    local unknown=a.kind=="accept" and #targets==0
+    if a.kind=="accept" then tasks[#tasks+1]=task(a,"accept",a.point,(a.node.manual and 45 or 20)+(unknown and work or 0))
     elseif a.kind=="complete" then tasks[#tasks+1]=task(a,"complete",a.point,piece)
     else tasks[#tasks+1]=task(a,"turnin",a.point,15) end
     local used={}
@@ -47,7 +51,9 @@ function L:Project(a,s)
     end
     -- A live offer is certain only for availability, not for completion time.
     local certainty=a.kind=="accept" and (B.Validator.offers[a.q] and 0.95 or 0.82) or 1
-    local chain=0;for _ in pairs(n.next or {}) do chain=chain+1 end
+    if unknown then certainty=certainty*0.7 end
+    a.uncertainWork=unknown or nil
+    local chain=B.Progression:ChainCount(n,s)
     return {a=a,tasks=tasks,xp=a.xp,value=a.xp*certainty*(1+math.min(0.15,chain*0.03))/(1+(a.risk or 0))*(a.levelFit and a.levelFit.factor or 1)*(a.regionFactor or 1)*(1+(a.reward and a.reward.bonus or 0))}
 end
 local function advance(state,project,index,s,costs)

@@ -79,6 +79,51 @@ function P:Unlock(n,s,future,classOnly)
     end
     local q=follow(n,0);cache[n.id]=q or false;return q
 end
+function P:ChainCount(n,s)
+    if not next(n.next or {}) then return 0 end
+    s.chainCounts=s.chainCounts or {}
+    if s.chainCounts[n.id]~=nil then return s.chainCounts[n.id] end
+    local count=0
+    local finish=B.Travel:Nearest(B.Graph:Locations(n,"turnin"),s)
+    -- This is a scoring projection only. Never mutate completion or the journal.
+    local after=setmetatable({log={},count=0},{__index=s})
+    for q,row in pairs(s.log) do if q~=n.id then after.log[q]=row;after.count=after.count+1 end end
+    function after:IsDone(q) return q==n.id or s:IsDone(q) end
+    for q in pairs(n.next or {}) do
+        local child=B.Graph:Node(q)
+        local valid=child and finish and not s:IsDone(q) and not s.log[q]
+            and not B.Recovery:IsSkipped(q) and not child.profession and not child.manual
+            and (child.fast or B.Journal:IsClass(child) or child.classPrerequisite)
+            and child.min<=s.level and child.level>=s.level-2 and child.level<=s.level+2
+            and Ding.Data:QuestOpenToPlayer(q) and B.Planner:Solo(child)
+        if valid then
+            -- No bonus for an already-satisfied alternative, another missing
+            -- prerequisite, a negative (active-parent) dependency or exclusion.
+            valid=B.Recovery:Prerequisite(child,s)~=nil and B.Recovery:Prerequisite(child,after)==nil
+            for _,id in ipairs(child.exclusive or {}) do if after:IsDone(id) or after.log[id] then valid=false end end
+            if B.Recovery:IsBlocked(q,s) then valid=false end
+            if #(child.startItems or {})>0 then
+                local hasItem=false
+                for _,item in ipairs(child.startItems) do if Ding.Compat.ItemCount(item)>0 then hasItem=true end end
+                if not hasItem then valid=false end
+            end
+        end
+        if valid then
+            local start=B.Travel:Nearest(B.Graph:Locations(child,"accept"),finish)
+            local d=start and B.Travel:Distance(finish,start)
+            valid=d and d<=840 and B.Travel:Reachable(start,s)
+            local targets=B.Graph:Locations(child,"complete")
+            -- An unknown continuation cannot justify a faster XP estimate.
+            if #targets==0 then valid=false end
+            for _,target in ipairs(targets) do
+                local p=B.Travel:Nearest(B.Planner:SafePoints(target,s,q),start or s)
+                if not p or not B.Travel:Reachable(p,s) then valid=false end
+            end
+        end
+        if valid then count=count+1 end
+    end
+    s.chainCounts[n.id]=count;return count
+end
 function P:Evaluate(n,kind,s,a)
     local row=s.log[n.id]
     local level=row and row.level or n.level

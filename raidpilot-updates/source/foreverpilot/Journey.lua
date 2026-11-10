@@ -19,6 +19,49 @@ local function retain(list)
     return chosen
 end
 function J:Reset() B.char.trip=nil end
+function J:OrderWork(list,trip,s)
+    if #list<2 or #list>25 then return retain(list) end
+    -- Class work keeps its own decision tier. Otherwise compare closed outings,
+    -- not just the distance to the first objective. Bound the search to one
+    -- greedy continuation per possible first stop; the nearest route is included.
+    local eligible={};local hasClass=false
+    for _,a in ipairs(list) do if a.classPriority then hasClass=true end end
+    for _,a in ipairs(list) do if not hasClass or a.classPriority then eligible[#eligible+1]=a end end
+    table.sort(eligible,function(a,b) return a.key<b.key end)
+    if #eligible<2 then return eligible[1] end
+    local edge,home={},{}
+    for i,a in ipairs(eligible) do
+        edge[i]={}
+        local d=distance(a.point,trip.hub)
+        if d==math.huge then return retain(list) end
+        home[i]=d/7
+        for j,b in ipairs(eligible) do
+            local between=distance(a.point,b.point)
+            if between==math.huge then return retain(list) end
+            edge[i][j]=between/7
+        end
+    end
+    local costs={};local best,bestCost
+    for first,a in ipairs(eligible) do
+        local used={[first]=true};local last=first;local cost=a.travel
+        for _=2,#eligible do
+            local nextIndex,nextCost
+            for j in ipairs(eligible) do if not used[j] and (not nextCost or edge[last][j]<nextCost) then nextIndex,nextCost=j,edge[last][j] end end
+            used[nextIndex]=true;cost=cost+nextCost;last=nextIndex
+        end
+        cost=cost+home[last];costs[a.key]=cost
+        if not bestCost or cost<bestCost then best,bestCost=a,cost end
+    end
+    local old=B.Planner.current
+    if old and costs[old.key] then
+        for _,a in ipairs(eligible) do if a.key==old.key then
+            -- Keep a current nearby objective and small differences. Switch only
+            -- for a material estimated saving, and never mid-combat.
+            if s.combat or distance(a.point,s)<=60 or costs[a.key]-bestCost<math.max(20,bestCost*0.08) then return a end
+        end end
+    end
+    return best
+end
 function J:Zone(a,s)
     if a.kind=="complete" then return a.point and a.point.map end
     if a.kind=="accept" then
@@ -33,7 +76,12 @@ end
 function J:LocalPickup(a,trip,s)
     if a.kind~="accept" or a.node.manual or a.point.map~=trip.hub.map
         or distance(a.point,trip.hub)>700 then return false end
-    for _,t in ipairs(B.Graph:Locations(a.node,"complete")) do
+    local targets=B.Graph:Locations(a.node,"complete")
+    -- The selected quest can still be investigated, and class work keeps its
+    -- priority. Do not fill the journal with speculative "local" errands when
+    -- no objective establishes that they belong to this zone's outing.
+    if #targets==0 and not a.classPriority then return false end
+    for _,t in ipairs(targets) do
         local localPoint=false
         for _,p in ipairs(B.Planner:SafePoints(t,s,a.q)) do
             if p.map==trip.zone and B.Travel:Reachable(p,s) then localPoint=true;break end
@@ -134,7 +182,7 @@ function J:Choose(winner,actions,s)
         chosen=retain(pending);chosen.collection={confirmed=confirmed,total=#trip.ids}
         if trip.phase=="return" then trip.phase="collect" end
     elseif not chosen and #work>0 then
-        trip.phase="work";chosen=retain(work)
+        trip.phase="work";chosen=self:OrderWork(work,trip,s)
     elseif not chosen then
         trip.phase="return";chosen=nearest(ready)
         if chosen then trip.hub=chosen.point end
