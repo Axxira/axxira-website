@@ -1,5 +1,5 @@
 local B=ForeverPilotLeveling
-local U={width=344,height=132};B.UI=U
+local U={width=360,height=176};B.UI=U
 local verbs={accept=B.T("PRENDS"),complete=B.T("TERMINE"),turnin=B.T("RENDS"),grind=B.T("XP D'APPOINT"),corpse=B.T("RETOUR AU CORPS"),done=B.T("NIVEAU 60"),recovery=B.T("RÉORIENTATION"),service=B.T("FAIS UNE HALTE"),rest=B.T("RÉCUPÈRE")}
 local colors={normal={0.40,0.85,0.80},turnin={0.94,0.76,0.43},recovery={1,0.65,0.36},pause={0.60,0.65,0.72}}
 local travelVerbs={fly=B.T("PRENDS LE VOL"),hearth=B.T("PIERRE DE FOYER"),boat=B.T("PRENDS LE BATEAU"),zeppelin=B.T("PRENDS LE ZEPPELIN"),tram=B.T("PRENDS LE TRAM"),passage=B.T("SUIS LE PASSAGE"),teleport=B.T("TÉLÉPORTATION")}
@@ -11,7 +11,7 @@ function U:Symbol(texture)
     self.arrow:SetRotation(0);self.arrow:Show()
 end
 local function font(f,size,x,y,width,height)
-    local t=f:CreateFontString(nil,"OVERLAY");t:SetFont(STANDARD_TEXT_FONT,size,"")
+    local t=f:CreateFontString(nil,"OVERLAY");B.SetUIFont(t,size)
     t:SetPoint("TOPLEFT",f,"TOPLEFT",x,-y);t:SetWidth(width);t:SetHeight(height or size+4)
     t:SetJustifyH("LEFT");t:SetJustifyV("TOP");t:SetTextColor(0.94,0.96,0.98)
     t:SetWordWrap(false)
@@ -22,8 +22,8 @@ local function rect(f,x,y,w,h,r,g,b,a)
     t:SetPoint("TOPLEFT",f,"TOPLEFT",x,-y);t:SetSize(w,h);return t
 end
 function U:View(a,s)
-    local v={verb=verbs[a.kind] or "CONTINUE",title=a.node and a.node.name or a.label or "",detail=a.objective and a.objective.text or a.note or "",color=colors.normal}
-    v.tag=a.confidence=="LIVE" and "LIVE" or a.confidence=="RECOVERY" and B.T("ADAPTATION") or B.T("GUIDAGE")
+    local v={verb=verbs[a.kind] or B.T("CONTINUE"),title=a.node and a.node.name or a.label or "",detail=a.objective and a.objective.text or a.note or "",color=colors.normal}
+    v.tag=a.confidence=="LIVE" and B.T("LIVE") or a.confidence=="RECOVERY" and B.T("ADAPTATION") or B.T("GUIDAGE")
     if a.levelFit and a.levelFit.questLevel then v.verb=v.verb..B.T(" · NIV. ")..a.levelFit.questLevel end
     if a.reward then v.verb=(verbs[a.kind] or "")..B.T(" · BUTIN BLEU À COMPARER") end
     local log=a.q and s.log[a.q];local have,need=0,0
@@ -54,7 +54,7 @@ function U:View(a,s)
         else v.footer=string.format(B.T("RETOUR HUB · %d à rendre"),a.outing.ready) end
     end
     if B.Recovery.notice and B.Recovery.notice.untilAt>s.now then v.footer=B.Recovery.notice.text;v.color=colors.recovery end
-    if B.settings.paused then v.tag="PAUSE";v.footer=B.T("Clic droit pour reprendre");v.color=colors.pause end
+    if B.settings.paused then v.tag=B.T("PAUSE");v.footer=B.T("Clic droit pour reprendre");v.color=colors.pause end
     local badge,badgeColor=B.Journal:Badge()
     if badge then v.tag=badge;v.tagColor=badgeColor end
     if a.classPriority then
@@ -65,7 +65,7 @@ function U:View(a,s)
         v.tag=B.T("TRAJET AÉRIEN");v.tagColor=colors.turnin;v.verb=B.T("PARLE AU MAÎTRE DE VOL")
         v.footer=B.T("À DÉCOUVRIR AVANT DE PARTIR")
     end
-    if B.settings.paused then v.tag="PAUSE";v.footer=B.T("Clic droit pour reprendre");v.tagColor=colors.pause end
+    if B.settings.paused then v.tag=B.T("PAUSE");v.footer=B.T("Clic droit pour reprendre");v.tagColor=colors.pause end
     return v
 end
 function U:Tooltip()
@@ -113,28 +113,28 @@ function U:Create()
     self.frame=f;f:SetSize(self.width,self.height);f:SetScale(B.settings.scale or 1)
     f:SetPoint(B.settings.point or "TOP",UIParent,B.settings.point or "TOP",B.settings.x or 0,B.settings.y or -90)
     f:SetMovable(true);f:EnableMouse(true);f:RegisterForDrag("LeftButton");f:SetClampedToScreen(true)
-    local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetPoint("TOPLEFT",f,"TOPLEFT",-12,12);bg:SetSize(368,156)
+    local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetPoint("TOPLEFT",f,"TOPLEFT",-12,12);bg:SetSize(self.width+24,self.height+24)
     bg:SetTexture("Interface\\AddOns\\ForeverPilot_Leveling\\Media\\Panel")
     bg:SetTexCoord(0,368/512,0,156/256)
-    self.accent=rect(f,14,29,316,1,0.40,0.85,0.80,0.22)
-    self.header=font(f,10,14,12,150,14);self.header:SetText("ForeversPilot FastXp");self.header:SetTextColor(0.73,0.81,0.87)
+    self.accent=rect(f,14,35,332,1,0.40,0.85,0.80,0.22)
+    self.header=font(f,12,14,12,152,18);self.header:SetText("ForeversPilot FastXp");self.header:SetTextColor(0.82,0.88,0.92)
     self.tag=font(f,9,190,12,140,14);self.tag:SetJustifyH("RIGHT")
     -- Confidence remains in the tooltip; the header is reserved for clear controls.
     self.tag:Hide()
-    self.arrow=f:CreateTexture(nil,"ARTWORK");self.arrow:SetSize(42,42);self.arrow:SetPoint("TOPLEFT",f,"TOPLEFT",24,-39)
+    self.arrow=f:CreateTexture(nil,"ARTWORK");self.arrow:SetSize(46,46);self.arrow:SetPoint("TOPLEFT",f,"TOPLEFT",22,-54)
     self.arrow:SetTexture("Interface\\AddOns\\Ding\\Media\\Textures\\arrow_halo_gold")
-    self.distance=font(f,11,9,86,72,16);self.distance:SetJustifyH("CENTER")
-    rect(f,83,40,1,57,0.45,0.55,0.64,0.18)
-    self.verb=font(f,10,97,38,233,14)
-    self.action=font(f,15,97,54,233,35);self.action:SetWordWrap(true)
-    self.progress=font(f,11,97,92,233,15);self.progress:SetTextColor(0.72,0.79,0.85)
-    self.track=rect(f,14,106,316,2,0.17,0.24,0.30,0.7)
-    self.bar=rect(f,14,106,1,2,0.40,0.85,0.80,0.8)
-    self.loop=font(f,10,14,115,316,14)
-    self.skip=CreateFrame("Button",nil,f);self.skip:SetPoint("TOPLEFT",f,"TOPLEFT",266,-111);self.skip:SetSize(64,19)
+    self.distance=font(f,12,7,108,76,20);self.distance:SetJustifyH("CENTER")
+    rect(f,83,46,1,86,0.45,0.55,0.64,0.18)
+    self.verb=font(f,11,97,44,249,16)
+    self.action=font(f,16,97,64,249,38);self.action:SetWordWrap(true)
+    self.progress=font(f,12,97,105,249,32);self.progress:SetWordWrap(true);self.progress:SetTextColor(0.84,0.89,0.93)
+    self.track=rect(f,14,140,332,2,0.17,0.24,0.30,0.7)
+    self.bar=rect(f,14,140,1,2,0.40,0.85,0.80,0.8)
+    self.loop=font(f,11,14,150,332,17)
+    self.skip=CreateFrame("Button",nil,f);self.skip:SetPoint("TOPLEFT",f,"TOPLEFT",266,-145);self.skip:SetSize(80,22)
     self.skip:RegisterForClicks("LeftButtonUp","RightButtonUp")
     local skipBG=self.skip:CreateTexture(nil,"BACKGROUND");skipBG:SetAllPoints(self.skip);skipBG:SetColorTexture(.17,.25,.30,.95)
-    self.skipLabel=font(self.skip,10,0,4,64,14);self.skipLabel:SetJustifyH("CENTER");self.skipLabel:SetText(B.T("Passer"))
+    self.skipLabel=font(self.skip,12,0,4,80,17);self.skipLabel:SetJustifyH("CENTER");self.skipLabel:SetText(B.T("Passer"))
     self.skip:SetScript("OnEnter",function()
         skipBG:SetColorTexture(.25,.36,.42,1)
         if self.reportUnavailable then
@@ -174,13 +174,13 @@ function U:Render(a,s)
     self.progress:SetText(v.detail);self.loop:SetText(v.footer);self.loop:SetTextColor(c[1],c[2],c[3])
     local canSkip=B.Recovery:CanSkip(a);local showSkip=canSkip or B.Recovery:LastSkipped()~=nil
     self.reportUnavailable=B.Recovery:CanReportUnavailable(a,s)
-    self.skip:SetShown(showSkip);self.skipLabel:SetText(self.reportUnavailable and B.T("Absent ?") or canSkip and B.T("Passer") or B.T("Reprendre"));self.loop:SetWidth(showSkip and 244 or 316)
-    self.bar:SetWidth(math.max(1,316*v.fraction));self.bar:SetShown(v.fraction>0);self.bar:SetColorTexture(c[1],c[2],c[3],0.8)
+    self.skip:SetShown(showSkip);self.skipLabel:SetText(self.reportUnavailable and B.T("Absent ?") or canSkip and B.T("Passer") or B.T("Reprendre"));self.loop:SetWidth(showSkip and 240 or 332)
+    self.bar:SetWidth(math.max(1,332*v.fraction));self.bar:SetShown(v.fraction>0);self.bar:SetColorTexture(c[1],c[2],c[3],0.8)
 end
 function U:Tick()
     local a=self.current;if not a or not self.frame:IsShown() then return end
     local s=self.state
-    if B.settings.paused then self.arrow:Hide();self.distance:SetText("Pause");return end
+    if B.settings.paused then self.arrow:Hide();self.distance:SetText(B.T("Pause"));return end
     local p=a.point
     if not p then self.arrow:Hide();self.distance:SetText(a.kind=="done" and "60" or "—");B.Navigation:Mark(nil);return end
     local leg=not a.walkOnly and B.Travel:Leg(p) or nil
@@ -203,7 +203,7 @@ function U:Tick()
         local facing=Ding.Compat.GetFacing()
         if facing then self:Symbol(arrowTexture);self.arrow:SetRotation(Ding.Arrow.Bearing(dx,dy)-facing)
         else self:Symbol(mapTexture);self.progress:SetText(B.T("Orientation indisponible · consulte la carte")) end
-        self.distance:SetText(distance<12 and B.T("Sur place") or distance>=1000 and string.format("%.1f k yd",distance/1000) or string.format("%.0f yd",distance))
+        self.distance:SetText(distance<12 and B.T("Sur place") or distance>=1000 and string.format(B.T("%.1f k yd"),distance/1000) or string.format(B.T("%.0f yd"),distance))
     else
         self:Symbol(mapTexture);self.distance:SetText(B.T("Carte"))
         self.verb:SetText(B.T("TRAJET À CONFIRMER"))

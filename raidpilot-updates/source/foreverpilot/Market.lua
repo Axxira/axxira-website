@@ -25,7 +25,7 @@ function M:Availability()
     if not B.settings or not B.settings.enabled then return false,B.T("Scan désactivé"),B.T("Active ForeverPilot pour scanner l'HDV.") end
     if not self.open then return false,B.T("Scanner HDV"),B.T("Ouvre l'hôtel des ventes pour lancer un scan.") end
     if self.pending then return false,B.T("Attente du serveur…"),B.T("Scan demandé · attente du serveur…") end
-    if self.job then return false,"Scan · "..math.floor(100*self.job.index/math.max(1,self.job.n)).." %",self.status end
+    if self.job then return false,B.T("Scan · ")..math.floor(100*self.job.index/math.max(1,self.job.n)).." %",self.status end
     if B.Call(InCombatLockdown)==true then return false,B.T("Attends la fin du combat"),B.T("Attends la fin du combat.") end
     local A=C_AuctionHouse
     if not (A and type(A.ReplicateItems)=="function" and type(A.GetReplicateItemInfo)=="function"
@@ -70,8 +70,8 @@ function M:Money(copper)
 end
 function M:Age(at)
     local age=math.max(0,time()-(num(at) or 0))
-    if age<60 then return B.T("à l'instant") elseif age<3600 then return B.T("il y a ")..math.floor(age/60).." min"
-    elseif age<86400 then return B.T("il y a ")..math.floor(age/3600).." h" else return B.T("il y a ")..math.floor(age/86400)..B.T(" j") end
+    if age<60 then return B.T("à l'instant") elseif age<3600 then return B.T("il y a ")..math.floor(age/60)..B.T(" min")
+    elseif age<86400 then return B.T("il y a ")..math.floor(age/3600)..B.T(" h") else return B.T("il y a ")..math.floor(age/86400)..B.T(" j") end
 end
 function M:Get(link)
     if not self.db then return end

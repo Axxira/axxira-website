@@ -1,7 +1,7 @@
 local B=ForeverPilotLeveling
 local U={};B.LayerUI=U
 local function label(f,size,x,y,w,h)
-    local t=f:CreateFontString(nil,"OVERLAY");t:SetFont(STANDARD_TEXT_FONT,size,"")
+    local t=f:CreateFontString(nil,"OVERLAY");B.SetUIFont(t,size)
     t:SetPoint("TOPLEFT",f,"TOPLEFT",x,-y);t:SetSize(w,h);t:SetJustifyH("LEFT");t:SetJustifyV("TOP");t:SetTextColor(.83,.89,.93);return t
 end
 local function button(f,x,y,w,text,click)

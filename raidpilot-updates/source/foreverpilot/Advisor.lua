@@ -2,7 +2,7 @@
 local B=ForeverPilotLeveling
 local A={page=1};B.Advisor=A
 local function text(parent,size,x,y,w,h)
-    local t=parent:CreateFontString(nil,"OVERLAY");t:SetFont(STANDARD_TEXT_FONT,size,"")
+    local t=parent:CreateFontString(nil,"OVERLAY");B.SetUIFont(t,size)
     t:SetPoint("TOPLEFT",parent,"TOPLEFT",x,-y);t:SetSize(w,h);t:SetJustifyH("LEFT");t:SetJustifyV("TOP");t:SetWordWrap(true)
     t:SetTextColor(.86,.90,.94);return t
 end
@@ -164,7 +164,7 @@ function A:Create()
     local title=text(f,17,20,18,390,24);title:SetText(B.T("ForeversPilot FastXp · Objets & HDV"))
     button(f,"×",430,12,28,function() f:Hide() end)
     self.tabButtons={}
-    for i,t in ipairs({{"gear",B.T("Équipement")},{"market",B.T("Prix HDV")},{"addons","Addons"}}) do
+    for i,t in ipairs({{"gear",B.T("Équipement")},{"market",B.T("Prix HDV")},{"addons",B.T("Addons")}}) do
         local tab=t[1];local b=button(f,t[2],20+(i-1)*145,52,135,function() self.tab=tab;self:Render() end)
         b.title=t[2];self.tabButtons[tab]=b
     end
@@ -239,7 +239,7 @@ function A:CreateProfile()
     self.liveModeButton=button(f,B.T("Mon personnage"),20,52,190,function() self.profileMode="live";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
     self.previewModeButton=button(f,B.T("Autre personnage"),220,52,190,function() self.profileMode="preview";if self.choiceFrame then self.choiceFrame:Hide() end;self:RenderProfile() end)
     self.profileModeLabel=text(f,10,20,88,390,18);self.profileModeLabel:SetTextColor(.3,.85,.8)
-    self.raceChoice=button(f,"Race",20,110,390,function()
+    self.raceChoice=button(f,B.T("Race"),20,110,390,function()
         if self.profileMode~="preview" then return end
         self:ProfileChoices(B.T("Choisir une race"),B.Items:RaceChoices(),self.preview.race,function(key) self.preview.race=key end)
     end)
@@ -288,7 +288,8 @@ function A:Init()
     B.Market:Init();self:InstallTooltips()
     if B.AuctionUI then B.AuctionUI:Init() end
     local f=B.UI.frame
-    self.openButton=button(f,B.T("Objets"),170,3,66,function() if B.Options.frame then B.Options.frame:Hide() end;self:Toggle() end)
+    self.openButton=button(f,B.T("Objets"),174,5,70,function() if B.Options.frame then B.Options.frame:Hide() end;self:Toggle() end)
+    self.openButton.label:SetAllPoints(self.openButton);self.openButton.label:SetJustifyV("MIDDLE");self.openButton.label:SetJustifyH("CENTER");B.SetUIFont(self.openButton.label,12)
     local events=CreateFrame("Frame");self.events=events
     for _,e in ipairs({"AUCTION_HOUSE_SHOW","AUCTION_HOUSE_CLOSED","REPLICATE_ITEM_LIST_UPDATE","COMMODITY_SEARCH_RESULTS_UPDATED","COMMODITY_SEARCH_RESULTS_ADDED","ITEM_SEARCH_RESULTS_UPDATED","ITEM_SEARCH_RESULTS_ADDED","BAG_UPDATE_DELAYED","PLAYER_EQUIPMENT_CHANGED","GET_ITEM_INFO_RECEIVED","PLAYER_REGEN_ENABLED"}) do pcall(events.RegisterEvent,events,e) end
     for e in pairs(B.Items.profileEvents) do pcall(events.RegisterEvent,events,e) end

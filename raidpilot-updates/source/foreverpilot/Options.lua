@@ -2,7 +2,7 @@
 local B=ForeverPilotLeveling
 local O={tab="general"};B.Options=O
 local function text(f,size,x,y,w,h,value,muted)
-    local t=f:CreateFontString(nil,"OVERLAY");t:SetFont(STANDARD_TEXT_FONT,size,"")
+    local t=f:CreateFontString(nil,"OVERLAY");B.SetUIFont(t,size)
     t:SetPoint("TOPLEFT",f,"TOPLEFT",x,-y);t:SetSize(w,h);t:SetJustifyH("LEFT");t:SetJustifyV("TOP");t:SetWordWrap(true)
     if muted then t:SetTextColor(.67,.76,.81) else t:SetTextColor(.91,.95,.97) end
     t:SetText(value or "");return t
@@ -34,13 +34,15 @@ function O:SyncEntryPoints()
     if not B.settings then return end
     local guide=B.UI and B.UI.frame
     if not self.shortcut then
-        self.shortcut=button(UIParent,"ForeversPilot FastXp · Options",0,0,244,function() self:Toggle() end)
+        self.shortcut=button(UIParent,"ForeversPilot FastXp · "..B.T("Options"),0,0,244,function() self:Toggle() end)
         self.shortcut:SetFrameStrata("MEDIUM");self.shortcut:SetClampedToScreen(true)
     end
     if guide and not self.headerButton then
-        self.headerButton=button(guide,"Options",244,3,86,function() self:Toggle() end)
+        self.headerButton=button(guide,B.T("Options"),252,5,94,function() self:Toggle() end)
+        self.headerButton:SetHeight(26);self.headerButton.label:SetAllPoints(self.headerButton)
+        self.headerButton.label:SetJustifyV("MIDDLE");B.SetUIFont(self.headerButton.label,12)
         self.headerButton:SetScript("OnEnter",function()
-            GameTooltip:SetOwner(self.headerButton,"ANCHOR_BOTTOM");GameTooltip:SetText("Options · Français / English")
+            GameTooltip:SetOwner(self.headerButton,"ANCHOR_BOTTOM");GameTooltip:SetText(B.T("Options"))
             GameTooltip:AddLine(B.T("Langue, profil, taille et aide."),.8,.9,.9,true);GameTooltip:Show()
         end)
         self.headerButton:HookScript("OnLeave",function() GameTooltip:Hide() end)
@@ -57,6 +59,8 @@ function O:Render()
     for key,p in pairs(self.pages) do p:SetShown(key==self.tab);self.tabs[key]:Paint(key==self.tab) end
     local chosen=self.pendingLanguage or B.settings.language or "auto"
     for key,b in pairs(self.languages) do b:Paint(chosen==key) end
+    self.languageButton.label:SetText(B.LanguageLabel(chosen).."  >")
+    if self.tab~="general" and self.languageMenu then self.languageMenu:Hide() end
     local changed=chosen~=(B.settings.language or "auto")
     local combat=B.Call(InCombatLockdown)==true
     self.apply:Paint(changed,changed and not combat)
@@ -101,12 +105,25 @@ function O:Create()
         local p=CreateFrame("Frame",nil,f);p:SetPoint("TOPLEFT",f,"TOPLEFT",0,0);p:SetSize(520,550);self.pages[key]=p
     end
     local p=self.pages.general
-    text(p,13,20,124,480,20,"Langue / Language")
+    text(p,13,20,124,480,20,B.T("Langue"))
     self.languages={}
-    for i,entry in ipairs({{"fr","Français"},{"en","English"},{"auto",B.T("Auto · langue du jeu")}}) do
+    self.languageButton=button(p,"",20,152,480,function()
+        self.languageMenu:SetShown(not self.languageMenu:IsShown())
+    end)
+    local languageMenu=CreateFrame("Frame",nil,p)
+    self.languageMenu=languageMenu;languageMenu:SetSize(480,150)
+    languageMenu:SetPoint("TOPLEFT",self.languageButton,"BOTTOMLEFT",0,-3)
+    languageMenu:SetFrameLevel(f:GetFrameLevel()+20);languageMenu:EnableMouse(true)
+    local languageBackground=languageMenu:CreateTexture(nil,"BACKGROUND")
+    languageBackground:SetAllPoints(languageMenu);languageBackground:SetColorTexture(.035,.06,.08,1)
+    for i,entry in ipairs(B.LanguageChoices()) do
         local key=entry[1]
-        self.languages[key]=button(p,entry[2],20+(i-1)*164,152,152,function() self.pendingLanguage=key;self:Render() end)
+        self.languages[key]=button(languageMenu,entry[2],6+((i-1)%3)*158,6+math.floor((i-1)/3)*35,152,function()
+            self.pendingLanguage=key;languageMenu:Hide();self:Render()
+        end)
     end
+    languageMenu:Hide()
+    f:HookScript("OnHide",function() languageMenu:Hide() end)
     self.languageHint=text(p,11,20,198,306,42,"",true)
     self.apply=button(p,B.T("Appliquer la langue"),348,195,152,function()
         if B.Call(InCombatLockdown)==true then self:Render();return end
@@ -169,7 +186,7 @@ function O:Create()
     self.accessLink:SetScript("OnEscapePressed",function(box) box:ClearFocus() end)
     self.copyLink=button(p,B.T("Sélectionner le lien (Ctrl+C)"),20,410,480,function() self.accessLink:SetText(B.subscriptionURL);self.accessLink:SetFocus();self.accessLink:HighlightText() end)
     text(p,11,20,465,480,45,B.T("Les outils HDV et layers restent accessibles. Ding fournit le guide de base."),true)
-    text(f,10,20,526,480,16,"ForeverPilot "..B.version.."  ·  Français / English",true)
+    text(f,10,20,526,480,16,"ForeverPilot "..B.version.."  ·  "..B.LanguageLabel(B.language),true)
     if UISpecialFrames then table.insert(UISpecialFrames,"ForeverPilotOptionsFrame") end
     for _,event in ipairs({"PLAYER_REGEN_ENABLED","PLAYER_REGEN_DISABLED","PLAYER_TALENT_UPDATE","PLAYER_LEVEL_UP"}) do pcall(f.RegisterEvent,f,event) end
     f:SetScript("OnEvent",function() if f:IsShown() then self:Render() end end)

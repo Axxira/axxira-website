@@ -19,13 +19,14 @@ function context(locale,saved){
  ForeverPilotLevelingDB=nil
  `);
  file('Bootstrap.lua');file('Locale.lua');
+ for(const f of fs.readdirSync(path.join(addon,'Locales'))) file('Locales/'+f);
  return {run,file,restore:()=>run('ForeverPilotLevelingDB='+saved)};
 }
 for(const [locale,saved,want] of [
- ['frFR','nil','fr'],['enUS','nil','en'],['enGB','nil','en'],['deDE','nil','en'],
- ['enUS','{brain={enabled=true}}','fr'],['enUS','{brain={language="fr"}}','fr'],
- ['frFR','{brain={language="en"}}','en'],['frFR','{brain={language="auto"}}','fr'],
- ['enUS','{brain={language="auto"}}','en'],['frFR','{brain={language="unknown"}}','fr']]){
+ ['frFR','nil','frFR'],['enUS','nil','enUS'],['enGB','nil','enUS'],['deDE','nil','deDE'],
+ ['enUS','{brain={enabled=true}}','frFR'],['enUS','{brain={language="fr"}}','frFR'],
+ ['frFR','{brain={language="en"}}','enUS'],['frFR','{brain={language="auto"}}','frFR'],
+ ['enUS','{brain={language="auto"}}','enUS'],['frFR','{brain={language="unknown"}}','enUS']]){
  const c=context(locale,saved);c.restore();c.run(`ForeverPilotLeveling.InitLocale(); assert(ForeverPilotLeveling.language=="${want}"); assert(ForeverPilotLeveling.T("An actual quest name")=="An actual quest name")`);checks+=2;
 }
 for(const language of ['en','fr']){
@@ -93,7 +94,7 @@ for(const language of ['en','fr']){
  O:Toggle()
  assert(O.frame:IsShown() and O.pages.general:IsShown() and not O.pages.help:IsShown())
  assert(O.languages.auto.label.text==${JSON.stringify(english?'Auto · game language':'Auto · langue du jeu')})
- local other=B.language=="en" and "fr" or "en"
+ local other=B.language=="enUS" and "frFR" or "enUS"
  O.languages[other].scripts.OnClick()
  assert(TEST.reloads==nil and B.settings.language==B.language and O.apply.enabled)
  TEST.combat=true;O.frame.scripts.OnEvent();O.apply.scripts.OnClick()
@@ -112,9 +113,9 @@ for(const language of ['en','fr']){
  `,'localized behavior '+language);checks+=42;
 }
 // Format arguments must retain their order and types in all translated messages.
-const source=fs.readFileSync(path.join(addon,'Locale.lua'),'utf8');
+const source=['Locale.lua',...fs.readdirSync(path.join(addon,'Locales')).map(f=>'Locales/'+f)].map(f=>fs.readFileSync(path.join(addon,f),'utf8')).join('\n');
 for(const line of source.split('\n')){
- const m=line.match(/^\s*\[("(?:\\.|[^"\\])*")\]=("(?:\\.|[^"\\])*"),$/);
+ const m=line.match(/^\s*\[("(?:\\.|[^"\\])*")\]\s*=\s*("(?:\\.|[^"\\])*"),$/);
  if(!m)continue;
  const fr=JSON.parse(m[1]),en=JSON.parse(m[2]);
  const formats=s=>[...s.matchAll(/%[-+ #0]*\d*(?:\.\d+)?[cdiouxXeEfgGqs%]/g)].map(m=>m[0]);

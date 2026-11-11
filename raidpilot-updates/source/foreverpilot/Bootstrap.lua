@@ -1,9 +1,15 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.10.3", modules = {}, dirty = true }
+local B = { version = "1.10.4", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 -- The CurseForge packager changes this one marker. RaidPilot always remains free.
 B.distribution = "raidpilot-test"
 B.subscriptionURL = "https://foreverpilot-subscriptions.tyronixstudio.workers.dev"
+-- Rasterize at the requested size. SetTextHeight scales an existing font and
+-- distorts small glyphs; the client's font retains its locale glyph coverage.
+function B.SetUIFont(region,size)
+    local face=GameFontHighlight and GameFontHighlight.GetFont and GameFontHighlight:GetFont()
+    region:SetFont(face or STANDARD_TEXT_FONT,size,"")
+end
 function B.HasPremium(feature)
     if B.distribution=="raidpilot-test" then return true end
     local a=_G.ForeverPilotAccess
@@ -43,7 +49,7 @@ function B.InitDB()
     B.settings=B.db.brain; B.settings.characters=B.settings.characters or {}
     if B.settings.enabled==nil then B.settings.enabled=true end
     if B.settings.shown==nil then B.settings.shown=true end
-    if B.settings.language==nil then B.settings.language=B.language or "fr" end
+    if B.settings.language==nil then B.settings.language="auto" end
     -- Forever permits characters with the same first name on the same realm.
     -- WoW's per-character saved-variable scope is the identity boundary, even
     -- when UnitGUID is absent/protected. Never reuse the legacy name-keyed
