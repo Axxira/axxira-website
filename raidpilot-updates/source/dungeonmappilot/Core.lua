@@ -1,4 +1,4 @@
-DungeonMapPilot = { version = "0.3.0", nativeCache = {} }
+DungeonMapPilot = { version = "0.4.2-alpha", nativeCache = {} }
 local A = DungeonMapPilot
 
 function A.Public(value)
@@ -41,18 +41,18 @@ function A.InitDB()
     db.routes = type(db.routes) == "table" and db.routes or {}
     db.routeMode = type(db.routeMode) == "table" and db.routeMode or {}
     db.guideHidden = db.guideHidden == true
-    if db.language ~= "fr" and db.language ~= "en" then db.language = "auto" end
+    db.language = db.language == "auto" and "auto" or A.NormalizeLocale(db.language) or "auto"
     db.schema = 2
 end
 
 function A.Language()
     local value = A.db and A.db.language
-    if value == "fr" or value == "en" then return value end
-    return A.Call(GetLocale) == "frFR" and "fr" or "en"
+    if value ~= "auto" and A.NormalizeLocale(value) then return A.NormalizeLocale(value) end
+    return A.NormalizeLocale(A.Call(GetLocale)) or "enUS"
 end
 
 function A.L(key, ...)
-    local value = (A.locales[A.Language()] or {})[key] or A.locales.en[key] or key
+    local value = (A.locales[A.Language()] or {})[key] or (A.locales.enUS or {})[key] or key
     if select("#", ...) > 0 then return string.format(value, ...) end
     return value
 end

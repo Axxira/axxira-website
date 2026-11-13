@@ -55,3 +55,12 @@ A.routeData = {
             "Take the nearby ramp to reach Bazzalan. Check your objectives before leaving."),
     } },
 }
+
+-- Display keys are separate from the stable route/step identifiers used by progress.
+for instanceID, route in pairs(A.routeData) do
+    for _, routeStep in ipairs(route.steps) do
+        local key = "route." .. instanceID .. "." .. routeStep.id
+        routeStep.title.localeKey = key .. ".title"
+        routeStep.body.localeKey = key .. ".body"
+    end
+end

@@ -1,11 +1,11 @@
 local A, T = DungeonMapPilot, TEST
 T.events.ADDON_LOADED.scripts.OnEvent(nil, "ADDON_LOADED", "DungeonMapPilot")
 check(A.db == DungeonMapPilotCharDB, "per-character storage")
-check(A.Language() == "fr", "French automatic")
+check(A.Language() == "frFR", "French automatic")
 check(A.Number(T.secret) == nil and A.Number(0/0) == nil and A.ID(-1) == nil, "protected/invalid numbers rejected")
 check(A.Call(function() error("API unavailable") end) == nil, "API failure guarded")
-for k in pairs(A.locales.en) do check(A.locales.fr[k] ~= nil, "French key " .. k) end
-for k in pairs(A.locales.fr) do check(A.locales.en[k] ~= nil, "English key " .. k) end
+for k in pairs(A.locales.enUS) do check(A.locales.frFR[k] ~= nil, "French key " .. k) end
+for k in pairs(A.locales.frFR) do check(A.locales.enUS[k] ~= nil, "English key " .. k) end
 
 local count, floorCount = 0, 0
 for id, ref in pairs(A.ReferenceMaps) do
@@ -206,4 +206,18 @@ A.RouteRestart(wc); U:SetContext(A.ReferenceContext(43)); U:FocusRouteStep(2)
 A.ZoomAt(U.view,2,400,250); U:ApplyView()
 check(near(U.routePins[2].point[4],wc.steps[2].x*U.view.width*2),"route badges remain attached during zoom")
 check(not U.player:IsShown(),"guide never creates a fake player pawn")
+-- Actual RouteUI buttons, with exact selection and restart recovery.
+A.RouteRestart(wc);U:SetContext(A.ReferenceContext(43));U:FocusRouteStep(1)
+local firstID=wc.steps[1].id
+U.guide.done:Click();check(A.RouteState(wc).done[firstID] and U.guide.undo.enabled,"step completion enables undo")
+local afterCompletion=A.RouteState(wc).current
+U.guide.undo:Click();check(A.RouteState(wc).current==1 and not A.RouteState(wc).done[firstID],"undo button restores selection and completion")
+U.guide.done:Click();U.guide.restart:Click();U.guide.restart:Click()
+check(A.RouteState(wc).current==1 and not A.RouteState(wc).done[firstID],"restart still requires confirmation")
+U.guide.undo:Click();check(A.RouteState(wc).current==afterCompletion and A.RouteState(wc).done[firstID],"undo recovers confirmed restart")
+for _,code in ipairs({"enUS","enGB","frFR","deDE","esES","esMX","itIT","ptBR","ruRU","koKR","zhCN","zhTW"}) do
+ A.db.language=code;U:Localize();check(U.guide.undo.text==A.L("undoRoute") and U.guide.undo.text~="undoRoute","undo localized "..code)
+end
+
+
 print("PASS " .. T.count .. " checks; " .. count .. " reference instances / " .. floorCount .. " floors. UI uses frame doubles.")

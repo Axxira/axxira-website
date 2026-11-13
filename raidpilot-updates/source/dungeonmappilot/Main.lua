@@ -15,6 +15,7 @@ events:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 events:SetScript("OnEvent", function(_, event, name)
     if event == "ADDON_LOADED" and name == "DungeonMapPilot" then
         A.InitDB()
+        if A.SyncMinimap then A.SyncMinimap() end
         SLASH_DUNGEONMAPPILOT1 = "/dmp"
         SLASH_DUNGEONMAPPILOT2 = "/dungeonmappilot"
         SLASH_DUNGEONMAPPILOT3 = "/fpmap"

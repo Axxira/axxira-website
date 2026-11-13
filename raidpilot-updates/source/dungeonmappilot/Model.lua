@@ -92,9 +92,9 @@ function A.CurrentContext()
 end
 
 function A.FloorName(floor, index)
-    if A.Language() == "fr" and floor.source == "reference" then
-        local names = A.floorNamesFR[floor.instanceID]
-        if names and names[floor.index] then return names[floor.index] end
+    if floor.source == "reference" then
+        local key = "floor." .. floor.instanceID .. "." .. floor.index
+        if A.HasText(key) then return A.L(key) end
     end
     return floor.name or A.L("floor", index or floor.index or 1)
 end

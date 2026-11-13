@@ -1,7 +1,31 @@
-# DungeonMapPilot — 0.3.0 — bêta / beta
+# DungeonMapPilot — alpha locale 0.3.1-alpha / local alpha
+
+## Localisation / Localization
+
+Cette alpha fournit les textes propres à l’addon en anglais, français, allemand,
+espagnol (Espagne et Amérique latine), italien, portugais brésilien, russe,
+coréen, chinois simplifié et chinois traditionnel. Le choix automatique suit
+la langue du client ; enGB utilise l’anglais. Les noms et informations fournis
+par le jeu restent ceux du client. Les notes personnelles et les identifiants
+internes ne sont pas traduits. Le menu Langue applique le choix immédiatement.
+
+This alpha supplies addon-owned text in English, French, German, Spanish
+(Spain and Latin America), Italian, Brazilian Portuguese, Russian, Korean,
+Simplified Chinese, and Traditional Chinese. Automatic selection follows the
+client locale; enGB uses English. Game-provided names and data remain in the
+client language. Personal notes and internal identifiers are preserved. The
+Language menu applies the selection immediately.
+
+Les contrôles automatiques couvrent les clés, les paramètres de formatage et
+les identifiants de données de jeu. Les traductions n’ont pas bénéficié d’une
+relecture native exhaustive ni d’une validation visuelle sur chaque client.
+Les polices natives sont utilisées ; le rendu d’une langue asiatique choisie
+manuellement sur un client européen reste à vérifier en jeu.
+
+Après cette mise à jour, ferme complètement WoW puis relance-le pour charger les nouveaux fichiers de langue. Un simple /reload peut conserver l’ancien TOC. / After updating, fully exit and restart WoW to load the new locale files; /reload may retain the old TOC.
 
 Carte de donjons et raids conçue pour se repérer, dans une fenêtre au style du jeu.
-Version bêta bilingue. Deux parcours guidés de référence sont inclus : Cavernes des Lamentations et Ragefeu. La couverture complète des instances reste en vérification.
+Cette première version est un prototype privé : elle n'est ni publiée ni proposée à la vente.
 
 ## Utilisation
 
@@ -12,7 +36,7 @@ Version bêta bilingue. Deux parcours guidés de référence sont inclus : Caver
 - Choisir l'étage avec son nom ou les flèches. Un choix manuel reste sélectionné jusqu'à **Lieu actuel**.
 - Molette : zoom autour du curseur. Glisser : déplacer. **Recentrer** : retrouver le plan entier.
 - Maj-clic : créer un repère personnel. Cliquer sur l'étoile : modifier ou supprimer ce repère.
-- **Langue** : automatique selon le client, français ou anglais. Déplacer la fenêtre par son cadre.
+- **Langue** : automatique selon le client ou une des 11 langues. Déplacer la fenêtre par son cadre.
 - **Parcours** : sélectionnez un objectif numéroté pour lire la direction à prendre.
   **Étape terminée** confirme l'action et sélectionne la suivante. **Passer** concerne les étapes facultatives.
 - **Masquer le parcours** replie le panneau et ses numéros pour garder le plan seul.
@@ -21,7 +45,7 @@ Version bêta bilingue. Deux parcours guidés de référence sont inclus : Caver
 Repères, langue, fenêtre, progression du parcours et choix d'étages sont enregistrés séparément pour chaque personnage.
 40 repères maximum par étage. Aucun message envoyé au groupe, aucune télémétrie réseau.
 
-## Parcours expliqués, français et anglais
+## Parcours expliqués, 11 langues
 
 Deux parcours de référence sont préparés : **Cavernes des Lamentations** et **Gouffre de Ragefeu**.
 Le départ porte la lettre D en français, S en anglais; les objectifs suivants sont numérotés.
@@ -51,7 +75,7 @@ Les deux parcours sont contrôlés par simulation, pas encore parcourus intégra
 Open `/dmp`, select **Language → English** (or **Auto** for the client language), and choose a map.
 Use the mouse wheel to zoom, drag to pan, and **Reset view** to show the entire floor.
 **Current location** returns to the detected dungeon; **Maps** opens the 25-instance catalogue.
-The guide, objective names, directions, buttons and help are available in French and English.
+The guide, objective names, directions, buttons and help use the selected addon language.
 
 Prepared reference routes cover **Wailing Caverns** and **Ragefire Chasm**. **S** marks the start;
 numbered objectives have short directions. Click a number to read it, then **Step completed** when
@@ -73,7 +97,7 @@ Only two prepared routes are included. They have not yet been fully walked in ga
 
 Close WoW completely before installing the `DungeonMapPilot` folder into `Interface/AddOns`, then
 restart through Battle.net. The addon is standalone: Ding is not required. The RaidPilot testing edition
-is free and works offline. The separate requested offer is CAD 5.99/month; the public edition requires a separate subscription and its Windows activation companion.
+is free and works offline. The separate requested offer is CAD 5.99/month; real sales remain closed.
 
 ## Position et couverture : ce qui est réellement implémenté
 
@@ -90,7 +114,7 @@ Deux sources sont clairement distinguées :
 Les illustrations de référence proviennent de versions WoW différentes. Ragefeu et les Cavernes des
 Lamentations s'affichent dans le client testé. La correspondance exacte de tous les couloirs et étages
 avec Forever reste **non validée**. Certains plans
-peuvent différer du terrain actuel, notamment les donjons remaniés. Cette version affiche donc
+peuvent différer du terrain actuel, notamment les donjons remaniés. Cette alpha affiche donc
 « Plan de référence · à vérifier en jeu ». Elle ne certifie pas 25 donjons jouables cartographiés.
 
 Ni nouvelles instances exclusives à Forever ni Naxxramas ajoutés sans données vérifiées.
@@ -114,7 +138,7 @@ projection, étages, zoom, repères, langues, isolation des droits et interactio
 ainsi que les prérequis du parcours, les étapes facultatives, les changements de personnage et la remise à zéro.
 Ils ne remplacent pas le rendu dans WoW, un parcours réel ou une mesure de performance en raid.
 
-Vérifications en jeu restant à effectuer :
+À vérifier avant une publication :
 
 - Chargement sans erreur Lua; ouverture/fermeture, langues, zoom, glisser, saisie et suppression d'un repère.
 - Ragefeu puis Cavernes des Lamentations : couloirs, intersections et limites réelles du plan.
@@ -132,9 +156,9 @@ ne débloque jamais l'édition publique Cartes. L'ancien service et les abonneme
 
 Le portail et le compagnon distincts sont raccordés. Paiement fictif de 5,99 CAD, activation signée
 reconnue par le compagnon, annulation conservant la période payée puis remboursement retirant
-l'accès ont été vérifiés dans PayPal Sandbox. Aucun argent réel utilisé. La disponibilité des nouvelles souscriptions est indiquée sur le portail; la couverture en instance reste en vérification.
-Portail : https://dungeonmappilot-subscriptions.tyronixstudio.workers.dev.
-Installez le compagnon depuis ce portail, importez votre clé, choisissez _forever_, puis actualisez votre accès avec WoW fermé. Activez DungeonMapPilot_Access et DungeonMapPilot au redémarrage. Actualisez au moins tous les sept jours; une licence ne dépasse jamais la période payée.
+l'accès ont été vérifiés dans PayPal Sandbox. Aucun argent réel utilisé. Le forfait réel reste en
+brouillon et les ventes sont fermées; couverture en instance et distribution restent à valider.
+Le contrat de préparation est conservé localement dans `commercial-contract.json`.
 Le code Lua reste lisible/modifiable; ce contrôle n'est pas une protection inviolable.
 La politique Blizzard exige des addons gratuits et interdit leurs fonctions payantes : la faisabilité
 technique du raccordement n'établit pas l'autorisation de commercialiser.

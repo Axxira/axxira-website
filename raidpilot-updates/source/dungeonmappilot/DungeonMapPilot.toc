@@ -3,17 +3,30 @@
 ## Notes: Dungeon and raid reference maps, floors, zoom and personal markers. Local alpha.
 ## Notes-frFR: Cartes de donjons et raids, étages, zoom et repères personnels. Alpha locale.
 ## Author: ForeverPilot Project
-## Version: 0.3.0
+## Version: 0.4.2-alpha
 ## OptionalDeps: DungeonMapPilot_Access
 ## SavedVariablesPerCharacter: DungeonMapPilotCharDB
+PilotMinimap.lua
 Core.lua
 Access.lua
 Locale.lua
+Locales/deDE.lua
+Locales/esES.lua
+Locales/esMX.lua
+Locales/itIT.lua
+Locales/ptBR.lua
+Locales/ruRU.lua
+Locales/koKR.lua
+Locales/zhCN.lua
+Locales/zhTW.lua
 ReferenceMaps.lua
 Catalog.lua
 Model.lua
 RouteData.lua
+RouteLocale.lua
 Routes.lua
 UI.lua
 RouteUI.lua
 Main.lua
+SuiteBridge.lua
+MinimapLauncher.lua

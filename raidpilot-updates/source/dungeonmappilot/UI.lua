@@ -237,9 +237,9 @@ function UI:Create()
     self.next = Button(f, 28, ">", function() self:SelectFloor(self.context.index + 1, false) end); self.next:SetPoint("LEFT", self.floorButton, "RIGHT", 4, 0)
     self.lang = Button(f, 100, "", function()
         local items = {}
-        for _, code in ipairs({ "auto", "fr", "en" }) do
-            local language = code
-            items[#items + 1] = { text = A.L(language), action = function() A.db.language = language; self:Localize() end }
+        for _, entry in ipairs(A.LanguageChoices()) do
+            local language = entry[1]
+            items[#items + 1] = { text = entry[2], action = function() A.db.language = language; self:Localize() end }
         end
         self:Menu(items, self.lang, 150)
     end); self.lang:SetPoint("TOPRIGHT", -18, -35)

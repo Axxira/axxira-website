@@ -211,6 +211,7 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="reprendre" or msg=="unskip" then B.ResumeSkipped()
     elseif msg=="reprendre tout" or msg=="unskip all" then B.ResumeSkipped("all")
     elseif msg:match("^reprendre%s+%d+$") or msg:match("^unskip%s+%d+$") then B.ResumeSkipped(tonumber(msg:match("(%d+)$")))
+    elseif msg=="recovery" or msg=="blocages" then B.RecoveryUI:Open()
     elseif msg=="resync" or msg=="reset" then B.Recovery:Reset();B.Planner.current=nil;B.Guard(B.Update)
     elseif msg=="pause" or msg=="auto" then B.settings.paused=not B.settings.paused;B.dirty=true
     elseif msg=="guide" then Ding.Panel:Toggle()
