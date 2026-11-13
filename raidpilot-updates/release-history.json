@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.34",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.34",
+      "date": "2026-11-11",
+      "summary": "ForeversPilot FastXp 1.10.4 : affichage plus lisible",
+      "details": "Police rendue à sa vraie taille, consignes sur deux lignes et boutons alignés. Les langues de la version locale sont conservées et incluses dans les deux distributions. Traductions supplémentaires sans relecture native exhaustive. Aucun reset de réglages. RaidPilot reste gratuit. Fermer puis relancer WoW après mise à jour depuis 1.10.3 pour charger les fichiers de langues."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.33",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "CORTEX — différencie horodatage F8 réel et correction visuelle silencieuse",
       "details": "Correctif de sûreté de la première version CORTEX : la fréquence des screenshots en mouvement utilise maintenant exclusivement le dernier F8 natif connu du superviseur. Une relocalisation visuelle, même confirmée, ne peut plus remettre à zéro l'horloge du vrai F8 dans la planification CORTEX. Le moteur reste désactivable pour comparaison. 17 tests de CORTEX couvrent notamment l'absence de fuite entre cartes/raids et cette distinction de temps."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.0.0",
-      "raidPilotVersion": "0.15.0.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "CORTEX Core — fusion de confiance, apprentissage des écarts F8 et navigation adaptive",
-      "details": "Première phase de CORTEX : superviseur local connecté aux mouvements, aux corrections visuelles réellement appliquées et à l'audit exact F8. Il suit la session carte/raid/fenêtre, rejette les observations périmées ou incohérentes, comptabilise les corrections visuelles corroborées et retient la dérive réelle observée aux F8 sans enregistrer de coordonnées. Une erreur F8 importante bloque temporairement l'espacement des captures; une nouvelle confiance exige deux mesures correctes. Deux corrections visuelles indépendantes sont nécessaires pour l'intervalle maximal de 12 s. Mode CORTEX désactivable depuis le menu pour comparer avec l'ancien moteur. Il ne s'agit pas encore d'un modèle neuronal ou d'un SLAM complet; précision à confirmer en raid."
     }
   ]
 }

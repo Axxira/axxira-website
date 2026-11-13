@@ -201,7 +201,7 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     end
     local language=msg:match("^lang%s+(%a+)$") or msg:match("^langue%s+(%a+)$") or msg:match("^language%s+(%a+)$")
     if language then
-        if not B.SetLanguage(language) then B.Print("/fpl lang fr | en | auto") end
+        if not B.SetLanguage(language) then B.Print(B.T("/fpl lang <code> | auto")) end
         return
     end
     if msg=="" and B.premiumBlocked then B.Options:Toggle()

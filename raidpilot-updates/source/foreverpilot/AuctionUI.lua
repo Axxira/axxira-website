@@ -3,7 +3,7 @@ local B=ForeverPilotLeveling
 local U={};B.AuctionUI=U
 local function label(parent,size)
     local t=parent:CreateFontString(nil,"OVERLAY")
-    t:SetFont(STANDARD_TEXT_FONT,size,"");t:SetAllPoints(parent)
+    B.SetUIFont(t,size);t:SetAllPoints(parent)
     t:SetJustifyH("LEFT");t:SetJustifyV("MIDDLE");t:SetWordWrap(false)
     return t
 end

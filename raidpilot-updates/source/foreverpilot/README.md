@@ -1,4 +1,35 @@
-# ForeversPilot FastXp 1.10.3 · Français / English
+# ForeversPilot FastXp 1.10.4 · 11 langues · 11 languages
+
+## 1.10.4 — Lisibilité / Readability
+
+Police rendue directement à sa taille : correction du texte déformé de la version multilingue locale. Panneau compact de 360 × 176, titre et consigne sur deux lignes, boutons alignés et contraste renforcé. Français et anglais vérifiés dans WoW. Les autres traductions restent sans relecture native exhaustive.
+
+Fonts are rendered at their requested size, fixing distorted text in the local multilingual build. Compact 360 × 176 panel, two-line quest title and instructions, aligned controls and clearer contrast. French and English checked in game. Other translations have not had exhaustive native review.
+
+## Localisation / Localization
+
+Cette alpha fournit les textes propres à l’addon en anglais, français, allemand,
+espagnol (Espagne et Amérique latine), italien, portugais brésilien, russe,
+coréen, chinois simplifié et chinois traditionnel. Le choix automatique suit
+la langue du client ; enGB utilise l’anglais. Les noms et informations fournis
+par le jeu restent ceux du client. Les notes personnelles et les identifiants
+internes ne sont pas traduits. Un changement de langue demande un rechargement
+hors combat.
+
+This alpha supplies addon-owned text in English, French, German, Spanish
+(Spain and Latin America), Italian, Brazilian Portuguese, Russian, Korean,
+Simplified Chinese, and Traditional Chinese. Automatic selection follows the
+client locale; enGB uses English. Game-provided names and data remain in the
+client language. Personal notes and internal identifiers are preserved. Apply
+language changes with a reload outside combat.
+
+Les contrôles automatiques couvrent les clés, les paramètres de formatage et
+les identifiants de données de jeu. Les traductions n’ont pas bénéficié d’une
+relecture native exhaustive ni d’une validation visuelle sur chaque client.
+Les polices natives sont utilisées ; le rendu d’une langue asiatique choisie
+manuellement sur un client européen reste à vérifier en jeu.
+
+Après cette mise à jour, ferme complètement WoW puis relance-le pour charger les nouveaux fichiers de langue. Un simple /reload peut conserver l’ancien TOC. / After updating, fully exit and restart WoW to load the new locale files; /reload may retain the old TOC.
 
 Assistant de leveling pour **WoW Forever**, interface 16001. **Ding est obligatoire**
 et doit rester activé. ChangeLayer est facultatif. Le joueur se déplace et combat
@@ -25,7 +56,7 @@ of optimality. No measured in-game XP/hour gain or complete 1–60 run is claime
 
 1. Installe Ding et ForeverPilot_Leveling, puis redémarre complètement WoW.
 2. L'accueil apparaît au premier chargement hors combat. Dans **Options → Général**,
-   choisis Français, English ou Auto, puis **Appliquer la langue** hors combat.
+   choisis une des 11 langues ou Auto, puis **Appliquer la langue** hors combat.
 3. Vérifie ta classe et ta spécialisation dans Profil. Un profil manuel est prioritaire;
    l'aperçu d'un autre personnage ne modifie pas ton personnage réel.
 4. Suis la flèche et l'action principale. **Passer** écarte la quête pour ce personnage

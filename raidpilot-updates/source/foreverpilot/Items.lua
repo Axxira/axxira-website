@@ -57,12 +57,18 @@ I.classes={
     DRUID={label=B.T("Druide"),{B.T("Équilibre"),"caster"},{B.T("Farouche"),"feral"},{B.T("Restauration"),"soin"}},
 }
 I.classOrder={"WARRIOR","PALADIN","HUNTER","ROGUE","PRIEST","SHAMAN","MAGE","WARLOCK","DRUID"}
-B.LocalizeLabels(I.slotNames);B.LocalizeLabels(I.stats);B.LocalizeLabels(I.profiles);B.LocalizeLabels(I.classes)
+B.LocalizeLabels(I.slotNames)
+for _, stat in ipairs(I.stats) do B.LocalizeLabels(stat, {2}) end
+for _, profile in pairs(I.profiles) do B.LocalizeLabels(profile, {"label"}) end
+for _, class in pairs(I.classes) do
+    B.LocalizeLabels(class, {"label"})
+    for _, spec in ipairs(class) do B.LocalizeLabels(spec, {1}) end
+end
 -- The nine races recognized by Ding's Forever import API. Include the live
 -- player race below if a later server patch introduces a different race.
 I.races={{"Human",B.T("Humain")},{"Dwarf",B.T("Nain")},{"NightElf",B.T("Elfe de la nuit")},{"Gnome","Gnome"},
     {"Orc","Orc"},{"Scourge",B.T("Mort-vivant")},{"Tauren","Tauren"},{"Troll","Troll"},{"Skyborne","Skyborne"}}
-B.LocalizeLabels(I.races)
+for _, race in ipairs(I.races) do B.LocalizeLabels(race, {2}) end
 I.classWeights={
     PALADIN={tank={int=.5,sp=.75},melee={int=.25,sp=.25},soin={spi=.5}},
     SHAMAN={melee={int=.5,sp=.3},soin={spi=.5}},

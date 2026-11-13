@@ -5,7 +5,7 @@ $toc = Get-Content -LiteralPath (Join-Path $addonRoot 'ForeverPilot_Leveling.toc
 $version = [regex]::Match($toc, '(?m)^## Version:\s*(\d+\.\d+\.\d+)').Groups[1].Value
 if (!$version) { throw 'Addon version is missing.' }
 $expected = @('ForeverPilot_Leveling.toc', 'README.md', 'LICENSE_GPLv3.txt', 'Media/Panel.tga')
-$expected += @($toc -split '\r?\n' | Where-Object { $_ -match '^\w+\.lua$' })
+$expected += @($toc -split '\r?\n' | Where-Object { $_ -match '^(?:Locales/)?\w+\.lua$' })
 foreach ($relative in $expected) {
     if (!(Test-Path -LiteralPath (Join-Path $addonRoot $relative) -PathType Leaf)) { throw "Missing addon file: $relative" }
 }

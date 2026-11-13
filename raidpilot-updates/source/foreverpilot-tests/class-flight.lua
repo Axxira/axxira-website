@@ -41,7 +41,7 @@ B.char.trip={ids={normal.q},accepted={[normal.q]=true},level=16};B.Planner.curre
 local chosen=B.Planner:Plan(s)
 check(chosen.q==class.q and chosen.classPriority,'class priority must override XP and committed ordinary outing')
 B.UI:Create();B.UI:Render(chosen,s)
-check(B.UI.tag.text==B.T('CLASSE PRIORITAIRE') and B.UI.frame.w==344 and B.UI.frame.h==132,'compact class UI')
+check(B.UI.tag.text==B.T('CLASSE PRIORITAIRE') and B.UI.frame.w<=360 and B.UI.frame.h<=176,'compact class UI')
 B.Planner.Candidates=function() return {normal} end;s.now=s.now+6;B.Planner.signature=nil
 check(B.Planner:Plan(s).q==normal.q,'ordinary quests resume after class candidate completes')
 B.Planner.Candidates=candidateFn
