@@ -745,7 +745,10 @@ ChangeLayerTests.Run(Run);
 if (args.Length == 2 && args[0] == "--changelayer-package") Run("ChangeLayer: official package hashes preserved", () => ChangeLayerTests.VerifyOfficial(args[1]));
 HabsGoalTests.Run(Run);
 if (args.Length == 2 && args[0] == "--addon-package")
+{
     Run("ForeverPilot : package réel installé sur un PC vierge", () => ForeverPilotTests.VerifyPublishedPackage(args[1]));
+    Run("Cartes : package réel avec langues installé sur un PC vierge", () => DungeonMapTests.VerifyPublishedPackage(args[1], Require));
+}
 if (failures.Count == 0)
 {
     Console.WriteLine($"{testCount}/{testCount} tests launcher réussis.");
