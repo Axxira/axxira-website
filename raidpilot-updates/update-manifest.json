@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-10T19:10:45.3500524+00:00",
+  "publishedAt": "2026-11-13T01:37:49.9861416+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.33-11d731ce21c5/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "10F0C8899FE9C62DDF78685902FB3615EC2C9D8C5EA6AB3BC15CA907C04B59C1",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.34-a834ef1433ab/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "9DCFD846A0D009823C24CF9CBA326184D751E99D1B0CC4516BB68E5BC80AA99D",
     "sizeBytes": 234574475,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.33-11d731ce21c5/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "D29EBC0035EDAA3123034EF17F2F78C8721EB79B68CDD4E88E166F262F6BC8F5",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.34-a834ef1433ab/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "98910E995BA93255C37037868BE22E8B06C16A4CE325B689694E84595FF7A80F",
     "sizeBytes": 58342775,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.33",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.33-11d731ce21c5/RaidPilot-Launcher-v0.2.33-Windows-x64.zip",
-    "sha256": "272DF1AF45864DB07300B14000187422F43A2363F24EA4B6BDFE4BA7ECC70C06",
-    "sizeBytes": 360683157,
-    "releaseNotes": "Temps de travail inclus même quand les objectifs ne sont pas cartographiés; suites réellement utiles seulement dans le bonus de chaîne. Plusieurs ordres de sortie comparés avec retour au village, priorité de classe et stabilité de la flèche conservées. Quêtes sans objectifs connus exclues des ajouts opportunistes ordinaires. XP/h de session hors pause/AFK; déplacements et morts restent comptés. FR/EN, aucun reset ni abandon. Tests simulés; aucun gain XP/h réel ou optimalité 1–60 garantis. RaidPilot reste entièrement gratuit."
+    "version": "0.2.34",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.34-a834ef1433ab/RaidPilot-Launcher-v0.2.34-Windows-x64.zip",
+    "sha256": "550B8E4824C2156B457A6C65FF5E1B2634D75F7F841DC0A21DCB358C52943304",
+    "sizeBytes": 360810507,
+    "releaseNotes": "Police rendue à sa vraie taille, consignes sur deux lignes et boutons alignés. Les langues de la version locale sont conservées et incluses dans les deux distributions. Traductions supplémentaires sans relecture native exhaustive. Aucun reset de réglages. RaidPilot reste gratuit. Fermer puis relancer WoW après mise à jour depuis 1.10.3 pour charger les fichiers de langues."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.34",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.34",
+      "date": "2026-11-11",
+      "summary": "ForeversPilot FastXp 1.10.4 : affichage plus lisible",
+      "details": "Police rendue à sa vraie taille, consignes sur deux lignes et boutons alignés. Les langues de la version locale sont conservées et incluses dans les deux distributions. Traductions supplémentaires sans relecture native exhaustive. Aucun reset de réglages. RaidPilot reste gratuit. Fermer puis relancer WoW après mise à jour depuis 1.10.3 pour charger les fichiers de langues."
+    },
     {
       "component": "launcher",
       "version": "0.2.33",
@@ -253,16 +263,6 @@
       "date": "2026-10-28",
       "summary": "QuestPilot durable et contextuel — interface RaidPilot simplifiée",
       "details": "QuestPilot sauvegarde désormais les missions suivies et les étapes cochées entre les raids et les redémarrages, séparément pour PvE/PvP. Les scans F8 ajoutent les nouvelles quêtes sans effacer la progression. Chaque quête possède une action manuelle « Fait » et « Réactiver », distincte des confirmations officielles du journal EFT. Le HUD de quête apparaît uniquement près d'un objectif géolocalisé non terminé et sur un étage cohérent, avec position fraîche, incertitude faible et deux mesures GPS distinctes. Hystérésis 30 m à l'entrée / 45 m à la sortie pour éviter les clignotements; aucun objectif n'est déclaré terminé par simple proximité. Le panneau détaillé reste ouvrable à la demande et l'aide native évite les doublons. Interface redessinée : carte aux commandes simplifiées, options avancées regroupées, menu Windows par catégories, fonds et tableaux QuestPilot/StashPilot harmonisés, disposition adaptée aux petits écrans. CORTEX V4.2 reste disponible; aucune amélioration de précision en raid n'est revendiquée sans mesures."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.6.2",
-      "raidPilotVersion": "0.15.6.2",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-28",
-      "summary": "CORTEX V4.2 — F8 adaptatif fondé sur des écarts réels, 4/6/8/12 s (test)",
-      "details": "Corrige la situation où les F8 restent autour de 4 secondes même après plusieurs raids : l'apprentissage V3 redémarre à chaque session et la mémoire V4 ne conservait que les mauvaises zones. V4.2 mémorise désormais de façon bornée, localement et pendant 7 jours, des comptes de F8 natifs comparables Precision V2 faibles/forts par carte (sans coordonnées ni images). Après au moins 6 bonnes comparaisons historiques et 2 de la session, il peut choisir prudemment 6 s; après 14 bonnes et 4 récentes, jusqu'à 8 s. Les 12 s nécessitent toujours des repères visuels indépendants. Mauvaise santé GPS, forte incertitude, mauvais écart F8, secteur risqué ou action dangereuse annulent immédiatement l'extension. Le diagnostic et l'export indiquent les comparaisons acceptées/rejetées. Le mode CORTEX V4 reste expérimental, activable manuellement. Aucune amélioration réelle en raid n'est affirmée sans mesures."
     }
   ]
 }
