@@ -1,7 +1,11 @@
 local A = DungeonMapPilot
 
 function A.RouteText(value)
-    if type(value) == "table" then return value[A.Language()] or value.en or "" end
+    if type(value) == "table" then
+        if value.localeKey and A.HasText(value.localeKey) then return A.L(value.localeKey) end
+        local language = A.Language()
+        return value[language] or value[language == "frFR" and "fr" or "en"] or ""
+    end
     return A.SafeLabel(value)
 end
 
@@ -29,6 +33,8 @@ function A.RouteState(route)
         s = {revision=route.revision, current=1, done={}, skipped={}}
         A.db.routes[route.id] = s
     end
+    s.history = type(s.history)=="table" and s.history or {}
+    while #s.history>20 do table.remove(s.history,1) end
     s.done = type(s.done)=="table" and s.done or {}
     s.skipped = type(s.skipped)=="table" and s.skipped or {}
     for _, step in ipairs(route.steps) do
@@ -41,10 +47,34 @@ end
 
 function A.RouteMissing(route, step)
     local s, missing = A.RouteState(route), {}
-    for _, required in ipairs(step.requires or {}) do
-        if s.done[required] ~= true then
-            for i, other in ipairs(route.steps) do if other.id==required then missing[#missing+1]={index=i,step=other} end end
+    if step.requires~=nil and type(step.requires)~="table" then return {{step={title=A.L("routeInvalidRequirement")},invalid=true}} end
+    local requirements, count, seen = step.requires or {}, 0, {}
+    for key,required in pairs(requirements) do
+        count=count+1
+        if type(key)~="number" or key%1~=0 or key<1 or key>128
+            or (type(required)~="string" and type(required)~="number")
+            or (type(required)=="number" and (not A.ID(required)))
+            or (type(required)=="string" and required=="")
+            or seen[required] then
+            return {{step={title=A.L("routeInvalidRequirement")},invalid=true}}
         end
+        seen[required]=true
+    end
+    for index=1,count do
+        if requirements[index]==nil then return {{step={title=A.L("routeInvalidRequirement")},invalid=true}} end
+    end
+    for _, required in ipairs(requirements) do
+        local found, index
+        for i, other in ipairs(route.steps) do
+            if other.id==required then
+                if found then return {{step={title=A.L("routeInvalidRequirement")},invalid=true}} end
+                found,index=other,i
+            end
+        end
+        -- Validate identity even if corrupt saved data claims it was completed.
+        if not found or required==step.id then
+            missing[#missing+1]={step={title=A.L("routeInvalidRequirement")},invalid=true}
+        elseif s.done[required]~=true then missing[#missing+1]={index=index,step=found} end
     end
     return missing
 end
@@ -55,10 +85,39 @@ function A.RouteSelect(route, index)
     return true
 end
 
+local function snapshot(route,s)
+    local out={revision=route.revision,current=s.current,done={},skipped={}}
+    for _,step in ipairs(route.steps) do
+        if s.done[step.id] then out.done[step.id]=true end
+        if s.skipped[step.id] then out.skipped[step.id]=true end
+    end
+    return out
+end
+local function checkpoint(route,s)
+    s.history[#s.history+1]=snapshot(route,s)
+    while #s.history>20 do table.remove(s.history,1) end
+end
+function A.RouteCanUndo(route)
+    local s=A.RouteState(route);local previous=s.history[#s.history]
+    return type(previous)=="table" and previous.revision==route.revision
+        and type(previous.done)=="table" and type(previous.skipped)=="table" and A.Number(previous.current)~=nil
+end
+function A.RouteUndo(route)
+    if not A.RouteCanUndo(route) then return false end
+    local s=A.RouteState(route);local previous=table.remove(s.history)
+    -- Copy booleans only for the current route; reject unrelated saved fields.
+    s.current=A.Clamp(math.floor(previous.current),1,#route.steps+1);s.done={};s.skipped={}
+    for _,step in ipairs(route.steps) do
+        if previous.done[step.id]==true then s.done[step.id]=true
+        elseif step.kind=="optional" and previous.skipped[step.id]==true then s.skipped[step.id]=true end
+    end
+    return true
+end
 function A.RouteAdvance(route, skip)
     local s = A.RouteState(route)
     local step = route.steps[s.current]
     if not step or (skip and step.kind~="optional") or #A.RouteMissing(route,step)>0 then return false end
+    checkpoint(route,s)
     s.done[step.id] = not skip or nil
     s.skipped[step.id] = skip or nil
     local nextIndex = s.current + 1
@@ -73,8 +132,10 @@ function A.RouteAdvance(route, skip)
 end
 
 function A.RouteRestart(route)
-    A.db.routes[route.id] = nil
-    return A.RouteState(route)
+    local s=A.RouteState(route)
+    checkpoint(route,s)
+    s.current=1;s.done={};s.skipped={}
+    return s
 end
 
 function A.RouteNumber(index) return index==1 and A.L("departureShort") or tostring(index-1) end

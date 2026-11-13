@@ -30,7 +30,7 @@ A.catalog = {
 
 function A.CatalogName(id)
     local item = A.catalog[id]
-    return item and (item[A.Language()] or item.en) or A.L("unknown")
+    return item and A.L("instance." .. id) or A.L("unknown")
 end
 
 function A.CatalogList()

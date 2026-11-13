@@ -1,5 +1,5 @@
 local A = DungeonMapPilot
--- Local/RaidPilot builds always stay free. Public builds require a separate Maps entitlement.
+-- Local/RaidPilot builds always stay free. No public paid build is released yet.
 A.distribution = "raidpilot-test"
 
 function A.HasAccess()

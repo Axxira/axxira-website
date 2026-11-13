@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.35",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.35",
+      "date": "2026-11-12",
+      "summary": "FastXp 1.11.2 et DungeonMapPilot 0.4.2 : reprise, parcours et minicarte",
+      "details": "Centre de reprise par quête, annulation des étapes de carte, prérequis renforcés, boutons ronds et intégration facultative à PilotCenter. Langues préservées, édition RaidPilot toujours gratuite. Fermer complètement WoW puis relancer après installation. Tests simulés réussis; nouveaux rendus en jeu à confirmer."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.34",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "CORTEX V2 — mémoire visuelle des lieux et contrôle d'identité des repères",
       "details": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.0.1",
-      "raidPilotVersion": "0.15.0.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "CORTEX — différencie horodatage F8 réel et correction visuelle silencieuse",
-      "details": "Correctif de sûreté de la première version CORTEX : la fréquence des screenshots en mouvement utilise maintenant exclusivement le dernier F8 natif connu du superviseur. Une relocalisation visuelle, même confirmée, ne peut plus remettre à zéro l'horloge du vrai F8 dans la planification CORTEX. Le moteur reste désactivable pour comparaison. 17 tests de CORTEX couvrent notamment l'absence de fuite entre cartes/raids et cette distinction de temps."
     }
   ]
 }

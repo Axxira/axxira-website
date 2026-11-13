@@ -7,20 +7,20 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $sourcePath = (Resolve-Path -LiteralPath $Source).Path
 $toc = Get-Content -LiteralPath (Join-Path $sourcePath 'DungeonMapPilot.toc') -Raw
-$version = [regex]::Match($toc, '(?m)^## Version: ([0-9]+\.[0-9]+\.[0-9]+)\s*$').Groups[1].Value
+$version = [regex]::Match($toc, '(?m)^## Version: ([0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.]+)?)\s*$').Groups[1].Value
 if (!$version) { throw 'Missing addon version' }
 $core = Get-Content -LiteralPath (Join-Path $sourcePath 'Core.lua') -Raw
 if (!$core.Contains('version = "' + $version + '"')) { throw 'TOC and Core versions differ' }
-$luaFiles = @($toc -split '\r?\n' | Where-Object { $_ -match '^[A-Za-z]+\.lua$' })
-$allowed = @('Core.lua','Access.lua','Locale.lua','ReferenceMaps.lua','Catalog.lua','Model.lua','RouteData.lua','Routes.lua','UI.lua','RouteUI.lua','Main.lua')
+$luaFiles = @($toc -split '\r?\n' | Where-Object { $_ -match '^(?:Locales/)?[A-Za-z]+\.lua$' })
+$allowed = @('PilotMinimap.lua','Core.lua','Access.lua','Locale.lua','Locales/deDE.lua','Locales/esES.lua','Locales/esMX.lua','Locales/itIT.lua','Locales/ptBR.lua','Locales/ruRU.lua','Locales/koKR.lua','Locales/zhCN.lua','Locales/zhTW.lua','ReferenceMaps.lua','Catalog.lua','Model.lua','RouteData.lua','RouteLocale.lua','Routes.lua','UI.lua','RouteUI.lua','Main.lua','SuiteBridge.lua','MinimapLauncher.lua')
 if (@(Compare-Object $luaFiles $allowed).Count -ne 0) { throw 'Review the changed TOC file list before packaging' }
-$files = @('DungeonMapPilot.toc') + $luaFiles + @('README.md','LICENSE.txt','LICENSE-OpenMap.txt')
+$files = @('DungeonMapPilot.toc') + $luaFiles + @('README.md','RELEASE-NOTES.md','LICENSE.txt','LICENSE-OpenMap.txt')
 $label = if ($Edition -eq 'public') { 'public-candidate' } else { 'local' }
 $destination = Join-Path $OutputRoot "DungeonMapPilot-v$version-$label"
 if (Test-Path -LiteralPath $destination) { throw "Output already exists: $destination" }
 $package = Join-Path $destination 'DungeonMapPilot'
 New-Item -ItemType Directory -Path $package -Force | Out-Null
-foreach ($file in $files) { Copy-Item -LiteralPath (Join-Path $sourcePath $file) -Destination (Join-Path $package $file) }
+foreach ($file in $files) { $targetFile=Join-Path $package $file; New-Item -ItemType Directory -Force -Path (Split-Path -Parent $targetFile) | Out-Null; Copy-Item -LiteralPath (Join-Path $sourcePath $file) -Destination $targetFile }
 $accessPath = Join-Path $package 'Access.lua'
 $access = Get-Content -LiteralPath $accessPath -Raw
 if ([regex]::Matches($access, 'A\.distribution = "raidpilot-test"').Count -ne 1) { throw 'Unexpected distribution marker' }

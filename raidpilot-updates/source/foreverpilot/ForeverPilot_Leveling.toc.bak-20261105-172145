@@ -1,0 +1,8 @@
+## Interface: 16001
+## Title: ForeverPilot Leveling |cff48D7E813-60|r
+## Notes: Optimized 13-60 quest route, powered by the open-source Ding route engine.
+## Author: ForeverPilot Project
+## Version: 0.3.0
+## Dependencies: Ding
+## SavedVariables: ForeverPilotLevelingDB
+ForeverPilot_Leveling.lua

@@ -1,0 +1,24 @@
+ForeverPilot Leveling v0.4.0
+
+SMART Leveling cockpit for WoW Forever.
+
+Dependency / route engine:
+Ding! by its respective contributors, licensed under GNU GPL v3.
+Source: https://github.com/moust4ki/DingGuideWoWForever
+
+ForeverPilot Leveling is distributed under GNU GPL v3.
+
+v0.4 adds:
+- live XP/hour
+- next-level ETA
+- projected ETA to level 60 after pace calibration
+- smart quest-loop advice
+- "NE RENTRE PAS ENCORE" / hub-return intelligence
+- 4-step lookahead with quest names
+- route/step progress
+- next guide preview
+- out-of-route quest detection
+- FAST mode
+- resync and arrow controls
+
+The existing ForeverPilot AI Bridge addon is separate and intentionally untouched.

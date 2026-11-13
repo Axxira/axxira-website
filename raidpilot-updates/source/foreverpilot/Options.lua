@@ -32,6 +32,7 @@ end
 -- This entry point must not depend on the equipment/auction module initializing.
 function O:SyncEntryPoints()
     if not B.settings then return end
+    if self.SyncMinimap then self:SyncMinimap() end
     local guide=B.UI and B.UI.frame
     if not self.shortcut then
         self.shortcut=button(UIParent,"ForeversPilot FastXp · "..B.T("Options"),0,0,244,function() self:Toggle() end)
@@ -52,7 +53,7 @@ function O:SyncEntryPoints()
     self.shortcut:ClearAllPoints()
     self.shortcut:SetPoint(B.settings.point or "TOP",UIParent,B.settings.point or "TOP",B.settings.x or 0,B.settings.y or -90)
     self.shortcut:SetScale(B.settings.scale or 1)
-    self.shortcut:SetShown(not guide or not guide:IsShown())
+    self.shortcut:SetShown(not self.minimapButton and (not guide or not guide:IsShown()))
 end
 function O:Render()
     if not self.frame then return end
@@ -161,7 +162,8 @@ function O:Create()
         text(p,11,246,y+1,254,48,entry[2],true)
     end
     line(p,426)
-    self.resume=button(p,B.T("Reprendre les quêtes écartées"),20,446,480,function() B.ResumeSkipped("all");self:Render() end)
+    self.resume=button(p,B.T("Reprendre les quêtes écartées"),20,446,230,function() B.ResumeSkipped("all");self:Render() end)
+    self.review=button(p,B.T("REC_OPEN"),270,446,230,function() self:CloseFor(function() B.RecoveryUI:Open() end) end)
     text(p,11,20,487,480,35,B.T("Passer met une quête de côté sans l'abandonner dans ton journal."),true)
     p=self.pages.help
     local tips={

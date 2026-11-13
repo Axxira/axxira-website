@@ -36,18 +36,21 @@ function U:CreateGuide()
         local r=self.route; if not r then return end
         local s=A.RouteState(r); local step=r.steps[s.current]; if not step then return end
         local missing=A.RouteMissing(r,step)
-        if #missing>0 then self:FocusRouteStep(missing[1].index); return end
+        if #missing>0 then if missing[1].index then self:FocusRouteStep(missing[1].index) end; return end
         A.RouteAdvance(r,false); self:FollowRouteSelection()
     end); p.done:SetPoint("BOTTOMLEFT",12,64)
     p.back=button(p,104,function() if self.route then self:FocusRouteStep(math.max(1,A.RouteState(self.route).current-1)) end end)
     p.back:SetPoint("BOTTOMLEFT",12,36)
     p.skip=button(p,104,function() if self.route and A.RouteAdvance(self.route,true) then self:FollowRouteSelection() end end)
     p.skip:SetPoint("BOTTOMRIGHT",-12,36)
-    p.restart=button(p,216,function()
+    p.restart=button(p,104,function()
         if not self.route then return end
         if self.restartConfirm~=self.route.id then self.restartConfirm=self.route.id; p.restart:SetText(A.L("confirmRestart")); return end
         A.RouteRestart(self.route); self.restartConfirm=nil; self:FollowRouteSelection()
     end); p.restart:SetPoint("BOTTOMLEFT",12,8)
+    p.undo=button(p,104,function()
+        if self.route and A.RouteUndo(self.route) then self.restartConfirm=nil;self:FollowRouteSelection() end
+    end);p.undo:SetPoint("BOTTOMRIGHT",-12,8)
     self.guideToggle=button(self.frame,150,function()
         A.db.guideHidden=not A.db.guideHidden; self:LayoutGuide(); self:UpdateGuide()
     end); self.guideToggle:SetPoint("RIGHT",self.reset,"LEFT",-8,0)
@@ -87,16 +90,17 @@ function U:UpdateGuide()
     p.heading:SetText(A.L("guideTitle")); p.mode:SetEnabled(self.context~=nil and self.context.source=="reference")
     p.mode:SetText(A.L(r and r.personal and "personalRoute" or "suggestedRoute"))
     self.guideToggle:SetText(A.L(A.db.guideHidden and "showGuide" or "hideGuide"))
-    p.back:SetText(A.L("previous")); p.skip:SetText(A.L("skipOptional"))
+    p.back:SetText(A.L("previous")); p.skip:SetText(A.L("skipOptional"));p.undo:SetText(A.L("undoRoute"))
     p.restart:SetText(A.L(self.restartConfirm and "confirmRestart" or "newRun"))
     for _, row in ipairs(p.rows) do row:Hide() end
     if not r then
         p.count:SetText(A.L("noGuide")); p.title:SetText(A.L("makePersonalRoute")); p.body:SetText(A.L("makePersonalHelp"))
         p.warning:SetText(A.L("guideManual")); p.done:SetText(A.L("stepDone")); p.done:SetEnabled(false)
-        p.back:SetEnabled(false); p.skip:SetEnabled(false); p.restart:SetEnabled(false); p.content:SetHeight(1)
+        p.back:SetEnabled(false); p.skip:SetEnabled(false); p.restart:SetEnabled(false);p.undo:SetEnabled(false); p.content:SetHeight(1)
         self:UpdateRoutePins(); return
     end
     local s=A.RouteState(r); local done,total,skipped=A.RouteCounts(r)
+    p.undo:SetEnabled(A.RouteCanUndo(r))
     p.count:SetText(A.L("routeProgress",done,total)..(skipped>0 and A.L("routeSkipped",skipped) or ""))
     p.content:SetHeight(math.max(200,#r.steps*27))
     for i,step in ipairs(r.steps) do
@@ -113,7 +117,7 @@ function U:UpdateGuide()
     if #missing>0 then warning=A.L("missingRouteStep",A.RouteText(missing[1].step.title))
     elseif step and step.kind=="optional" then warning=A.L("optionalRouteStep") end
     p.warning:SetText(warning)
-    p.done:SetText(A.L(#missing>0 and "showRequired" or "stepDone")); p.done:SetEnabled(step~=nil)
+    p.done:SetText(A.L(#missing>0 and "showRequired" or "stepDone")); p.done:SetEnabled(step~=nil and not (missing[1] and missing[1].invalid))
     p.skip:SetEnabled(step~=nil and step.kind=="optional"); p.back:SetEnabled(s.current>1); p.restart:SetEnabled(true)
     self:UpdateRoutePins()
 end

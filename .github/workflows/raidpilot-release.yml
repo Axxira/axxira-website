@@ -296,7 +296,7 @@ jobs:
           Compress-Archive -LiteralPath (Join-Path $out "maps-companion/DungeonMapPilot.Companion.exe"),(Join-Path $out "maps-companion/COMMENCE-ICI.md") -DestinationPath $mapsCompanionZip -CompressionLevel Optimal
           "MAPS_COMPANION_ZIP=$mapsCompanionZip" | Out-File -FilePath $env:GITHUB_ENV -Append
           & ./raidpilot-updates/Build-DungeonMapPilotPackage.ps1 -Edition public -OutputRoot release-assets
-          $mapsZip = (Get-ChildItem -LiteralPath release-assets/DungeonMapPilot-v0.3.0-public-candidate -Filter *.zip).FullName
+          $mapsZip = (Get-ChildItem -LiteralPath release-assets/DungeonMapPilot-v0.4.2-alpha-public-candidate -Filter *.zip).FullName
           "MAPS_ZIP=$mapsZip" | Out-File -FilePath $env:GITHUB_ENV -Append
 
           "RP_ZIP=$rpZip" | Out-File -FilePath $env:GITHUB_ENV -Append
