@@ -1,9 +1,0 @@
-## Interface: 16001
-## Title: ForeverPilot Leveling |cff48D7E8AUTO-FOLLOW 13-60|r
-## Notes: Smart leveling cockpit for WoW Forever: automatic step advancement, route intelligence, quest loops, live pace and ETA.
-## Author: ForeverPilot Project
-## Version: 0.5.0
-## Dependencies: Ding
-## SavedVariables: ForeverPilotLevelingDB
-ForeverPilot_Leveling.lua
-
