@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-13T01:37:49.9861416+00:00",
+  "publishedAt": "2026-11-13T01:57:57.0834891+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.34-a834ef1433ab/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "9DCFD846A0D009823C24CF9CBA326184D751E99D1B0CC4516BB68E5BC80AA99D",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.35-16d9091ca543/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "E81F2F4FEAF544A96F6553AB0E4ECC14DBF30BDFF7F884BB49C8A45130D24F80",
     "sizeBytes": 234574475,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.34-a834ef1433ab/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "98910E995BA93255C37037868BE22E8B06C16A4CE325B689694E84595FF7A80F",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.35-16d9091ca543/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "13EE5A68507A640970967D8C28F9A0B8DC10CCB652C58C5C757F768538351428",
     "sizeBytes": 58342775,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.34",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.34-a834ef1433ab/RaidPilot-Launcher-v0.2.34-Windows-x64.zip",
-    "sha256": "550B8E4824C2156B457A6C65FF5E1B2634D75F7F841DC0A21DCB358C52943304",
-    "sizeBytes": 360810507,
-    "releaseNotes": "Police rendue à sa vraie taille, consignes sur deux lignes et boutons alignés. Les langues de la version locale sont conservées et incluses dans les deux distributions. Traductions supplémentaires sans relecture native exhaustive. Aucun reset de réglages. RaidPilot reste gratuit. Fermer puis relancer WoW après mise à jour depuis 1.10.3 pour charger les fichiers de langues."
+    "version": "0.2.35",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.35-16d9091ca543/RaidPilot-Launcher-v0.2.35-Windows-x64.zip",
+    "sha256": "F6B3D5FECE07F6F1B8E04AEE71AFCEBD7FE884E7BBD7D6881F73F150C7CE6A5B",
+    "sizeBytes": 360872313,
+    "releaseNotes": "Centre de reprise par quête, annulation des étapes de carte, prérequis renforcés, boutons ronds et intégration facultative à PilotCenter. Langues préservées, édition RaidPilot toujours gratuite. Fermer complètement WoW puis relancer après installation. Tests simulés réussis; nouveaux rendus en jeu à confirmer."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.35",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.35",
+      "date": "2026-11-12",
+      "summary": "FastXp 1.11.2 et DungeonMapPilot 0.4.2 : reprise, parcours et minicarte",
+      "details": "Centre de reprise par quête, annulation des étapes de carte, prérequis renforcés, boutons ronds et intégration facultative à PilotCenter. Langues préservées, édition RaidPilot toujours gratuite. Fermer complètement WoW puis relancer après installation. Tests simulés réussis; nouveaux rendus en jeu à confirmer."
+    },
     {
       "component": "launcher",
       "version": "0.2.34",
@@ -253,16 +263,6 @@
       "date": "2026-10-28",
       "summary": "Guide des clés Tarkov — portes associées, recherche et repères sur chaque carte",
       "details": "Ajoute un guide « 🔑 Clés » aux cartes locales RaidPilot : recherche une clé par nom ou abréviation et retrouve les portes/serrures qu'elle ouvre selon les catalogues vérifiés de tarkov.dev. Les serrures identifiées affichent le nom de la clé, la catégorie de porte et une indication d'étage seulement si le niveau est documenté sans ambiguïté. Un clic sur « 📍 Voir » sélectionne la serrure sur la carte, à condition que le fond soit correctement calibré. Les clés permettant l'accès à une carte sans porte localisée sont présentées à part. Les portes sans clé ou position publiée sont explicitement indiquées comme non renseignées, jamais devinées. Les nouveaux marqueurs 🔑 sont disponibles via le guide/filtre; aucun nom de chambre ou emplacement n'est inventé. Fonctionnement hors ligne avec les données publiques vérifiées déjà incluses. L'interface conserve CORTEX V4.2, QuestPilot et la progression sans modification. Les données Tarkov peuvent changer après un patch du jeu; vérifier en partie. Aucun scan de trousseau ni nouvelle intelligence de localisation n'est affirmé."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.7.0",
-      "raidPilotVersion": "0.15.7.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-28",
-      "summary": "QuestPilot durable et contextuel — interface RaidPilot simplifiée",
-      "details": "QuestPilot sauvegarde désormais les missions suivies et les étapes cochées entre les raids et les redémarrages, séparément pour PvE/PvP. Les scans F8 ajoutent les nouvelles quêtes sans effacer la progression. Chaque quête possède une action manuelle « Fait » et « Réactiver », distincte des confirmations officielles du journal EFT. Le HUD de quête apparaît uniquement près d'un objectif géolocalisé non terminé et sur un étage cohérent, avec position fraîche, incertitude faible et deux mesures GPS distinctes. Hystérésis 30 m à l'entrée / 45 m à la sortie pour éviter les clignotements; aucun objectif n'est déclaré terminé par simple proximité. Le panneau détaillé reste ouvrable à la demande et l'aide native évite les doublons. Interface redessinée : carte aux commandes simplifiées, options avancées regroupées, menu Windows par catégories, fonds et tableaux QuestPilot/StashPilot harmonisés, disposition adaptée aux petits écrans. CORTEX V4.2 reste disponible; aucune amélioration de précision en raid n'est revendiquée sans mesures."
     }
   ]
 }
