@@ -96,7 +96,7 @@ U.pins[1]:Click(); U.editor.delete:Click(); check(#A.Pins(key) == 0, "UI removes
 U.follow = false; U:SetContext(A.ReferenceContext(33)); U:SelectFloor(2, false)
 check(U.context.index == 2 and A.db.floors[33] == 2, "manual floor saved")
 U:RefreshCurrent(); check(U.context.instanceID == 33, "preview not stolen by auto detection")
-U:ChooseMap(); check(U.menu:IsShown() and #U.menu.buttons == 25, "all instances in browser")
+U:ChooseMap(); check(U.menu:IsShown() and #U.menu.buttons == 34, "25 illustrated maps plus 9 Forever guide-only entries in browser")
 U.menu:Hide(); A.db.language = "en"; U:Localize(); check(U.browse.text == "Maps", "English UI")
 A.db.language = "fr"; U:Localize(); check(U.current.text == "Lieu actuel", "French UI")
 T.best = 9001; U:Current(); check(U.player:IsShown(), "true native GPS drawn")
@@ -127,7 +127,8 @@ for instanceID,route in pairs(A.routeData) do
     end
 end
 check(routeCount==2,"two prepared routes, not 25")
-check(A.GetRoute(nil)==nil and A.GetRoute({source="native",instanceID=43})==nil,"reference guide never projected onto native map")
+check(A.GetRoute(nil)==nil and A.GetRoute({source="native",instanceID=43})==A.routeData[43],
+    "native dungeon retains guide text while reference-only pins stay hidden")
 local wc=A.GetRoute(A.ReferenceContext(43))
 local state=A.RouteRestart(wc)
 check(A.RouteSelect(wc,9) and #A.RouteMissing(wc,wc.steps[9])==4,"return requires all four Fanglords")
@@ -178,13 +179,17 @@ U:FocusRouteStep(1); check(U.routePins[1].number.text=="S","English Start badge"
 U.guide.restart:Click(); check(A.RouteState(wc).done.anacondra and U.guide.restart.text==A.L("confirmRestart"),"restart needs second click")
 U.guide.restart:Click(); check(not A.RouteState(wc).done.anacondra and A.RouteState(wc).current==1,"confirmed restart clears only route progress")
 T.kind="party"; T.best=9001; U:Current()
-check(U.route==nil,"native map has no reference route")
+check(U.route==wc and U.floor.source=="native","native dungeon maps now retain the textual walkthrough")
+check(U.guide.warning.text==A.L("guideTextOnly"),"native art never claims calibrated guide pins")
 for _,pin in pairs(U.routePins) do check(not pin:IsShown(),"no reference pins leak to native map") end
 
 -- Personal ordered objectives across floors, editing, translation, and reset isolation.
 local context=A.ReferenceContext(33); local firstKey=context.floors[1].key; local secondKey=context.floors[2].key
 A.db.pins[firstKey]={}; A.db.pins[secondKey]={}
-check(A.GetRoute(context)==nil,"unprepared map has no invented route")
+check(A.GetRoute(context)~=nil and A.GetRoute(context).guideOnly,
+      "Shadowfang has a text-only prepared route with no fabricated position")
+A.db.routeMode[33]="personal"
+check(A.GetRoute(context)==nil,"personal mode still starts empty without user markers")
 A.SavePin(firstKey,.2,.3,"Départ perso"); A.SavePin(secondKey,.7,.6,"Porte finale")
 U:SetContext(context); U:FocusRouteStep(1)
 check(U.route.personal and #U.route.steps==2 and U.context.index==1,"personal route selects correct starting floor")
@@ -202,6 +207,7 @@ check(#A.Pins(firstKey)==1 and #A.Pins(secondKey)==1,"new run does not delete ma
 A.db.routeMode[43]="personal"; check(A.GetRoute(A.ReferenceContext(43))==nil,"personal mode does not silently substitute prepared route")
 A.SavePin(key,.1,.1,"Mon départ"); check(A.GetRoute(A.ReferenceContext(43)).personal,"custom route available on prepared map")
 A.db.routeMode[43]=nil; check(A.GetRoute(A.ReferenceContext(43))==wc,"switching back preserves prepared route identity")
+A.db.routeMode[33]=nil
 A.RouteRestart(wc); U:SetContext(A.ReferenceContext(43)); U:FocusRouteStep(2)
 A.ZoomAt(U.view,2,400,250); U:ApplyView()
 check(near(U.routePins[2].point[4],wc.steps[2].x*U.view.width*2),"route badges remain attached during zoom")

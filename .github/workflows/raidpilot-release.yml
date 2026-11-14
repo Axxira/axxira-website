@@ -295,8 +295,12 @@ jobs:
           $mapsCompanionZip = Join-Path $assets "DungeonMapPilot-Companion-v1.0.0-Windows-x64.zip"
           Compress-Archive -LiteralPath (Join-Path $out "maps-companion/DungeonMapPilot.Companion.exe"),(Join-Path $out "maps-companion/COMMENCE-ICI.md") -DestinationPath $mapsCompanionZip -CompressionLevel Optimal
           "MAPS_COMPANION_ZIP=$mapsCompanionZip" | Out-File -FilePath $env:GITHUB_ENV -Append
-          & ./raidpilot-updates/Build-DungeonMapPilotPackage.ps1 -Edition public -OutputRoot release-assets
-          $mapsZip = (Get-ChildItem -LiteralPath release-assets/DungeonMapPilot-v0.4.2-alpha-public-candidate -Filter *.zip).FullName
+          # The launcher contains ONLY two addon families, both free in this test distribution.
+          # The subscription edition for CurseForge is packaged separately from paid staging.
+          & ./raidpilot-updates/Build-DungeonMapPilotPackage.ps1 -Edition raidpilot-test -OutputRoot release-assets
+          $matches = @(Get-ChildItem -LiteralPath release-assets -Recurse -File -Filter 'DungeonMapPilot-v*-raidpilot-test.zip')
+          if ($matches.Count -ne 1) { throw 'Expected exactly one free DungeonMapPilot package.' }
+          $mapsZip = $matches[0].FullName
           "MAPS_ZIP=$mapsZip" | Out-File -FilePath $env:GITHUB_ENV -Append
 
           "RP_ZIP=$rpZip" | Out-File -FilePath $env:GITHUB_ENV -Append

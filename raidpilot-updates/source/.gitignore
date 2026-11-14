@@ -1,1 +1,5 @@
 /ding/
+**/bin/
+**/obj/
+**/node_modules/
+/brand/RaidPilot.ico

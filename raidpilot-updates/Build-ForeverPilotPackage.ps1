@@ -13,12 +13,13 @@ New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $zipPath = Join-Path (Resolve-Path $OutputDirectory).Path "ForeverPilot-v$version.zip"
 if (Test-Path -LiteralPath $zipPath) { throw 'Refusing to overwrite an existing publication archive.' }
 Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 function Get-PackageBytes([string]$Relative) {
     $bytes = [IO.File]::ReadAllBytes((Join-Path $addonRoot $Relative))
     if ($Relative -eq 'Bootstrap.lua') {
         $text = [Text.Encoding]::UTF8.GetString($bytes)
         $marker = 'B.distribution = "raidpilot-test"'
-        if (($text.Split($marker)).Count -ne 2) { throw 'Distribution marker missing or duplicated.' }
+        if ([regex]::Matches($text,[regex]::Escape($marker)).Count -ne 1) { throw 'Distribution marker missing or duplicated.' }
         $bytes = [Text.Encoding]::UTF8.GetBytes($text.Replace($marker, 'B.distribution = "public"'))
     }
     return ,$bytes
@@ -39,8 +40,12 @@ try {
         if (!$entry.FullName.StartsWith('ForeverPilot_Leveling/')) { throw 'Unexpected archive root.' }
         $relative = $entry.FullName.Substring('ForeverPilot_Leveling/'.Length)
         $entryStream=$entry.Open()
-        try { $actual=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($entryStream)) } finally { $entryStream.Dispose() }
-        $expectedHash=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([byte[]](Get-PackageBytes $relative)))
+        $sha=[Security.Cryptography.SHA256]::Create()
+        try { $actual=[BitConverter]::ToString($sha.ComputeHash($entryStream)).Replace('-','') }
+        finally { $entryStream.Dispose(); $sha.Dispose() }
+        $sha=[Security.Cryptography.SHA256]::Create()
+        try { $expectedHash=[BitConverter]::ToString($sha.ComputeHash([byte[]](Get-PackageBytes $relative))).Replace('-','') }
+        finally { $sha.Dispose() }
         if ($actual -ne $expectedHash) { throw "Archive differs: $relative" }
     }
 } finally { $check.Dispose() }

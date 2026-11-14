@@ -9,5 +9,8 @@ function run(text, name) {
 run(fs.readFileSync(path.join(__dirname, 'fixture.lua'), 'utf8'), 'fixture');
 const toc = fs.readFileSync(path.join(root, 'DungeonMapPilot.toc'), 'utf8');
 for (const file of toc.split(/\r?\n/).filter(x => x.endsWith('.lua'))) run(fs.readFileSync(path.join(root, file), 'utf8'), file);
-run(fs.readFileSync(path.join(__dirname, 'scenarios.lua'), 'utf8'), 'scenarios');
-console.log('PASS: TOC loads; model and UI scenarios complete. These are simulated tests, not in-game validation.');
+for (const name of ['scenarios', 'all_guides', 'forever_guides', 'roster_level',
+                    'boss_search', 'notebook', 'notebook_limits']) {
+  run(fs.readFileSync(path.join(__dirname, name + '.lua'), 'utf8'), name);
+}
+console.log('PASS: 7 DungeonMapPilot regression suites, TOC, maps, guides, rosters, boss search and notes. Simulated WoW APIs only.');

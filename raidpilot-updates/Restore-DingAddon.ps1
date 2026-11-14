@@ -29,7 +29,7 @@ try {
     Copy-Item -LiteralPath $source -Destination $destination -Recurse
     $files = @(Get-ChildItem -LiteralPath $source -File -Recurse)
     foreach ($file in $files) {
-        $relative = [IO.Path]::GetRelativePath($source, $file.FullName)
+        $relative = $file.FullName.Substring($source.TrimEnd('\').Length + 1)
         if ((Get-FileHash -LiteralPath $file.FullName).Hash -ne
             (Get-FileHash -LiteralPath (Join-Path $destination $relative)).Hash) { throw "Ding copy differs: $relative" }
     }

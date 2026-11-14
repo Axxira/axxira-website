@@ -80,15 +80,37 @@ function A.ReferenceContext(id)
         index = A.Clamp(math.floor(saved), 1, #floors), raid = A.catalog[id] and A.catalog[id].raid }
 end
 
+function A.GuideNameMatches(id,value)
+    local data=A.customGuideMeta and A.customGuideMeta[id]
+    if not data or type(value)~="string" then return false end
+    local actual=value:lower():gsub("[%s%p]","")
+    local en=data.en:lower():gsub("[%s%p]","")
+    local fr=data.fr:lower():gsub("[%s%p]","")
+    return actual==en or actual==fr
+end
+function A.GuideContext(id,liveName)
+    local data=A.customGuideMeta and A.customGuideMeta[id]
+    if not data then return nil end
+    if liveName and not A.GuideNameMatches(id,liveName) then return nil end
+    return {instanceID=id,name=A.CatalogName(id),source="guide-only",
+       floors={},index=1,raid=false,fromLive=liveName~=nil}
+end
+
 function A.CurrentContext()
     local name, kind, _, _, _, _, _, instanceID = A.Call(GetInstanceInfo)
     if kind ~= "party" and kind ~= "raid" then return nil end
     instanceID = A.ID(instanceID)
     if not instanceID then return nil end
+    if A.customGuideMeta and A.customGuideMeta[instanceID] and
+        not A.GuideNameMatches(instanceID,name) then
+        return {instanceID=instanceID,name=A.Text(name),floors={},source="unavailable",
+            index=1,raid=kind=="raid"}
+    end
     local best = C_Map and A.Call(C_Map.GetBestMapForUnit, "player")
     local floors, index = A.NativeFloors(best)
     if floors then return { instanceID = instanceID, name = A.Text(name), source = "native", floors = floors, index = index, raid = kind == "raid" } end
-    return A.ReferenceContext(instanceID) or { instanceID = instanceID, name = A.Text(name), floors = {}, source = "unavailable", raid = kind == "raid" }
+    return A.ReferenceContext(instanceID) or A.GuideContext(instanceID,name) or
+        { instanceID = instanceID, name = A.Text(name), floors = {}, source = "unavailable", raid = kind == "raid" }
 end
 
 function A.FloorName(floor, index)

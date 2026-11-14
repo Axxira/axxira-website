@@ -22,7 +22,7 @@ registry.providers.ForeverPilot_Leveling={api=1,version=A.version,
     local state=A.State.current
     local current=A.Planner.current
     return {ready=state~=nil,enabled=A.settings.enabled~=false,paused=A.settings.paused==true,
-        access=A.HasPremium(),errors=A.errors or 0,failed=A.failed==true,
+        access=true,premium=A.HasPremium(),edition=A.Mode(),errors=A.errors or 0,failed=A.failed==true,
         unavailable=#blocked,skipped=#skipped,questCount=state and state.count,questLimit=state and state.limit,
         sampledAt=state and state.now,quest=current and current.node and current.node.name,
         action=current and current.kind,confidence=current and current.confidence}
@@ -31,7 +31,7 @@ registry.providers.ForeverPilot_Leveling={api=1,version=A.version,
     if combat() or not A.settings then return false end
     if action=="recovery" then A.RecoveryUI:Open()
     elseif action=="open" or action=="options" then
-        if not A.UI.frame or action=="options" or not A.HasPremium() then A.Options:Toggle()
+        if not A.UI.frame or action=="options" then A.Options:Toggle()
         else A.settings.shown=true;A.UI.frame:Show() end
     else return false end
     return true

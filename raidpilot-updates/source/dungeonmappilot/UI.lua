@@ -133,15 +133,35 @@ function UI:Menu(items, anchor, width)
 end
 
 function UI:ChooseMap()
-    local items = {}
-    for _, item in ipairs(A.CatalogList()) do
-        local id = item.id
-        items[#items + 1] = { text = item.name, action = function()
-            A.db.lastReference = id
-            self.follow = false; self:SetContext(A.ReferenceContext(id))
-        end }
+    local items={}
+    local level=A.PlayerDungeonLevel()
+    local levelMatches=A.CatalogAtLevel(level)
+    if self.mapBrowseMode~="level" then self.mapBrowseMode="all" end
+    if level and #levelMatches>0 then
+        local mode=self.mapBrowseMode
+        items[#items+1]={text=mode=="level" and A.L("guideAllMaps",#A.CatalogList())
+            or A.L("guideMyLevel",level,#levelMatches),action=function()
+                self.mapBrowseMode=mode=="level" and "all" or "level"
+                self:ChooseMap()
+            end}
+    else self.mapBrowseMode="all" end
+    local entries=self.mapBrowseMode=="level" and #levelMatches>0 and levelMatches or A.CatalogList()
+    for _,item in ipairs(entries) do
+        local id=item.id
+        local meta=A.catalog[id]
+        local min,max=A.CatalogLevelRange(id)
+        local range=min and max and ("["..min.."-"..max.."] ") or ""
+        local suffix=meta and meta.rosterOnly and A.L("guideBrowseRoster")
+            or meta and meta.previewOnly and A.L("guideBrowsePreview")
+            or meta and meta.guideOnly and A.L("guideBrowseText")
+        items[#items+1]={text=range..item.name..(suffix and (" - "..suffix) or ""),
+            action=function()
+                A.db.lastReference=id
+                self.follow=false
+                self:SetContext(A.ReferenceContext(id) or A.GuideContext(id))
+            end}
     end
-    self:Menu(items, self.browse, 320)
+    self:Menu(items,self.browse,365)
 end
 
 function UI:ChooseFloor()
@@ -187,7 +207,9 @@ function UI:Render()
     self.source:SetText(floor and A.L(floor.source) or "")
     self.sourceButton:SetShown(floor ~= nil)
     self.empty:SetShown(not floor or not floor.tiles)
-    self.empty:SetText(A.L("unsupported") .. "\n\n" .. A.L("unsupportedHelp"))
+    self.empty:SetText(c and c.source=="guide-only" and
+        (A.L("guideNoArt").."\n\n"..A.L("guideTextOnly")) or
+        (A.L("unsupported") .. "\n\n" .. A.L("unsupportedHelp")))
     local aspect = floor and floor.aspect or 1.5
     local width = math.min(884, 590 * aspect); local height = width / aspect
     self.viewport:SetSize(width, height)
@@ -203,10 +225,70 @@ function UI:Render()
     self:UpdateGuide(); self:Reset()
 end
 
+-- The Options screen is one click from the map. Donations never appear on map controls.
+local optionsLabels={enUS="Options",enGB="Options",frFR="Options",deDE="Optionen",
+    esES="Opciones",esMX="Opciones",itIT="Opzioni",ptBR="Opções",
+    ruRU="Настройки",koKR="설정",zhCN="选项",zhTW="選項"}
+function UI:OptionsCaption()
+    local code=A.db and A.db.language
+    if code=="auto" or code==nil then code=A.Call(GetLocale) end
+    return optionsLabels[code] or optionsLabels.enUS
+end
+function UI:OpenOptions()
+    if not self.frame then self:Create() end
+    if self.optionsPanel then
+        self.optionsPanel:SetShown(not self.optionsPanel:IsShown())
+        return
+    end
+    if self.menu then self.menu:Hide() end
+    local p=CreateFrame("Frame","DungeonMapPilotOptionsFrame",self.frame,"BackdropTemplate")
+    self.optionsPanel=p
+    p:SetSize(465,280);p:SetPoint("CENTER",self.frame,"CENTER",0,0)
+    p:SetFrameStrata("DIALOG");p:SetFrameLevel(self.frame:GetFrameLevel()+13)
+    p:SetClampedToScreen(true);p:EnableMouse(true)
+    p:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",
+        edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+    p:SetBackdropColor(.048,.063,.078,.98);p:SetBackdropBorderColor(.65,.53,.29,1)
+    p.title=Label(p,"GameFontNormalLarge",self:OptionsCaption())
+    p.title:SetPoint("TOPLEFT",20,-17)
+    p.description=Label(p,"GameFontHighlightSmall",A.L("hint"))
+    p.description:SetPoint("TOPLEFT",20,-52)
+    p.description:SetWidth(420)
+    p.language=Button(p,280,A.L("language"),function()
+        local choices={}
+        for _,entry in ipairs(A.LanguageChoices()) do
+            local code=entry[1]
+            choices[#choices+1]={text=entry[2],action=function()
+                A.db.language=code;self:Localize()
+            end}
+        end
+        if self.menu then self.menu:Hide() end
+        self:Menu(choices,p.language,215)
+    end)
+    p.language:SetPoint("TOPLEFT",20,-102)
+    p.close=Button(p,92,A.L("cancel"),function() p:Hide() end)
+    p.close:SetPoint("TOPRIGHT",-16,-16)
+    if A.Support then
+        p.supportHint=Label(p,"GameFontHighlightSmall",A.Support.Text("optional"))
+        p.supportHint:SetPoint("TOPLEFT",20,-155)
+        p.supportHint:SetWidth(420)
+        A.Support.Attach(p,{
+            point="TOPLEFT",relativePoint="TOPLEFT",x=20,y=-185,width=239,height=33})
+    end
+    p:SetScript("OnHide",function() if self.menu then self.menu:Hide() end end)
+    if UISpecialFrames then UISpecialFrames[#UISpecialFrames+1]="DungeonMapPilotOptionsFrame" end
+    p:Show()
+end
+
 function UI:Localize()
     self.frame.TitleText:SetText("DungeonMapPilot · " .. A.L("title"))
     self.browse:SetText(A.L("browse")); self.current:SetText(A.L("current")); self.reset:SetText(A.L("reset"))
-    self.lang:SetText(A.L("language")); self.hint:SetText(A.L("hint"))
+    self.lang:SetText(self:OptionsCaption()); self.hint:SetText(A.L("hint"))
+    if self.optionsPanel then
+        self.optionsPanel.title:SetText(self:OptionsCaption())
+        self.optionsPanel.language:SetText(A.L("language"))
+        if A.Support then self.optionsPanel.supportHint:SetText(A.Support.Text("optional")) end
+    end
     if A.worldButton then A.worldButton:SetText(A.L("worldButton")) end
     self:Render()
 end
@@ -235,14 +317,8 @@ function UI:Create()
     self.previous = Button(f, 28, "<", function() self:SelectFloor(self.context.index - 1, false) end); self.previous:SetPoint("LEFT", self.current, "RIGHT", 16, 0)
     self.floorButton = Button(f, 338, "", function() self:ChooseFloor() end); self.floorButton:SetPoint("LEFT", self.previous, "RIGHT", 4, 0)
     self.next = Button(f, 28, ">", function() self:SelectFloor(self.context.index + 1, false) end); self.next:SetPoint("LEFT", self.floorButton, "RIGHT", 4, 0)
-    self.lang = Button(f, 100, "", function()
-        local items = {}
-        for _, entry in ipairs(A.LanguageChoices()) do
-            local language = entry[1]
-            items[#items + 1] = { text = entry[2], action = function() A.db.language = language; self:Localize() end }
-        end
-        self:Menu(items, self.lang, 150)
-    end); self.lang:SetPoint("TOPRIGHT", -18, -35)
+    self.lang = Button(f, 100, "", function() self:OpenOptions() end)
+    self.lang:SetPoint("TOPRIGHT", -18, -35)
     self.name = Label(f, "GameFontNormal"); self.name:SetPoint("TOPLEFT", 21, -64)
     self.source = Label(f, "GameFontHighlightSmall"); self.source:SetPoint("TOPRIGHT", -21, -65)
     self.sourceButton = CreateFrame("Button", nil, f); self.sourceButton:SetAllPoints(self.source)
@@ -277,6 +353,7 @@ function UI:Create()
         self.drag = nil
         if self.menu then self.menu:Hide() end
         if self.editor then self.editor:Hide() end
+        if self.optionsPanel then self.optionsPanel:Hide() end
     end)
     local positionTime, contextTime = 0, 0
     f:SetScript("OnUpdate", function(_, dt)
@@ -296,6 +373,12 @@ function UI:Create()
         end
         if positionTime >= 0.15 then positionTime = 0; self:UpdatePosition() end
     end)
+    if f.TitleText then
+        f.TitleText:ClearAllPoints()
+        f.TitleText:SetPoint("TOPLEFT",16,-7)
+        f.TitleText:SetWidth(560)
+        f.TitleText:SetJustifyH("LEFT")
+    end
     self:Localize()
 end
 
@@ -337,7 +420,8 @@ function A.Toggle()
     UI:Create(); UI:Current(); UI.frame:Show()
     if not UI.here then
         local last = A.ID(A.db.lastReference)
-        if last and A.catalog[last] then UI.follow = false; UI:SetContext(A.ReferenceContext(last))
+        if last and A.catalog[last] then UI.follow = false;
+            UI:SetContext(A.ReferenceContext(last) or A.GuideContext(last))
         else UI:ChooseMap() end
     end
 end

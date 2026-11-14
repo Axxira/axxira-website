@@ -1,7 +1,8 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.11.2", modules = {}, dirty = true }
+local B = { version = "1.12.0", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
--- The CurseForge packager changes this one marker. RaidPilot always remains free.
+-- Subscription distribution; companion supplies ForeverPilotAccess after server verification.
+-- No billing is performed inside WoW. No licence is stored in the main saved variables.
 B.distribution = "raidpilot-test"
 B.subscriptionURL = "https://foreverpilot-subscriptions.tyronixstudio.workers.dev"
 -- Rasterize at the requested size. SetTextHeight scales an existing font and
@@ -10,11 +11,24 @@ function B.SetUIFont(region,size)
     local face=GameFontHighlight and GameFontHighlight.GetFont and GameFontHighlight:GetFont()
     region:SetFont(face or STANDARD_TEXT_FONT,size,"")
 end
+-- Missing, malformed or expired entitlements deny Premium features.
 function B.HasPremium(feature)
-    if B.distribution=="raidpilot-test" then return true end
-    local a=_G.ForeverPilotAccess
-    if type(a)~="table" or a.environment~="live" or type(a.expires)~="number" or not(a.expires>time()) then return false end
-    return feature=="class" and a.classGuidance==true or feature~="class" and a.fastXP==true
+    if B.distribution == "raidpilot-test" then return true end
+    local access = B.Public(_G.ForeverPilotAccess)
+    if type(access) ~= "table" then return false end
+    local expiry = B.Public(access.expires)
+    local now = B.Call(time)
+    if B.Public(access.environment) ~= "live"
+       or type(expiry) ~= "number" or expiry ~= expiry
+       or type(now) ~= "number" or now ~= now or expiry <= now then
+        return false
+    end
+    if feature == "class" then return B.Public(access.classGuidance) == true end
+    return B.Public(access.fastXP) == true
+end
+-- Zone Explorer is always playable; paid entitlement selects optimized routing only.
+function B.Mode()
+    return B.HasPremium() and "fast" or "zone"
 end
 function B.List(v) if type(v)=="table" then return v elseif type(v)=="number" then return {v} end return {} end
 function B.Copy(v)

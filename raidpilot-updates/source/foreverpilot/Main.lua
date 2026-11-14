@@ -2,8 +2,8 @@ local B=ForeverPilotLeveling
 local initialized=false
 function B.SetEnabled(enabled)
     B.settings.enabled=enabled
-    B.premiumBlocked=enabled and not B.HasPremium()
-    if enabled and not B.premiumBlocked then
+    B.premiumBlocked=false;B.zoneOnly=enabled and B.Mode()=="zone"
+    if enabled then
         Ding.AutoQuest.Wanted=B.Wanted
         B.Navigation:Install()
         Ding.db.ui.autoAccept=true;Ding.db.ui.autoTurnin=true
@@ -46,7 +46,7 @@ function B.Guard(fn)
 end
 function B.Wanted()
     local accept,turnin,ahead={},{},{}
-    if not B.settings or not B.settings.enabled or B.premiumBlocked or B.settings.paused then return accept,turnin,ahead end
+    if not B.settings or not B.settings.enabled or B.settings.paused then return accept,turnin,ahead end
     local s=B.State:Refresh();if not s then return accept,turnin,ahead end
     local current=B.Planner.current;local planned={}
     for _,q in ipairs(current and (current.tripIDs or current.plan and current.plan.ids) or {}) do planned[q]=true end
@@ -62,11 +62,11 @@ function B.Wanted()
     return accept,turnin,ahead
 end
 function B.Update()
-    if not initialized or not B.settings.enabled or B.premiumBlocked then return end
-    if not B.HasPremium() then B.SetEnabled(B.settings.enabled);return end
+    if not initialized or not B.settings.enabled then return end
     if B.Options then B.Options:MaybeWelcome() end
     local started=B.Call(debugprofilestop)
     local s=B.State:Refresh()
+    if B.Grind then B.Grind:Observe(s) end
     B.Journal:Refresh(s,true)
     B.Learning:Tick(s,B.Planner.current)
     B.Recovery:Tick(s,B.Planner.current)
@@ -117,7 +117,7 @@ f:SetScript("OnEvent",function(_,event,...)
             end
             return
         end
-        if not B.settings.enabled or B.premiumBlocked then return end
+        if not B.settings.enabled then return end
         if event=="QUEST_DETAIL" or event=="QUEST_COMPLETE" then B.Knowledge.rewardDialog=true;B.Knowledge:ReadRewards(true)
         elseif event=="QUEST_FINISHED" or event=="GOSSIP_CLOSED" then B.Knowledge.rewardDialog=nil
         elseif event=="QUEST_LOG_UPDATE" then B.Knowledge:ReadRewards(false)
@@ -125,6 +125,7 @@ f:SetScript("OnEvent",function(_,event,...)
         if event=="GET_ITEM_INFO_RECEIVED" or event=="PLAYER_EQUIPMENT_CHANGED" then B.Planner.signature=nil end
         if event=="TAXIMAP_OPENED" or event=="TAXI_NODE_STATUS_CHANGED" or event=="ZONE_CHANGED" or event=="ZONE_CHANGED_INDOORS" or event=="ZONE_CHANGED_NEW_AREA" then B.FlightPaths:Event(event) end
         if event=="QUEST_TURNED_IN" then
+            if B.Grind then B.Grind:QuestTurnIn(B.Now()) end
             if type(q)=="number" then
                 B.char.completed[q]=true;B.Learning:TurnIn(q,xp)
                 B.Knowledge:TurnIn(q,xp,B.State.current or B.State:Refresh(),Ding.Compat.NpcUnitID())
@@ -185,7 +186,6 @@ end
 local elapsed,arrow=0,0
 f:SetScript("OnUpdate",function(_,dt)
     if not initialized or not B.settings.enabled then return end
-    if B.premiumBlocked then if B.Options then B.Options:MaybeWelcome() end;return end
     elapsed=elapsed+dt;arrow=arrow+dt
     if elapsed>=(B.dirty and 0.3 or 3) then elapsed=0;B.Guard(B.Update) end
     if arrow>=0.1 then arrow=0;B.Guard(function() B.UI:Tick() end) end
@@ -204,8 +204,7 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
         if not B.SetLanguage(language) then B.Print(B.T("/fpl lang <code> | auto")) end
         return
     end
-    if msg=="" and B.premiumBlocked then B.Options:Toggle()
-    elseif msg=="" then B.settings.shown=not B.UI.frame:IsShown();B.UI.frame:SetShown(B.settings.shown)
+    if msg=="" then B.settings.shown=not B.UI.frame:IsShown();B.UI.frame:SetShown(B.settings.shown)
     elseif msg=="skip" or msg=="next" or msg=="passer" then B.SkipCurrent()
     elseif msg=="absent" or msg=="unavailable" then B.ReportUnavailable()
     elseif msg=="reprendre" or msg=="unskip" then B.ResumeSkipped()
@@ -220,7 +219,12 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="hdv" or msg=="ah" then B.Advisor:Toggle("market")
     elseif msg=="addons" then B.Advisor:Toggle("addons")
     elseif msg=="options" or msg=="settings" then B.Options:Toggle()
-    elseif msg=="premium" or msg=="abonnement" then B.Options:Toggle("subscription")
+    elseif msg=="premium" or msg=="abonnement" or msg=="subscription" then B.Options:Toggle("subscription")
+    elseif msg=="mode" then B.Print(B.Mode()=="fast" and B.T("Mode FastXP abonné actif.") or B.T("Mode Zone Explorer gratuit actif."))
+    elseif msg=="zone ici" or msg=="zone here" then
+        if B.Mode()=="zone" and B.State.current and B.ZoneGuide:SetZone(B.State.current.map) then
+            B.Recovery:Replan();B.Guard(B.Update)
+        else B.Print(B.T("Déplacement de zone indisponible ici.")) end
     elseif msg=="help" or msg=="aide" then B.Options:Toggle("help")
     elseif msg=="layers" or msg=="layer" then B.LayerUI:Toggle()
     elseif msg=="scan" then B.Market:Scan();B.Print(B.Market.status);B.Advisor:RefreshIfShown()
@@ -251,6 +255,6 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="off" then B.SetEnabled(false);B.Print(B.T("Brain désactivé. Guide Ding restauré."))
     elseif msg=="on" then
         B.errors=0;B.failed=nil;B.SetEnabled(true);B.Guard(B.Update)
-        if B.premiumBlocked then B.Options:Toggle("subscription") else B.Print(B.T("Brain activé.")) end
+        B.Print(B.Mode()=="fast" and B.T("Mode FastXP abonné actif.") or B.T("Mode Zone Explorer gratuit actif."))
     else B.Print(B.T("/fpl | objets | hdv | scan | layers | addons | profil auto | journal | why | skip | reprendre [tout] | resync | pause | size 1 | lock | guide | debug | on | off")) end
 end

@@ -53,7 +53,14 @@ internal static class LauncherPackageVerifier
         }
         try
         {
-            ForeverPilotService.ValidateAddon(Path.Combine(root, "payload", ForeverPilotService.AddonName));
+            var fastXpPayload = Path.Combine(root, "payload", ForeverPilotService.AddonName);
+            ForeverPilotService.ValidateAddon(fastXpPayload);
+            // The launcher is a free testing edition, never bundle the paid CurseForge variant.
+            var bootstrap = File.ReadAllText(Path.Combine(fastXpPayload, "Bootstrap.lua"));
+            if (!bootstrap.Contains("B.distribution = \"raidpilot-test\"", StringComparison.Ordinal)
+                || bootstrap.Contains("B.distribution = \"subscriber\"", StringComparison.Ordinal))
+                throw new InvalidDataException("FastXp du launcher doit être l'édition de test gratuite.");
+            DungeonMapService.Validate(Path.Combine(root, "payload", "DungeonMapPilot"));
             ForeverPilotService.ValidateDing(Path.Combine(root, "payload", "Ding"), requireLicense: true);
             var feed = File.ReadAllText(Path.Combine(root, "update-feed.txt")).Trim();
             if (!string.Equals(feed, LauncherSettings.StableManifestUrl,

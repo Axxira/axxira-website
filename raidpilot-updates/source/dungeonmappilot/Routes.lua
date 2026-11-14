@@ -10,9 +10,21 @@ function A.RouteText(value)
 end
 
 function A.GetRoute(context)
-    if not context or context.source ~= "reference" then return nil end
+    if not context or (context.source ~= "reference" and context.source ~= "native"
+        and context.source~="guide-only") then return nil end
     local id = context.instanceID
-    if A.db.routeMode[id] ~= "personal" and A.routeData[id] then return A.routeData[id] end
+    if context.source=="native" and context.fromLive and A.customGuideMeta and
+        A.customGuideMeta[id] and not A.GuideNameMatches(id,context.name) then return nil end
+    if A.db.routeMode[id] ~= "personal" then
+        local variants=A.routeVariants and A.routeVariants[id]
+        if type(variants)=="table" and #variants>0 then
+            local choice=A.ID(A.db.routeWing[id]) or 1
+            if choice>#variants then choice=1 end
+            return variants[choice]
+        end
+        if A.routeData[id] then return A.routeData[id] end
+    end
+    if context.source~="reference" then return nil end
     local route = {id="personal:"..id, personal=true, steps={}}
     local revision = {}
     for floorIndex, floor in ipairs(context.floors) do
@@ -25,6 +37,43 @@ function A.GetRoute(context)
     if #route.steps == 0 then return nil end
     route.revision = table.concat(revision,";")
     return route
+end
+
+
+function A.RouteVariants(context)
+    if not context or (context.source~="reference" and context.source~="native"
+        and context.source~="guide-only") then return {} end
+    local variants=A.routeVariants and A.routeVariants[context.instanceID]
+    if type(variants)~="table" then return {} end
+    return variants
+end
+function A.RouteChooseVariant(context,index)
+    local variants=A.RouteVariants(context)
+    if #variants==0 or not A.ID(index) or index>#variants then return false end
+    A.db.routeWing[context.instanceID]=index
+    return true
+end
+function A.RouteCoverage()
+    local maps,variants,bosses,anchored=0,0,0,0
+    for id in pairs(A.catalog or {}) do
+        local rows=A.routeVariants and A.routeVariants[id]
+        if type(rows)=="table" and #rows>0 then
+            maps=maps+1;variants=variants+#rows
+            for _,r in ipairs(rows) do
+                for _,step in ipairs(r.steps) do
+                    if step.kind~="start" and step.kind~="note" then bosses=bosses+1 end
+                    if A.Number(step.x) and A.Number(step.y) then anchored=anchored+1 end
+                end
+            end
+        elseif A.routeData and A.routeData[id] then
+            maps=maps+1;variants=variants+1
+            for _,step in ipairs(A.routeData[id].steps) do
+                if step.kind~="start" and step.kind~="note" then bosses=bosses+1 end
+                if A.Number(step.x) and A.Number(step.y) then anchored=anchored+1 end
+            end
+        end
+    end
+    return {maps=maps,variants=variants,bosses=bosses,anchored=anchored}
 end
 
 function A.RouteState(route)
@@ -79,6 +128,30 @@ function A.RouteMissing(route, step)
     return missing
 end
 
+-- Human-readable route readiness; never marks a step complete.
+function A.RouteHealth(route)
+    if type(route)~="table" or type(route.steps)~="table" or #route.steps==0 then return nil end
+    local state=A.RouteState(route)
+    local result={remaining=0,blocked=0,invalid=0,optional=0,eligible=0,issues={}}
+    for index,step in ipairs(route.steps) do
+        if not state.done[step.id] and not state.skipped[step.id] then
+            result.remaining=result.remaining+1
+            if step.kind=="optional" then result.optional=result.optional+1 end
+            local missing=A.RouteMissing(route,step)
+            if #missing>0 then
+                result.blocked=result.blocked+1
+                local invalid=missing[1].invalid==true
+                if invalid then result.invalid=result.invalid+1 end
+                if #result.issues<6 then
+                    result.issues[#result.issues+1]={index=index,title=step.title,
+                       prerequisite=missing[1].step.title,invalid=invalid}
+                end
+            else result.eligible=result.eligible+1 end
+        end
+    end
+    return result
+end
+
 function A.RouteSelect(route, index)
     if not A.Number(index) or index < 1 or index > #route.steps then return false end
     A.RouteState(route).current=math.floor(index)
@@ -116,7 +189,8 @@ end
 function A.RouteAdvance(route, skip)
     local s = A.RouteState(route)
     local step = route.steps[s.current]
-    if not step or (skip and step.kind~="optional") or #A.RouteMissing(route,step)>0 then return false end
+    if not step or route.previewOnly or (skip and step.kind~="optional") or
+        #A.RouteMissing(route,step)>0 then return false end
     checkpoint(route,s)
     s.done[step.id] = not skip or nil
     s.skipped[step.id] = skip or nil

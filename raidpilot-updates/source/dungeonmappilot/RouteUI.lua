@@ -16,7 +16,12 @@ function U:CreateGuide()
     local p=CreateFrame("Frame",nil,self.frame,"BackdropTemplate"); self.guide=p
     p:SetSize(240,590); p:SetPoint("TOPRIGHT",-18,-84)
     p:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",edgeFile="Interface\\Tooltips\\UI-Tooltip-Border",edgeSize=16,insets={left=4,right=4,top=4,bottom=4}})
-    p.heading=text(p,"GameFontNormal",216,22); p.heading:SetPoint("TOPLEFT",12,-12)
+    p.heading=text(p,"GameFontNormal",190,22); p.heading:SetPoint("TOPLEFT",12,-12)
+    p.audit=button(p,28,function() self:ShowRouteAudit() end)
+    p.audit:SetPoint("TOPRIGHT",-9,-9)
+    p.audit:SetText("?")
+    p.audit:SetScript("OnEnter",function() self:ShowRouteAudit() end)
+    p.audit:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     p.mode=button(p,216,function()
         if not self.context then return end
         local id=self.context.instanceID
@@ -25,9 +30,23 @@ function U:CreateGuide()
             {text=A.L("personalRoute"),action=function() A.db.routeMode[id]="personal"; self:UpdateGuide() end},
         },p.mode,240)
     end); p.mode:SetPoint("TOPLEFT",12,-38)
-    p.count=text(p,"GameFontHighlightSmall",216,22); p.count:SetPoint("TOPLEFT",12,-70)
+    p.variant=button(p,216,function()
+        if not self.context then return end
+        local options={}
+        for index,variant in ipairs(A.RouteVariants(self.context)) do
+            local selected=index
+            options[#options+1]={text=A.RouteText(variant.name),action=function()
+                if A.RouteChooseVariant(self.context,selected) then
+                    self.restartConfirm=nil;self:UpdateGuide();self:FollowRouteSelection()
+                end
+            end}
+        end
+        if #options>1 then self:Menu(options,p.variant,240) end
+    end)
+    p.variant:SetPoint("TOPLEFT",12,-67)
+    p.count=text(p,"GameFontHighlightSmall",216,22); p.count:SetPoint("TOPLEFT",12,-99)
     p.scroll=CreateFrame("ScrollFrame",nil,p,"UIPanelScrollFrameTemplate")
-    p.scroll:SetPoint("TOPLEFT",12,-96); p.scroll:SetSize(192,200)
+    p.scroll:SetPoint("TOPLEFT",12,-124); p.scroll:SetSize(192,172)
     p.content=CreateFrame("Frame",nil,p.scroll); p.content:SetSize(190,200); p.scroll:SetScrollChild(p.content); p.rows={}
     p.title=text(p,"GameFontNormal",216,36); p.title:SetPoint("TOPLEFT",12,-310)
     p.body=text(p,"GameFontHighlight",216,92); p.body:SetPoint("TOPLEFT",12,-350)
@@ -73,13 +92,37 @@ end
 
 function U:FollowRouteSelection()
     local r=self.route; local s=r and A.RouteState(r); local step=s and r.steps[s.current]
-    if step and step.floor~=self.context.index then self:SelectFloor(step.floor,false) else self:UpdateGuide() end
+    if step and A.ID(step.floor) and self.context and self.context.source=="reference"
+        and self.context.floors[step.floor]
+        and step.floor~=self.context.index then
+        self:SelectFloor(step.floor,false)
+    else self:UpdateGuide() end
     if step then
-        local v=self.view
-        v.panX,v.panY=A.PanBounds(v,step.x*v.width*v.zoom-v.width/2,step.y*v.height*v.zoom-v.height/2)
-        self:ApplyView()
-        self.guide.scroll:SetVerticalScroll(math.max(0,math.min((s.current-1)*27-80,#r.steps*27-200)))
+        local x,y=A.Number(step.x),A.Number(step.y)
+        if self.floor and self.floor.source=="reference" and
+            x and y and x>=0 and x<=1 and y>=0 and y<=1 then
+            local v=self.view
+            v.panX,v.panY=A.PanBounds(v,x*v.width*v.zoom-v.width/2,y*v.height*v.zoom-v.height/2)
+            self:ApplyView()
+        end
+        self.guide.scroll:SetVerticalScroll(math.max(0,math.min((s.current-1)*27-80,#r.steps*27-172)))
     end
+end
+
+function U:ShowRouteAudit()
+    local health=self.route and A.RouteHealth(self.route)
+    if not health or not GameTooltip then return end
+    GameTooltip:SetOwner(self.guide.audit,"ANCHOR_LEFT")
+    GameTooltip:SetText(A.L("guideTitle"))
+    local done,total,skipped=A.RouteCounts(self.route)
+    GameTooltip:AddLine(A.L("routeProgress",done,total),.65,.92,.76)
+    GameTooltip:AddLine(A.L(self.route and self.route.rosterOnly and "guideRosterWarning"
+        or "referenceRouteNote"),.83,.85,.9,true)
+    for _,issue in ipairs(health.issues) do
+        GameTooltip:AddLine("! "..A.RouteText(issue.title)..": "..A.RouteText(issue.prerequisite),1,.73,.42,true)
+    end
+    if health.blocked>6 then GameTooltip:AddLine("+"..(health.blocked-6),.93,.8,.51) end
+    GameTooltip:Show()
 end
 
 function U:UpdateGuide()
@@ -89,6 +132,10 @@ function U:UpdateGuide()
     local r=self.route
     p.heading:SetText(A.L("guideTitle")); p.mode:SetEnabled(self.context~=nil and self.context.source=="reference")
     p.mode:SetText(A.L(r and r.personal and "personalRoute" or "suggestedRoute"))
+    local variants=A.RouteVariants(self.context)
+    p.variant:SetShown(#variants>1 and not (r and r.personal))
+    p.variant:SetEnabled(#variants>1)
+    if #variants>1 and r then p.variant:SetText(A.RouteText(r.name)) end
     self.guideToggle:SetText(A.L(A.db.guideHidden and "showGuide" or "hideGuide"))
     p.back:SetText(A.L("previous")); p.skip:SetText(A.L("skipOptional"));p.undo:SetText(A.L("undoRoute"))
     p.restart:SetText(A.L(self.restartConfirm and "confirmRestart" or "newRun"))
@@ -96,12 +143,18 @@ function U:UpdateGuide()
     if not r then
         p.count:SetText(A.L("noGuide")); p.title:SetText(A.L("makePersonalRoute")); p.body:SetText(A.L("makePersonalHelp"))
         p.warning:SetText(A.L("guideManual")); p.done:SetText(A.L("stepDone")); p.done:SetEnabled(false)
-        p.back:SetEnabled(false); p.skip:SetEnabled(false); p.restart:SetEnabled(false);p.undo:SetEnabled(false); p.content:SetHeight(1)
+        p.back:SetEnabled(false); p.skip:SetEnabled(false); p.restart:SetEnabled(false);p.undo:SetEnabled(false);p.audit:SetEnabled(false); p.content:SetHeight(1)
         self:UpdateRoutePins(); return
     end
     local s=A.RouteState(r); local done,total,skipped=A.RouteCounts(r)
     p.undo:SetEnabled(A.RouteCanUndo(r))
+    p.audit:SetEnabled(r~=nil)
     p.count:SetText(A.L("routeProgress",done,total)..(skipped>0 and A.L("routeSkipped",skipped) or ""))
+    if r.rosterOnly then
+        p.heading:SetText(A.L("guideTitle").." - "..A.L("guideRosterBadge"))
+    elseif r.guideOnly then
+        p.heading:SetText(A.L("guideTitle").." - "..A.L("guideTextBadge"))
+    end
     p.content:SetHeight(math.max(200,#r.steps*27))
     for i,step in ipairs(r.steps) do
         local row=p.rows[i] or button(p.content,190,function(b) self:FocusRouteStep(b.index) end)
@@ -113,12 +166,23 @@ function U:UpdateGuide()
     local missing=step and A.RouteMissing(r,step) or {}
     p.title:SetText(step and (A.RouteNumber(s.current).." · "..A.RouteText(step.title)) or A.L("routeFinished"))
     p.body:SetText(step and A.RouteText(step.body) or A.L("routeFinishedBody"))
-    local warning=A.L(r.personal and "personalRouteNote" or "referenceRouteNote")
-    if #missing>0 then warning=A.L("missingRouteStep",A.RouteText(missing[1].step.title))
-    elseif step and step.kind=="optional" then warning=A.L("optionalRouteStep") end
+    local warning=A.L(r.previewOnly and "guidePreviewOnly"
+        or r.rosterOnly and "guideRosterWarning"
+        or r.personal and "personalRouteNote"
+        or (r.guideOnly or self.floor and self.floor.source=="native")
+            and "guideTextOnly" or "referenceRouteNote")
+    if #missing>0 then
+        warning=A.L("missingRouteStep",A.RouteText(missing[1].step.title))
+    elseif step and step.kind=="optional" then
+        warning=warning.." / "..A.L("optionalRouteStep")
+    end
     p.warning:SetText(warning)
-    p.done:SetText(A.L(#missing>0 and "showRequired" or "stepDone")); p.done:SetEnabled(step~=nil and not (missing[1] and missing[1].invalid))
-    p.skip:SetEnabled(step~=nil and step.kind=="optional"); p.back:SetEnabled(s.current>1); p.restart:SetEnabled(true)
+    p.done:SetText(A.L(#missing>0 and "showRequired" or "stepDone"))
+    p.done:SetEnabled(step~=nil and not r.previewOnly and not (missing[1] and missing[1].invalid))
+    p.skip:SetEnabled(step~=nil and not r.previewOnly and step.kind=="optional")
+    p.back:SetEnabled(s.current>1)
+    p.restart:SetEnabled(not r.previewOnly)
+    p.undo:SetEnabled(not r.previewOnly and A.RouteCanUndo(r))
     self:UpdateRoutePins()
 end
 
@@ -130,8 +194,10 @@ function U:UpdateRoutePins()
     local r,s,v=self.route,A.RouteState(self.route),self.view
     local chosen={}
     for i,step in ipairs(r.steps) do
-        if step.floor==self.context.index then
-            local key=step.x..":"..step.y
+        local x,y=A.Number(step.x),A.Number(step.y)
+        if step.floor==self.context.index and x and y and
+            x>=0 and x<=1 and y>=0 and y<=1 then
+            local key=x..":"..y
             if not chosen[key] or s.current==i then chosen[key]=i end
         end
     end

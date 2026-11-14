@@ -1,6 +1,6 @@
 local B=ForeverPilotLeveling
 local U={width=360,height=176};B.UI=U
-local verbs={accept=B.T("PRENDS"),complete=B.T("TERMINE"),turnin=B.T("RENDS"),grind=B.T("XP D'APPOINT"),corpse=B.T("RETOUR AU CORPS"),done=B.T("NIVEAU 60"),recovery=B.T("RÉORIENTATION"),service=B.T("FAIS UNE HALTE"),rest=B.T("RÉCUPÈRE")}
+local verbs={accept=B.T("PRENDS"),complete=B.T("TERMINE"),turnin=B.T("RENDS"),grind=B.T("XP D'APPOINT"),zone=B.T("ZONE SUIVANTE"),corpse=B.T("RETOUR AU CORPS"),done=B.T("NIVEAU 60"),recovery=B.T("RÉORIENTATION"),service=B.T("FAIS UNE HALTE"),rest=B.T("RÉCUPÈRE")}
 local colors={normal={0.40,0.85,0.80},turnin={0.94,0.76,0.43},recovery={1,0.65,0.36},pause={0.60,0.65,0.72}}
 local travelVerbs={fly=B.T("PRENDS LE VOL"),hearth=B.T("PIERRE DE FOYER"),boat=B.T("PRENDS LE BATEAU"),zeppelin=B.T("PRENDS LE ZEPPELIN"),tram=B.T("PRENDS LE TRAM"),passage=B.T("SUIS LE PASSAGE"),teleport=B.T("TÉLÉPORTATION")}
 B.LocalizeLabels(verbs);B.LocalizeLabels(travelVerbs)
@@ -37,7 +37,10 @@ function U:View(a,s)
     if tripCount>1 then v.footer=v.footer.."  ·  "..tripCount..B.T(" quêtes") end
     if v.detail=="" and a.point and a.point.label then v.detail=B.T("Parle à ")..a.point.label end
     if a.kind=="turnin" then v.color=colors.turnin end
-    if a.kind=="grind" then v.footer=B.T("Quêtes réévaluées à chaque progression") end
+    if a.kind=="grind" then
+        v.footer=a.fastGrind and B.T("GRIND RAPIDE · RENDEMENT XP MESURÉ") or B.T("Quêtes réévaluées à chaque progression")
+    end
+    if a.kind=="zone" then v.footer=B.T("ZONE À DÉCOUVRIR · OFFRES À VÉRIFIER") end
     if a.kind=="rest" then v.footer=B.T("La boucle t'attend");v.color=colors.turnin end
     if a.kind=="service" then v.footer=B.T("Reprise des quêtes après cette halte");v.color=colors.turnin end
     if a.kind=="recovery" then v.title=B.T("Une nouvelle direction");v.footer=B.T("Ouvre un PNJ de quêtes à proximité");v.color=colors.recovery end
@@ -57,6 +60,9 @@ function U:View(a,s)
     if B.settings.paused then v.tag=B.T("PAUSE");v.footer=B.T("Clic droit pour reprendre");v.color=colors.pause end
     local badge,badgeColor=B.Journal:Badge()
     if badge then v.tag=badge;v.tagColor=badgeColor end
+    if not badge then
+        v.tag=B.Mode()=="zone" and B.T("MODE ZONE GRATUIT") or B.T("FASTXP ROUTE RAPIDE")
+    end
     if a.classPriority then
         v.tag=B.T("CLASSE PRIORITAIRE");v.tagColor={0.74,0.66,1}
         if not a.outing then v.footer=B.Journal:IsClass(a.node) and B.T("PROGRESSION DE CLASSE") or B.T("PRÉREQUIS DE CLASSE") end
@@ -121,6 +127,13 @@ function U:Create()
     self.tag=font(f,9,190,12,140,14);self.tag:SetJustifyH("RIGHT")
     -- Confidence remains in the tooltip; the header is reserved for clear controls.
     self.tag:Hide()
+    -- A visible, optional explanation shortcut instead of a hidden tooltip-only workflow.
+    self.why=CreateFrame("Button",nil,f,"UIPanelButtonTemplate")
+    self.why:SetSize(22,20);self.why:SetPoint("TOPRIGHT",f,"TOPRIGHT",-16,-9)
+    self.why:SetText("?")
+    self.why:SetScript("OnClick",function() if self.current then self:Tooltip() end end)
+    self.why:SetScript("OnEnter",function() if self.current then self:Tooltip() end end)
+    self.why:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     self.arrow=f:CreateTexture(nil,"ARTWORK");self.arrow:SetSize(46,46);self.arrow:SetPoint("TOPLEFT",f,"TOPLEFT",22,-54)
     self.arrow:SetTexture("Interface\\AddOns\\Ding\\Media\\Textures\\arrow_halo_gold")
     self.distance=font(f,12,7,108,76,20);self.distance:SetJustifyH("CENTER")

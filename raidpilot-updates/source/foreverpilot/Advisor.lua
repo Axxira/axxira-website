@@ -41,7 +41,6 @@ function A:MarketTooltip(tip,link,info)
     -- WoW already displays the vendor sell price in the base item tooltip.
 end
 function A:UpgradeSummary(r)
-    if r.status=="premium" then return "ForeverPilot Premium",{r.text},false,false end
     local yes=r.status=="upgrade"
     local no=r.status=="lower" or r.status=="similar" or r.status=="unusable"
     local title=B.T("Upgrade : ")..(yes and B.T("OUI") or no and B.T("NON") or B.T("À VÉRIFIER"))
