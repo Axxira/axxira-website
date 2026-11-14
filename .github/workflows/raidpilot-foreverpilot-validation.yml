@@ -2,7 +2,7 @@ name: RaidPilot ForeverPilot Launcher CI
 
 on:
   push:
-    branches: [raidpilot-foreverpilot-launcher-20261107, foreverpilot-auction-house-button-20261107]
+    branches: [raidpilot-foreverpilot-launcher-20261107, foreverpilot-auction-house-button-20261107, pilot-free-tests-fastxp-dungeon-20261113]
   pull_request:
     branches: [raidpilot-updates]
     paths:

@@ -1,4 +1,4 @@
-DungeonMapPilot = { version = "0.4.2-alpha", nativeCache = {} }
+DungeonMapPilot = { version = "0.5.4", nativeCache = {} }
 local A = DungeonMapPilot
 
 function A.Public(value)
@@ -40,6 +40,7 @@ function A.InitDB()
     db.floors = type(db.floors) == "table" and db.floors or {}
     db.routes = type(db.routes) == "table" and db.routes or {}
     db.routeMode = type(db.routeMode) == "table" and db.routeMode or {}
+    db.routeWing = type(db.routeWing) == "table" and db.routeWing or {}
     db.guideHidden = db.guideHidden == true
     db.language = db.language == "auto" and "auto" or A.NormalizeLocale(db.language) or "auto"
     db.schema = 2

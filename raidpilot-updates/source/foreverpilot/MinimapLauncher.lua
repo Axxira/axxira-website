@@ -10,7 +10,7 @@ function A.Options:SyncMinimap()
         end,
         Click=function(mouse)
             if not A.settings then return end
-            if mouse=="RightButton" or not A.UI.frame or not A.HasPremium() then A.Options:Toggle()
+            if mouse=="RightButton" or not A.UI.frame then A.Options:Toggle()
             else A.settings.shown=not A.UI.frame:IsShown();A.UI.frame:SetShown(A.settings.shown) end
         end})
     return self.minimapButton

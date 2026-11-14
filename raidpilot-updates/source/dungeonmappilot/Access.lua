@@ -1,6 +1,7 @@
 local A = DungeonMapPilot
--- Local/RaidPilot builds always stay free. No public paid build is released yet.
+-- Subscription edition: the companion supplies DungeonMapPilotAccess from verified billing.
 A.distribution = "raidpilot-test"
+A.subscriptionURL = "https://dungeonmappilot-subscriptions.tyronixstudio.workers.dev"
 
 function A.HasAccess()
     if A.distribution == "raidpilot-test" then return true end

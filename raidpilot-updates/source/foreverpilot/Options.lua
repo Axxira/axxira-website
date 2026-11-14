@@ -80,8 +80,12 @@ function O:Render()
     self.resume:Paint(false,canResume)
     local free=B.distribution=="raidpilot-test"
     local active=B.HasPremium()
-    self.accessTitle:SetText(free and B.T("Édition RaidPilot : tout est gratuit") or active and B.T("ForeverPilot Premium actif") or B.T("Activer Fast XP et le suivi de classe"))
-    self.accessDetails:SetText(free and B.T("Toutes les fonctions sont incluses dans ton édition de test. Aucun abonnement ni connexion ne sont nécessaires.") or active and B.T("Ton accès est chargé. Le compagnon vérifie le renouvellement lorsque tu l'ouvres. Garde-le ouvert pour actualiser l'accès.") or B.T("1. Ouvre le portail ci-dessous.\n2. Abonne-toi sur PayPal et garde ta clé personnelle.\n3. Ouvre le compagnon Windows, colle ta clé, puis reconnecte-toi à WoW."))
+    if self.modeCaption then
+        self.modeCaption:SetText(active and B.T("FastXP abonné : route rapide et grind mesuré.") or
+            B.T("Zone Explorer gratuit : quêtes recensées, zone par zone."))
+    end
+    self.accessTitle:SetText(free and B.T("Édition RaidPilot : tout est gratuit") or active and B.T("ForeverPilot Premium actif") or B.T("Zone Explorer gratuit actif · FastXP rapide en abonnement"))
+    self.accessDetails:SetText(free and B.T("Toutes les fonctions sont incluses dans ton édition de test. Aucun abonnement ni connexion ne sont nécessaires.") or active and B.T("Ton accès est chargé. Le compagnon vérifie le renouvellement lorsque tu l'ouvres. Garde-le ouvert pour actualiser l'accès.") or B.T("Le guidage gratuit reste actif, zone par zone. Abonne-toi uniquement pour les itinéraires XP rapides et le grind intelligent.\nPortail et compagnon Windows ci-dessous."))
     self.accessLink:SetShown(not free);self.copyLink:SetShown(not free)
 end
 function O:MaybeWelcome()
@@ -92,12 +96,12 @@ end
 function O:Create()
     if self.frame then return end
     local f=CreateFrame("Frame","ForeverPilotOptionsFrame",UIParent);self.frame=f
-    f:SetSize(520,550);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetClampedToScreen(true)
+    f:SetSize(520,615);f:SetPoint("CENTER",UIParent,"CENTER",0,0);f:SetClampedToScreen(true)
     f:SetFrameStrata("DIALOG");f:EnableMouse(true)
     local bg=f:CreateTexture(nil,"BACKGROUND");bg:SetAllPoints(f);bg:SetColorTexture(.035,.06,.08,.99)
     local accent=f:CreateTexture(nil,"ARTWORK");accent:SetPoint("TOPLEFT",f,"TOPLEFT",0,0);accent:SetSize(520,2);accent:SetColorTexture(.4,.85,.8,1)
     text(f,17,20,18,410,24,"ForeversPilot FastXp")
-    text(f,11,20,43,440,17,B.T("Réglages, profil et outils au même endroit."),true)
+    self.modeCaption=text(f,11,20,43,440,17,B.T("Zone Explorer gratuit : quêtes recensées, zone par zone."),true)
     button(f,"×",467,16,32,function() f:Hide() end)
     self.pages={};self.tabs={}
     for i,entry in ipairs({{"general",B.T("Général")},{"tools",B.T("Outils")},{"help",B.T("Aide")},{"subscription",B.T("Abonnement")}}) do
@@ -192,6 +196,11 @@ function O:Create()
     if UISpecialFrames then table.insert(UISpecialFrames,"ForeverPilotOptionsFrame") end
     for _,event in ipairs({"PLAYER_REGEN_ENABLED","PLAYER_REGEN_DISABLED","PLAYER_TALENT_UPDATE","PLAYER_LEVEL_UP"}) do pcall(f.RegisterEvent,f,event) end
     f:SetScript("OnEvent",function() if f:IsShown() then self:Render() end end)
+    if B.Support then
+        self.donationCaption=text(f,11,20,566,250,24,B.Support.Text("optional"),true)
+        B.Support.Attach(f,{
+            point="BOTTOMRIGHT",relativePoint="BOTTOMRIGHT",x=-18,y=17,width=222,height=30})
+    end
     f:Hide()
 end
 function O:Toggle(tab)
@@ -200,6 +209,6 @@ function O:Toggle(tab)
     if B.Advisor.frame then B.Advisor.frame:Hide() end
     if B.Advisor.profileFrame then B.Advisor.profileFrame:Hide() end
     if B.LayerUI and B.LayerUI.frame then B.LayerUI.frame:Hide() end
-    self.tab=tab or "general";self.pendingLanguage=B.settings.language or "auto"
+    self.tab=self.pages[tab] and tab or "general";self.pendingLanguage=B.settings.language or "auto"
     self:Render();self.frame:Show()
 end

@@ -1,8 +1,9 @@
 ## Interface: 16001
+## X-Pilot-Local-Patch: voluntary-support-1
 ## Title: ForeversPilot |cff48D7E8FastXp|r
 ## Notes: Dynamic quest planning, live validation, recovery, batching and arrow-first guidance. GPLv3.
 ## Author: ForeverPilot Project
-## Version: 1.11.2
+## Version: 1.12.0
 ## Dependencies: Ding
 ## OptionalDeps: ChangeLayer, ForeverPilot_Access
 ## SavedVariables: ForeverPilotLevelingDB
@@ -19,9 +20,11 @@ Locales/ruRU.lua
 Locales/koKR.lua
 Locales/zhCN.lua
 Locales/zhTW.lua
+DualModeLocale.lua
 Knowledge.lua
 State.lua
 Graph.lua
+ZoneGuide.lua
 Journal.lua
 Progression.lua
 Recovery.lua
@@ -30,10 +33,13 @@ Travel.lua
 FlightPaths.lua
 Needs.lua
 Learning.lua
+Grind.lua
 Loop.lua
 Journey.lua
 Planner.lua
 Navigation.lua
+SupportConfig.lua
+Support.lua
 UI.lua
 Items.lua
 Market.lua

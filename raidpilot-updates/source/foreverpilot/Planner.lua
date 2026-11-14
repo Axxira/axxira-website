@@ -109,7 +109,8 @@ function P:Action(n,kind,s,recovery)
     if not a.point then return nil,"noCoordinates" end
     if not B.Travel:Reachable(a.point,s) then return nil,"noTravelRoute" end
     a.levelFit=B.Progression:Evaluate(n,kind,s,a)
-    if a.levelFit.retire then return nil,"outleveled" end
+    if a.levelFit.retire and B.Mode()=="fast" then return nil,"outleveled" end
+    if B.Mode()=="zone" then a.levelFit.factor=1 end
     a.travel=B.Travel:Seconds(a.point,s)
     -- Keep distant class offers in the candidate set, without interrupting a
     -- local outing for an unconfirmed pickup on another continent. Held class
@@ -162,10 +163,20 @@ function P:Candidates(s)
     end
     for q,log in pairs(s.log) do add(B.Graph:Node(q),log.ready and "turnin" or "complete") end
     local pool={} for _,n in pairs(B.Graph.nodes) do pool[#pool+1]=n end
+    local zoneMode=B.Mode()=="zone"
     for _,n in ipairs(pool) do
-        if n.min<=s.level and n.level<=s.level+2 and (n.level>=s.level-5 or self:ClassPriority(n,s)) and not s.log[n.id] and not s:IsDone(n.id) then
+        local allowed
+        if zoneMode then
+            allowed=n.min<=s.level and n.level<=s.level+3 and
+                (B.ZoneGuide:Eligible(n,s) or B.Validator.offers[n.id] or self:ClassPriority(n,s))
+        else
+            allowed=n.min<=s.level and n.level<=s.level+2 and
+                (n.level>=s.level-5 or self:ClassPriority(n,s))
+        end
+        if allowed and not s.log[n.id] and not s:IsDone(n.id) then
             local context=B.Graph:Context(n,"accept",s)
-            if context or n.extension or B.Validator.offers[n.id] then
+            if context or n.extension or B.Validator.offers[n.id] or
+                (zoneMode and B.ZoneGuide:Eligible(n,s)) then
                 if context or n.extension then recover(n,{},0) end
                 add(n,"accept")
             end
@@ -237,6 +248,10 @@ function P:Batch(actions,s)
     return actions
 end
 function P:Fallback(s)
+    if B.Mode()=="zone" and B.ZoneGuide then
+        local nextZone=B.ZoneGuide:Transition(s)
+        if nextZone then return nextZone end
+    end
     -- The old guide cursor may be in a different level bracket. Derive a recovery
     -- camp from the graph and the player's current level, never from that cursor.
     local cache=self.farm
@@ -276,7 +291,9 @@ function P:Signature(s)
     local log={}
     for q,row in pairs(s.log) do log[#log+1]=q..":"..B.Recovery:Signature(row) end
     table.sort(log)
-    return table.concat({s.level,s.map or 0,math.floor((s.wx or 0)/35),math.floor((s.wy or 0)/35),s.count,s.limit,s.bags or -1,
+    return table.concat({B.Mode(),B.ZoneGuide and B.ZoneGuide:Current(s) or 0,
+        math.floor(((B.char.grindTelemetry or {}).samples or 0)/5),
+        s.level,s.map or 0,math.floor((s.wx or 0)/35),math.floor((s.wy or 0)/35),s.count,s.limit,s.bags or -1,
         B.Validator.generation or 0,B.Validator.revision or 0,B.Recovery.revision or 0,B.FlightPaths.revision or 0,
         math.floor((s.health or 1)*20),math.floor((s.mana or 1)*20),math.floor((s.durability or 1)*20),tostring(s.combat),table.concat(log,";")},"|")
 end
@@ -290,7 +307,9 @@ function P:Plan(s)
     if self.current and self.signature==signature and s.now-(self.plannedAt or 0)<5 then return self.current end
     self.signature=signature;self.plannedAt=s.now
     B.Travel:Prepare(s)
-    local actions=self:Batch(self:Candidates(s),s)
+    local actions=self:Candidates(s)
+    if B.Mode()=="zone" and B.ZoneGuide then actions=B.ZoneGuide:Filter(actions,s) end
+    actions=self:Batch(actions,s)
     self.actions=actions
     local priority={}
     for _,a in ipairs(actions) do if a.classPriority then priority[#priority+1]=a end end
@@ -306,6 +325,7 @@ function P:Plan(s)
         end
     end
     winner=B.Journey:Choose(winner,actions,s) or self:Fallback(s)
+    if B.Grind then winner=B.Grind:Choose(s,winner) end
     winner=B.FlightPaths:Choose(s,winner)
     winner=B.Needs:Choose(s,winner)
     if not old or old.key~=winner.key then B.Trace("decision",winner.key);winner.since=s.now else winner.since=old.since end

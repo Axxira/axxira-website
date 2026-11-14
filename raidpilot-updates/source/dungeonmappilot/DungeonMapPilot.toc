@@ -1,9 +1,10 @@
 ## Interface: 16001
+## X-Pilot-Local-Patch: voluntary-support-1
 ## Title: |cffE5BD73DungeonMapPilot|r
 ## Notes: Dungeon and raid reference maps, floors, zoom and personal markers. Local alpha.
 ## Notes-frFR: Cartes de donjons et raids, étages, zoom et repères personnels. Alpha locale.
 ## Author: ForeverPilot Project
-## Version: 0.4.2-alpha
+## Version: 0.5.4
 ## OptionalDeps: DungeonMapPilot_Access
 ## SavedVariablesPerCharacter: DungeonMapPilotCharDB
 PilotMinimap.lua
@@ -23,10 +24,25 @@ ReferenceMaps.lua
 Catalog.lua
 Model.lua
 RouteData.lua
+DungeonGuides.lua
+ForeverGuides.lua
+ClientRoster.lua
+PreflightNotes.lua
+CatalogUX.lua
 RouteLocale.lua
+GuideLocale.lua
+RosterLocale.lua
+SearchLocale.lua
+BossNotebookLocale.lua
 Routes.lua
+BossNotebook.lua
+EncounterSearch.lua
+SupportConfig.lua
+Support.lua
 UI.lua
 RouteUI.lua
+EncounterSearchUI.lua
+BossNotebookUI.lua
 Main.lua
 SuiteBridge.lua
 MinimapLauncher.lua

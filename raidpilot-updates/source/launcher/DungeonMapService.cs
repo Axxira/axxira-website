@@ -6,7 +6,17 @@ namespace RaidPilot.Launcher;
 internal static class DungeonMapService
 {
     internal static string BundlePath => Path.Combine(AppContext.BaseDirectory, "payload", "DungeonMapPilot");
-    internal static readonly string[] Files = ["DungeonMapPilot.toc", "Core.lua", "Access.lua", "Locale.lua", "ReferenceMaps.lua", "Catalog.lua", "Model.lua", "RouteData.lua", "Routes.lua", "UI.lua", "RouteUI.lua", "Main.lua", "README.md", "RELEASE-NOTES.md", "LICENSE.txt", "LICENSE-OpenMap.txt", "PilotMinimap.lua", "MinimapLauncher.lua", "RouteLocale.lua", "SuiteBridge.lua", "Locales/deDE.lua", "Locales/esES.lua", "Locales/esMX.lua", "Locales/itIT.lua", "Locales/koKR.lua", "Locales/ptBR.lua", "Locales/ruRU.lua", "Locales/zhCN.lua", "Locales/zhTW.lua"];
+    internal static readonly string[] Files = [
+        "Access.lua", "BossNotebook.lua", "BossNotebookLocale.lua", "BossNotebookUI.lua", "Catalog.lua",
+        "CatalogUX.lua", "ClientRoster.lua", "Core.lua", "DATA-SOURCES.md", "DungeonGuides.lua",
+        "DungeonMapPilot.toc", "EncounterSearch.lua", "EncounterSearchUI.lua", "ForeverGuides.lua", "GUIDES-STATUS.md",
+        "GuideLocale.lua", "LICENSE-OpenMap.txt", "LICENSE.txt", "Locale.lua", "Locales/deDE.lua",
+        "Locales/esES.lua", "Locales/esMX.lua", "Locales/itIT.lua", "Locales/koKR.lua", "Locales/ptBR.lua",
+        "Locales/ruRU.lua", "Locales/zhCN.lua", "Locales/zhTW.lua", "Main.lua", "MinimapLauncher.lua",
+        "Model.lua", "PilotMinimap.lua", "PreflightNotes.lua", "README.md", "RELEASE-NOTES.md",
+        "ReferenceMaps.lua", "RosterLocale.lua", "RouteData.lua", "RouteLocale.lua", "RouteUI.lua",
+        "Routes.lua", "SearchLocale.lua", "SuiteBridge.lua", "Support.lua", "SupportConfig.lua",
+        "UI.lua"];
     private const string VersionPattern = @"(?m)^## Version: ([0-9]+\.[0-9]+\.[0-9]+)(?:-[A-Za-z0-9.]+)?\s*$";
 
     private static HashSet<string> KnownFiles(string folder)

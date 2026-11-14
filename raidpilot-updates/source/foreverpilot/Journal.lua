@@ -2,10 +2,10 @@
 local B=ForeverPilotLeveling
 local J={};B.Journal=J
 local classBits={1,2,4,8,16,64,128,256,1024}
-local labels={abandon=B.T("À ABANDONNER"),class=B.T("CLASSE · À CONSERVER"),prerequisite=B.T("PRÉREQUIS · À CONSERVER"),fast=B.T("PARCOURS RAPIDE"),unknown=B.T("À VÉRIFIER · CONSERVER"),skipped=B.T("MISE DE CÔTÉ · CONSERVÉE")}
+local labels={abandon=B.T("À ABANDONNER"),class=B.T("CLASSE · À CONSERVER"),prerequisite=B.T("PRÉREQUIS · À CONSERVER"),fast=B.T("PARCOURS RAPIDE"),zone=B.T("QUÊTES DE ZONE"),unknown=B.T("À VÉRIFIER · CONSERVER"),skipped=B.T("MISE DE CÔTÉ · CONSERVÉE")}
 B.LocalizeLabels(labels)
-local colors={abandon={1,0.65,0.36},class={0.74,0.66,1},prerequisite={0.40,0.85,0.80},fast={0.40,0.85,0.80},unknown={0.94,0.76,0.43},skipped={0.69,0.76,0.84}}
-local order={class=1,abandon=2,skipped=3,unknown=4,prerequisite=5,fast=6}
+local colors={abandon={1,0.65,0.36},class={0.74,0.66,1},prerequisite={0.40,0.85,0.80},fast={0.40,0.85,0.80},zone={0.35,0.85,0.80},unknown={0.94,0.76,0.43},skipped={0.69,0.76,0.84}}
+local order={class=1,abandon=2,skipped=3,unknown=4,prerequisite=5,fast=6,zone=7}
 function J:IsClass(n)
     if not n then return false end
     if B.Graph.classQuests[n.id] then return true end
@@ -25,6 +25,10 @@ function J:Classify(q,s)
         status="prerequisite";reason=B.T("Prérequis d'une quête de classe : à conserver.")
     elseif n and n.fastPrerequisite then
         status="prerequisite";reason=B.T("Débloque une quête du parcours rapide.")
+    elseif B.Mode()=="zone" and n then
+        status=n.profession and "unknown" or "zone"
+        reason=n.profession and B.T("Quête de métier : prérequis à vérifier manuellement.")
+            or B.T("Mode gratuit : quête recensée dans la zone. Aucune suppression automatique.")
     elseif n and n.profession then
         status="abandon";reason=B.T("Quête de métier optionnelle, exclue du leveling rapide.")
     elseif n and n.fast then
@@ -37,7 +41,7 @@ function J:Classify(q,s)
         status="abandon";reason=B.T("Hors parcours rapide et sans prérequis utile connu.")
     end
     local outleveled=false
-    if row and n and (status=="fast" or status=="prerequisite") then
+    if B.Mode()=="fast" and row and n and (status=="fast" or status=="prerequisite") then
         local fit=B.Progression:Evaluate(n,row.ready and "turnin" or "complete",s)
         if fit.retire then
             outleveled=true
@@ -93,7 +97,7 @@ function J:PrintRow(row)
 end
 function J:Print(s)
     local report=self:Refresh(s,false)
-    B.Print(B.T("Journal · parcours rapide (conseils, aucun abandon automatique)"))
+    B.Print(B.T(B.Mode()=="zone" and "Journal · quêtes zone par zone" or "Journal · parcours rapide (conseils, aucun abandon automatique)"))
     for _,row in ipairs(report.rows) do self:PrintRow(row) end
     if #report.rows==0 then B.Print(B.T("Aucune quête dans le journal.")) end
 end

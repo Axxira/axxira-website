@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.36",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.36",
+      "date": "2026-11-13",
+      "summary": "FastXp 1.12.0 et DungeonMapPilot 0.5.4 : éditions de test gratuites dans le launcher",
+      "details": "La page ForeverPilot du launcher embarque uniquement FastXp 1.12.0, DungeonMapPilot 0.5.4 et la dépendance Ding officielle. Les deux addons sont entièrement gratuits dans cette édition de test RaidPilot ; leurs distributions publiques CurseForge avec abonnement restent distinctes. FastXp conserve l'optimisation des quêtes et du grind mesuré, ainsi que le parcours de zones. DungeonMapPilot comprend les 25 cartes de référence et 63 étages, les 41 variantes de guides, le moteur de recherche de boss et le carnet. Les neuf autres addons de PilotSuite ne sont pas installés par ce launcher. Sauvegardes et protections contre les rétrogradations maintenues. Fermer complètement WoW avant la mise à jour, puis le relancer. Tests automatisés réussis ; navigation réelle des donjons, temps XP/heure et trajets complets 1–60 non encore certifiés en jeu."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.35",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — premier conseiller de quêtes, planque et inventaire",
       "details": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.1.0",
-      "raidPilotVersion": "0.15.1.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "CORTEX V2 — mémoire visuelle des lieux et contrôle d'identité des repères",
-      "details": "Le moteur de navigation CORTEX apprend désormais en mémoire locale les identifiants des couples de repères visuels 64×36 et 160×90 effectivement confirmés. Revoir le même lieu ne compte plus comme deux preuves indépendantes : la cadence F8 maximale de 12 s exige deux lieux distincts, séparés d'au moins 3 m et vus récemment au même étage. Les changements incohérents de position associés à un même repère déclenchent un repli prudent. Les sauts d'estimation provenant d'une correction visuelle appliquée ne sont plus confondus avec un déplacement humain impossible. Mémoire bornée et réinitialisée par raid/F8, aucune image persistée. Tests déterministes étendus; précision à vérifier en situation réelle."
     }
   ]
 }
