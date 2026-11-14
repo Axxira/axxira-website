@@ -63,16 +63,15 @@ function R:QuestOK(q,kind,s)
         return false
     end
     local node=B.Graph and B.Graph:Node(q)
-    if node and (node.manual or node.profession) then return false end
+    if not node or node.manual or node.profession then return false end
     if B.Recovery and B.Recovery.IsBlocked and B.Recovery:IsBlocked(q,s) then return false end
-    if node and B.Validator and B.Validator.Eligible then
-        local eligible=B.Call(B.Validator.Eligible,B.Validator,node,s,"accept")
-        if eligible==false then return false end
-    end
+    if not (B.Validator and B.Validator.Eligible) then return false end
+    local eligible=B.Call(B.Validator.Eligible,B.Validator,node,s,"accept")
+    if eligible~=true then return false end
     return true
 end
-function R:QuestAction(s,E,step)
-    local lines=B.Call(E.Describe,E,step,false)
+function R:QuestAction(s,E,step,lookahead)
+    local lines=not lookahead and B.Call(E.Describe,E,step,false) or {}
     for _,line in ipairs(type(lines)=="table" and lines or {}) do
         if type(line)=="table" and not line.done and not line.impossible and
             self:QuestOK(line.quest,line.action,s) then
@@ -95,7 +94,7 @@ function R:Nearest(points,s)
     if point(result) and (not B.Travel.Reachable or
         B.Call(B.Travel.Reachable,B.Travel,result,s)~=false) then return result end
 end
-function R:Point(s,E,step,q,kind)
+function R:Point(s,E,step,q,kind,index)
     if point(step.go and {map=step.go[1],x=step.go[2],y=step.go[3]}) then
         return {map=step.go[1],x=step.go[2],y=step.go[3]}
     end
@@ -121,7 +120,7 @@ function R:Point(s,E,step,q,kind)
             end
         end
     end
-    local candidates=B.Call(E.StepCandidates,E,step,E.index)
+    local candidates=B.Call(E.StepCandidates,E,step,index or E.index)
     if type(candidates)=="table" and #candidates>0 then
         if q and kind=="complete" and B.Recovery and B.Recovery.Avoided then
             local filtered={}
@@ -134,6 +133,46 @@ function R:Point(s,E,step,q,kind)
         if point(p) then self.lastTarget=p.label;return p end
     end
 end
+-- A blocked guide quest should not trap a player in one obsolete section.
+-- Look only at nearby reachable goals in the same guide; never complete or skip
+-- a quest in the quest log and never move Ding's saved cursor without consent.
+function R:LookAhead(s,E,guide)
+    if not guide or not guide.steps or type(E.index)~="number" then return nil end
+    local best,bestCost
+    for i=E.index+1,math.min(#guide.steps,E.index+9) do
+        local candidate=guide.steps[i]
+        if type(candidate)~="table" then break end
+        if candidate.level and candidate.level>s.level then break end
+        if candidate.fly or candidate.train or candidate.vendor or candidate.repair
+            or candidate.hearth or candidate.sethearth then break end
+        if candidate.go and not candidate.accept and not candidate.complete and
+            not candidate.turnin then break end
+        local applies=not Ding.StepApplies or B.Call(Ding.StepApplies,Ding,candidate)==true
+        local isComplete=E.IsStepDone and B.Call(E.IsStepDone,E,candidate,i)==true
+        if applies and not isComplete then
+            local q,kind,instruction=self:QuestAction(s,E,candidate,true)
+            if q and kind then
+                local where=self:Point(s,E,candidate,q,kind,i)
+                local seconds=where and B.Call(B.Travel.Seconds,B.Travel,where,s)
+                if point(where) and type(seconds)=="number" and seconds>=0 and seconds<=480
+                    and B.Travel:Reachable(where,s) then
+                    local cost=seconds+(i-E.index)*35
+                        +(kind=="accept" and 30 or kind=="turnin" and -40 or 0)
+                    local key="route:"..tostring(guide.id)..":"..tostring(i)..":"..tostring(q)
+                    local untilAt=B.char and B.char.deferred and B.char.deferred[key]
+                    if (type(untilAt)~="number" or untilAt<=time()) and
+                        (not bestCost or cost<bestCost) then
+                        bestCost=cost
+                        best={q=q,kind=kind,step=candidate,index=i,
+                            instruction=instruction,point=where}
+                    end
+                end
+            end
+        end
+    end
+    return best
+end
+
 function R:Urgent(s)
     local chosen
     for _,a in ipairs(B.Planner and B.Planner.actions or {}) do
@@ -157,11 +196,17 @@ function R:Choose(s,winner)
     if step.level and s.level>=step.level then return winner end
 
     local q,kind,instruction=self:QuestAction(s,E,step)
-    -- If the current route quest is unavailable or too high-level, keep the
-    -- optimized local plan rather than navigating to an unrelated objective.
+    local routeIndex=E.index
+    local preview=false
     if not q and (#(step.accept or {})>0 or #(step.complete or {})>0 or
-        #(step.turnin or {})>0) then return winner end
-    local target=self:Point(s,E,step,q,kind)
+        #(step.turnin or {})>0) then
+        local ahead=self:LookAhead(s,E,guide)
+        if not ahead then return winner end
+        q,kind,instruction,step,routeIndex=ahead.q,ahead.kind,ahead.instruction,
+            ahead.step,ahead.index
+        preview=true
+    end
+    local target=self:Point(s,E,step,q,kind,routeIndex)
     local note=type(instruction)=="string" and instruction~="" and instruction
         or type(step.note)=="string" and step.note
         or type(step.text)=="string" and step.text or nil
@@ -189,10 +234,11 @@ function R:Choose(s,winner)
     end
     if not q and not target and not step.level then return winner end
     local action={kind=actionKind,q=q,node=node,
-        key="route:"..tostring(guide.id)..":"..tostring(E.index)..":"..tostring(q or actionKind),
+        key="route:"..tostring(guide.id)..":"..tostring(routeIndex)..":"..tostring(q or actionKind),
         label=name or tostring(q or ""),point=target,batch={},confidence="ROUTE",
         routeStep=true,routeGuide=guide.title or guide.id,routeGuideId=guide.id,
-        routeIndex=E.index,routeTotal=#guide.steps,routeVerb=routeVerb,
+        routeIndex=routeIndex,routeTotal=#guide.steps,routeVerb=routeVerb,
+        routePreview=preview,
         routeSource="Ding",note=note}
     if target and B.Travel and B.Travel.Seconds then
         action.travel=B.Call(B.Travel.Seconds,B.Travel,target,s)
@@ -204,11 +250,22 @@ function R:Choose(s,winner)
         action.questReview=true
         action.note=B.T("Quête de l'itinéraire sans repère vérifié. Vérifie le journal et la carte.")
     end
-    self.last={guide=guide.id,step=E.index,quest=q,kind=action.kind}
+    if preview then
+        action.note=B.T("Étape réalisable à proximité; le guide principal reste inchangé.")
+        action.confidence="ROUTE PREVIEW"
+    end
+    self.last={guide=guide.id,step=routeIndex,quest=q,kind=action.kind}
     return action
 end
 function R:SkipStep(a)
     local E=Ding and Ding.Engine
+    if a and a.routePreview and a.routeStep and E and E.guide and
+        E.guide.id==a.routeGuideId and type(a.key)=="string" and
+        B.char and B.char.deferred then
+        B.char.deferred[a.key]=time()+300
+        B.Recovery:Replan()
+        return true
+    end
     if not a or not a.routeStep or not E or not E.guide or
         E.guide.id~=a.routeGuideId or E.index~=a.routeIndex or
         type(E.Skip)~="function" then return false end

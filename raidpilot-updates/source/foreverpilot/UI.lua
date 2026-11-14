@@ -77,6 +77,7 @@ function U:View(a,s)
     end
     if a.routeStep then
         v.footer=string.format(B.T("ITINÉRAIRE · ÉTAPE %d/%d"),a.routeIndex or 0,a.routeTotal or 0)
+        if a.routePreview then v.footer=B.T("REPRISE INTELLIGENTE · OBJECTIF PROCHE") end
         v.verb=a.routeVerb or v.verb
         if not badge then v.tag=B.T("PARCOURS RAPIDE") end
     end
@@ -118,6 +119,15 @@ function U:Tooltip()
     if rate then
         local state=B.State
         GameTooltip:AddLine(string.format(B.T("Session hors pause/AFK : %d min · déplacement hors combat %d%% · mort %d%%"),math.floor(state.elapsed/60),math.floor((state.travelSeconds or 0)*100/state.elapsed),math.floor((state.deadSeconds or 0)*100/state.elapsed)),0.75,0.83,0.89,true)
+    end
+    if B.SpeedMetrics then
+        local metrics=B.SpeedMetrics:Summary()
+        if metrics and metrics.seconds>=60 then
+            GameTooltip:AddLine(string.format(
+                B.T("Mesure : %.0f XP/h sur %.0f min · trajets %.0f%%"),
+                metrics.rate,metrics.seconds/60,metrics.travel*100),
+                .72,.89,.75,true)
+        end
     end
     GameTooltip:AddLine(B.T("Source : ")..a.confidence,0.62,0.68,0.76,true)
     GameTooltip:AddLine(B.T("Glisser : déplacer · Clic droit : pause"),0.62,0.68,0.76)

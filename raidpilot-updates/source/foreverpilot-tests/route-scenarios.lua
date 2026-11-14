@@ -63,4 +63,36 @@ s.combat=false;s.now=200
 a=R:Choose(s,fallback)
 assert(E.guide.id=="h33" and TEST.resumes==2,"Resync to compatible guide after combat")
 assert(type(R:Signature())=="string","Route signature should report the current step")
-return "PASS SpeedRoute: level bracket, auto-resume, real quest coordinates, zone transfer, level step, blocked quests, close hand-in, class, manual skip, disabled mode, combat guard"
+-- Smart recovery: a blocked first quest may offer a nearby later step
+-- without changing the original guide cursor or declaring it done.
+local future=Ding:SuggestGuide("ding")
+E.guide=future;E.index=1
+future.steps[1]={accept={999}}
+future.steps[2]={accept={1110}}
+s.log[1110]=nil;s.done[1110]=nil
+s.now=210;s.combat=false
+B.Recovery.skipped[999]=true
+B.char.deferred={}
+local seen=R:Choose(s,fallback)
+assert(seen.routePreview and seen.routeIndex==2 and seen.q==1110 and seen.kind=="accept",
+  "Nearby available quest should be previewed")
+assert(E.index==1 and not s:IsDone(999),"No fictional step completion or cursor advance")
+assert(R:SkipStep(seen),"Preview should be temporarily deferred by Skip")
+assert(E.index==1 and B.char.deferred[seen.key]>time(),
+  "Preview skip must not modify Ding or abandon the quest")
+assert(R:Choose(s,fallback)==fallback,"Deferred preview must not be immediately suggested again")
+B.char.deferred={}
+future.steps[2]={fly=true}
+future.steps[3]={accept={1110}}
+assert(R:Choose(s,fallback)==fallback,"Smart recovery must not jump past mandatory flights")
+future.steps[2]={accept={1110}}
+future.steps[3]=nil
+B.Validator.Eligible=function(self,node,state,kind)
+ if node.id==1110 then return false end return true
+end
+assert(R:Choose(s,fallback)==fallback,"Blocked prerequisites cannot become a suggested pickup")
+B.Validator.Eligible=function()return true end
+seen=R:Choose(s,fallback)
+assert(seen.routePreview and seen.q==1110,"Unblocked step is eligible again")
+assert(type(R:Signature())=="string","Signature remains stable under recovery")
+return "PASS SpeedRoute: current guide, smart nearby catch-up, route barriers, prerequisites, deferred preview, no cursor mutation, original policy"

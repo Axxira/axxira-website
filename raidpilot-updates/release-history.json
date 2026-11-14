@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.41",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.41",
+      "date": "2026-11-14",
+      "summary": "FastXP 1.12.4 : reprise intelligente et suivi XP/heure",
+      "details": "FastXP 1.12.4 améliore la reprise lorsque la quête actuelle est bloquée : recherche prudente d’étapes accessibles dans la même section, sans contourner les prérequis ni marquer les quêtes comme terminées. Ajout de statistiques XP/heure par parcours, déplacement, reprise et étapes lentes, conservées uniquement sur le PC dans les sauvegardes de personnage. Rapport via /fpl perf ou Options > Outils. Nouveaux textes traduits dans 11 langues. La version FastXP gratuite du launcher et DungeonMapPilot demeurent dans les mêmes dossiers, sans doublons; les abonnements restent inchangés. Validation de structure des 86 sections de guides 1–60 et tests automatisés; supériorité de vitesse et parcours réel complet non certifiés. Fermer WoW avant d’installer la mise à jour."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.40",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — scan direct F8 depuis l'inventaire Tarkov",
       "details": "Ouverture rapide StashPilot par Ctrl+Alt+P. Le scanner est armé pour 90 secondes dès l'ouverture ou par le bouton « Scanner avec F8 » : le prochain screenshot manuel F8 créé dans le dossier EFT est lu avec l'OCR local et présenté dans une fenêtre de validation. Les captures F8 du recalage automatique RaidPilot ne sont pas utilisées pour ce scan. Bouton Annuler F8, fallback Choisir PNG, aucune reconnaissance d'icônes ni validation automatique des objets/quantités. Le menu de stash doit être visible lors de F8. Les besoins quêtes/planque restent soumis aux données confirmées."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.3.2",
-      "raidPilotVersion": "0.15.3.2",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — ouverture instantanée et interface plus rapide",
-      "details": "StashPilot s'ouvre désormais directement avec Ctrl+Alt+P, ou depuis le menu RaidPilot; une fenêtre déjà ouverte est ramenée au premier plan au lieu d'être dupliquée. Les actions suivent l'ordre Scanner PNG puis Analyser. Raccourcis Ctrl+Entrée pour analyser et Ctrl+S pour sauvegarder la progression localement. La reconnaissance OCR reste assistée et les objets doivent être confirmés manuellement."
     }
   ]
 }

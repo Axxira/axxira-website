@@ -180,7 +180,10 @@ function O:Create()
     line(p,426)
     self.resume=button(p,B.T("Reprendre les quêtes écartées"),20,446,230,function() B.ResumeSkipped("all");self:Render() end)
     self.review=button(p,B.T("REC_OPEN"),270,446,230,function() self:CloseFor(function() B.RecoveryUI:Open() end) end)
-    text(p,11,20,487,480,35,B.T("Passer met une quête de côté sans l'abandonner dans ton journal."),true)
+    text(p,11,20,487,240,35,B.T("Passer met une quête de côté sans l'abandonner dans ton journal."),true)
+    button(p,B.T("Rapport de vitesse XP/h"),270,484,230,function()
+        if B.SpeedMetrics then B.SpeedMetrics:Report() end
+    end)
     p=self.pages.help
     local tips={
         {B.T("1. Suis la flèche"),B.T("Va au point indiqué et termine l'objectif. ForeverPilot réévalue la suite quand tu progresses.")},
