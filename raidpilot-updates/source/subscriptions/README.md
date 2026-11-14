@@ -1,7 +1,7 @@
 # ForeverPilot subscription service
 
 Dedicated Cloudflare Worker + SQLite Durable Object; never shares the RaidPilot relay.
-Public plan: CAD 9.99 monthly, no trial or setup fee. The RaidPilot test edition is always
+Public plan: CAD 6.99 monthly, no trial or setup fee. The RaidPilot test edition is always
 free and never calls this service. The portal and companion support French and English.
 
 ## Verification and deployment

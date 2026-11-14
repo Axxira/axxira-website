@@ -58,7 +58,7 @@ internal sealed partial class LauncherForm
     {
         if (action is not (LauncherAction.ForeverPilot or LauncherAction.LaunchBattleNet or
             LauncherAction.ChooseForeverFolder or LauncherAction.OpenForeverFolder or
-            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or LauncherAction.InstallChangeLayer or LauncherAction.InstallDungeonMaps or LauncherAction.OpenDungeonMapSubscription or
+            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or LauncherAction.OpenFastXpSubscription or LauncherAction.InstallChangeLayer or LauncherAction.InstallDungeonMaps or LauncherAction.OpenDungeonMapSubscription or
             LauncherAction.ToggleHabsGoals or LauncherAction.PreviewHabsGoals)) return false;
         if (_foreverInstalling || _busy) return true;
         try
@@ -68,6 +68,17 @@ internal sealed partial class LauncherForm
             var state = _surface.Forever;
             switch (action)
             {
+                case LauncherAction.OpenFastXpSubscription:
+                    if (!ForeverPilotSubscriptionPortal.IsAllowed(new Uri(ForeverPilotSubscriptionPortal.Url)))
+                        throw new InvalidOperationException("Lien FastXp non autorisé.");
+                    if (!await ForeverPilotSubscriptionPortal.IsLivePriceReadyAsync())
+                    {
+                        _surface.ForeverMessage = "Forfait FastXp Premium à 6,99 $ CAD/mois indisponible ou tarif non confirmé.";
+                        break;
+                    }
+                    Process.Start(new ProcessStartInfo(ForeverPilotSubscriptionPortal.Url) { UseShellExecute = true });
+                    _surface.ForeverMessage = "Portail FastXp Premium à 6,99 $ CAD/mois ouvert dans ton navigateur.";
+                    break;
                 case LauncherAction.OpenDungeonMapSubscription:
                     if (!DungeonMapSubscriptionPortal.IsAllowed(new Uri(DungeonMapSubscriptionPortal.Url)))
                         throw new InvalidOperationException("Lien DungeonMapPilot Pro non autorisé.");
@@ -198,6 +209,8 @@ internal sealed partial class LauncherSurface
         ForeverText(g, "WORLD OF WARCRAFT  /  FOREVER", 244, 84, 630, 20, 9, ForeverAccent, true);
         ForeverText(g, "ForeversPilot FastXp", 242, 113, 680, 55, 32, Color.White, true);
         ForeverText(g, "Ton cap vers le niveau 60.", 245, 176, 680, 28, 14, Color.FromArgb(210, 231, 230));
+        ForeverButton(g, new Rectangle(340, 215, 260, 34), "Passer à FastXp Premium",
+            LauncherAction.OpenFastXpSubscription, !Busy);
         ForeverButton(g, new Rectangle(615, 215, 260, 34), "DungeonMapPilot Pro - Guides",
             LauncherAction.OpenDungeonMapSubscription, !Busy);
         ForeverButton(g, new Rectangle(890, 215, 242, 34), "Cartes donjons · gratuit", LauncherAction.InstallDungeonMaps,

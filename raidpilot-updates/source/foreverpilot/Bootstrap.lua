@@ -4,7 +4,7 @@ _G.ForeverPilotLeveling = B
 -- Subscription distribution; companion supplies ForeverPilotAccess after server verification.
 -- No billing is performed inside WoW. No licence is stored in the main saved variables.
 B.distribution = "raidpilot-test"
-B.subscriptionURL = "https://foreverpilot-subscriptions.tyronixstudio.workers.dev"
+B.subscriptionURL = "https://foreverpilot-subscriptions.tyronixstudio.workers.dev/#account-title"
 -- Rasterize at the requested size. SetTextHeight scales an existing font and
 -- distorts small glyphs; the client's font retains its locale glyph coverage.
 function B.SetUIFont(region,size)

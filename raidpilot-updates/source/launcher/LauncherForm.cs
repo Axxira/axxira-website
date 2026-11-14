@@ -1008,6 +1008,7 @@ internal enum LauncherAction
     OpenForeverFolder,
     RefreshForeverPilot,
     InstallForeverPilot,
+    OpenFastXpSubscription,
     InstallChangeLayer,
     InstallDungeonMaps,
     OpenDungeonMapSubscription,

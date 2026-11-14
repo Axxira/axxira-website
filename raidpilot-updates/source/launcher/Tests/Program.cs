@@ -10,6 +10,32 @@ using RaidPilot.Overlay;
 var failures = new List<string>();
 int testCount = 0;
 DungeonMapTests.Run(Run, Require);
+Run("FastXp Premium : le bouton n'ouvre que le forfait 6,99 $ CAD confirmé", () =>
+{
+    var uri = new Uri(ForeverPilotSubscriptionPortal.Url);
+    Require(ForeverPilotSubscriptionPortal.IsAllowed(uri), "Portail abonnement officiel rejeté");
+    Require(!ForeverPilotSubscriptionPortal.IsAllowed(new Uri("https://evil.example/#account-title")),
+        "Lien non approuvé autorisé");
+    Require(!ForeverPilotSubscriptionPortal.IsAllowed(new Uri(
+        "https://foreverpilot-subscriptions.tyronixstudio.workers.dev.attacker.invalid/#account-title")),
+        "Sous-domaine malveillant autorisé");
+    Require(!ForeverPilotSubscriptionPortal.IsAllowed(new Uri(
+        "https://foreverpilot-subscriptions.tyronixstudio.workers.dev/?redirect=bad#account-title")),
+        "Lien de redirection non approuvé autorisé");
+    Require(ForeverPilotSubscriptionPortal.IsExpectedConfig(
+        """{"ready":true,"environment":"live","price":"6.99","currency":"CAD","interval":"MONTH"}"""),
+        "Tarif live de 6,99 $ non accepté");
+    foreach (var value in new[]
+    {
+        """{"ready":true,"environment":"live","price":"9.99","currency":"CAD","interval":"MONTH"}""",
+        """{"ready":true,"environment":"sandbox","price":"6.99","currency":"CAD","interval":"MONTH"}""",
+        """{"ready":false,"environment":"live","price":"6.99","currency":"CAD","interval":"MONTH"}""",
+        """{"ready":true,"environment":"live","price":null,"currency":"CAD","interval":"MONTH"}""",
+        "{not json}"
+    })
+        Require(!ForeverPilotSubscriptionPortal.IsExpectedConfig(value),
+            "Tarif ou environnement non confirmé accepté comme abonnement disponible");
+});
 Run("DungeonMapPilot Pro : bouton dirige vers le bon abonnement vérifié", () =>
 {
     var target = new Uri(DungeonMapSubscriptionPortal.Url);

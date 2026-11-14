@@ -12,8 +12,8 @@ if(!env.PAYPAL_PRODUCT_ID){
   env.PAYPAL_PRODUCT_ID=product.id;save();
 }
 if(!env.PAYPAL_PLAN_ID){
-  const plan=await pp.request('/v1/billing/plans',{method:'POST',requestId:'foreverpilot-sandbox-plan-v1',body:{product_id:env.PAYPAL_PRODUCT_ID,name:'ForeverPilot Premium — CAD 9.99 / month',status:'ACTIVE',
-    billing_cycles:[{frequency:{interval_unit:'MONTH',interval_count:1},tenure_type:'REGULAR',sequence:1,total_cycles:0,pricing_scheme:{fixed_price:{value:'9.99',currency_code:'CAD'}}}],
+  const plan=await pp.request('/v1/billing/plans',{method:'POST',requestId:'foreverpilot-sandbox-plan-v1',body:{product_id:env.PAYPAL_PRODUCT_ID,name:'ForeverPilot Premium - CAD 6.99 / month',status:'ACTIVE',
+    billing_cycles:[{frequency:{interval_unit:'MONTH',interval_count:1},tenure_type:'REGULAR',sequence:1,total_cycles:0,pricing_scheme:{fixed_price:{value:'6.99',currency_code:'CAD'}}}],
     payment_preferences:{auto_bill_outstanding:false,setup_fee:{value:'0',currency_code:'CAD'},setup_fee_failure_action:'CANCEL',payment_failure_threshold:1}}});
   env.PAYPAL_PLAN_ID=plan.id;save();
 }

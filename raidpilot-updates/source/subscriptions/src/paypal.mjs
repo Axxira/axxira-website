@@ -1,6 +1,8 @@
 export class ServiceError extends Error {
   constructor(code, status=503) { super(code); this.status=status; }
 }
+export const MONTHLY_PRICE_CAD = '6.99';
+const acceptedMonthlyPayments = new Set(['9.99', MONTHLY_PRICE_CAD]);
 export class PayPal {
   constructor(env, transport=(...args)=>fetch(...args)) {
     if (!['sandbox','live'].includes(env.PAYPAL_ENV)) throw new ServiceError('CONFIGURATION');
@@ -27,7 +29,7 @@ export class PayPal {
     const cycle=plan.billing_cycles?.[0];
     if (plan.id!==this.env.PAYPAL_PLAN_ID || !(plan.status==='ACTIVE'||allowDraft&&plan.status==='CREATED') || plan.billing_cycles?.length!==1 ||
         cycle?.tenure_type!=='REGULAR' || cycle.frequency?.interval_unit!=='MONTH' || cycle.frequency?.interval_count!==1 ||
-        cycle.total_cycles!==0 || cycle.pricing_scheme?.fixed_price?.currency_code!=='CAD' || cycle.pricing_scheme?.fixed_price?.value!=='9.99' ||
+        cycle.total_cycles!==0 || cycle.pricing_scheme?.fixed_price?.currency_code!=='CAD' || cycle.pricing_scheme?.fixed_price?.value!==MONTHLY_PRICE_CAD ||
         Number(plan.payment_preferences?.setup_fee?.value||0)!==0 || Number(plan.taxes?.percentage||0)!==0 || plan.quantity_supported) {
       throw new ServiceError('PLAN_NOT_READY');
     }
@@ -52,7 +54,7 @@ export function paidUntil(subscription, transactions, revoked, now) {
   if (!['ACTIVE','CANCELLED','EXPIRED'].includes(subscription.status)) return 0;
   // Approval/activation alone is never proof of payment. No free trials in this plan.
   const sales=(transactions||[]).filter(t=>t.status==='COMPLETED' && !revoked.has(t.id) &&
-    t.amount_with_breakdown?.gross_amount?.currency_code==='CAD' && t.amount_with_breakdown?.gross_amount?.value==='9.99' &&
+    t.amount_with_breakdown?.gross_amount?.currency_code==='CAD' && acceptedMonthlyPayments.has(t.amount_with_breakdown?.gross_amount?.value) &&
     Number.isFinite(Date.parse(t.time)) && Date.parse(t.time)<=now);
   return sales.reduce((end,t)=>Math.max(end,monthAfter(Date.parse(t.time))),0);
 }
