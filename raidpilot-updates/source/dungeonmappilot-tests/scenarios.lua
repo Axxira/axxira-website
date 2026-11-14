@@ -87,6 +87,18 @@ check(A.worldButton ~= nil, "native map access button")
 T.combat = true; A.Toggle(); check(A.UI.frame == nil, "no intrusive opening in combat")
 T.combat = false; SlashCmdList.DUNGEONMAPPILOT("")
 local U = A.UI
+check(U.proUpgrade ~= nil, "Pro upgrade button exists beneath selected floor")
+check(U.proUpgrade:GetHeight() == 19, "Pro upgrade row fits in header without covering dungeon map")
+check(U.proUpgrade.point[1]=="TOPLEFT" and U.proUpgrade.point[2]==U.floorButton
+    and U.proUpgrade.point[3]=="BOTTOMLEFT" and U.proUpgrade.point[5]==-4,
+    "Pro upgrade button anchored directly below floor selector, no overlay")
+check(U.proUpgrade.text==A.L("proUpgrade"), "localized upgrade button")
+U.proUpgrade:Click()
+check(U.accessFrame and U.accessFrame:IsShown(), "Pro button opens official subscription instructions")
+check(U.accessFrame.url:GetText()==A.subscriptionURL, "Pro portal does not point to FastXp subscription")
+check(U.accessFrame.url.focused and U.accessFrame.url.highlighted,
+    "official Maps subscription URL is selected for Ctrl+C")
+U.accessFrame:Hide()
 check(U.frame:IsShown() and U.floor.source == "reference", "opens current static dungeon")
 check(not U.player:IsShown() and U.status.text == A.L("noPosition"), "no false player marker")
 check(#U.tiles == 12 and near(U.tiles[12].width, U.view.width * 234/1002), "render tile crop scale")

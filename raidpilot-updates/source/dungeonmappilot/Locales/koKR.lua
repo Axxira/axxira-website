@@ -1,6 +1,8 @@
 -- Generated from the reviewed localization catalog.
 local A = DungeonMapPilot
 A.RegisterLocale("koKR", {
+    ["proUpgrade"] = "Pro 업그레이드 - 가이드와 팁",
+    ["proUpgradeHelp"] = "DungeonMapPilot 공식 구독 주소를 표시합니다. Ctrl+C로 복사하세요.",
     ["title"] = "던전 및 공격대",
     ["current"] = "현재 위치",
     ["browse"] = "지도",

@@ -10,6 +10,33 @@ using RaidPilot.Overlay;
 var failures = new List<string>();
 int testCount = 0;
 DungeonMapTests.Run(Run, Require);
+Run("DungeonMapPilot Pro : bouton dirige vers le bon abonnement vérifié", () =>
+{
+    var target = new Uri(DungeonMapSubscriptionPortal.Url);
+    Require(DungeonMapSubscriptionPortal.IsAllowed(target), "Lien officiel Pro rejeté");
+    Require(!DungeonMapSubscriptionPortal.IsAllowed(new Uri(
+        "https://foreverpilot-subscriptions.tyronixstudio.workers.dev/#account-title")),
+        "Le bouton DungeonMapPilot redirige vers FastXp");
+    Require(!DungeonMapSubscriptionPortal.IsAllowed(new Uri(
+        "https://dungeonmappilot-subscriptions.tyronixstudio.workers.dev.attacker.invalid/#account-title")),
+        "Adresse non autorisée acceptée");
+    Require(!DungeonMapSubscriptionPortal.IsAllowed(new Uri(
+        "https://dungeonmappilot-subscriptions.tyronixstudio.workers.dev/?redirect=evil#account-title")),
+        "Redirection acceptée");
+    Require(DungeonMapSubscriptionPortal.IsExpectedConfig(
+        """{"ready":true,"companionReady":true,"environment":"live","product":"dungeon_maps","price":"5.99","currency":"CAD","interval":"MONTH"}"""),
+        "Abonnement DungeonMapPilot live à 5,99 CAD non reconnu");
+    foreach (var value in new[]
+    {
+        """{"ready":true,"environment":"live","product":"fast_xp","price":"5.99","currency":"CAD","interval":"MONTH"}""",
+        """{"ready":true,"environment":"live","product":"dungeon_maps","price":"6.99","currency":"CAD","interval":"MONTH"}""",
+        """{"ready":true,"environment":"sandbox","product":"dungeon_maps","price":"5.99","currency":"CAD","interval":"MONTH"}""",
+        """{"ready":false,"environment":"live","product":"dungeon_maps","price":"5.99","currency":"CAD","interval":"MONTH"}""",
+        """{"ready":true,"environment":"live","product":"dungeon_maps","price":null,"currency":"CAD","interval":"MONTH"}""",
+        "{not-json}"
+    }) Require(!DungeonMapSubscriptionPortal.IsExpectedConfig(value),
+        "Un tarif ou produit non confirmé a activé le bouton Pro");
+});
 Run("comparaison de versions", () =>
 {
     Require(UpdateService.IsNewer("0.10.2", "0.11.0"), "0.11.0 devrait être plus récent");

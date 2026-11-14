@@ -58,7 +58,7 @@ internal sealed partial class LauncherForm
     {
         if (action is not (LauncherAction.ForeverPilot or LauncherAction.LaunchBattleNet or
             LauncherAction.ChooseForeverFolder or LauncherAction.OpenForeverFolder or
-            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or LauncherAction.InstallChangeLayer or LauncherAction.InstallDungeonMaps or
+            LauncherAction.RefreshForeverPilot or LauncherAction.InstallForeverPilot or LauncherAction.InstallChangeLayer or LauncherAction.InstallDungeonMaps or LauncherAction.OpenDungeonMapSubscription or
             LauncherAction.ToggleHabsGoals or LauncherAction.PreviewHabsGoals)) return false;
         if (_foreverInstalling || _busy) return true;
         try
@@ -68,6 +68,14 @@ internal sealed partial class LauncherForm
             var state = _surface.Forever;
             switch (action)
             {
+                case LauncherAction.OpenDungeonMapSubscription:
+                    if (!DungeonMapSubscriptionPortal.IsAllowed(new Uri(DungeonMapSubscriptionPortal.Url)))
+                        throw new InvalidOperationException("Lien DungeonMapPilot Pro non autorisé.");
+                    if (!await DungeonMapSubscriptionPortal.IsLivePriceReadyAsync())
+                        throw new InvalidOperationException("Abonnement DungeonMapPilot indisponible ou prix non confirmé par le portail.");
+                    Process.Start(new ProcessStartInfo(DungeonMapSubscriptionPortal.Url) { UseShellExecute = true });
+                    _surface.ForeverMessage = "Portail DungeonMapPilot Pro ouvert dans ton navigateur.";
+                    break;
                 case LauncherAction.InstallDungeonMaps:
                     if (state.GamePath is null) throw new InvalidOperationException("Choisis d'abord ton dossier WoW Forever.");
                     _foreverInstalling = true; SetBusy(true);
@@ -190,9 +198,11 @@ internal sealed partial class LauncherSurface
         ForeverText(g, "WORLD OF WARCRAFT  /  FOREVER", 244, 84, 630, 20, 9, ForeverAccent, true);
         ForeverText(g, "ForeversPilot FastXp", 242, 113, 680, 55, 32, Color.White, true);
         ForeverText(g, "Ton cap vers le niveau 60.", 245, 176, 680, 28, 14, Color.FromArgb(210, 231, 230));
+        ForeverButton(g, new Rectangle(615, 215, 260, 34), "DungeonMapPilot Pro - Guides",
+            LauncherAction.OpenDungeonMapSubscription, !Busy);
         ForeverButton(g, new Rectangle(890, 215, 242, 34), "Cartes donjons · gratuit", LauncherAction.InstallDungeonMaps,
             Forever.GamePath is not null && !Forever.GameRunning && !Busy && Directory.Exists(DungeonMapService.BundlePath));
-        ForeverText(g, "Édition de test · Toutes les fonctions gratuites · Aucun abonnement requis", 245, 217, 630, 25, 10, Muted);
+        ForeverText(g, "Édition de test · Toutes les fonctions gratuites · Aucun abonnement requis", 245, 249, 868, 16, 10, Muted);
 
         var autoFailed = ForeverAutoState == "failed" && !Forever.Ready;
         var statusTitle = autoFailed ? "INSTALLATION AUTO BLOQUÉE · ACTION NÉCESSAIRE" : Forever.StatusTitle;

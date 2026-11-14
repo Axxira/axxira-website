@@ -1,6 +1,8 @@
 -- Generated from the reviewed localization catalog.
 local A = DungeonMapPilot
 A.RegisterLocale("ptBR", {
+    ["proUpgrade"] = "Passar para Pro - Guias e dicas",
+    ["proUpgradeHelp"] = "Mostra o link oficial do DungeonMapPilot; copie com Ctrl+C.",
     ["title"] = "Masmorras e raides",
     ["current"] = "Local atual",
     ["browse"] = "Mapas",

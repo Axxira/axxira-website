@@ -1,6 +1,8 @@
 -- Generated from the reviewed localization catalog.
 local A = DungeonMapPilot
 A.RegisterLocale("ruRU", {
+    ["proUpgrade"] = "Перейти на Pro - гайды и советы",
+    ["proUpgradeHelp"] = "Показать официальную ссылку DungeonMapPilot. Скопируйте: Ctrl+C.",
     ["title"] = "Подземелья и рейды",
     ["current"] = "Текущее местоположение",
     ["browse"] = "Карты",

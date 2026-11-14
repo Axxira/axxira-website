@@ -10,6 +10,7 @@
     <Compile Include="..\HabsGoalDiagnostics.cs" Link="HabsGoalDiagnostics.cs" />
     <Compile Include="..\ForeverPilotService.cs" Link="ForeverPilotService.cs" />
     <Compile Include="..\DungeonMapService.cs" Link="DungeonMapService.cs" />
+    <Compile Include="..\DungeonMapSubscriptionPortal.cs" Link="DungeonMapSubscriptionPortal.cs" />
     <Compile Include="..\ChangeLayerService.cs" Link="ChangeLayerService.cs" />
 
     <Compile Include="..\UpdateService.cs" Link="UpdateService.cs" />

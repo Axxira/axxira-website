@@ -1,6 +1,8 @@
 -- Generated from the reviewed localization catalog.
 local A = DungeonMapPilot
 A.RegisterLocale("deDE", {
+    ["proUpgrade"] = "Auf Pro upgraden - Guides und Tipps",
+    ["proUpgradeHelp"] = "Offiziellen DungeonMapPilot-Link anzeigen und mit Strg+C kopieren.",
     ["title"] = "Dungeons und Schlachtzüge",
     ["current"] = "Aktueller Ort",
     ["browse"] = "Karten",

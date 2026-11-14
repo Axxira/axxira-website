@@ -1,4 +1,4 @@
-# DungeonMapPilot 0.5.3-alpha — dungeon guides for every illustrated map
+# DungeonMapPilot 0.5.5 — dungeon guides for every illustrated map
 
 FR: Guide pour les 25 cartes classiques de donjons et raids de la bibliothèque, avec 32 variantes selon les ailes. Neuf entrées Forever supplémentaires sans illustration : neuf listes de boss, dont cinq ajoutées à partir de données client récentes (itinéraires non vérifiés). Toutes les entrées ont des étapes ou des listes de boss. Pour les cinq mises à jour récentes, l’ordre du client ne constitue pas un itinéraire vérifié.
 
