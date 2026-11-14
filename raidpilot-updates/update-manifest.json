@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-14T02:24:49.6873556+00:00",
+  "publishedAt": "2026-11-14T13:22:08.6239106+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.38-80bf6acea2fc/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "CA3A8B482848C94BD185388703001BBE126DA66D47575F77143D86C71E265553",
-    "sizeBytes": 234574474,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.39-76677ea4510f/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "E19A1F03B6C32AAC7F3D52F12E91DD8F3BCDE361CC3510C228D644A847724319",
+    "sizeBytes": 234574475,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.38-80bf6acea2fc/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "64830E5C7FC4899E1E2034DBC750A6DD5B25F3AFBCDEF2E9508150990E075EE4",
-    "sizeBytes": 58342774,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.39-76677ea4510f/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "5B5F07C0A6C5C05B6536DE5D0964936828C363269A91599AD9BE0E7F52A196DE",
+    "sizeBytes": 58342775,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.38",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.38-80bf6acea2fc/RaidPilot-Launcher-v0.2.38-Windows-x64.zip",
-    "sha256": "1E4D60854A6F53673C5F04040544607911B52A821F211CF3309AA1C69036146E",
-    "sizeBytes": 360939805,
-    "releaseNotes": "La page ForeverPilot du launcher intègre un bouton Passer à FastXp Premium qui ouvre le portail de souscription dans le navigateur seulement si le service annonce 6,99 $ CAD/mois, est en production et confirme ses accès. La version de test gratuite FastXp reste libre d'accès pour tous et le bouton DungeonMapPilot Pro demeure distinct à 5,99 $ CAD/mois. Le serveur Cloudflare FastXp est maintenant synchronisé avec PayPal à 6,99 $ : les paiements antérieurs de 9,99 $ continuent à compter pour la durée déjà acquittée. Aucun nouveau produit ni aucun second dossier d'addon n'est créé. La distribution du launcher comprend FastXp 1.12.0 gratuit et DungeonMapPilot 0.5.5 gratuit. Le canal CurseForge demeure séparé avec ses éditions publiques. Les tests automatiques de serveur et de launcher sont exécutés avant publication."
+    "version": "0.2.39",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.39-76677ea4510f/RaidPilot-Launcher-v0.2.39-Windows-x64.zip",
+    "sha256": "377D3445E4599DE14CA622FE41A01A4F07C7AB773ED5DF8E6D6D2467A65B317C",
+    "sizeBytes": 360942063,
+    "releaseNotes": "FastXp 1.12.2 corrige le guidage qui recommandait notamment les Mountain Yeti à la place des quêtes déjà acceptées. Les objectifs du journal et les quêtes de classe restent prioritaires; les quêtes de niveau inférieur déjà prises ne sont plus rejetées. Si une position de quête n’est pas connue, le guide affiche une vérification nécessaire au lieu d’imposer du grind. Les offres réellement visibles chez un PNJ sont mieux prises en compte. Les quêtes volontairement écartées restent écartées. Nouveaux libellés multilingues. L’édition FastXp intégrée au launcher RaidPilot reste entièrement gratuite, sans création de second addon ni modification des sauvegardes. DungeonMapPilot 0.5.5 et les abonnements existants sont inchangés. FastXp est automatiquement mis à jour dans WoW après fermeture du jeu; des tests simulés ont été exécutés, mais un parcours complet 1–60 et le rendu réel en jeu restent à confirmer."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.39",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.39",
+      "date": "2026-11-14",
+      "summary": "FastXp 1.12.2 : priorité aux quêtes plutôt qu’au grind",
+      "details": "FastXp 1.12.2 corrige le guidage qui recommandait notamment les Mountain Yeti à la place des quêtes déjà acceptées. Les objectifs du journal et les quêtes de classe restent prioritaires; les quêtes de niveau inférieur déjà prises ne sont plus rejetées. Si une position de quête n’est pas connue, le guide affiche une vérification nécessaire au lieu d’imposer du grind. Les offres réellement visibles chez un PNJ sont mieux prises en compte. Les quêtes volontairement écartées restent écartées. Nouveaux libellés multilingues. L’édition FastXp intégrée au launcher RaidPilot reste entièrement gratuite, sans création de second addon ni modification des sauvegardes. DungeonMapPilot 0.5.5 et les abonnements existants sont inchangés. FastXp est automatiquement mis à jour dans WoW après fermeture du jeu; des tests simulés ont été exécutés, mais un parcours complet 1–60 et le rendu réel en jeu restent à confirmer."
+    },
     {
       "component": "launcher",
       "version": "0.2.38",
@@ -253,16 +263,6 @@
       "date": "2026-11-07",
       "summary": "ForeverPilot rejoint le launcher : guidage WoW Forever et installation de l'addon",
       "details": "Ajoute une page ForeverPilot au launcher : version installée, présence de Ding, vérification des modules, choix du dossier _forever_, accès à AddOns et ouverture de Battle.net. Le launcher embarque ForeverPilot_Leveling 1.4.1 (GPLv3). Installation ou mise à jour sur demande, jeu fermé, copie vérifiée et sauvegarde de la version précédente dans Interface/ForeverPilotBackups. Une version plus récente n'est jamais remplacée. Le bridge ForeverPilot, Ding et les réglages WTF sont conservés. Ding reste une dépendance à installer séparément; son activation et celle de ForeverPilot_Leveling se contrôlent dans le jeu. Les prochaines versions de l'addon sont livrées avec les mises à jour du launcher. Aucun téléchargement de données Zygor/RestedXP ni lancement direct de Wow.exe. Tests de détection, préservation, sauvegarde, version, package incomplet et protection pendant le jeu."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.16.0.1",
-      "raidPilotVersion": "0.16.0.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-29",
-      "summary": "CORTEX V4.3 — rapport F8 explicable et journal de diagnostic durable",
-      "details": "Corrige le diagnostic CORTEX lorsque le rapport affiche zéro F8 exploitable ou WaitingForAnchor malgré des parties précédentes : chaque capture F8 reconnue est maintenant classée par cause (premier ancrage, horodatage absent/non monotone, suivi interrompu, changement de mode, pose prédite absente, durée incompatible, géométrie ou résidu invalide). Le journal local, dont le nom de fichier dérive d'un hachage de l'identifiant de profil, conserve au maximum 256 événements sur 14 jours, avec compteurs des PNG signalés par le surveillant, indépendamment de la reconnaissance de nom. Le rapport JSON schemaVersion 2 ajoute capturePipeline (étapes observées, causes de refus, moyenne et P90 sur comparaisons réelles, date de dernière observation) et précise la différence entre compteurs de session et historique. Pas de PNG, coordonnées, trajets, noms de joueur ou carte dans cet historique; aucune modification des seuils de sécurité, de la cadence F8 ou de l'estimation de position. Ajoute des tests de causes d'exclusion, persistance, expiration, cohérence et confidentialité. Première étape instrumentée : l'amélioration réelle du GPS doit être évaluée avec des F8 comparables en raid."
     }
   ]
 }
