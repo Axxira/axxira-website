@@ -86,6 +86,7 @@ function B.Update()
     else
         B.UI:Render(B.Planner.current,s)
     end
+    if B.SpeedMetrics then B.SpeedMetrics:Observe(s,B.Planner.current) end
     B.UI:Tick();B.dirty=false
     local finished=B.Call(debugprofilestop)
     if started and finished then
@@ -120,6 +121,7 @@ f:SetScript("OnEvent",function(_,event,...)
         if event=="PLAYER_LOGIN" then C_Timer.After(1,function() B.Guard(init) end);return end
         if not initialized then return end
         if event=="PLAYER_LOGOUT" then
+            if B.SpeedMetrics then B.SpeedMetrics:Flush() end
             B.Snapshot()
             if B.dingPrefs then
                 Ding.db.panel.shown=B.dingPrefs.panel;Ding.db.arrow.shown=B.dingPrefs.arrow
@@ -233,6 +235,8 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="route reset" or msg=="parcours reset" then
         if B.SpeedRoute then B.SpeedRoute:Reset() end;B.Guard(B.Update)
     elseif msg=="pause" or msg=="auto" then B.settings.paused=not B.settings.paused;B.dirty=true
+    elseif msg=="perf" or msg=="performance" or msg=="vitesse" then
+        if B.SpeedMetrics then B.SpeedMetrics:Report() end
     elseif msg=="guide" then Ding.Panel:Toggle()
     elseif msg=="journal" then B.Journal:Print(B.State:Refresh())
     elseif msg=="objets" or msg=="gear" or msg=="items" then B.Advisor:Toggle("gear")
@@ -276,5 +280,5 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg=="on" then
         B.errors=0;B.failed=nil;B.SetEnabled(true);B.Guard(B.Update)
         B.Print(B.Mode()=="fast" and B.T("Mode FastXP abonné actif.") or B.T("Mode Zone Explorer gratuit actif."))
-    else B.Print(B.T("/fpl | objets | hdv | scan | layers | addons | profil auto | journal | why | skip | reprendre [tout] | resync | pause | size 1 | lock | guide | debug | on | off")) end
+    else B.Print(B.T("/fpl | objets | hdv | scan | layers | addons | profil auto | journal | perf | why | skip | reprendre [tout] | resync | pause | size 1 | lock | guide | debug | on | off")) end
 end

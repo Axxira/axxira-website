@@ -11,8 +11,8 @@ function run(src,name,execute=true){
 }
 const addon=path.resolve(__dirname,'../foreverpilot');
 const toc=fs.readFileSync(path.join(addon,'ForeverPilot_Leveling.toc'),'utf8').replace(/^\uFEFF/,'');
-if(!toc.includes('## Version: 1.12.3')||!toc.includes('SpeedRoute.lua')||!toc.includes('SpeedRouteLocale.lua'))
- throw Error('Missing FastXP 1.12.3 route modules');
+if(!toc.includes('## Version: 1.12.4')||!toc.includes('SpeedRoute.lua')||!toc.includes('SpeedRouteLocale.lua'))
+ throw Error('Missing FastXP 1.12.4 route modules');
 if(toc.indexOf('Planner.lua')>toc.indexOf('SpeedRoute.lua'))throw Error('Invalid route dependency order');
 for(const rel of toc.split(/\r?\n/).map(x=>x.trim()).filter(x=>x.endsWith('.lua'))){
  const file=path.join(addon,rel);if(!fs.existsSync(file))throw Error('Missing module '+rel);
