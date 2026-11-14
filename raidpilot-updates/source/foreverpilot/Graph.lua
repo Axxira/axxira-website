@@ -1,5 +1,12 @@
 local B=ForeverPilotLeveling
 local G={nodes={},routes={},count=0,classQuests={}}; B.Graph=G
+-- WoW Forever quest 97328 is missing its finisher relation in Ding 1.8.1.
+-- NPC 4631 and coordinates are present in Ding's GPLv3 NPC database; the
+-- relation to Wharfmaster Lozgil is also documented in the Forever quest data.
+-- Do not override newer live/observed coordinates when available.
+local knownMissingFinishers={
+    [97328]={npc=4631,map=1434,x=26.35,y=73.56,label="Wharfmaster Lozgil"}
+}
 -- Conservative chain repair: Scout Support delivers Darthalia's orders to
 -- Masoj before Valuable Vantages. Ding 1.8.1 omits this link. Do not infer
 -- prerequisites from arbitrary route order; a real offer still overrides it.
@@ -110,7 +117,12 @@ function G:Locations(n,kind)
         local key=kind=="accept" and "starts" or "ends"
         n[key]=n[key] or (kind=="accept" and Ding.Data:StartPoints(n.id) or Ding.Data:EndPoints(n.id))
         local observed=B.Knowledge:Points(n.id,kind)
-        if #observed==0 then return n[key] end
+        if #observed==0 then
+            if kind=="turnin" and #n[key]==0 and knownMissingFinishers[n.id] then
+                return {knownMissingFinishers[n.id]}
+            end
+            return n[key]
+        end
         local out,knownNPC={},{}
         for _,p in ipairs(observed) do out[#out+1]=p;knownNPC[p.npc]=true end
         for _,p in ipairs(n[key]) do if not p.npc or not knownNPC[p.npc] then out[#out+1]=p end end

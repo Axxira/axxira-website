@@ -22,7 +22,12 @@ B.Planner.Candidates=function(self,state)
  }
 end
 local result=B.Planner:Plan(s)
-assert(result.q==201,"Held quest must outrank a speculative new pickup")
+assert(result.q==301,"Fast mode may prefer a well-scored available pickup over low-value held work")
+B.Mode=function()return "zone" end
+B.Planner.current=nil;B.Planner.signature=nil
+result=B.Planner:Plan(s)
+assert(result.q==201,"Zone mode must keep the accepted quest ahead of new pickups")
+B.Mode=function()return "fast" end
 B.Planner.current=nil;B.Planner.signature=nil
 B.Planner.Candidates=function(self,state)
  return {

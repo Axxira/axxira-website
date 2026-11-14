@@ -305,9 +305,25 @@ function P:Signature(s)
     table.sort(log)
     return table.concat({B.Mode(),B.ZoneGuide and B.ZoneGuide:Current(s) or 0,
         math.floor(((B.char.grindTelemetry or {}).samples or 0)/5),
+        B.SpeedRoute and B.SpeedRoute:Signature() or "no-route",
         s.level,s.map or 0,math.floor((s.wx or 0)/35),math.floor((s.wy or 0)/35),s.count,s.limit,s.bags or -1,
         B.Validator.generation or 0,B.Validator.revision or 0,B.Recovery.revision or 0,B.FlightPaths.revision or 0,
         math.floor((s.health or 1)*20),math.floor((s.mana or 1)*20),math.floor((s.durability or 1)*20),tostring(s.combat),table.concat(log,";")},"|")
+end
+-- A quest may stay in the player's journal without driving the fastest route.
+-- High-level incomplete quests (including collectible book chapters) should
+-- not exclude level-appropriate work. A ready turn-in, class objective, or
+-- nearly finished quest always remains available.
+function P:FastEligible(a,s)
+    if B.Mode()~="fast" or not a or not a.q or not s or
+        not s.log or not s.log[a.q] or a.classPriority or a.kind=="turnin"
+        or a.kind~="complete" then return true end
+    local row=s.log[a.q]
+    local level=(type(row.level)=="number" and row.level>0 and row.level)
+        or (a.node and a.node.level) or 0
+    if level<=s.level+3 then return true end
+    local fraction=B.Progression:Progress(row)
+    return fraction>=.90
 end
 function P:Plan(s)
     if s.level>=60 or s.dead then
@@ -323,14 +339,25 @@ function P:Plan(s)
     if B.Mode()=="zone" and B.ZoneGuide then actions=B.ZoneGuide:Filter(actions,s) end
     actions=self:Batch(actions,s)
     self.actions=actions
-    local priority,held={},{}
+    local priority,held,eligible={},{},{}
     for _,a in ipairs(actions) do
-        if a.classPriority then priority[#priority+1]=a
-        elseif a.q and s.log[a.q] then held[#held+1]=a end
+        if self:FastEligible(a,s) then
+            eligible[#eligible+1]=a
+            if a.classPriority then priority[#priority+1]=a
+            elseif a.q and s.log[a.q] then held[#held+1]=a end
+        else
+            a.speedDeferred=true -- advisory only: never abandon or skip the quest
+        end
     end
-    -- Class quests first, then quests already in the journal. Only then
-    -- consider new pickups; grind is exclusively a no-quest fallback.
-    local choices=#priority>0 and priority or (#held>0 and held or actions)
+    -- Route speed depends on both nearby pickups and existing work: compare
+    -- them together rather than forcing every held quest, regardless of level,
+    -- to displace a useful new quest. Preserve the original Zone mode.
+    local choices
+    if B.Mode()=="fast" then
+        choices=#priority>0 and priority or eligible
+    else
+        choices=#priority>0 and priority or (#held>0 and held or actions)
+    end
     local winner=B.Loop:Choose(choices,s) or choices[1]
     table.sort(actions,better)
     local old=self.current
@@ -341,6 +368,7 @@ function P:Plan(s)
     end
     winner=B.Journey:Choose(winner,choices,s) or self:Fallback(s)
     if B.Grind then winner=B.Grind:Choose(s,winner) end
+    if B.SpeedRoute then winner=B.SpeedRoute:Choose(s,winner) or winner end
     winner=B.FlightPaths:Choose(s,winner)
     winner=B.Needs:Choose(s,winner)
     if not old or old.key~=winner.key then B.Trace("decision",winner.key);winner.since=s.now else winner.since=old.since end

@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.40",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.40",
+      "date": "2026-11-14",
+      "summary": "FastXP 1.12.3 : guidage par étapes et reprise intelligente du parcours",
+      "details": "FastXP 1.12.3 ajoute un moteur de parcours par étapes s’appuyant sur les guides de WoW Forever déjà intégrés : quêtes ordonnées, points de déplacement, objectifs de niveau, vols, entraîneurs et reprise après progression. Le nouveau moteur respecte les quêtes de classe et les remises proches, évite les quêtes trop haut niveau et s’écarte temporairement des lieux sans progression. Dans Options > Outils, Itinéraire rapide permet de revenir au planificateur précédent; /fpl route affiche la section et l’étape. Nouveaux libellés dans 11 langues. L’édition RaidPilot reste intégralement gratuite; les réglages, les sauvegardes, DungeonMapPilot et les prix d’abonnement sont inchangés. Évaluations de fonctionnement simulées et tests de non-régression réussis; vitesse relative à RestedXP/Zygor et parcours réel 1–60 non certifiés. Fermer WoW avant l’installation automatique du nouveau launcher."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.39",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — ouverture instantanée et interface plus rapide",
       "details": "StashPilot s'ouvre désormais directement avec Ctrl+Alt+P, ou depuis le menu RaidPilot; une fenêtre déjà ouverte est ramenée au premier plan au lieu d'être dupliquée. Les actions suivent l'ordre Scanner PNG puis Analyser. Raccourcis Ctrl+Entrée pour analyser et Ctrl+S pour sauvegarder la progression localement. La reconnaissance OCR reste assistée et les objets doivent être confirmés manuellement."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.3.1",
-      "raidPilotVersion": "0.15.3.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — propositions d'objets et quantités à partir d'OCR",
-      "details": "Le lecteur OCR propose maintenant les quantités au format « Boulons x4 » ou « 4 x Boulons » depuis des captures choisies par le joueur. L'import dans la liste d'inventaire reste non confirmé, sans statut FIR déduit, et exige de vérifier chaque ligne. Les inconnus ne sont jamais classés automatiquement comme objets à vendre. Trois tests de non-régression ajoutés; la reconnaissance des icônes et la synchronisation complète des quêtes et de la planque restent à développer."
     }
   ]
 }
