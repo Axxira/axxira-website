@@ -1,7 +1,9 @@
-# ForeversPilot FastXp 1.12.0 — RaidPilot Edition de test gratuite
+# ForeversPilot FastXp 1.12.2 — Édition gratuite RaidPilot
 
-- Toutes les fonctions FastXP et conseils de classe sont inclus sans abonnement dans le launcher.
-- Parcours de quêtes par zones et optimisation des trajets / XP, grind intelligent uniquement selon des mesures fiables.
-- Historique et réglages de chaque personnage conservés. Ding reste une dépendance.
-- La version CurseForge est une distribution séparée, avec abonnement pour les itinéraires rapides.
-- Tests Lua simulés réussis; vérification du fonctionnement dans WoW Forever et du trajet réel 1–60 encore nécessaire.
+- Les quêtes déjà acceptées passent avant les recommandations de grind basées sur XP/heure.
+- Les quêtes de niveau inférieur restent proposées si elles sont présentes dans le journal.
+- Si aucune destination fiable n’est connue, FastXP affiche la quête à vérifier sans imposer de grind.
+- Les offres admissibles réellement détectées chez un PNJ peuvent être prises même hors de la boucle actuellement suggérée.
+- Les quêtes volontairement mises de côté restent respectées; paramètres et progression conservés.
+- Nouveaux messages traduits. Ding reste une dépendance.
+- Toutes les fonctions gratuites dans le launcher. Vérifications automatiques uniquement; test en jeu requis.

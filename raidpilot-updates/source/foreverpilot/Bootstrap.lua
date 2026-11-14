@@ -1,5 +1,5 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.12.0", modules = {}, dirty = true }
+local B = { version = "1.12.2", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
 -- Subscription distribution; companion supplies ForeverPilotAccess after server verification.
 -- No billing is performed inside WoW. No licence is stored in the main saved variables.

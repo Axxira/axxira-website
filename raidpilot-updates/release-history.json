@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.39",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.39",
+      "date": "2026-11-14",
+      "summary": "FastXp 1.12.2 : priorité aux quêtes plutôt qu’au grind",
+      "details": "FastXp 1.12.2 corrige le guidage qui recommandait notamment les Mountain Yeti à la place des quêtes déjà acceptées. Les objectifs du journal et les quêtes de classe restent prioritaires; les quêtes de niveau inférieur déjà prises ne sont plus rejetées. Si une position de quête n’est pas connue, le guide affiche une vérification nécessaire au lieu d’imposer du grind. Les offres réellement visibles chez un PNJ sont mieux prises en compte. Les quêtes volontairement écartées restent écartées. Nouveaux libellés multilingues. L’édition FastXp intégrée au launcher RaidPilot reste entièrement gratuite, sans création de second addon ni modification des sauvegardes. DungeonMapPilot 0.5.5 et les abonnements existants sont inchangés. FastXp est automatiquement mis à jour dans WoW après fermeture du jeu; des tests simulés ont été exécutés, mais un parcours complet 1–60 et le rendu réel en jeu restent à confirmer."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.38",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — propositions d'objets et quantités à partir d'OCR",
       "details": "Le lecteur OCR propose maintenant les quantités au format « Boulons x4 » ou « 4 x Boulons » depuis des captures choisies par le joueur. L'import dans la liste d'inventaire reste non confirmé, sans statut FIR déduit, et exige de vérifier chaque ligne. Les inconnus ne sont jamais classés automatiquement comme objets à vendre. Trois tests de non-régression ajoutés; la reconnaissance des icônes et la synchronisation complète des quêtes et de la planque restent à développer."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.3.0",
-      "raidPilotVersion": "0.15.3.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — OCR local de captures PNG avec revue manuelle",
-      "details": "Ajout d'un bouton de lecture OCR Windows pour captures PNG choisies par le joueur, sans transfert réseau. Les résultats sont affichés dans une fenêtre de revue et insérés comme notes non vérifiées. Aucun objet ou quantité n'est automatiquement confirmé ni conseillé à la vente. La reconnaissance fiable des icônes d'inventaire et la synchronisation de progression restent à développer."
     }
   ]
 }

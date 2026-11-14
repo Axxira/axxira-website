@@ -37,13 +37,13 @@ function P:Action(n,kind,s,recovery)
     if B.Recovery:IsSkipped(n.id) then return nil,"skipped" end
     local allowed,reason=B.Validator:Eligible(n,s,kind)
     if not allowed then return nil,reason end
-    if kind~="turnin" and n.profession then return nil,"optionalProfession" end
+    if kind=="accept" and n.profession then return nil,"optionalProfession" end
     local wanted,why=B.Journal:Allows(n,s)
     if not wanted then return nil,why end
     if s.log[n.id] then
         n.name=s.log[n.id].title or n.name
         for _,o in ipairs(s.log[n.id].objectives) do
-            if kind~="turnin" and not o.finished and o.objectiveType==14 then return nil,"optionalProfession" end
+            if kind=="accept" and not o.finished and o.objectiveType==14 then return nil,"optionalProfession" end
         end
     end
     local a={q=n.id,node=n,kind=kind,key=kind..":"..n.id,confidence=reason=="LIVE" and "LIVE" or (kind~="accept" and "LIVE / POSITION DB" or "DATABASE"),recovery=recovery}
@@ -63,7 +63,7 @@ function P:Action(n,kind,s,recovery)
         if #targets==0 and not B.Travel:Nearest(B.Graph:Locations(n,"turnin"),s) then return nil,"unknownDestination" end
     end
     if kind=="complete" then
-        if n.level>s.level+3 then return nil,"difficulty" end
+        if n.level>s.level+3 and not s.log[n.id] then return nil,"difficulty" end
         if context and (context.step.elite or context.step.dungeon) then return nil,"group" end
         local targets=B.Graph:Locations(n,kind)
         local live=s.log[n.id].objectives
@@ -109,7 +109,7 @@ function P:Action(n,kind,s,recovery)
     if not a.point then return nil,"noCoordinates" end
     if not B.Travel:Reachable(a.point,s) then return nil,"noTravelRoute" end
     a.levelFit=B.Progression:Evaluate(n,kind,s,a)
-    if a.levelFit.retire and B.Mode()=="fast" then return nil,"outleveled" end
+    if a.levelFit.retire and B.Mode()=="fast" and not s.log[n.id] then return nil,"outleveled" end
     if B.Mode()=="zone" then a.levelFit.factor=1 end
     a.travel=B.Travel:Seconds(a.point,s)
     -- Keep distant class offers in the candidate set, without interrupting a
@@ -248,6 +248,18 @@ function P:Batch(actions,s)
     return actions
 end
 function P:Fallback(s)
+    -- Unknown coordinates must not be mistaken for a lack of player quests.
+    local held={}
+    for q in pairs(s.log or {}) do
+        if not B.Recovery:IsSkipped(q) then held[#held+1]=q end
+    end
+    table.sort(held)
+    if #held>0 then
+        local q=held[1]
+        return {kind="recovery",key="quest-review:"..q,questReview=true,
+            label=s.log[q].title or (B.T("Quête ")..q),confidence="LIVE",batch={},
+            note=B.T("Quête active sans repère fiable. Consulte ses objectifs dans ton journal; aucun grind imposé.")}
+    end
     if B.Mode()=="zone" and B.ZoneGuide then
         local nextZone=B.ZoneGuide:Transition(s)
         if nextZone then return nextZone end
@@ -311,11 +323,14 @@ function P:Plan(s)
     if B.Mode()=="zone" and B.ZoneGuide then actions=B.ZoneGuide:Filter(actions,s) end
     actions=self:Batch(actions,s)
     self.actions=actions
-    local priority={}
-    for _,a in ipairs(actions) do if a.classPriority then priority[#priority+1]=a end end
-    -- Priority is a separate decision tier; XP scoring and a saved ordinary
-    -- outing must not hide an eligible class chain again.
-    local choices=#priority>0 and priority or actions
+    local priority,held={},{}
+    for _,a in ipairs(actions) do
+        if a.classPriority then priority[#priority+1]=a
+        elseif a.q and s.log[a.q] then held[#held+1]=a end
+    end
+    -- Class quests first, then quests already in the journal. Only then
+    -- consider new pickups; grind is exclusively a no-quest fallback.
+    local choices=#priority>0 and priority or (#held>0 and held or actions)
     local winner=B.Loop:Choose(choices,s) or choices[1]
     table.sort(actions,better)
     local old=self.current
@@ -324,7 +339,7 @@ function P:Plan(s)
             if a.key==old.key and a.score>=winner.score*0.88 and not (winner.kind=="turnin" and winner.travel<8) then winner=a;break end
         end
     end
-    winner=B.Journey:Choose(winner,actions,s) or self:Fallback(s)
+    winner=B.Journey:Choose(winner,choices,s) or self:Fallback(s)
     if B.Grind then winner=B.Grind:Choose(s,winner) end
     winner=B.FlightPaths:Choose(s,winner)
     winner=B.Needs:Choose(s,winner)

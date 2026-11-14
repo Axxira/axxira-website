@@ -25,6 +25,10 @@ function J:Classify(q,s)
         status="prerequisite";reason=B.T("Prérequis d'une quête de classe : à conserver.")
     elseif n and n.fastPrerequisite then
         status="prerequisite";reason=B.T("Débloque une quête du parcours rapide.")
+    elseif row and n then
+        -- A quest the player has already accepted is never automatically retired
+        -- merely because it is outside a computed speed route.
+        status="fast";reason=B.T("Quête déjà acceptée : ses objectifs sont prioritaires.")
     elseif B.Mode()=="zone" and n then
         status=n.profession and "unknown" or "zone"
         reason=n.profession and B.T("Quête de métier : prérequis à vérifier manuellement.")
@@ -44,12 +48,8 @@ function J:Classify(q,s)
     if B.Mode()=="fast" and row and n and (status=="fast" or status=="prerequisite") then
         local fit=B.Progression:Evaluate(n,row.ready and "turnin" or "complete",s)
         if fit.retire then
-            outleveled=true
-            if n.classPrerequisite or B.Progression:Unlock(n,s,true) then
-                status="prerequisite";reason=B.T("Trop basse pour la boucle actuelle, mais prérequis utile pour la suite : conserve-la.")
-            else
-                status="abandon";reason=B.T("Niveau dépassé : ")..(fit.questLevel or "?")..B.T(" pour ton niveau ")..s.level..B.T(", sans suite utile connue.")
-            end
+            -- Lower-level quests already in the log remain eligible.
+            reason=B.T("Quête de niveau inférieur déjà prise : conservée dans le guidage.")
         elseif fit.keep then reason=B.Progression:Describe(fit) end
     end
     local label=labels[status]
@@ -63,6 +63,8 @@ end
 function J:Allows(n,s)
     local row=self:Classify(n.id,s)
     if row.status=="skipped" then return false,"skipped" end
+    -- Explicitly held quests take precedence over a speculative XP-speed filter.
+    if s.log[n.id] then return true end
     if row.outleveled then return false,"outleveled" end
     if row.status=="abandon" then return false,"outsideFastRoute" end
     return true
