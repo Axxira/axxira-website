@@ -43,7 +43,11 @@ function U:View(a,s)
     if a.kind=="zone" then v.footer=B.T("ZONE À DÉCOUVRIR · OFFRES À VÉRIFIER") end
     if a.kind=="rest" then v.footer=B.T("La boucle t'attend");v.color=colors.turnin end
     if a.kind=="service" then v.footer=B.T("Reprise des quêtes après cette halte");v.color=colors.turnin end
-    if a.kind=="recovery" then v.title=B.T("Une nouvelle direction");v.footer=B.T("Ouvre un PNJ de quêtes à proximité");v.color=colors.recovery end
+    if a.kind=="recovery" then
+        v.title=a.questReview and (a.label or B.T("Une nouvelle direction")) or B.T("Une nouvelle direction")
+        v.footer=a.questReview and B.T("QUÊTE EN COURS · GUIDE À VÉRIFIER") or B.T("Ouvre un PNJ de quêtes à proximité")
+        v.color=colors.recovery
+    end
     if a.kind=="corpse" then v.title=s.ghost and B.T("Rejoins ton corps") or B.T("Reviens quand tu es prêt");v.footer=B.T("La boucle reprend après résurrection") end
     if a.kind=="done" then v.title=B.T("L'aventure continue.");v.detail=B.T("Niveau 60 atteint");v.footer=B.T("Objectif accompli") end
     if a.itemStart then v.verb=B.T("OUVRE L'OBJET") end

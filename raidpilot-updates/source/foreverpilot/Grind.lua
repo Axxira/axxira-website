@@ -1,4 +1,4 @@
--- FastXp measured grind recommendation. Never assumes unobserved XP or a kill.
+-- XP telemetry for diagnostics; grinding never overrides quest-first guidance.
 local B=ForeverPilotLeveling
 local G={samples=0,totalXP=0,totalSeconds=0};B.Grind=G
 function G:QuestTurnIn(now)
@@ -50,31 +50,8 @@ function G:QuestRate(winner)
  end
 end
 function G:Choose(s,winner)
- if B.Mode()~="fast" or not s or not winner or not winner.q
-    or winner.classPriority or winner.kind=="turnin" or s.combat or s.dead
-    or s.taxi or s.afk or (s.health and s.health<.55)
-    or (s.mana and s.mana<.35) or (s.durability and s.durability<.4) then
-  return winner
- end
- if winner.kind=="complete" and winner.node and
-    s.log[winner.q] and B.Progression:Progress(s.log[winner.q])>.6 then return winner end
- local measured=self:Rate(s)
- local quest=self:QuestRate(winner)
- if not measured or not quest or measured<=quest*1.3 then return winner end
- local candidate=B.Planner:Fallback(s)
- if not candidate or candidate.kind~="grind" or not candidate.point
-    or candidate.point.map~=s.map or not B.Travel:Reachable(candidate.point,s) then
-  return winner
- end
- local travel=B.Travel:Seconds(candidate.point,s)
- if type(travel)~="number" or travel>220 then return winner end
- -- Switch only when measured XP/hour after amortizing the travel is superior.
- local adjusted=measured*math.max(.45,300/(300+travel))
- if adjusted<=quest*1.25 then return winner end
- candidate.measuredRate=math.floor(adjusted+.5)
- candidate.questRate=math.floor(quest+.5)
- candidate.note=B.T("Grind conseillé selon l'XP observée, puis retour aux quêtes si le rendement baisse.")
- candidate.confidence="MEASURED"
- candidate.fastGrind=true
- return candidate
+ -- Quest-first policy: XP/hour telemetry must never override quest guidance.
+ -- The planner's recovery fallback may still suggest grind when no quests are
+ -- actionable and none are being followed in the journal.
+ return winner
 end

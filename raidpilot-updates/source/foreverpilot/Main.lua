@@ -51,11 +51,12 @@ function B.Wanted()
     local current=B.Planner.current;local planned={}
     for _,q in ipairs(current and (current.tripIDs or current.plan and current.plan.ids) or {}) do planned[q]=true end
     if current and current.kind=="accept" then planned[current.q]=true end
-    -- Only collect quests belonging to the selected loop. Nearby candidates
-    -- can be alternatives, and accepting all of them would fill the log.
+    -- Accept selected-loop pickups and eligible offers confirmed at the
+    -- currently open NPC. Unobserved alternatives cannot fill the quest log.
     for _,a in ipairs(B.Planner.actions or {}) do
         if not B.Recovery:IsSkipped(a.q) then
-            if a.kind=="accept" and planned[a.q] and not s.log[a.q] and not s:IsDone(a.q) and not a.node.manual and not a.node.profession and a.travel<120 and s.count<s.limit then accept[a.q]=true end
+            local offered=B.Validator.npc and B.Validator.offers[a.q]
+            if a.kind=="accept" and (planned[a.q] or offered) and not s.log[a.q] and not s:IsDone(a.q) and not a.node.manual and not a.node.profession and (a.travel<120 or offered) and s.count<s.limit then accept[a.q]=true end
             if a.kind=="turnin" then turnin[a.q]=true end
         end
     end

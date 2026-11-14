@@ -3,7 +3,7 @@
 ## Title: ForeversPilot |cff48D7E8FastXp|r
 ## Notes: Dynamic quest planning, live validation, recovery, batching and arrow-first guidance. GPLv3.
 ## Author: ForeverPilot Project
-## Version: 1.12.0
+## Version: 1.12.2
 ## Dependencies: Ding
 ## OptionalDeps: ChangeLayer, ForeverPilot_Access
 ## SavedVariables: ForeverPilotLevelingDB
@@ -21,6 +21,7 @@ Locales/koKR.lua
 Locales/zhCN.lua
 Locales/zhTW.lua
 DualModeLocale.lua
+QuestFirstLocale.lua
 Knowledge.lua
 State.lua
 Graph.lua
