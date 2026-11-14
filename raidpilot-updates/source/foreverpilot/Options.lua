@@ -78,6 +78,12 @@ function O:Render()
     self.layerShortcut.label:SetText(B.settings.layerShortcut and B.T("Raccourci layer : affiché") or B.T("Raccourci layer : masqué"));self.layerShortcut:Paint(B.settings.layerShortcut)
     local canResume=B.Recovery and B.Recovery:LastSkipped()~=nil
     self.resume:Paint(false,canResume)
+    if self.speedRouteToggle then
+        local fast=B.Mode()=="fast"
+        local on=fast and B.settings.speedRoute~=false
+        self.speedRouteToggle.label:SetText(on and B.T("Itinéraire rapide : actif") or B.T("Itinéraire rapide : désactivé"))
+        self.speedRouteToggle:Paint(on,fast)
+    end
     local free=B.distribution=="raidpilot-test"
     local active=B.HasPremium()
     if self.modeCaption then
@@ -154,7 +160,13 @@ function O:Create()
         B.settings.layerShortcut=not B.settings.layerShortcut;if B.LayerUI then B.LayerUI:Refresh() end;self:Render()
     end)
     p=self.pages.tools
-    text(p,13,20,124,480,22,B.T("L'essentiel, sans encombrer la flèche."))
+    text(p,13,20,124,242,22,B.T("L'essentiel, sans encombrer la flèche."))
+    self.speedRouteToggle=button(p,"",270,124,230,function()
+        if B.Mode()~="fast" then return end
+        B.settings.speedRoute=not (B.settings.speedRoute~=false)
+        if B.SpeedRoute then B.SpeedRoute:Reset() end
+        B.Guard(B.Update);self:Render()
+    end)
     local cards={
         {B.T("Équipement"),B.T("Upgrade oui/non, gains et pertes selon ta spécialisation."),function() B.Advisor:Toggle("gear") end},
         {B.T("Hôtel des ventes"),B.T("Lance un scan à l'HDV, puis consulte les prix dans tes sacs."),function() B.Advisor:Toggle("market") end},

@@ -75,6 +75,11 @@ function U:View(a,s)
         v.tag=B.T("TRAJET AÉRIEN");v.tagColor=colors.turnin;v.verb=B.T("PARLE AU MAÎTRE DE VOL")
         v.footer=B.T("À DÉCOUVRIR AVANT DE PARTIR")
     end
+    if a.routeStep then
+        v.footer=string.format(B.T("ITINÉRAIRE · ÉTAPE %d/%d"),a.routeIndex or 0,a.routeTotal or 0)
+        v.verb=a.routeVerb or v.verb
+        if not badge then v.tag=B.T("PARCOURS RAPIDE") end
+    end
     if B.settings.paused then v.tag=B.T("PAUSE");v.footer=B.T("Clic droit pour reprendre");v.tagColor=colors.pause end
     return v
 end
@@ -85,6 +90,9 @@ function U:Tooltip()
     local levelNote=B.Progression:Describe(a.levelFit)
     if levelNote then GameTooltip:AddLine(levelNote,0.94,0.76,0.43,true) end
     if self.routeHint then GameTooltip:AddLine(self.routeHint,0.8,0.9,0.94,true) end
+    if a.routeStep then
+        GameTooltip:AddLine(string.format(B.T("Guide : %s · Étape %d/%d"),tostring(a.routeGuide or ""),a.routeIndex or 0,a.routeTotal or 0),.4,.85,.8,true)
+    end
     if a.savedTravel then GameTooltip:AddLine(string.format(B.T("En finissant ici : environ %d min de trajet évitées (estimation)."),math.max(1,math.floor(a.savedTravel/60))),.4,.85,.8,true) end
     if a.reward then
         GameTooltip:AddLine(B.T("Récompense observée : ")..a.reward.link,.4,.65,1,true)
@@ -171,7 +179,10 @@ function U:Create()
         GameTooltip:Hide()
         if self.reportUnavailable then
             if button=="RightButton" then B.SkipCurrent() else B.ReportUnavailable() end
-        elseif button=="RightButton" or not B.Recovery:CanSkip(B.Planner.current) then B.ResumeSkipped() else B.SkipCurrent() end
+        elseif button=="RightButton" then B.ResumeSkipped()
+        elseif B.Planner.current and B.Planner.current.routeStep then B.SkipCurrent()
+        elseif not B.Recovery:CanSkip(B.Planner.current) then B.ResumeSkipped()
+        else B.SkipCurrent() end
     end)
     f:SetScript("OnDragStart",function() if not B.settings.locked then f:StartMoving() end end)
     f:SetScript("OnDragStop",function() f:StopMovingOrSizing();local p,_,_,x,y=f:GetPoint();B.settings.point=p;B.settings.x=x;B.settings.y=y end)
@@ -189,7 +200,7 @@ function U:Render(a,s)
     self.tag:SetText(v.tag);self.tag:SetTextColor(tc[1],tc[2],tc[3])
     self.action:SetText(v.title);self.verb:SetText(v.verb);self.verb:SetTextColor(c[1],c[2],c[3])
     self.progress:SetText(v.detail);self.loop:SetText(v.footer);self.loop:SetTextColor(c[1],c[2],c[3])
-    local canSkip=B.Recovery:CanSkip(a);local showSkip=canSkip or B.Recovery:LastSkipped()~=nil
+    local canSkip=B.Recovery:CanSkip(a) or (a and a.routeStep);local showSkip=canSkip or B.Recovery:LastSkipped()~=nil
     self.reportUnavailable=B.Recovery:CanReportUnavailable(a,s)
     self.skip:SetShown(showSkip);self.skipLabel:SetText(self.reportUnavailable and B.T("Absent ?") or canSkip and B.T("Passer") or B.T("Reprendre"));self.loop:SetWidth(showSkip and 240 or 332)
     self.bar:SetWidth(math.max(1,332*v.fraction));self.bar:SetShown(v.fraction>0);self.bar:SetColorTexture(c[1],c[2],c[3],0.8)

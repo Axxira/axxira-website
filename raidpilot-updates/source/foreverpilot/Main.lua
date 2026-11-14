@@ -60,6 +60,15 @@ function B.Wanted()
             if a.kind=="turnin" then turnin[a.q]=true end
         end
     end
+    if current and current.routeStep and current.q and not B.Recovery:IsSkipped(current.q) then
+        local n=B.Graph and B.Graph:Node(current.q)
+        if current.kind=="accept" and not s.log[current.q] and not s:IsDone(current.q) and
+            s.count<s.limit and n and not n.manual and not n.profession then
+            accept[current.q]=true
+        elseif current.kind=="turnin" and s.log[current.q] and s.log[current.q].ready then
+            turnin[current.q]=true
+        end
+    end
     return accept,turnin,ahead
 end
 function B.Update()
@@ -168,7 +177,8 @@ function B.Snapshot()
 end
 function B.SkipCurrent()
     B.Guard(function()
-        if B.Recovery:Defer(B.Planner.current) then B.Update()
+        if B.SpeedRoute and B.SpeedRoute:SkipStep(B.Planner.current) then B.Update()
+        elseif B.Recovery:Defer(B.Planner.current) then B.Update()
         else B.Print(B.T("Aucune quête ou étape à passer.")) end
     end)
 end
@@ -213,6 +223,15 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg:match("^reprendre%s+%d+$") or msg:match("^unskip%s+%d+$") then B.ResumeSkipped(tonumber(msg:match("(%d+)$")))
     elseif msg=="recovery" or msg=="blocages" then B.RecoveryUI:Open()
     elseif msg=="resync" or msg=="reset" then B.Recovery:Reset();B.Planner.current=nil;B.Guard(B.Update)
+    elseif msg=="route" or msg=="parcours" then
+        local r=B.SpeedRoute and B.SpeedRoute:Status() or {}
+        B.Print((r.enabled and "Route active" or "Route inactive").." · "..tostring(r.guide or "aucun guide").." · étape "..tostring(r.index or "?").."/"..tostring(r.total or "?"))
+    elseif msg=="route on" or msg=="parcours on" then
+        B.settings.speedRoute=true;B.Recovery:Replan();B.Guard(B.Update)
+    elseif msg=="route off" or msg=="parcours off" then
+        B.settings.speedRoute=false;B.Recovery:Replan();B.Guard(B.Update)
+    elseif msg=="route reset" or msg=="parcours reset" then
+        if B.SpeedRoute then B.SpeedRoute:Reset() end;B.Guard(B.Update)
     elseif msg=="pause" or msg=="auto" then B.settings.paused=not B.settings.paused;B.dirty=true
     elseif msg=="guide" then Ding.Panel:Toggle()
     elseif msg=="journal" then B.Journal:Print(B.State:Refresh())
