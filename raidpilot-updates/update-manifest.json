@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-14T02:11:53.5374859+00:00",
+  "publishedAt": "2026-11-14T02:24:49.6873556+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.37-325f726fe151/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "6EA1DCAAF28D72D52E186DE160F94EC8C2803BFDC55B8901AFC49FFA4B1E44D7",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.38-80bf6acea2fc/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "CA3A8B482848C94BD185388703001BBE126DA66D47575F77143D86C71E265553",
     "sizeBytes": 234574474,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.37-325f726fe151/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "B216CA4F7351A1B4914693BA398F56A7322CB5BD08D7D3E29F047BA6D674F2C7",
-    "sizeBytes": 58342775,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.38-80bf6acea2fc/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "64830E5C7FC4899E1E2034DBC750A6DD5B25F3AFBCDEF2E9508150990E075EE4",
+    "sizeBytes": 58342774,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.37",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.37-325f726fe151/RaidPilot-Launcher-v0.2.37-Windows-x64.zip",
-    "sha256": "5DC3FC76A86A872A0F7D6A455CC7BE02F8EBF4B85DA1041977F8232601D567A1",
-    "sizeBytes": 360938966,
-    "releaseNotes": "DungeonMapPilot 0.5.5 conserve les mêmes dossiers et réglages que la version précédente. Sous le sélecteur d'étage de chaque donjon (notamment Cimetière), un bouton Pro - Guides et astuces ouvre les instructions du portail DungeonMapPilot et sélectionne le lien dans WoW. Le launcher Windows propose aussi un accès direct au portail d'abonnement DungeonMapPilot dont le prix public confirmé est de 5,99 $ CAD/mois. L'édition de test RaidPilot conserve gratuitement toutes les cartes et fonctionnalités. FastXp et son propre abonnement restent indépendants; la modification de tarif FastXp à 6,99 $ sera livrée séparément après synchronisation de PayPal et du serveur. Les sept suites DungeonMapPilot (4 232 assertions) et 87 tests du launcher réussissent; l'ouverture du navigateur est disponible dans le launcher et non dans Lua. L'utilisateur doit redémarrer WoW pour voir le nouveau bouton."
+    "version": "0.2.38",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.38-80bf6acea2fc/RaidPilot-Launcher-v0.2.38-Windows-x64.zip",
+    "sha256": "1E4D60854A6F53673C5F04040544607911B52A821F211CF3309AA1C69036146E",
+    "sizeBytes": 360939805,
+    "releaseNotes": "La page ForeverPilot du launcher intègre un bouton Passer à FastXp Premium qui ouvre le portail de souscription dans le navigateur seulement si le service annonce 6,99 $ CAD/mois, est en production et confirme ses accès. La version de test gratuite FastXp reste libre d'accès pour tous et le bouton DungeonMapPilot Pro demeure distinct à 5,99 $ CAD/mois. Le serveur Cloudflare FastXp est maintenant synchronisé avec PayPal à 6,99 $ : les paiements antérieurs de 9,99 $ continuent à compter pour la durée déjà acquittée. Aucun nouveau produit ni aucun second dossier d'addon n'est créé. La distribution du launcher comprend FastXp 1.12.0 gratuit et DungeonMapPilot 0.5.5 gratuit. Le canal CurseForge demeure séparé avec ses éditions publiques. Les tests automatiques de serveur et de launcher sont exécutés avant publication."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.38",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.38",
+      "date": "2026-11-13",
+      "summary": "FastXp Premium : tarif vérifié à 6,99 $ CAD/mois et accès direct dans le launcher",
+      "details": "La page ForeverPilot du launcher intègre un bouton Passer à FastXp Premium qui ouvre le portail de souscription dans le navigateur seulement si le service annonce 6,99 $ CAD/mois, est en production et confirme ses accès. La version de test gratuite FastXp reste libre d'accès pour tous et le bouton DungeonMapPilot Pro demeure distinct à 5,99 $ CAD/mois. Le serveur Cloudflare FastXp est maintenant synchronisé avec PayPal à 6,99 $ : les paiements antérieurs de 9,99 $ continuent à compter pour la durée déjà acquittée. Aucun nouveau produit ni aucun second dossier d'addon n'est créé. La distribution du launcher comprend FastXp 1.12.0 gratuit et DungeonMapPilot 0.5.5 gratuit. Le canal CurseForge demeure séparé avec ses éditions publiques. Les tests automatiques de serveur et de launcher sont exécutés avant publication."
+    },
     {
       "component": "launcher",
       "version": "0.2.37",
@@ -253,16 +263,6 @@
       "date": "2026-10-29",
       "summary": "CORTEX V4.3 — rapport F8 explicable et journal de diagnostic durable",
       "details": "Corrige le diagnostic CORTEX lorsque le rapport affiche zéro F8 exploitable ou WaitingForAnchor malgré des parties précédentes : chaque capture F8 reconnue est maintenant classée par cause (premier ancrage, horodatage absent/non monotone, suivi interrompu, changement de mode, pose prédite absente, durée incompatible, géométrie ou résidu invalide). Le journal local, dont le nom de fichier dérive d'un hachage de l'identifiant de profil, conserve au maximum 256 événements sur 14 jours, avec compteurs des PNG signalés par le surveillant, indépendamment de la reconnaissance de nom. Le rapport JSON schemaVersion 2 ajoute capturePipeline (étapes observées, causes de refus, moyenne et P90 sur comparaisons réelles, date de dernière observation) et précise la différence entre compteurs de session et historique. Pas de PNG, coordonnées, trajets, noms de joueur ou carte dans cet historique; aucune modification des seuils de sécurité, de la cadence F8 ou de l'estimation de position. Ajoute des tests de causes d'exclusion, persistance, expiration, cohérence et confidentialité. Première étape instrumentée : l'amélioration réelle du GPS doit être évaluée avec des F8 comparables en raid."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.16.0.0",
-      "raidPilotVersion": "0.16.0.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-28",
-      "summary": "Command Center — nouveau menu interactif, Loot et évolution de la planque",
-      "details": "Ctrl+Alt+I ouvre désormais une interface RaidPilot à carte centrale, avec onglets Carte, Quêtes, Clés, Loot, Planque, Équipe, Options et Filtres, dans un style sombre professionnel. Les panneaux sont dockés sous la carte et mutuellement exclusifs. IMPORTANT : lorsque le mode interactif est fermé, la carte RaidPilot normale reste affichée comme avant, sans ces panneaux ; zoom, CORTEX, coéquipiers et marqueurs sont conservés. Nouveau conseiller de loot : recherche d'objets dans le catalogue local Tarkov, besoins recensés pour les quêtes suivies ou toutes les quêtes disponibles, priorité aux objets nécessaires à la planque et aux objectifs FIR lorsqu'identifiables, avec quantités possédées saisies manuellement et conservées par mode PvE/PvP. La planque charge ses niveaux et matériaux via l'API JSON publique de tarkov.dev en lecture seule, avec cache local, et permet au joueur d'enregistrer le niveau de ses modules. Si l'API est inaccessible, les quêtes/objets locaux restent consultables. Aucune vente automatique ni affirmation qu'un objet sans besoin recensé est inutile. Première phase : les prix à jour, trocs, crafts, prérequis complexes et reconnaissance automatique complète de l'inventaire ne sont pas encore intégrés. Tests Windows validant le mode normal/interactif, la sauvegarde et les filtres requis avant publication."
     }
   ]
 }
