@@ -1,4 +1,4 @@
-import {PayPal, ServiceError, paidUntil} from './paypal.mjs';
+import {PayPal, ServiceError, paidUntil, MONTHLY_PRICE_CAD} from './paypal.mjs';
 const enc=new TextEncoder();
 export const hash=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(value))),n=>n.toString(16).padStart(2,'0')).join('');
 const b64=value=>btoa(String.fromCharCode(...value)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
@@ -95,7 +95,17 @@ export async function handle(request,env,{provider,now=Date.now()}={}) {
     if(!env.SIGNING_JWK) throw new ServiceError('SERVICE_NOT_READY');
     const {n,e,kid}=JSON.parse(env.SIGNING_JWK);return json({kty:'RSA',alg:'RS256',use:'sig',kid:kid||'fp-v1',n,e});
   }
-  if (path==='/api/config' && request.method==='GET') return json({ready:configured(env),companionReady:!!companionURL(env),environment:env.PAYPAL_ENV||'sandbox',price:'9.99',currency:'CAD',interval:'MONTH'});
+  if (path==='/api/config' && request.method==='GET') {
+    const serverReady=configured(env);
+    let priceVerified=false;
+    if (serverReady) {
+      try { await (provider||new PayPal(env)).validatePlan();priceVerified=true; }
+      catch { /* Reject stale provider prices or provider unavailability. */ }
+    }
+    return json({ready:serverReady&&priceVerified,companionReady:!!companionURL(env),
+      environment:env.PAYPAL_ENV||'sandbox',price:priceVerified?MONTHLY_PRICE_CAD:null,
+      currency:'CAD',interval:'MONTH'});
+  }
   if (path==='/health') return json({service:'foreverpilot-subscriptions',billingReady:configured(env)});
   if (!path.startsWith('/api/')) return env.ASSETS.fetch(request);
   if (!env.DB) throw new ServiceError('SERVICE_NOT_READY');

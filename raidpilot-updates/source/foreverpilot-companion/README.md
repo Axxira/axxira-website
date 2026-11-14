@@ -32,7 +32,7 @@ retire l'accès actif, pris en compte au prochain chargement de WoW.
 The public edition uses this Windows 10/11 x64 companion. **RaidPilot users do not need
 it: their edition is fully free.** Extract the ZIP and run `ForeverPilot.Companion.exe`.
 Choose English, open the subscription portal, create access and save your personal key.
-Confirm the CAD 9.99 monthly subscription on PayPal, then use **Import…** to load the key
+Confirm the CAD 6.99 monthly subscription on PayPal, then use **Import…** to load the key
 file in the companion. Check the `_forever_` folder, close WoW for initial installation,
 click **Activate / refresh my access**, then launch WoW through Battle.net.
 

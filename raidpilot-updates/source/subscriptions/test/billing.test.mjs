@@ -4,7 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {generateKeyPairSync,createPublicKey,verify} from 'node:crypto';
 import {handle,reconcile,configured} from '../src/worker.mjs';
-import {PayPal,paidUntil,monthAfter} from '../src/paypal.mjs';
+import {PayPal,paidUntil,monthAfter,MONTHLY_PRICE_CAD} from '../src/paypal.mjs';
 const now=Date.parse('2026-11-08T16:00:00Z'),origin='https://billing.example.test';
 const pair=generateKeyPairSync('rsa',{modulusLength:2048});
 const privateJwk=pair.privateKey.export({format:'jwk'});
@@ -119,8 +119,37 @@ test('rate limits prevent unlimited account creation',async()=>{
   await assert.rejects(handle(new Request(origin+'/api/session',{method:'POST',headers:{Origin:origin}}),x.env,{provider:x.provider,now}),/PLEASE_WAIT/);
 });
 test('PayPal adapter rejects wrong price, trial periods and unsigned notifications',async()=>{
-  const plan={id:'P-TEST',status:'ACTIVE',billing_cycles:[{tenure_type:'REGULAR',total_cycles:0,frequency:{interval_unit:'MONTH',interval_count:1},pricing_scheme:{fixed_price:{currency_code:'CAD',value:'9.99'}}}]};
+  const plan={id:'P-TEST',status:'ACTIVE',billing_cycles:[{tenure_type:'REGULAR',total_cycles:0,frequency:{interval_unit:'MONTH',interval_count:1},pricing_scheme:{fixed_price:{currency_code:'CAD',value:'6.99'}}}]};
   let reply=plan;const pp=new PayPal(setup().env,async url=>Response.json(url.endsWith('/token')?{access_token:'TEST'}:reply));await pp.validatePlan();
+  reply={...plan,billing_cycles:[{...plan.billing_cycles[0],pricing_scheme:{fixed_price:{currency_code:'CAD',value:'9.99'}}}]};
+  await assert.rejects(pp.validatePlan(),/PLAN_NOT_READY/);
+  reply=plan;
   reply={...plan,billing_cycles:[...plan.billing_cycles,{tenure_type:'TRIAL'}]};await assert.rejects(pp.validatePlan(),/PLAN_NOT_READY/);
   assert.equal(await pp.verifyWebhook(new Request(origin),{}),false);
+});
+
+
+test('CAD 6.99 payments activate while existing CAD 9.99 payments remain valid',()=>{
+  assert.equal(MONTHLY_PRICE_CAD,'6.99');
+  const newer={...sale,id:'NEW699',amount_with_breakdown:{gross_amount:{currency_code:'CAD',value:'6.99'}}};
+  const old={...sale,id:'OLD999'};
+  const expiry=monthAfter(Date.parse(sale.time));
+  assert.equal(paidUntil({status:'ACTIVE'},[newer],new Set(),now),expiry);
+  assert.equal(paidUntil({status:'ACTIVE'},[old],new Set(),now),expiry);
+  const forgery={...newer,id:'WRONG',amount_with_breakdown:{gross_amount:{currency_code:'CAD',value:'7.99'}}};
+  assert.equal(paidUntil({status:'ACTIVE'},[forgery],new Set(),now),0);
+  assert.equal(paidUntil({status:'ACTIVE'},[newer],new Set(['NEW699']),now),0);
+});
+test('public pricing never advertises unverified PayPal rates or enables checkout',async()=>{
+  const x=setup();
+  const correct=await(await x.request('/api/config')).json();
+  assert.equal(correct.price,'6.99');assert.equal(correct.currency,'CAD');assert.equal(correct.ready,true);
+  const badProvider={...x.provider,async validatePlan(){throw new Error('PLAN_NOT_READY')}};
+  const result=await handle(new Request(origin+'/api/config'),x.env,{provider:badProvider,now});
+  const stale=await result.json();
+  assert.equal(stale.ready,false);
+  assert.equal(stale.price,null);
+  await assert.rejects(handle(new Request(origin+'/api/checkout',{method:'POST',
+    headers:{Origin:origin,Authorization:'Bearer '+(await x.start()).recoveryKey},
+  }),x.env,{provider:badProvider,now}),/PLAN_NOT_READY/);
 });

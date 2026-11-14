@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.38",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.38",
+      "date": "2026-11-13",
+      "summary": "FastXp Premium : tarif vérifié à 6,99 $ CAD/mois et accès direct dans le launcher",
+      "details": "La page ForeverPilot du launcher intègre un bouton Passer à FastXp Premium qui ouvre le portail de souscription dans le navigateur seulement si le service annonce 6,99 $ CAD/mois, est en production et confirme ses accès. La version de test gratuite FastXp reste libre d'accès pour tous et le bouton DungeonMapPilot Pro demeure distinct à 5,99 $ CAD/mois. Le serveur Cloudflare FastXp est maintenant synchronisé avec PayPal à 6,99 $ : les paiements antérieurs de 9,99 $ continuent à compter pour la durée déjà acquittée. Aucun nouveau produit ni aucun second dossier d'addon n'est créé. La distribution du launcher comprend FastXp 1.12.0 gratuit et DungeonMapPilot 0.5.5 gratuit. Le canal CurseForge demeure séparé avec ses éditions publiques. Les tests automatiques de serveur et de launcher sont exécutés avant publication."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.37",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — OCR local de captures PNG avec revue manuelle",
       "details": "Ajout d'un bouton de lecture OCR Windows pour captures PNG choisies par le joueur, sans transfert réseau. Les résultats sont affichés dans une fenêtre de revue et insérés comme notes non vérifiées. Aucun objet ou quantité n'est automatiquement confirmé ni conseillé à la vente. La reconnaissance fiable des icônes d'inventaire et la synchronisation de progression restent à développer."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.2.1",
-      "raidPilotVersion": "0.15.2.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — progression conservée localement entre les sessions",
-      "details": "Le conseiller StashPilot possède maintenant une sauvegarde locale versionnée et atomique de l'inventaire et des objectifs saisis/confirmés. Boutons explicites Sauvegarder et Charger, restauration automatique au démarrage si le fichier est valide. Le fichier reste dans %LOCALAPPDATA%/RaidPilot, pas de transmission réseau, limites de taille et gestion des données corrompues. Le scan automatique d'inventaire, planque et quêtes n'est pas encore implémenté; aucune vente automatique n'est effectuée."
     }
   ]
 }

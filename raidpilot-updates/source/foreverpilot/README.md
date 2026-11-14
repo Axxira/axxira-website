@@ -155,7 +155,7 @@ character without abandoning it. Restore it explicitly from Tools.
 
 The **RaidPilot launcher edition is entirely free**, including Fast XP and class advice,
 with no subscription or online check. The **public edition** offers Fast XP and class/spec
-advice through a **CAD 9.99/month** subscription. Open Options → Subscription, save your
+advice through a **CAD 6.99/month** subscription. Open Options → Subscription, save your
 personal portal key, confirm PayPal and import the key into the Windows companion.
 Payment must be verified by the service. Close WoW for the initial access installation.
 Refresh with the companion regularly; offline access lasts at most seven days and never
