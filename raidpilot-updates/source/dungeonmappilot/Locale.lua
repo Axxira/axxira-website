@@ -26,6 +26,8 @@ function A.HasText(key)
 end
 
 A.RegisterLocale("enUS", {
+    ["proUpgrade"] = "Upgrade to Pro - Guides & Tips",
+    ["proUpgradeHelp"] = "Open the official DungeonMapPilot subscription link. Press Ctrl+C to copy it; WoW cannot open a browser directly.",
     ["title"] = "Dungeons and raids",
     ["current"] = "Current location",
     ["browse"] = "Maps",
@@ -207,6 +209,8 @@ A.RegisterLocale("enUS", {
     ["route.389.bazzalan.body"] = "Take the nearby ramp to reach Bazzalan. Check your objectives before leaving.",
 })
 A.RegisterLocale("frFR", {
+    ["proUpgrade"] = "Passer à la version Pro - Guides et astuces",
+    ["proUpgradeHelp"] = "Accédez au portail officiel DungeonMapPilot. Le lien sera sélectionné : Ctrl+C pour le copier.",
     ["title"] = "Donjons et raids",
     ["current"] = "Lieu actuel",
     ["browse"] = "Cartes",

@@ -283,6 +283,7 @@ end
 function UI:Localize()
     self.frame.TitleText:SetText("DungeonMapPilot · " .. A.L("title"))
     self.browse:SetText(A.L("browse")); self.current:SetText(A.L("current")); self.reset:SetText(A.L("reset"))
+    if self.proUpgrade then self.proUpgrade:SetText(A.L("proUpgrade")) end
     self.lang:SetText(self:OptionsCaption()); self.hint:SetText(A.L("hint"))
     if self.optionsPanel then
         self.optionsPanel.title:SetText(self:OptionsCaption())
@@ -317,6 +318,13 @@ function UI:Create()
     self.previous = Button(f, 28, "<", function() self:SelectFloor(self.context.index - 1, false) end); self.previous:SetPoint("LEFT", self.current, "RIGHT", 16, 0)
     self.floorButton = Button(f, 338, "", function() self:ChooseFloor() end); self.floorButton:SetPoint("LEFT", self.previous, "RIGHT", 4, 0)
     self.next = Button(f, 28, ">", function() self:SelectFloor(self.context.index + 1, false) end); self.next:SetPoint("LEFT", self.floorButton, "RIGHT", 4, 0)
+    -- One compact row directly below the selected dungeon floor (e.g. "Cimetière").
+    -- It does not move or cover the map, the dungeon title, or the route panel.
+    self.proUpgrade = Button(f, 338, A.L("proUpgrade"), function() self:OpenProSubscription() end)
+    self.proUpgrade:SetHeight(19)
+    self.proUpgrade:SetPoint("TOPLEFT", self.floorButton, "BOTTOMLEFT", 0, -4)
+    self.proUpgrade:SetScript("OnEnter", function(s) Tip(s, A.L("proUpgrade"), A.L("proUpgradeHelp")) end)
+    self.proUpgrade:SetScript("OnLeave", function() GameTooltip:Hide() end)
     self.lang = Button(f, 100, "", function() self:OpenOptions() end)
     self.lang:SetPoint("TOPRIGHT", -18, -35)
     self.name = Label(f, "GameFontNormal"); self.name:SetPoint("TOPLEFT", 21, -64)
@@ -391,6 +399,14 @@ function UI:RefreshCurrent()
     if key ~= nextKey or (c and c.instanceID) ~= (h and h.instanceID) or (c and c.source) ~= (h and h.source) then self:SetContext(h) end
 end
 
+function UI:OpenProSubscription()
+    -- Safe in-game behavior: selects the official link, never fabricates
+    -- an external-browser launch that protected WoW Lua cannot perform.
+    self:AccessHelp()
+    local box=self.accessFrame and self.accessFrame.url
+    if box then box:SetFocus(); box:HighlightText() end
+end
+
 function UI:AccessHelp()
     if not self.accessFrame then
         local f = CreateFrame("Frame", "DungeonMapPilotAccessFrame", UIParent, "BasicFrameTemplateWithInset")
@@ -398,7 +414,7 @@ function UI:AccessHelp()
         f.steps = Label(f, "GameFontHighlight"); f.steps:SetPoint("TOPLEFT", 24, -44); f.steps:SetWidth(562)
         f.caption = Label(f, "GameFontNormal"); f.caption:SetPoint("TOPLEFT", 24, -130)
         f.url = CreateFrame("EditBox", nil, f, "InputBoxTemplate"); f.url:SetSize(550, 28); f.url:SetPoint("TOPLEFT", 30, -151); f.url:SetAutoFocus(false)
-        local address = "https://dungeonmappilot-subscriptions.tyronixstudio.workers.dev"
+        local address = A.subscriptionURL or "https://dungeonmappilot-subscriptions.tyronixstudio.workers.dev"
         f.url:SetText(address)
         f.url:SetScript("OnEditFocusGained", function(s) s:HighlightText() end)
         f.url:SetScript("OnTextChanged", function(s) if s:GetText() ~= address then s:SetText(address) end end)

@@ -1,4 +1,4 @@
-DungeonMapPilot = { version = "0.5.4", nativeCache = {} }
+DungeonMapPilot = { version = "0.5.5", nativeCache = {} }
 local A = DungeonMapPilot
 
 function A.Public(value)

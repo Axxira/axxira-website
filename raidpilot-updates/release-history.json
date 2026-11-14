@@ -3,6 +3,16 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.37",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.37",
+      "date": "2026-11-13",
+      "summary": "DungeonMapPilot 0.5.5 : accès Pro sous l'étage et version gratuite actualisée",
+      "details": "DungeonMapPilot 0.5.5 conserve les mêmes dossiers et réglages que la version précédente. Sous le sélecteur d'étage de chaque donjon (notamment Cimetière), un bouton Pro - Guides et astuces ouvre les instructions du portail DungeonMapPilot et sélectionne le lien dans WoW. Le launcher Windows propose aussi un accès direct au portail d'abonnement DungeonMapPilot dont le prix public confirmé est de 5,99 $ CAD/mois. L'édition de test RaidPilot conserve gratuitement toutes les cartes et fonctionnalités. FastXp et son propre abonnement restent indépendants; la modification de tarif FastXp à 6,99 $ sera livrée séparément après synchronisation de PayPal et du serveur. Les sept suites DungeonMapPilot (4 232 assertions) et 87 tests du launcher réussissent; l'ouverture du navigateur est disponible dans le launcher et non dans Lua. L'utilisateur doit redémarrer WoW pour voir le nouveau bouton."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.36",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -390,16 +400,6 @@
       "date": "2026-10-25",
       "summary": "StashPilot — progression conservée localement entre les sessions",
       "details": "Le conseiller StashPilot possède maintenant une sauvegarde locale versionnée et atomique de l'inventaire et des objectifs saisis/confirmés. Boutons explicites Sauvegarder et Charger, restauration automatique au démarrage si le fichier est valide. Le fichier reste dans %LOCALAPPDATA%/RaidPilot, pas de transmission réseau, limites de taille et gestion des données corrompues. Le scan automatique d'inventaire, planque et quêtes n'est pas encore implémenté; aucune vente automatique n'est effectuée."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.2.0",
-      "raidPilotVersion": "0.15.2.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — premier conseiller de quêtes, planque et inventaire",
-      "details": "Ajout du menu StashPilot : saisie/import par collage d'un inventaire et des besoins confirmés des quêtes et améliorations de la planque, avec analyse des quantités à conserver, excédents théoriques, restrictions Found in Raid et explication des objectifs. L'interface exige une vérification humaine des objets et ne signale jamais un objet inconnu comme inutile ou automatiquement vendable. Le scan visuel et la synchronisation automatique de la progression ne sont PAS encore implémentés; six tests de sécurité et de calcul sont ajoutés."
     }
   ]
 }

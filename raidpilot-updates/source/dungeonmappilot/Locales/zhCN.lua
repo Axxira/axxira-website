@@ -1,6 +1,8 @@
 -- Generated from the reviewed localization catalog.
 local A = DungeonMapPilot
 A.RegisterLocale("zhCN", {
+    ["proUpgrade"] = "升级 Pro - 攻略与技巧",
+    ["proUpgradeHelp"] = "显示 DungeonMapPilot 官方订阅链接，按 Ctrl+C 复制。",
     ["title"] = "地下城与团队副本",
     ["current"] = "当前位置",
     ["browse"] = "地图",

@@ -1010,6 +1010,7 @@ internal enum LauncherAction
     InstallForeverPilot,
     InstallChangeLayer,
     InstallDungeonMaps,
+    OpenDungeonMapSubscription,
     ToggleHabsGoals,
     PreviewHabsGoals,
     Home,

@@ -51,9 +51,9 @@ function methods:StartMoving() end
 function methods:StopMovingOrSizing() end
 function methods:SetAutoFocus() end
 function methods:SetMaxLetters() end
-function methods:SetFocus() end
+function methods:SetFocus() self.focused=true end
 function methods:ClearFocus() end
-function methods:HighlightText() end
+function methods:HighlightText() self.highlighted=true end
 function methods:SetBackdrop() end
 function methods:SetScrollChild(v) self.child = v end
 function methods:SetHorizontalScroll(v) self.scrollX = v end
