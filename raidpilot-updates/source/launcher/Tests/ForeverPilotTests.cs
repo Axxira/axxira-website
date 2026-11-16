@@ -6,6 +6,9 @@ internal static class ForeverPilotTests
     {
         var addon = Path.Combine(Path.GetFullPath(launcherRoot), "payload", ForeverPilotService.AddonName);
         var ding = Path.Combine(Path.GetFullPath(launcherRoot), "payload", "Ding");
+        var payload = Path.Combine(Path.GetFullPath(launcherRoot), "payload");
+        var engine = Directory.GetDirectories(payload, "ForeverPilot_Engine*", SearchOption.TopDirectoryOnly);
+        Require(engine.Length == 28, "Les 28 composants du moteur FastXP doivent accompagner le launcher.");
         ForeverPilotService.ValidateAddon(addon);
         ForeverPilotService.ValidateDing(ding, requireLicense: true);
         WithFixture((game, _) =>
@@ -14,7 +17,7 @@ internal static class ForeverPilotTests
             ForeverPilotService.Install(game, addon, () => false, ding);
             Require(ForeverPilotService.InspectAt(game, addon, null, false).Ready, "installation du package réel non prête");
             int verified = 0;
-            foreach (var source in new[] { addon, ding })
+            foreach (var source in new[] { addon, ding }.Concat(engine))
             foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             {
                 var relative = Path.GetRelativePath(source, file);

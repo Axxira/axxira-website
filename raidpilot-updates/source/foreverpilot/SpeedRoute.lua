@@ -257,6 +257,42 @@ function R:Choose(s,winner)
     self.last={guide=guide.id,step=routeIndex,quest=q,kind=action.kind}
     return action
 end
+-- Navigation suppresses Ding's hidden arrow, including its arrival callback.
+-- Feed the actual guide destination back to Ding for plain walking steps only.
+-- Never validate a quest, service, preview, transport stop or stale HUD action.
+function R:PollArrival(a,s)
+    if not self:Enabled(s) or B.settings.paused or not a or a.embedded or
+        not a.routeStep or a.routePreview or a.routeSource~="Ding" or a.q then return false end
+    local E,C=Ding.Engine,Ding.Compat
+    if not E.guide or E.hold or E.guide.id~=a.routeGuideId or
+        E.index~=a.routeIndex or type(E.OnPosition)~="function" or
+        type(E.NearestPoint)~="function" or not C or
+        B.Call(C.IsDeadOrGhost) or B.Call(C.OnTaxi) then return false end
+    local step=B.Call(E.CurrentStep,E)
+    if not step or not step.go or step.accept or step.complete or step.turnin or
+        step.level or step.train or step.vendor or step.repair or step.fly or
+        step.hearth or step.sethearth or step.deathskip or step.patrol then return false end
+    -- Ding's own goal registry also covers items, kills, gossip and chores.
+    if not Ding.Goals or B.Call(Ding.Goals.Auto,Ding.Goals,step)~=false then return false end
+    local p=a.point
+    if not point(p) or p.map~=step.go[1] or p.x~=step.go[2] or p.y~=step.go[3] then return false end
+    local radius=step.radius or 6 -- Ding's default walking-arrival radius, in yards
+    if type(radius)~="number" or radius~=radius or radius<=0 or radius==math.huge then return false end
+    local destination={map=step.go[1],x=step.go[2],y=step.go[3],isGo=true}
+    local _,distance,otherContinent=B.Call(E.NearestPoint,E,{destination})
+    if otherContinent or type(distance)~="number" or distance~=distance or
+        distance<0 or distance==math.huge then return false end
+    if distance>radius then return false,radius end
+    local old=E.index
+    B.Call(E.OnPosition,E,distance,destination)
+    if E.index~=old then
+        if B.Planner then B.Planner.signature=nil end
+        B.dirty=true
+        if B.Trace then B.Trace("route","Arrived at step "..tostring(old)) end
+        return true,radius
+    end
+    return false,radius
+end
 function R:SkipStep(a)
     local E=Ding and Ding.Engine
     if a and a.routePreview and a.routeStep and E and E.guide and

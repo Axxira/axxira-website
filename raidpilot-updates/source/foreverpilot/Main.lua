@@ -2,11 +2,45 @@ local B=ForeverPilotLeveling
 local initialized=false
 function B.SetEnabled(enabled)
     B.settings.enabled=enabled
-    B.premiumBlocked=false;B.zoneOnly=enabled and B.Mode()=="zone"
+    B.premiumBlocked=false
+    -- Single addon: the same saved quests, HUD and addons are retained
+    -- whether the existing companion reports an active entitlement or not.
+    local selectedMode=B.Mode()
+    B.lastAccessMode=selectedMode
+    B.zoneOnly=enabled and selectedMode=="zone"
+    -- Only one quest automation system may act on a guide window.
+    -- In native mode, the bundled engine performs its own prerequisite-aware
+    -- accept/turn-in while Ding's duplicate automation is disabled.
+    local core=B.EmbeddedEngine and B.EmbeddedEngine:Runtime()
+    local native=core and selectedMode=="fast"
+    if B.MapRoute then B.MapRoute:Reset(core) end
+    if core and type(core.Set)=="function" then
+        B.Call(core.Set,"behavior.autoAccept",enabled and native or false)
+        B.Call(core.Set,"behavior.autoTurnin",enabled and native or false)
+        B.Call(core.Set,"behavior.closeSkipped",false)
+        -- Keep native pathfinding enabled but suppress its separate UI controls,
+        -- markers, minimap icon, popups and floating launchers.
+        B.Call(core.Set,"maps.minimapButton",false)
+        B.Call(core.Set,"ui.launcher",false)
+        B.Call(core.Set,"nav.worldPins",false)
+        B.Call(core.Set,"nav.minimapPins",false)
+        B.Call(core.Set,"nav.minimapRoute",false)
+        B.Call(core.Set,"nav.routeLines",true)
+        if enabled and native then
+            -- The bundled router supports fastest / balanced / roads.
+            -- Select fastest estimated traversable route, still penalizing hostile
+            -- towns and dangerous zones. It is not an absolute speed guarantee.
+            B.Call(core.Set,"nav.navRouting",true)
+            B.Call(core.Set,"nav.routeStyle","fastest")
+        end
+        -- Draw the graph route on both maps while retaining one HUD and no duplicate pins.
+        B.Call(core.Set,"nav.fastxpRouteOverlay",enabled and native and B.settings.mapRoute~=false)
+        if type(core.SetHidden)=="function" then B.Call(core.SetHidden,true) end
+    end
     if enabled then
         Ding.AutoQuest.Wanted=B.Wanted
         B.Navigation:Install()
-        Ding.db.ui.autoAccept=true;Ding.db.ui.autoTurnin=true
+        Ding.db.ui.autoAccept=not native;Ding.db.ui.autoTurnin=not native
         Ding.db.panel.shown=false;Ding.db.arrow.shown=false
         if Ding.Panel.frame then Ding.Panel.frame:Hide() end
         if Ding.Arrow.frame then Ding.Arrow.frame:Hide() end
@@ -48,6 +82,7 @@ function B.Wanted()
     local accept,turnin,ahead={},{},{}
     if not B.settings or not B.settings.enabled or B.settings.paused then return accept,turnin,ahead end
     local s=B.State:Refresh();if not s then return accept,turnin,ahead end
+    if B.EmbeddedEngine and B.EmbeddedEngine:Enabled(s) then return accept,turnin,ahead end
     local current=B.Planner.current;local planned={}
     for _,q in ipairs(current and (current.tripIDs or current.plan and current.plan.ids) or {}) do planned[q]=true end
     if current and current.kind=="accept" then planned[current.q]=true end
@@ -56,7 +91,7 @@ function B.Wanted()
     for _,a in ipairs(B.Planner.actions or {}) do
         if not B.Recovery:IsSkipped(a.q) then
             local offered=B.Validator.npc and B.Validator.offers[a.q]
-            if a.kind=="accept" and (planned[a.q] or offered) and not s.log[a.q] and not s:IsDone(a.q) and not a.node.manual and not a.node.profession and (a.travel<120 or offered) and s.count<s.limit then accept[a.q]=true end
+            if a.kind=="accept" and (planned[a.q] or offered) and not s.log[a.q] and not s:IsDone(a.q) and not (a.node and a.node.manual) and not (a.node and a.node.profession) and ((a.travel or math.huge)<120 or offered) and s.count<s.limit then accept[a.q]=true end
             if a.kind=="turnin" then turnin[a.q]=true end
         end
     end
@@ -69,10 +104,40 @@ function B.Wanted()
             turnin[current.q]=true
         end
     end
+    -- Embedded routing engine decides if a quest is wanted; only the live,
+    -- visible FastXP objective can authorize Ding's auto quest handlers.
+    if current and current.embedded and current.q and B.EmbeddedEngine then
+        local ns=B.EmbeddedEngine:Runtime()
+        local E=ns and ns.Engine
+        if E and type(E.WantsQuest)=="function" then
+            if current.kind=="accept" and not s.log[current.q] and not s:IsDone(current.q)
+                and s.count<s.limit and B.Call(E.WantsQuest,"accept",current.q)==true then
+                accept[current.q]=true
+            elseif current.kind=="turnin" and s.log[current.q] and s.log[current.q].ready
+                and B.Call(E.WantsQuest,"turnin",current.q)==true then
+                turnin[current.q]=true
+            end
+        end
+    end
     return accept,turnin,ahead
 end
 function B.Update()
     if not initialized or not B.settings.enabled then return end
+    -- Entitlements are supplied by the existing ForeverPilot_Access companion.
+    -- React at the next update if the loaded access changes or expires.
+    -- Never delete SavedVariables, account identities, PayPal subscriptions,
+    -- or quest progress when the mode changes.
+    local newMode=B.Mode()
+    if B.lastAccessMode and newMode~=B.lastAccessMode then
+        B.SetEnabled(true)
+        B.Recovery:Replan()
+        if B.Options and B.Options.frame and B.Options.frame:IsShown() then
+            B.Options:Render()
+        end
+        B.Print(newMode=="fast" and
+            B.T("Mode FastXP abonné actif.") or
+            B.T("Mode Zone Explorer gratuit actif."))
+    end
     if B.Options then B.Options:MaybeWelcome() end
     local started=B.Call(debugprofilestop)
     local s=B.State:Refresh()
@@ -87,6 +152,7 @@ function B.Update()
         B.UI:Render(B.Planner.current,s)
     end
     if B.SpeedMetrics then B.SpeedMetrics:Observe(s,B.Planner.current) end
+    if B.MapRoute then B.MapRoute:Sync(B.Planner.current,s) end
     B.UI:Tick();B.dirty=false
     local finished=B.Call(debugprofilestop)
     if started and finished then
@@ -166,7 +232,7 @@ end)
 function B.Snapshot()
     local s=B.State.current;if not s then return end
     local snapshot={version=B.version,at=time(),level=s.level,map=s.map,x=s.x,y=s.y,log=B.Copy(s.log),done=B.Copy(s.done),errors=B.errors or 0,lastError=B.lastError,updateMS=B.updateMS,maxUpdateMS=B.maxUpdateMS,blocked=B.Copy(B.Planner.blocked),knowledge=B.Knowledge.key,loop=B.Copy(B.Planner.current and B.Planner.current.plan),choices={}}
-    for i,a in ipairs(B.Planner.actions or {}) do if i<=12 then snapshot.choices[i]={q=a.q,kind=a.kind,name=a.node.name,score=a.score,travel=a.travel,point=B.Copy(a.point),levelFit=B.Copy(a.levelFit)} end end
+    for i,a in ipairs(B.Planner.actions or {}) do if i<=12 then snapshot.choices[i]={q=a.q,kind=a.kind,name=a.node and a.node.name or a.label,score=a.score,travel=a.travel,point=B.Copy(a.point),levelFit=B.Copy(a.levelFit)} end end
     B.char.diagnostic=snapshot
     snapshot.trip=B.Copy(B.char.trip)
     snapshot.journal=B.Copy(B.Journal.current)
@@ -179,7 +245,8 @@ function B.Snapshot()
 end
 function B.SkipCurrent()
     B.Guard(function()
-        if B.SpeedRoute and B.SpeedRoute:SkipStep(B.Planner.current) then B.Update()
+        if B.EmbeddedEngine and B.EmbeddedEngine:Skip(B.Planner.current) then B.Update()
+        elseif B.SpeedRoute and B.SpeedRoute:SkipStep(B.Planner.current) then B.Update()
         elseif B.Recovery:Defer(B.Planner.current) then B.Update()
         else B.Print(B.T("Aucune quête ou étape à passer.")) end
     end)
@@ -225,6 +292,34 @@ SlashCmdList.FOREVERPILOTLEVELING=function(msg)
     elseif msg:match("^reprendre%s+%d+$") or msg:match("^unskip%s+%d+$") then B.ResumeSkipped(tonumber(msg:match("(%d+)$")))
     elseif msg=="recovery" or msg=="blocages" then B.RecoveryUI:Open()
     elseif msg=="resync" or msg=="reset" then B.Recovery:Reset();B.Planner.current=nil;B.Guard(B.Update)
+    elseif msg=="vols" or msg=="flights" or msg=="flypath" then
+        if B.FlightSync then B.FlightSync:Report() end
+    elseif msg=="maproute" or msg=="trajet" or msg=="carte" then
+        local r=B.MapRoute and B.MapRoute:Status() or {}
+        B.Print((r.enabled and "Carte : tracé actif" or "Carte : tracé inactif")..
+            " · segments "..tostring(r.legs or 0)..
+            (r.estimated and " · portion directe estimée" or "")..
+            (r.pinSynced and " · repère de quête synchronisé" or ""))
+    elseif msg=="maproute on" or msg=="trajet on" then
+        B.settings.mapRoute=true;B.SetEnabled(true);B.Guard(B.Update)
+    elseif msg=="maproute off" or msg=="trajet off" then
+        B.settings.mapRoute=false;B.SetEnabled(true);B.Guard(B.Update)
+    elseif msg=="pin" or msg=="questpin" or msg=="repere" then
+        local current=B.Planner and B.Planner.current
+        local p=current and B.QuestMarker and B.QuestMarker:Point(current,B.State.current,B.Now())
+        if p then
+            B.Print(string.format("Repere de quete WoW : %d (%.1f, %.1f) [%s]",
+                p.map,p.x,p.y,p.source))
+        else
+            B.Print("Repere WoW indisponible pour cette etape : guidage FastXP de secours.")
+        end
+    elseif msg=="engine" or msg=="moteur" then
+        B.Print("Moteur de guidage : "..(B.EmbeddedEngine and B.EmbeddedEngine:Runtime() and
+            (B.settings.embeddedEngine~=false and "intégré" or "désactivé") or "indisponible"))
+    elseif msg=="engine off" or msg=="moteur off" then
+        B.settings.embeddedEngine=false;B.SetEnabled(true);B.Recovery:Replan();B.Guard(B.Update)
+    elseif msg=="engine on" or msg=="moteur on" then
+        B.settings.embeddedEngine=true;B.SetEnabled(true);B.Recovery:Replan();B.Guard(B.Update)
     elseif msg=="route" or msg=="parcours" then
         local r=B.SpeedRoute and B.SpeedRoute:Status() or {}
         B.Print((r.enabled and "Route active" or "Route inactive").." · "..tostring(r.guide or "aucun guide").." · étape "..tostring(r.index or "?").."/"..tostring(r.total or "?"))

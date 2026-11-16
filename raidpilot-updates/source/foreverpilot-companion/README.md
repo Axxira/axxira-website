@@ -9,7 +9,7 @@ gratuit et n'en a pas besoin.** Windows 10/11 x64, WoW Forever et Ding sont requ
 2. Choisis ta langue, puis **Ouvrir mon abonnement**. Le portail officiel est
    https://foreverpilot-subscriptions.tyronixstudio.workers.dev.
 3. Crée ton accès, **enregistre ta clé personnelle**, puis confirme l'abonnement PayPal.
-   Le service doit confirmer un paiement de 9,99 CAD pour activer la période mensuelle.
+   Le service doit confirmer un paiement de 6,99 CAD pour activer la période mensuelle.
 4. Dans le compagnon, **Importer…** ouvre le fichier `ForeverPilot-personal-key.json`.
    Tu peux aussi coller la clé. Ne partage jamais cette clé.
 5. Vérifie le dossier `_forever_`, ferme WoW pour la première installation, puis clique

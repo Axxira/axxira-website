@@ -331,6 +331,31 @@ function P:Plan(s)
         self.actions={};self.current={kind=kind,key=kind,point=kind=="corpse" and s.ghost and Ding.Compat.CorpsePoint() or nil,batch={},confidence="LIVE"}
         self.signature=nil;return self.current
     end
+    -- If the bundled native leveling engine is ready, it is the only guide
+    -- authority. Do not run the old speculative candidate/XP scorer first:
+    -- that scorer caused target oscillation and contradictory pickup advice.
+    if B.EmbeddedEngine and B.EmbeddedEngine:Enabled(s) then
+        local native=B.EmbeddedEngine:Choose(s,nil)
+        -- The guide can momentarily have no live step during a server
+        -- refresh. Keep its last valid native objective for a short grace
+        -- period instead of promoting Ding's different target immediately.
+        if not native and self.current and self.current.embedded and
+            B.EmbeddedEngine.last and type(B.EmbeddedEngine.last.at)=="number" and
+            s.now-B.EmbeddedEngine.last.at<6 then
+            return self.current
+        end
+        if native then
+            local old=self.current
+            self.actions={native}
+            self.signature=nil;self.plannedAt=s.now
+            if not old or old.key~=native.key then
+                B.Trace("decision",native.key)
+                native.since=s.now
+            else native.since=old.since end
+            self.current=native
+            return native
+        end
+    end
     local signature=self:Signature(s)
     if self.current and self.signature==signature and s.now-(self.plannedAt or 0)<5 then return self.current end
     self.signature=signature;self.plannedAt=s.now
@@ -371,6 +396,7 @@ function P:Plan(s)
     if B.SpeedRoute then winner=B.SpeedRoute:Choose(s,winner) or winner end
     winner=B.FlightPaths:Choose(s,winner)
     winner=B.Needs:Choose(s,winner)
+    if B.EmbeddedEngine then winner=B.EmbeddedEngine:Choose(s,winner) or winner end
     if not old or old.key~=winner.key then B.Trace("decision",winner.key);winner.since=s.now else winner.since=old.since end
     self.current=winner
     return winner

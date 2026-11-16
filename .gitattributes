@@ -1,0 +1,5 @@
+# Preserve packed navigation Lua blobs exactly. They contain binary zlib strings.
+raidpilot-updates/source/launcher/Runtime/**/*.lua -text
+raidpilot-updates/source/launcher/Runtime/**/*.tga -text
+raidpilot-updates/source/launcher/Runtime/**/*.ogg -text
+raidpilot-updates/source/launcher/Runtime/**/*.ttf -text

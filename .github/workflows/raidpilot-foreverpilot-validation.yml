@@ -16,6 +16,8 @@ on:
       - "raidpilot-updates/source/dungeonmappilot*/**"
       - "raidpilot-updates/release-history.json"
       - "raidpilot-updates/Restore-DingAddon.ps1"
+      - "raidpilot-updates/Restore-FastXPEngine.ps1"
+      - "raidpilot-updates/Test-ForeverPilotPackage.ps1"
       - "raidpilot-updates/Ding-NOTICE.txt"
       - ".github/workflows/raidpilot-foreverpilot-validation.yml"
 
@@ -38,6 +40,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
+      - name: Restore verified FastXP engine
+        shell: pwsh
+        run: ./raidpilot-updates/Restore-FastXPEngine.ps1
       - name: Restore verified Ding dependency
         shell: pwsh
         run: ./raidpilot-updates/Restore-DingAddon.ps1

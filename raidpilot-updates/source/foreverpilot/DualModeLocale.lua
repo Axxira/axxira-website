@@ -66,3 +66,21 @@ for code,translations in pairs(language) do
   end
  end
 end
+-- The compact Pro entry keeps FR/EN labels; other locales use the English fallback.
+local pro={
+ ["VERSION PRO"]="GO PRO",
+ ["PRO inclus"]="PRO INCLUDED",
+ ["PRO actif"]="PRO ACTIVE",
+ ["Passe à FastXP Pro"]="Upgrade to FastXP Pro",
+ ["Itinéraires XP optimisés et conseils adaptés à ta classe et ta spécialisation."]="Optimized XP routes and advice for your class and specialization.",
+ ["Découvre l'offre et le tarif dans le portail d'abonnement."]="Explore the offer and pricing in the subscription portal.",
+ ["Déjà abonné ? Active ta clé existante, sans repayer."]="Already subscribed? Activate your existing key without paying again.",
+ ["PRO inclus · édition RaidPilot"]="PRO included · RaidPilot edition",
+ ["FastXP Pro actif"]="FastXP Pro active",
+ ["Toutes les fonctions sont incluses. Aucun abonnement nécessaire."]="All features are included. No subscription required.",
+ ["Consulte ton accès et gère ton abonnement."]="View your access and manage your subscription.",
+}
+for key,value in pairs(pro) do
+ if B.locales.enUS then B.locales.enUS[key]=value end
+ if B.locales.frFR then B.locales.frFR[key]=key end
+end

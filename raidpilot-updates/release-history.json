@@ -3,6 +3,36 @@
   "entries": [
     {
       "component": "launcher",
+      "version": "0.2.44",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.44",
+      "date": "2026-11-16",
+      "summary": "FastXP 1.12.12 : accès Pro visible sous la flèche",
+      "details": "Bouton Pro compact sous la flèche, sans masquer Objets ni Options. L'édition publique sans accès affiche VERSION PRO / GO PRO avec une lueur rouge douce, fixe en combat. Le clic ouvre l'abonnement existant. Les abonnés voient PRO actif; le launcher RaidPilot reste entièrement gratuit avec PRO inclus. Aucun changement de prix, de licence, de progression ou de paiement. Les 28 composants internes accompagnent le paquet. Vérifications automatisées FR/EN et des deux éditions; rendu en jeu à confirmer."
+    },
+    {
+      "component": "launcher",
+      "version": "0.2.43",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.43",
+      "date": "2026-11-14",
+      "summary": "FastXP 1.12.11 : trajet visible sur la carte et repère de quête synchronisé",
+      "details": "FastXP 1.12.11 ajoute le tracé des routes calculées par le moteur intégré sur la carte du monde et la minicarte. La destination du parcours peut reprendre le repère exact de la quête en cours quand le client WoW en fournit les coordonnées non ambiguës. Le tracé indique le chemin connu estimé le plus efficace selon le réseau, les passages et transports détectés, sans certifier un optimum absolu ni inventer des sentiers. Une portion droite peut être approximative lorsque le graphe n’a pas de route fiable. Options > Outils permet de masquer/afficher le tracé; /fpl trajet donne son état. Aucun deuxième addon, bouton flottant, marqueur de quête ou paiement n’est ajouté. L’édition du launcher reste gratuite et les droits des abonnés de la version publique sont conservés. Tous les fichiers existants de WoW sont protégés jusqu’à la fermeture du jeu. Tests simulés et paquet Windows vérifiés; parcours réel et rendu visuel en jeu à confirmer."
+    },
+    {
+      "component": "launcher",
+      "version": "0.2.42",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.42",
+      "date": "2026-11-14",
+      "summary": "FastXP 1.12.10 : repères de quête WoW et nouveau moteur intégré",
+      "details": "Le launcher inclut FastXP 1.12.10 avec les 28 composants internes du moteur de navigation dans la même mise à jour. Pour une quête présente au journal, la flèche privilégie le repère de la quête affiché par WoW lorsque le client fournit une position non ambiguë correspondant au même identifiant de quête. Les vols, bateaux, portails et repères personnels conservent leur priorité; la commande /fpl pin indique si la position de quête est disponible. Le correctif conserve la stabilisation de la flèche, les cartes compressées réparées, les vols déjà découverts et les étapes du parcours. L’édition RaidPilot du launcher reste gratuite, sans second addon, abonnement ni modification des sauvegardes de personnage; le service CurseForge et les abonnés existants demeurent inchangés. La mise à jour s’installe après fermeture de WoW avec sauvegarde et vérification des 29 dossiers. Tests automatisés et vérification des blocs cartographiques effectués; précision de tous les repères en jeu non certifiée lorsque le client ne révèle pas leur position."
+    },
+    {
+      "component": "launcher",
       "version": "0.2.41",
       "raidPilotVersion": "0.16.0.1",
       "beaconVersion": "0.3.10",
@@ -370,36 +400,6 @@
       "date": "2026-10-26",
       "summary": "StashPilot — catalogue et comparaison d'icônes en version test",
       "details": "Ajoute un catalogue consultable d'objets Tarkov et une comparaison visuelle assistée depuis la capture F8. Les références sont téléchargées au besoin et conservées localement. Le prototype examine au maximum 120 premières références, et les suggestions doivent être confirmées par le joueur. La segmentation automatique de tout l'inventaire et la reconnaissance exhaustive ne sont pas disponibles. Aucun objet n'est vendu automatiquement."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.4.2",
-      "raidPilotVersion": "0.15.4.2",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — interface minimale et validation de scan F8",
-      "details": "StashPilot montre désormais les objets et leurs décisions en quatre colonnes seulement : objet, quantité, décision, raison. Les réglages d'inventaire et de besoins sont déplacés dans une fenêtre secondaire. En menu Tarkov, F8 lance l'OCR local puis une seule fenêtre permet de corriger et confirmer les noms/quantités reconnus avant de remplacer la liste du dernier scan et de sauvegarder localement. Aucun objet sans besoin confirmé ne reçoit un conseil de vente. L'OCR ne reconnaît pas les icônes seules, et le scan doit être vérifié manuellement avant confirmation. Aucun achat ni vente automatique."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.4.1",
-      "raidPilotVersion": "0.15.4.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — F8 seul dans le menu Tarkov ouvre le scan",
-      "details": "StashPilot n'exige plus Ctrl+Alt+P ni d'armer le scan quand le joueur est hors raid. Le watcher RaidPilot détecte aussi les nouveaux screenshots du menu dont les noms ne portent pas de coordonnées GPS. Un F8 pris depuis le menu Tarkov ouvre automatiquement StashPilot et lance une lecture OCR locale quand le PNG a fini d'être écrit. Plusieurs scans successifs possibles, sans action en raid. Les résultats OCR restent à vérifier : les icônes seules et quantités incertaines ne sont pas déclarées comme confirmées."
-    },
-    {
-      "component": "raidpilot",
-      "version": "0.15.4.0",
-      "raidPilotVersion": "0.15.4.0",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.15",
-      "date": "2026-10-25",
-      "summary": "StashPilot — scan direct F8 depuis l'inventaire Tarkov",
-      "details": "Ouverture rapide StashPilot par Ctrl+Alt+P. Le scanner est armé pour 90 secondes dès l'ouverture ou par le bouton « Scanner avec F8 » : le prochain screenshot manuel F8 créé dans le dossier EFT est lu avec l'OCR local et présenté dans une fenêtre de validation. Les captures F8 du recalage automatique RaidPilot ne sont pas utilisées pour ce scan. Bouton Annuler F8, fallback Choisir PNG, aucune reconnaissance d'icônes ni validation automatique des objets/quantités. Le menu de stash doit être visible lors de F8. Les besoins quêtes/planque restent soumis aux données confirmées."
     }
   ]
 }

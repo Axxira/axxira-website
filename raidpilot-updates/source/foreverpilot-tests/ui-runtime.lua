@@ -42,6 +42,7 @@ function methods:IsShown() return self.shown end
 function methods:Show() self.shown=true end
 function methods:Hide() self.shown=false end
 function methods:SetScale(v) self.scale=v end
+function methods:SetAlpha(v) self.alpha=v end
 function methods:SetScript(event,fn) self.scripts[event]=fn end
 function methods:SetEnabled(value) self.enabled=value end
 function methods:HookScript(event,fn)
