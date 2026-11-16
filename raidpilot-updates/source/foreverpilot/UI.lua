@@ -7,8 +7,13 @@ B.LocalizeLabels(verbs);B.LocalizeLabels(travelVerbs)
 local arrowTexture="Interface\\AddOns\\Ding\\Media\\Textures\\arrow_halo_gold"
 local mapTexture="Interface\\Icons\\INV_Misc_Map_01"
 function U:Symbol(texture)
-    if self.symbol~=texture then self.arrow:SetTexture(texture);self.symbol=texture end
-    self.arrow:SetRotation(0);self.arrow:Show()
+    if self.symbol~=texture then
+        self.arrow:SetTexture(texture)
+        self.symbol=texture
+        -- Do not reset a traveling arrow to north every 100 ms.
+        self.arrow:SetRotation(0)
+    end
+    self.arrow:Show()
 end
 local function font(f,size,x,y,width,height)
     local t=f:CreateFontString(nil,"OVERLAY");B.SetUIFont(t,size)
@@ -156,9 +161,9 @@ function U:Create()
     self.why:SetScript("OnClick",function() if self.current then self:Tooltip() end end)
     self.why:SetScript("OnEnter",function() if self.current then self:Tooltip() end end)
     self.why:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
-    self.arrow=f:CreateTexture(nil,"ARTWORK");self.arrow:SetSize(46,46);self.arrow:SetPoint("TOPLEFT",f,"TOPLEFT",22,-54)
+    self.arrow=f:CreateTexture(nil,"ARTWORK");self.arrow:SetSize(40,40);self.arrow:SetPoint("TOPLEFT",f,"TOPLEFT",25,-47)
     self.arrow:SetTexture("Interface\\AddOns\\Ding\\Media\\Textures\\arrow_halo_gold")
-    self.distance=font(f,12,7,108,76,20);self.distance:SetJustifyH("CENTER")
+    self.distance=font(f,12,7,92,76,18);self.distance:SetJustifyH("CENTER")
     rect(f,83,46,1,86,0.45,0.55,0.64,0.18)
     self.verb=font(f,11,97,44,249,16)
     self.action=font(f,16,97,64,249,38);self.action:SetWordWrap(true)
@@ -218,8 +223,20 @@ end
 function U:Tick()
     local a=self.current;if not a or not self.frame:IsShown() then return end
     local s=self.state
+    if B.MapRoute then B.MapRoute:Sync(a,s) end
     if B.settings.paused then self.arrow:Hide();self.distance:SetText(B.T("Pause"));return end
-    local p=a.point
+    -- A single destination authority owns an embedded guide step. Never
+    -- fall back to Ding/B.Travel for one transient nil/unknown Nav.Sample:
+    -- doing so flickers between different bearings and overwrites waypoints.
+    if a.embedded then
+        if B.EmbeddedEngine then B.EmbeddedEngine:Tick(self,a) end
+        return
+    end
+    local arrived,arrivalRadius
+    if B.SpeedRoute then arrived,arrivalRadius=B.SpeedRoute:PollArrival(a,s) end
+    if arrived then return end -- refresh the plan before drawing the old destination
+    local marker=B.QuestMarker and B.QuestMarker:Point(a,s,B.Now())
+    local p=marker or a.point
     if not p then self.arrow:Hide();self.distance:SetText(a.kind=="done" and "60" or "—");B.Navigation:Mark(nil);return end
     local leg=not a.walkOnly and B.Travel:Leg(p) or nil
     -- A hearthstone/teleport is an action performed here, not an arrow pointing
@@ -231,7 +248,11 @@ function U:Tick()
         self.routeHint=leg.hint;B.Navigation:Mark(nil);return
     end
     local target=leg and leg.point or p
-    B.Travel:World(target);B.Navigation:Mark(target)
+    B.Travel:World(target)
+    -- The game's quest pin is already visible. Do not stack a second
+    -- manually owned waypoint on it. Intermediate travel stops still show.
+    if marker and not leg then B.Navigation:Mark(nil)
+    else B.Navigation:Mark(target) end
     self.routeHint=leg and leg.hint or Ding.Compat.MapName(target.map)
     self.verb:SetText(leg and travelVerbs[leg.kind] or self.view.verb)
     if leg and travelVerbs[leg.kind] then self.progress:SetText(leg.hint or self.view.detail) else self.progress:SetText(self.view.detail) end
@@ -241,7 +262,7 @@ function U:Tick()
         local facing=Ding.Compat.GetFacing()
         if facing then self:Symbol(arrowTexture);self.arrow:SetRotation(Ding.Arrow.Bearing(dx,dy)-facing)
         else self:Symbol(mapTexture);self.progress:SetText(B.T("Orientation indisponible · consulte la carte")) end
-        self.distance:SetText(distance<12 and B.T("Sur place") or distance>=1000 and string.format(B.T("%.1f k yd"),distance/1000) or string.format(B.T("%.0f yd"),distance))
+        self.distance:SetText(distance<=(not leg and arrivalRadius or 12) and B.T("Sur place") or distance>=1000 and string.format(B.T("%.1f k yd"),distance/1000) or string.format(B.T("%.0f yd"),distance))
     else
         self:Symbol(mapTexture);self.distance:SetText(B.T("Carte"))
         self.verb:SetText(B.T("TRAJET À CONFIRMER"))

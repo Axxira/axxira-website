@@ -2,7 +2,7 @@
   "name": "foreverpilot-regressions",
   "private": true,
   "scripts": {
-    "test": "node run.cjs && node run-class-flight.cjs && node run-class-flight.cjs --en && node run-outing.cjs && node run-outing.cjs --en && node run-locale.cjs && node run-npc-recovery.cjs && node run-npc-recovery.cjs --en && node run-efficiency.cjs && node run-efficiency.cjs --en && node run-questfirst.cjs && node run-route.cjs && node run-route-locales.cjs && node run-speed-metrics.cjs && node run-speed-metrics-locales.cjs && node run-route-coverage.cjs"
+    "test": "node run.cjs && node run-class-flight.cjs && node run-class-flight.cjs --en && node run-outing.cjs && node run-outing.cjs --en && node run-locale.cjs && node run-npc-recovery.cjs && node run-npc-recovery.cjs --en && node run-efficiency.cjs && node run-efficiency.cjs --en && node run-questfirst.cjs && node run-route.cjs && node run-route-locales.cjs && node run-speed-metrics.cjs && node run-speed-metrics-locales.cjs && node run-route-coverage.cjs && node run-quest-marker.cjs && node run-route-arrival.cjs && node run-map-route.cjs && node run-map-route-engine-syntax.cjs && node run-pro-button.cjs"
   },
   "dependencies": {
     "fengari": "0.1.5"

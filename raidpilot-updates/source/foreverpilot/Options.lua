@@ -28,6 +28,74 @@ end
 function O:CloseFor(fn)
     self.frame:Hide();GameTooltip:Hide();fn()
 end
+-- One entry below the arrow. It never competes with Items/Options in the header.
+-- The test edition and existing subscribers get a quiet status, not an upsell.
+function O:SyncPremiumButton()
+    local b=self.premiumButton;if not b then return end
+    local state=B.distribution=="raidpilot-test" and "included" or B.HasPremium() and "active" or "upgrade"
+    local label=state=="included" and B.T("PRO inclus") or state=="active" and B.T("PRO actif") or B.T("VERSION PRO")
+    b.state=state;b.label:SetText(label)
+    local warm=state=="upgrade"
+    b.bg:SetColorTexture(warm and (b.hovered and .43 or .29) or .055,
+        warm and .035 or (b.hovered and .27 or .19),warm and .065 or .20,1)
+    b.label:SetTextColor(1,warm and .91 or .95,warm and .91 or .94)
+    for _,edge in ipairs(b.edges) do edge:SetColorTexture(warm and .98 or .30,warm and .26 or .68,warm and .32 or .65,.9) end
+    b.glow:SetShown(warm)
+    if not warm then b.phase=0 end
+    b:SetShown(true)
+end
+function O:CreatePremiumButton(guide)
+    if self.premiumButton then return end
+    local b=button(guide,"",6,115,72,function()
+        if GameTooltip then GameTooltip:Hide() end
+        self:Toggle("subscription")
+    end)
+    self.premiumButton=b;b:SetHeight(22);b.phase=0;b.elapsed=0;b.refresh=0
+    b.label:SetAllPoints(b);b.label:SetJustifyV("MIDDLE");b.label:SetWordWrap(false);B.SetUIFont(b.label,10)
+    local function edge(parent,x,y,w,h,alpha)
+        local t=parent:CreateTexture(nil,"BACKGROUND");t:SetPoint("TOPLEFT",parent,"TOPLEFT",x,y);t:SetSize(w,h)
+        t:SetColorTexture(.95,.12,.20,alpha);return t
+    end
+    b.edges={edge(b,0,0,72,1,.9),edge(b,0,-21,72,1,.9),edge(b,0,0,1,22,.9),edge(b,71,0,1,22,.9)}
+    b.glow=CreateFrame("Frame",nil,b);b.glow:SetAllPoints(b);b.glow:EnableMouse(false)
+    for i=1,3 do
+        local a=(4-i)*.17
+        edge(b.glow,-i,i,72+2*i,1,a);edge(b.glow,-i,-21-i,72+2*i,1,a)
+        edge(b.glow,-i,i,1,22+2*i,a);edge(b.glow,71+i,i,1,22+2*i,a)
+    end
+    b.glow:SetAlpha(.3)
+    b:SetScript("OnEnter",function()
+        b.hovered=true;self:SyncPremiumButton()
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(b,"ANCHOR_BOTTOM")
+        if b.state=="upgrade" then
+            GameTooltip:SetText(B.T("Passe à FastXP Pro"))
+            GameTooltip:AddLine(B.T("Itinéraires XP optimisés et conseils adaptés à ta classe et ta spécialisation."),.88,.93,.96,true)
+            GameTooltip:AddLine(B.T("Découvre l'offre et le tarif dans le portail d'abonnement."),1,.72,.68,true)
+            GameTooltip:AddLine(B.T("Déjà abonné ? Active ta clé existante, sans repayer."),.72,.82,.85,true)
+        else
+            GameTooltip:SetText(B.T(b.state=="included" and "PRO inclus · édition RaidPilot" or "FastXP Pro actif"))
+            GameTooltip:AddLine(B.T(b.state=="included" and "Toutes les fonctions sont incluses. Aucun abonnement nécessaire." or "Consulte ton accès et gère ton abonnement."),.80,.91,.91,true)
+        end
+        GameTooltip:Show()
+    end)
+    b:SetScript("OnLeave",function() b.hovered=false;self:SyncPremiumButton();if GameTooltip then GameTooltip:Hide() end end)
+    b:SetScript("OnHide",function() b.hovered=false;b.phase=0;b.glow:SetAlpha(.3) end)
+    b:SetScript("OnUpdate",function(_,dt)
+        b.refresh=b.refresh+dt;b.elapsed=b.elapsed+dt
+        if b.refresh>=1 then b.refresh=0;self:SyncPremiumButton() end
+        if b.elapsed<.05 then return end
+        local elapsed=b.elapsed;b.elapsed=0
+        if b.state~="upgrade" then return end
+        -- A slow four-second glow cycle; static during combat, pause or hover.
+        if b.hovered or B.settings.paused or B.Call(InCombatLockdown)==true then
+            b.glow:SetAlpha(b.hovered and .8 or .3);return
+        end
+        b.phase=(b.phase+elapsed)%4
+        b.glow:SetAlpha(.35+.25*(.5-.5*math.cos(b.phase*math.pi/2)))
+    end)
+    self:SyncPremiumButton()
+end
 -- Settings remain reachable even when guidance is hidden, unavailable or stopped.
 -- This entry point must not depend on the equipment/auction module initializing.
 function O:SyncEntryPoints()
@@ -50,6 +118,7 @@ function O:SyncEntryPoints()
         guide:HookScript("OnShow",function() self:SyncEntryPoints() end)
         guide:HookScript("OnHide",function() self:SyncEntryPoints() end)
     end
+    if guide then self:CreatePremiumButton(guide);self:SyncPremiumButton() end
     self.shortcut:ClearAllPoints()
     self.shortcut:SetPoint(B.settings.point or "TOP",UIParent,B.settings.point or "TOP",B.settings.x or 0,B.settings.y or -90)
     self.shortcut:SetScale(B.settings.scale or 1)
@@ -84,6 +153,12 @@ function O:Render()
         self.speedRouteToggle.label:SetText(on and B.T("Itinéraire rapide : actif") or B.T("Itinéraire rapide : désactivé"))
         self.speedRouteToggle:Paint(on,fast)
     end
+    if self.mapRouteToggle then
+        local fast=B.Mode()=="fast" and B.EmbeddedEngine and B.EmbeddedEngine:Runtime()~=nil
+        local on=fast and B.settings.mapRoute~=false
+        self.mapRouteToggle.label:SetText(on and B.T("Tracé sur carte : actif") or B.T("Tracé sur carte : désactivé"))
+        self.mapRouteToggle:Paint(on,fast)
+    end
     local free=B.distribution=="raidpilot-test"
     local active=B.HasPremium()
     if self.modeCaption then
@@ -91,8 +166,9 @@ function O:Render()
             B.T("Zone Explorer gratuit : quêtes recensées, zone par zone."))
     end
     self.accessTitle:SetText(free and B.T("Édition RaidPilot : tout est gratuit") or active and B.T("ForeverPilot Premium actif") or B.T("Zone Explorer gratuit actif · FastXP rapide en abonnement"))
-    self.accessDetails:SetText(free and B.T("Toutes les fonctions sont incluses dans ton édition de test. Aucun abonnement ni connexion ne sont nécessaires.") or active and B.T("Ton accès est chargé. Le compagnon vérifie le renouvellement lorsque tu l'ouvres. Garde-le ouvert pour actualiser l'accès.") or B.T("Le guidage gratuit reste actif, zone par zone. Abonne-toi uniquement pour les itinéraires XP rapides et le grind intelligent.\nPortail et compagnon Windows ci-dessous."))
+    self.accessDetails:SetText(free and B.T("Toutes les fonctions sont incluses dans ton édition de test. Aucun abonnement ni connexion ne sont nécessaires.") or active and B.T("Ton accès Pro existant est reconnu. Aucun nouvel abonnement ni paiement n'est nécessaire. Le compagnon Windows continue de vérifier tes renouvellements.") or B.T("Zone Explorer reste actif gratuitement. Déjà abonné ? Réutilise ta clé actuelle dans ForeverPilot Companion et recharge WoW pour retrouver le mode Pro. Aucun nouvel achat nécessaire. Pour un nouvel abonnement, utilise le portail ci-dessous."))
     self.accessLink:SetShown(not free);self.copyLink:SetShown(not free)
+    self:SyncPremiumButton()
 end
 function O:MaybeWelcome()
     if not B.char or not B.settings or not B.settings.enabled or B.char.welcomeSeen or B.Call(InCombatLockdown)==true or B.Call(UnitIsDeadOrGhost,"player")==true then return end
@@ -160,7 +236,12 @@ function O:Create()
         B.settings.layerShortcut=not B.settings.layerShortcut;if B.LayerUI then B.LayerUI:Refresh() end;self:Render()
     end)
     p=self.pages.tools
-    text(p,13,20,124,242,22,B.T("L'essentiel, sans encombrer la flèche."))
+    self.mapRouteToggle=button(p,"",20,124,230,function()
+        if B.Mode()~="fast" then return end
+        B.settings.mapRoute=not (B.settings.mapRoute~=false)
+        B.SetEnabled(B.settings.enabled~=false)
+        B.Guard(B.Update);self:Render()
+    end)
     self.speedRouteToggle=button(p,"",270,124,230,function()
         if B.Mode()~="fast" then return end
         B.settings.speedRoute=not (B.settings.speedRoute~=false)

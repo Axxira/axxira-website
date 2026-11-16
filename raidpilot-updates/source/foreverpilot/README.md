@@ -1,3 +1,19 @@
+# FastXP 1.12.12 — RaidPilot (édition de test gratuite)
+
+Cette distribution du launcher RaidPilot comprend toutes les fonctions FastXP de test, sans abonnement. La distribution publique CurseForge reste séparée et continue d’utiliser le compagnon d’abonnement existant. Une seule installation FastXP, ses 28 composants internes de navigation et Ding. Le nouveau guidage privilégie le marqueur de la quête active sur la carte de WoW lorsque le client fournit réellement ses coordonnées; les trajets aériens et autres transports restent prioritaires. Diagnostic : /fpl pin. Conserve les sauvegardes de personnage.
+
+## 1.12.12 — Accès Pro près de la flèche / Pro shortcut
+
+FR : Le bouton VERSION PRO apparaît sous la flèche avec une lueur rouge lente, fixe pendant le combat. Il ouvre Options > Abonnement et le lien du portail existant. Les abonnés voient PRO actif; l'édition gratuite RaidPilot affiche PRO inclus, sans paiement demandé. Objets et Options restent dégagés.
+
+EN: GO PRO sits below the arrow with a gentle red glow, steady during combat. It opens the existing subscription page and portal link. Subscribers see PRO ACTIVE; the free RaidPilot edition shows PRO INCLUDED with no checkout required. Items and Options remain unobstructed.
+
+## 1.12.11 — Tracé visible vers les quêtes
+
+En mode FastXP rapide (édition de test du launcher ou accès Pro), le tracé de la carte du monde et celui de la minicarte sont activés par défaut. Le parcours utilise le graphe de navigation déjà inclus, ses passages connus et les transports admissibles; son coût est estimé, sans garantie d'optimalité absolue sur tous les terrains. Si le serveur fournit le marqueur de la quête active, la destination de la route et la flèche sont alignées sur le même point. Si aucun trajet routier connu n'est disponible, une portion directe estimée peut apparaître : ce n'est pas un chemin traversable certifié. Aucun second pin de quête ni raccourci du moteur n'est ajouté. Un waypoint manuel existant n'est pas remplacé.
+
+Options > Outils > Tracé sur carte permet de masquer ou d'afficher le parcours. Les commandes /fpl trajet, /fpl trajet on et /fpl trajet off affichent l'état et changent ce réglage. Les paramètres restent propres au personnage; les abonnements et les progrès des quêtes ne sont pas modifiés. Le tracé ne signifie jamais que l'addon joue ou se déplace à la place du joueur. Validation réelle des itinéraires à effectuer dans WoW Forever.
+
 # ForeversPilot FastXp 1.10.4 · 11 langues · 11 languages
 
 ## 1.10.4 — Lisibilité / Readability
@@ -89,7 +105,7 @@ Other Forever prerequisites remain incomplete; this is not a certified 1–60 ro
 - **Launcher RaidPilot : toutes les fonctions sont gratuites**, Fast XP et conseils
   de classe compris. Aucun abonnement, essai expirant ou contrôle en ligne requis.
 - **Distribution publique : Fast XP et conseils de classe/spécialisation nécessitent
-  un abonnement de 9,99 CAD/mois** et le compagnon Windows. Options → Abonnement donne
+  un abonnement de 6,99 CAD/mois** et le compagnon Windows (édition CurseForge uniquement). Options → Abonnement donne
   les instructions et le lien du portail. Renouvellement mensuel; annulation des prochains
   paiements depuis le portail ou PayPal. La période déjà payée reste active.
 - Le portail indique si les abonnements sont ouverts. Une confirmation PayPal seule
@@ -97,8 +113,10 @@ Other Forever prerequisites remain incomplete; this is not a certified 1–60 ro
   importe-la dans le compagnon, ferme WoW pour la première installation et active ton accès.
   Ouvre régulièrement le compagnon pour actualiser l'accès (validité hors ligne limitée
   à sept jours et à la période payée). Reconnecte-toi au jeu pour charger l'actualisation.
-- Sans accès public actif, Ding retrouve son guidage; prix HDV, outils et Options restent
-  accessibles. Le ZIP Lua ne se connecte jamais directement à PayPal.
+- Sans accès Pro actif, FastXP reste en mode gratuit Zone Explorer, avec sa flèche,
+  ses quêtes de zone, ses outils et ses Options. Aucun nouvel achat n'est exigé des
+  abonnés actuels : le compagnon conserve la même clé et les mêmes droits.
+  Le ZIP Lua ne se connecte jamais directement à PayPal.
 
 Portail officiel : https://foreverpilot-subscriptions.tyronixstudio.workers.dev
 

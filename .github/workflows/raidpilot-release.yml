@@ -50,6 +50,9 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Restore verified FastXP engine
+        shell: pwsh
+        run: ./raidpilot-updates/Restore-FastXPEngine.ps1
       - name: Restore verified Ding dependency
         shell: pwsh
         run: ./raidpilot-updates/Restore-DingAddon.ps1

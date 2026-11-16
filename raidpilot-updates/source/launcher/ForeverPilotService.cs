@@ -77,7 +77,96 @@ internal static class ForeverPilotService
     internal const string AddonName = "ForeverPilot_Leveling";
     internal static string BundlePath => Path.Combine(AppContext.BaseDirectory, "payload", AddonName);
     internal static string DingBundlePath => Path.Combine(AppContext.BaseDirectory, "payload", "Ding");
+    private const string EnginePrefix = "ForeverPilot_Engine";
+    private const int RequiredEngineFolders = 28;
     private static string SettingsPath => Path.Combine(LauncherSettingsStore.SettingsDirectory, "foreverpilot.json");
+
+    // Older FastXP fixtures have no integrated engine. From 1.12.9, every
+    // internal support pack is shipped with the one ForeverPilot_Leveling
+    // addon, rather than expecting the player to install Polestar separately.
+    private static string[] BundledEngineFolders(string bundle)
+    {
+        var toc = File.ReadAllLines(Path.Combine(bundle, AddonName + ".toc"));
+        var usesEngine = toc.Any(line => line.TrimStart().StartsWith("## Dependencies:", StringComparison.OrdinalIgnoreCase) &&
+            line.Contains(EnginePrefix, StringComparison.Ordinal));
+        if (!usesEngine) return Array.Empty<string>();
+        var parent = Path.GetDirectoryName(Path.GetFullPath(bundle))!;
+        var folders = Directory.EnumerateDirectories(parent, EnginePrefix + "*", SearchOption.TopDirectoryOnly)
+            .Where(folder => Path.GetFileName(folder) == EnginePrefix ||
+                Path.GetFileName(folder).StartsWith(EnginePrefix + "_", StringComparison.Ordinal))
+            .OrderBy(folder => folder, StringComparer.OrdinalIgnoreCase).ToArray();
+        if (folders.Length != RequiredEngineFolders ||
+            !folders.Any(folder => Path.GetFileName(folder) == EnginePrefix))
+            throw new InvalidDataException("Moteur FastXP incomplet : 28 composants requis.");
+        foreach (var folder in folders) ValidateEngineFolder(folder);
+        return folders;
+    }
+
+    private static void ValidateEngineFolder(string folder, string? expectedName = null)
+    {
+        RejectLinkedPath(folder);
+        var name = expectedName ?? Path.GetFileName(folder);
+        if (name != EnginePrefix && !name.StartsWith(EnginePrefix + "_", StringComparison.Ordinal))
+            throw new InvalidDataException("Dossier du moteur FastXP invalide.");
+        var tocPath = Path.Combine(folder, name + ".toc");
+        if (!File.Exists(tocPath)) throw new InvalidDataException("TOC moteur FastXP absent : " + name);
+        var lines = File.ReadAllLines(tocPath);
+        if (!lines.Any(l => l.Trim().Equals("## Interface: 16001", StringComparison.OrdinalIgnoreCase)))
+            throw new InvalidDataException("Module du moteur incompatible : " + name);
+        var modules = lines.Select(l => l.Trim()).Where(l => l.Length > 0 && !l.StartsWith('#')
+            && (l.EndsWith(".lua", StringComparison.OrdinalIgnoreCase) ||
+                l.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))).ToArray();
+        if (modules.Length == 0) throw new InvalidDataException("Module moteur vide : " + name);
+        foreach (var module in modules)
+            if (!File.Exists(SafeChild(folder, module)))
+                throw new InvalidDataException("Module moteur absent : " + name + "/" + module);
+    }
+
+    // The engine contains ~100 MiB of map data. Hashing it on every
+    // launcher polling tick would freeze the UI; cache a verified result
+    // briefly and invalidate it explicitly after an installation.
+    private static readonly object EngineCacheLock = new();
+    private static string? EngineCacheKey;
+    private static DateTime EngineCacheAt;
+    private static bool EngineCacheValue;
+
+    private static void InvalidateEngineCache()
+    {
+        lock (EngineCacheLock) EngineCacheKey = null;
+    }
+
+    private static bool EngineMatchesBundle(string bundle, string installedAddons)
+    {
+        var key = Path.GetFullPath(bundle) + "|" + Path.GetFullPath(installedAddons);
+        lock (EngineCacheLock)
+        {
+            if (EngineCacheKey == key &&
+                (DateTime.UtcNow - EngineCacheAt).TotalSeconds < 25)
+                return EngineCacheValue;
+
+            bool ok = true;
+            foreach (var source in BundledEngineFolders(bundle))
+            {
+                var target = Path.Combine(installedAddons, Path.GetFileName(source));
+                if (!Directory.Exists(target)) { ok = false; break; }
+                foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
+                {
+                    var dest = SafeChild(target, Path.GetRelativePath(source, file));
+                    if (!File.Exists(dest) || new FileInfo(file).Length != new FileInfo(dest).Length)
+                    { ok = false; break; }
+                    using var original = File.OpenRead(file);
+                    using var installed = File.OpenRead(dest);
+                    if (!SHA256.HashData(original).SequenceEqual(SHA256.HashData(installed)))
+                    { ok = false; break; }
+                }
+                if (!ok) break;
+            }
+            EngineCacheKey = key;
+            EngineCacheAt = DateTime.UtcNow;
+            EngineCacheValue = ok;
+            return ok;
+        }
+    }
 
     internal static ForeverPilotStatus Inspect()
     {
@@ -116,8 +205,9 @@ internal static class ForeverPilotService
         {
             try
             {
-                if (!MatchesBundle(addon, bundle))
-                    problem = "Même numéro de version, mais fichiers différents du launcher. Clique sur Réparer l'addon dans WoW.";
+                if (!MatchesBundle(addon, bundle) ||
+                    !EngineMatchesBundle(bundle, Path.GetDirectoryName(addon)!))
+                    problem = "Fichiers FastXP ou moteur intégré incomplets. Clique sur Réparer l'addon dans WoW.";
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
             { problem = "Vérification des fichiers impossible : " + e.Message; }
@@ -278,6 +368,9 @@ internal static class ForeverPilotService
         game = NormalizeGamePath(game) ?? throw new InvalidDataException("Installation WoW Forever introuvable.");
         RejectLinkedPath(game);
         ValidateAddon(bundle);
+        // Validate all native routing/data packs before staging or touching
+        // any installed addon or customer access file.
+        var engineSources = BundledEngineFolders(bundle);
         var target = Path.Combine(game, "Interface", "AddOns", AddonName);
         RejectLinkedPath(target);
         var existing = ReadVersion(target);
@@ -306,6 +399,16 @@ internal static class ForeverPilotService
             CopyVerified(bundle, stage);
             ValidateAddon(stage);
             plans.Add((target, stage, Path.Combine(backups, (existing ?? "installation") + "-" + id)));
+            foreach (var source in engineSources)
+            {
+                var name = Path.GetFileName(source);
+                var engineTarget = Path.Combine(game, "Interface", "AddOns", name);
+                RejectLinkedPath(engineTarget);
+                var engineStage = Path.Combine(backups, "staging-" + name + "-" + id);
+                CopyVerified(source, engineStage);
+                ValidateEngineFolder(engineStage, name);
+                plans.Add((engineTarget, engineStage, Path.Combine(backups, name + "-" + id)));
+            }
         }
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         // Recheck immediately before switching folders: WoW may have started during staging.
@@ -324,8 +427,11 @@ internal static class ForeverPilotService
                 Directory.Move(plan.Stage, plan.Target);
                 installed.Add((plan.Target, plan.Stage));
             }
+            InvalidateEngineCache();
             ValidateDing(dingTarget);
             ValidateAddon(target);
+            if (!newerAddon && !EngineMatchesBundle(bundle, Path.GetDirectoryName(target)!))
+                throw new InvalidDataException("Fichiers du moteur FastXP différents du paquet vérifié.");
         }
         catch
         {
@@ -334,7 +440,10 @@ internal static class ForeverPilotService
             foreach (var item in moved.AsEnumerable().Reverse()) Directory.Move(item.Backup, item.Target);
             throw;
         }
-        return moved.Count > 0 ? moved[^1].Backup : "";
+        // Keep the existing API's return value: backup of the old FastXP,
+        // never the backup of the last internal support module.
+        var addonBackup = moved.FirstOrDefault(item => item.Target == target).Backup;
+        return addonBackup ?? (moved.Count > 0 ? moved[^1].Backup : "");
     }
 
     private static void CopyVerified(string source, string destination)
@@ -347,7 +456,9 @@ internal static class ForeverPilotService
             if (Directory.Exists(entry)) { CopyVerified(entry, dest); continue; }
             var info = new FileInfo(entry);
             if (info.Length > 16 * 1024 * 1024 ||
-                !(info.Name == "LICENSE" || new[] { ".lua", ".toc", ".tga", ".md", ".txt", ".xml", ".ttf" }.Contains(info.Extension.ToLowerInvariant())))
+                !(info.Name == "LICENSE" || new[] { ".lua", ".toc", ".tga", ".png", ".jpg", ".jpeg",
+                    ".blp", ".md", ".txt", ".xml", ".ttf", ".otf", ".ogg", ".wav", ".json",
+                    ".lua54" }.Contains(info.Extension.ToLowerInvariant())))
                 throw new InvalidDataException("Fichier inattendu dans l'addon : " + info.Name);
             File.Copy(entry, dest, overwrite: false);
             using var original = File.OpenRead(entry);
