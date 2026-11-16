@@ -1,29 +1,59 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-14T20:28:07.8754769+00:00",
+  "publishedAt": "2026-11-16T11:40:55.2414057+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.41-a957f7736ca0/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "5EAB921E8DD5222C2BF16606B5B396C7FA90C8A683A51DBD3061708E0F89904B",
-    "sizeBytes": 234574476,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.44-94be7064a765/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "4FA4DAF3BA4ABEF341FBB37F47F7B014085422F9B6F80D5A3A4C1A93D61621DA",
+    "sizeBytes": 234574474,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.41-a957f7736ca0/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "0E55E678E7E320333690F75DC564C9EC47A1C7AEE212EC4E0F0FBF802BC18B76",
-    "sizeBytes": 58342776,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.44-94be7064a765/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "64EA20A189BEA2BA3229F87716D82AFD4DB9123BDAF3DE8F66C512F384CBB405",
+    "sizeBytes": 58342774,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.41",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.41-a957f7736ca0/RaidPilot-Launcher-v0.2.41-Windows-x64.zip",
-    "sha256": "64BC97BC2F2E81779E1C1FC415A6F0CE87A56DEDA3DD6BE94C19858BF8B0C6D9",
-    "sizeBytes": 360955804,
-    "releaseNotes": "FastXP 1.12.4 améliore la reprise lorsque la quête actuelle est bloquée : recherche prudente d’étapes accessibles dans la même section, sans contourner les prérequis ni marquer les quêtes comme terminées. Ajout de statistiques XP/heure par parcours, déplacement, reprise et étapes lentes, conservées uniquement sur le PC dans les sauvegardes de personnage. Rapport via /fpl perf ou Options > Outils. Nouveaux textes traduits dans 11 langues. La version FastXP gratuite du launcher et DungeonMapPilot demeurent dans les mêmes dossiers, sans doublons; les abonnements restent inchangés. Validation de structure des 86 sections de guides 1–60 et tests automatisés; supériorité de vitesse et parcours réel complet non certifiés. Fermer WoW avant d’installer la mise à jour."
+    "version": "0.2.44",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.44-94be7064a765/RaidPilot-Launcher-v0.2.44-Windows-x64.zip",
+    "sha256": "207BBC797A8609F4C2C9168B2A750D9E43F9906346F5AE2830A76DEDDF735C24",
+    "sizeBytes": 417199273,
+    "releaseNotes": "Bouton Pro compact sous la flèche, sans masquer Objets ni Options. L'édition publique sans accès affiche VERSION PRO / GO PRO avec une lueur rouge douce, fixe en combat. Le clic ouvre l'abonnement existant. Les abonnés voient PRO actif; le launcher RaidPilot reste entièrement gratuit avec PRO inclus. Aucun changement de prix, de licence, de progression ou de paiement. Les 28 composants internes accompagnent le paquet. Vérifications automatisées FR/EN et des deux éditions; rendu en jeu à confirmer."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.44",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.44",
+      "date": "2026-11-16",
+      "summary": "FastXP 1.12.12 : accès Pro visible sous la flèche",
+      "details": "Bouton Pro compact sous la flèche, sans masquer Objets ni Options. L'édition publique sans accès affiche VERSION PRO / GO PRO avec une lueur rouge douce, fixe en combat. Le clic ouvre l'abonnement existant. Les abonnés voient PRO actif; le launcher RaidPilot reste entièrement gratuit avec PRO inclus. Aucun changement de prix, de licence, de progression ou de paiement. Les 28 composants internes accompagnent le paquet. Vérifications automatisées FR/EN et des deux éditions; rendu en jeu à confirmer."
+    },
+    {
+      "component": "launcher",
+      "version": "0.2.43",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.43",
+      "date": "2026-11-14",
+      "summary": "FastXP 1.12.11 : trajet visible sur la carte et repère de quête synchronisé",
+      "details": "FastXP 1.12.11 ajoute le tracé des routes calculées par le moteur intégré sur la carte du monde et la minicarte. La destination du parcours peut reprendre le repère exact de la quête en cours quand le client WoW en fournit les coordonnées non ambiguës. Le tracé indique le chemin connu estimé le plus efficace selon le réseau, les passages et transports détectés, sans certifier un optimum absolu ni inventer des sentiers. Une portion droite peut être approximative lorsque le graphe n’a pas de route fiable. Options > Outils permet de masquer/afficher le tracé; /fpl trajet donne son état. Aucun deuxième addon, bouton flottant, marqueur de quête ou paiement n’est ajouté. L’édition du launcher reste gratuite et les droits des abonnés de la version publique sont conservés. Tous les fichiers existants de WoW sont protégés jusqu’à la fermeture du jeu. Tests simulés et paquet Windows vérifiés; parcours réel et rendu visuel en jeu à confirmer."
+    },
+    {
+      "component": "launcher",
+      "version": "0.2.42",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.42",
+      "date": "2026-11-14",
+      "summary": "FastXP 1.12.10 : repères de quête WoW et nouveau moteur intégré",
+      "details": "Le launcher inclut FastXP 1.12.10 avec les 28 composants internes du moteur de navigation dans la même mise à jour. Pour une quête présente au journal, la flèche privilégie le repère de la quête affiché par WoW lorsque le client fournit une position non ambiguë correspondant au même identifiant de quête. Les vols, bateaux, portails et repères personnels conservent leur priorité; la commande /fpl pin indique si la position de quête est disponible. Le correctif conserve la stabilisation de la flèche, les cartes compressées réparées, les vols déjà découverts et les étapes du parcours. L’édition RaidPilot du launcher reste gratuite, sans second addon, abonnement ni modification des sauvegardes de personnage; le service CurseForge et les abonnés existants demeurent inchangés. La mise à jour s’installe après fermeture de WoW avec sauvegarde et vérification des 29 dossiers. Tests automatisés et vérification des blocs cartographiques effectués; précision de tous les repères en jeu non certifiée lorsque le client ne révèle pas leur position."
+    },
     {
       "component": "launcher",
       "version": "0.2.41",
@@ -233,36 +263,6 @@
       "date": "2026-11-07",
       "summary": "ForeverPilot 1.6.0 : classe, maîtres de vol et ChangeLayer",
       "details": "Les quêtes de classe de Ding passent en priorité dans la flèche, avec leurs prérequis et les restrictions de race et de niveau. Les chaînes de classe Forever utilisent aussi les liens explicites du guide lorsque la base est incomplète; les offres réelles du PNJ restent prioritaires. Les quêtes indisponibles, trop difficiles ou mises de côté ne bloquent pas le guidage. À proximité d'un nouveau village, une halte courte propose le maître de vol allié ou neutre encore non confirmé. Ouvrir sa carte confirme le trajet et reprend les quêtes; aucun vol automatique. Le panneau conserve sa taille. Le bouton Changer de layer utilise maintenant ChangeLayer, sans exiger ForeverPilot chez les volontaires. Le launcher télécharge ChangeLayer intact depuis CurseForge, avec contrôle SHA-256 et sauvegarde. Demande dans Général en anglais. Redémarrer complètement WoW via Battle.net après installation, puis activer Ding, ForeverPilot_Leveling et ChangeLayer. Ding reste inclus; le bridge et les réglages personnels sont préservés."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.20",
-      "raidPilotVersion": "0.16.0.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.20",
-      "date": "2026-11-07",
-      "summary": "ForeverPilot 1.5.0 : bouton Changer de layer",
-      "details": "Ajoute un bouton discret sous le guidage et un panneau facultatif accessible avec /fpl layers. Recherche sur demande de volontaires ForeverPilot dans la même zone, via son propre canal et la guilde; un seul volontaire est sélectionné. Le mode Aider les autres est facultatif et désactivé par défaut. Les invitations sont acceptées manuellement dans WoW. Le bouton Demander dans Général prépare un message modifiable, sans l’envoyer. Lorsqu’un transfert est déjà proposé par WoW, Changer maintenant permet de le confirmer hors combat. Seule la confirmation serveur affiche un succès; rejoindre un groupe ne prouve pas un changement. Gestion des délais, combat, instances, annulation, refus serveur et anti-spam persistant après rechargement. Aucun départ de groupe automatique, aucun numéro de layer inventé. Code original, sans copie de ChangeLayer. Les utilisateurs doivent avoir ForeverPilot 1.5.0 et activer l’aide pour répondre à la recherche. Ding reste inclus; le bridge ForeverPilot est préservé. Appliquer la mise à jour dans la page ForeverPilot du launcher, jeu fermé."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.19",
-      "raidPilotVersion": "0.16.0.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.19",
-      "date": "2026-11-07",
-      "summary": "ForeverPilot : Ding inclus et détection des buts corrigée",
-      "details": "Corrige les installations sur un nouveau PC : le launcher inclut maintenant Ding v1.8.1 officiel et ForeverPilot_Leveling 1.4.2. Le bouton Installer ForeverPilot + Ding installe les deux addons, jeu fermé. Si ForeverPilot est déjà présent, Installer / réparer Ding complète la dépendance manquante ou cassée. Le contrôle vérifie tous les modules Ding, son édition Forever et sa flèche; la seule présence de Ding.toc ne suffit plus. Un Ding existant valide est conservé. Les versions remplacées sont sauvegardées et les deux addons sont restaurés ensemble si une étape échoue. Une version plus récente de ForeverPilot est préservée lors de la réparation de Ding. Ding est récupéré depuis sa publication officielle avec empreinte SHA-256 fixe; code source, licence GPLv3, crédits et licences des polices sont inclus. Un essai automatique installe le vrai package sur une installation vierge et compare chaque fichier. Après installation, activer Ding et ForeverPilot_Leveling à la sélection du personnage. Le bridge ForeverPilot et WTF sont conservés. Lumières LE BUT : corrige les buts ajoutés tardivement au détail LNH après des actions plus récentes et les buts gagnants publiés après la fin du match. Suivi toutes les 10 secondes en direct, effet de 10 secondes inchangé. Le launcher conserve le résultat de la dernière alerte et un diagnostic local borné pour distinguer réception du but, WoW hors premier plan et erreur d’affichage. Aucun rattrapage des anciens buts au démarrage ou après une longue coupure."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.18",
-      "raidPilotVersion": "0.16.0.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.18",
-      "date": "2026-11-07",
-      "summary": "ForeverPilot : les lumières de but des Canadiens dans WoW",
-      "details": "Option LE BUT dans la page ForeverPilot : deux gyrophares rouges animés, un bandeau lumineux rouge, blanc et bleu et un panneau à DEL pendant 10 secondes. Le launcher lit les buts de Montréal dans le flux public de la LNH et affiche la célébration uniquement lorsque la fenêtre WoW Forever sélectionnée est active. Activer les lumières puis laisser le launcher ouvert, même réduit. Un bouton Tester dans WoW permet un aperçu identifié. Aucun ancien but au démarrage ou après une longue coupure, aucun doublon; les tentatives de tirs de barrage sont exclues. Masquage immédiat hors de WoW, aucune interception des clics. Actualisation du match toutes les 20 secondes : le délai dépend de la publication LNH et peut différer de la télévision. Nécessite WoW en mode fenêtré ou plein écran sans bordure. Aucun son, saisie dans le jeu ni accès à sa mémoire. Option désactivée par défaut. ForeverPilot_Leveling reste en version 1.4.2."
     }
   ]
 }
