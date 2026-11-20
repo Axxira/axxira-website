@@ -14,11 +14,12 @@ free and never calls this service. The portal and companion support French and E
   files and `.dev.vars*` are ignored. Never commit them, logs, account screenshots or keys.
 - Required secrets: PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_PLAN_ID,
   PAYPAL_WEBHOOK_ID, SIGNING_JWK. The RSA private JWK remains server-side.
-- Live also requires a verified release asset in COMPANION_URL, explicitly enabled
-  BILLING_ENABLED and LIVE_VERIFIED. Use `wrangler deploy --config wrangler.live.jsonc
-  --var BILLING_ENABLED:true --var LIVE_VERIFIED:true` only after sandbox E2E passes and
-  the companion artifact has been published and downloaded successfully. Subsequent
-  deployments using the default live config disable new checkouts intentionally.
+- Live requires explicitly enabled BILLING_ENABLED and LIVE_VERIFIED, plus either
+  ADDON_ACCESS_ENABLED=true or a verified release asset in COMPANION_URL. Publish
+  the matching addon before enabling addon activation. Deploy with `--keep-vars`
+  and explicit live/addon flags to preserve the existing production configuration;
+  never replace secrets, the signing key or the database. The default live config
+  intentionally disables new checkouts unless the live flags are explicitly set.
 - Signed PayPal webhooks target `/api/webhook`. Hourly reconciliation repairs missed
   activation notifications; refund/reversal events are recorded idempotently.
 

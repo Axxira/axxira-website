@@ -23,16 +23,21 @@ The CurseForge upload is currently performed through the signed-in author portal
 No upload token has been configured in GitHub. Never describe this step as
 automatic until a securely stored token and a verified upload workflow exist.
 
-From v1.9.0 the standalone public package changes only the Bootstrap distribution
-marker from `raidpilot-test` to `public`. The launcher payload keeps `raidpilot-test`
+The standalone public package uses the `subscriber` Bootstrap distribution marker
+and a public-stable TOC. The launcher payload keeps `raidpilot-test`
 and always grants all features, even offline or with expired access. The packaging
 script checks the marker and the exact transformed bytes. Never install the public
 package into the RaidPilot test payload.
 
-The public CAD 9.99/month service lives in source/subscriptions; its Windows companion
-lives in source/foreverpilot-companion. CI validates both and releases the standalone
-companion ZIP. Complete sandbox payment, signed activation, cancellation and refund
-checks before enabling production checkout. Production checkout also requires the
-verified companion release URL. Do not describe a sandbox charge as a real payment.
+The public CAD 6.99/month service lives in source/subscriptions. From 1.12.13,
+customers copy a signed code from the payment portal into Options > Subscription;
+no Windows companion is required. Payment remains in the browser. A new code must
+be imported after each paid renewal. Offline codes expire at the paid-period end,
+at most 32 days, and cannot be revoked immediately after a refund. The existing
+companion in source/foreverpilot-companion remains compatible but optional.
+Publish the matching addon before deploying ADDON_ACCESS_ENABLED=true. Preserve
+the existing live variables, secrets, signing key and database on deployment.
+Complete sandbox payment, signed activation, cancellation and refund checks before
+enabling production checkout. Do not describe a sandbox charge as a real payment.
 The local Lua client is modifiable GPL code, not tamperproof DRM. Keep private keys,
 accounts and test receipts outside the public repository and all client archives.
