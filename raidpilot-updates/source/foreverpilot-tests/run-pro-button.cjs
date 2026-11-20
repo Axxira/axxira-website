@@ -9,7 +9,7 @@ for(const language of ['frFR','enUS']){
  }
  run(`TEST={clock=100,checks=0};Ding={db={},Compat={}};function GetTime()return TEST.clock end;function time()return TEST.clock end;function InCombatLockdown()return TEST.combat end;function GetLocale()return '${language}' end`,'host');
  run(fs.readFileSync(path.join(__dirname,'ui-runtime.lua'),'utf8'),'UI runtime');
- for(const file of ['Bootstrap.lua','Locale.lua','DualModeLocale.lua','Items.lua','Market.lua','Advisor.lua','UI.lua','Options.lua'])run(fs.readFileSync(path.join(addon,file),'utf8'),file);
+ for(const file of ['Bootstrap.lua','Locale.lua','DualModeLocale.lua','AccessLocale.lua','Access.lua','Items.lua','Market.lua','Advisor.lua','UI.lua','Options.lua'])run(fs.readFileSync(path.join(addon,file),'utf8'),file);
  run(`
  local B=ForeverPilotLeveling;B.InitDB();B.distribution='subscriber';ForeverPilotAccess=nil
  local O=B.Options;B.UI:Create();local b=O.premiumButton
@@ -28,6 +28,11 @@ for(const language of ['frFR','enUS']){
  check(O.accessLink:IsShown() and O.copyLink:IsShown(),'New visitor can reach the portal')
  check(O.accessLink.text==B.subscriptionURL and O.accessLink.text:find('https://foreverpilot-subscriptions.tyronixstudio.workers.dev/',1,true),'Uses official subscription portal')
  O.copyLink.scripts.OnClick();check(O.accessLink.focused and O.accessLink.highlighted,'Portal URL is selected for copying')
+ check(O.accessCode:IsShown() and O.activateCode:IsShown(),'Code activation is available in addon')
+ check(not O.accessCode.multiLine and O.accessCode.maxLetters==2048,'Long receipt stays in a bounded single-line field')
+ check(O.accessCode.y+O.accessCode.h<O.activateCode.y and O.activateCode.y+O.activateCode.h<O.accessResult.y,'Code, action and result do not overlap')
+ O.accessCode:SetText('not-a-code');O.activateCode.scripts.OnClick();check(O.accessResult.text==B.T('Code non reconnu. Copie le code complet commençant par FPA1, pas ta clé personnelle.'),'Invalid code gives an actionable localized message')
+ check(not B.HasPremium(),'Invalid code never grants access')
  O.frame:Hide()
  for i=1,80 do b.scripts.OnUpdate(b,.05);check(b.glow.alpha>=.35 and b.glow.alpha<=.60,'Glow remains smooth and bounded') end
  TEST.combat=true;b.scripts.OnUpdate(b,.1);check(b.glow.alpha==.3,'No pulse in combat')

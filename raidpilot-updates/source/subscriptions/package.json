@@ -2,6 +2,13 @@
   "name": "foreverpilot-subscriptions",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test test/*.test.mjs", "dev": "wrangler dev", "deploy": "wrangler deploy" },
-  "devDependencies": { "wrangler": "4.158.0" }
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "jsdom": "26.1.0",
+    "wrangler": "4.158.0"
+  }
 }

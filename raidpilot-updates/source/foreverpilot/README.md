@@ -1,6 +1,22 @@
-# FastXP 1.12.12 — RaidPilot (édition de test gratuite)
+# FastXP 1.12.13 — RaidPilot (édition de test gratuite)
 
-Cette distribution du launcher RaidPilot comprend toutes les fonctions FastXP de test, sans abonnement. La distribution publique CurseForge reste séparée et continue d’utiliser le compagnon d’abonnement existant. Une seule installation FastXP, ses 28 composants internes de navigation et Ding. Le nouveau guidage privilégie le marqueur de la quête active sur la carte de WoW lorsque le client fournit réellement ses coordonnées; les trajets aériens et autres transports restent prioritaires. Diagnostic : /fpl pin. Conserve les sauvegardes de personnage.
+Cette distribution du launcher RaidPilot comprend toutes les fonctions FastXP de test, sans abonnement. La distribution publique CurseForge active Pro avec un code signé à coller dans l’addon, sans compagnon Windows. Une seule installation FastXP, ses 28 composants internes de navigation et Ding. Le nouveau guidage privilégie le marqueur de la quête active sur la carte de WoW lorsque le client fournit réellement ses coordonnées; les trajets aériens et autres transports restent prioritaires. Diagnostic : /fpl pin. Conserve les sauvegardes de personnage.
+
+## 1.12.13 — Activation dans l’addon / In-addon activation
+
+FR : Aucun compagnon Windows requis. Après le paiement sur le portail, copie le
+code FPA1 dans Options → Abonnement puis clique Activer Pro, hors combat.
+L’activation est immédiate, sans redémarrer WoW. Le code est conservé pour ce
+compte WoW et expire à la fin de la période payée. Après chaque renouvellement
+payé, récupère le nouveau code sur le portail. Les accès existants restent reconnus.
+La mise à jour initiale ajoute deux fichiers : ferme complètement WoW avant installation.
+
+EN: No Windows companion required. After paying in the portal, paste your FPA1
+code into Options → Subscription and click Activate Pro outside combat.
+Activation is immediate, without restarting WoW. The code is saved for this WoW
+account and expires at the end of the paid period. After each paid renewal,
+retrieve the new code from the portal. Existing access remains recognized.
+This initial update adds two files: fully exit WoW before installing it.
 
 ## 1.12.12 — Accès Pro près de la flèche / Pro shortcut
 
@@ -104,19 +120,21 @@ Other Forever prerequisites remain incomplete; this is not a certified 1–60 ro
 
 - **Launcher RaidPilot : toutes les fonctions sont gratuites**, Fast XP et conseils
   de classe compris. Aucun abonnement, essai expirant ou contrôle en ligne requis.
-- **Distribution publique : Fast XP et conseils de classe/spécialisation nécessitent
-  un abonnement de 6,99 CAD/mois** et le compagnon Windows (édition CurseForge uniquement). Options → Abonnement donne
-  les instructions et le lien du portail. Renouvellement mensuel; annulation des prochains
-  paiements depuis le portail ou PayPal. La période déjà payée reste active.
-- Le portail indique si les abonnements sont ouverts. Une confirmation PayPal seule
-  n'active rien : le service doit confirmer le paiement. Conserve ta clé personnelle,
-  importe-la dans le compagnon, ferme WoW pour la première installation et active ton accès.
-  Ouvre régulièrement le compagnon pour actualiser l'accès (validité hors ligne limitée
-  à sept jours et à la période payée). Reconnecte-toi au jeu pour charger l'actualisation.
-- Sans accès Pro actif, FastXP reste en mode gratuit Zone Explorer, avec sa flèche,
-  ses quêtes de zone, ses outils et ses Options. Aucun nouvel achat n'est exigé des
-  abonnés actuels : le compagnon conserve la même clé et les mêmes droits.
-  Le ZIP Lua ne se connecte jamais directement à PayPal.
+- **Distribution publique : Fast XP et conseils de classe/spécialisation à
+  6,99 CAD/mois.** Paiement dans le portail PayPal; aucun compagnon à installer.
+  Conserve ta clé personnelle pour retrouver ton compte sur le portail.
+- Une fois le paiement confirmé, clique « Obtenir mon code pour WoW » puis
+  colle le code FPA1 dans Options → Abonnement → Activer Pro. Ce code est
+  différent de la clé personnelle du portail et ne donne pas accès aux paiements.
+- Après chaque renouvellement payé, importe le nouveau code dans l’addon.
+  Le code reste valable jusqu’à la fin de la période payée, au maximum 32 jours.
+  Le jeu ne contacte pas Internet : révocation/remboursement empêche l’émission
+  de nouveaux codes, mais un code déjà importé reste valide jusqu’à son échéance.
+- Annule les prochains paiements dans le portail ou PayPal; la période payée
+  reste active. Les abonnés existants retrouvent leur compte avec la même clé,
+  sans nouvel achat. Les accès de l’ancien compagnon restent compatibles.
+- Sans accès Pro, Zone Explorer et les outils gratuits restent accessibles.
+  Le Lua ne se connecte pas à PayPal et n’ouvre pas automatiquement le navigateur.
 
 Portail officiel : https://foreverpilot-subscriptions.tyronixstudio.workers.dev
 
@@ -173,13 +191,15 @@ character without abandoning it. Restore it explicitly from Tools.
 
 The **RaidPilot launcher edition is entirely free**, including Fast XP and class advice,
 with no subscription or online check. The **public edition** offers Fast XP and class/spec
-advice through a **CAD 6.99/month** subscription. Open Options → Subscription, save your
-personal portal key, confirm PayPal and import the key into the Windows companion.
-Payment must be verified by the service. Close WoW for the initial access installation.
-Refresh with the companion regularly; offline access lasts at most seven days and never
-past the paid period. Log back into WoW to load refreshed access. Cancel future renewals
-in the portal or PayPal; already paid time remains available. Ding guidance resumes when
-public access expires. AH prices and tools remain available.
+advice through a **CAD 6.99/month** subscription. Save your personal portal key,
+confirm payment on PayPal, then get an activation code and paste it in
+Options → Subscription → Activate Pro. No Windows companion required.
+After each paid renewal, import the new code. It expires at the end of the paid
+period (at most 32 days). WoW cannot check the Internet: refunds/revocation block
+new codes but cannot revoke an already imported offline code before its expiry.
+Existing accounts and paid legacy access remain compatible. Cancel future
+renewals in the portal or PayPal; already paid time remains available.
+Free Zone Explorer and tools remain available when Pro expires.
 
 AH values are dated observations, possibly partial, never guaranteed live prices.
 Gear advice follows class/spec and shows YES/NO or CHECK when uncertain. Class quests
@@ -214,7 +234,7 @@ Source : https://github.com/Axxira/axxira-website/tree/raidpilot-updates/raidpil
 Code distribué sous **GPLv3**, voir `LICENSE_GPLv3.txt`. Conserver les crédits et licences
 des dépendances. L'abonnement ne retire pas les droits GPL sur le code reçu. Le client Lua
 est ouvert et modifiable : le contrôle local n'est pas un mécanisme inviolable. Le service
-vérifie les paiements et le compagnon vérifie les signatures avant l'activation normale.
+vérifie les paiements et l’addon vérifie la signature du code avant l’activation normale.
 L'ancien addon `ForeverPilot` est un bridge indépendant, jamais remplacé par ce produit.
 
 ## 1.10.1

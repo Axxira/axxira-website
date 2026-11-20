@@ -58,6 +58,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $PSNativeCommandUseErrorActionPreference = $true
+          npm ci --ignore-scripts --prefix raidpilot-updates/source/subscriptions
           node --test raidpilot-updates/source/subscriptions/test/*.test.mjs
           dotnet run --project raidpilot-updates/source/foreverpilot-companion/ForeverPilot.Companion.csproj -c Release -- --self-test
           node raidpilot-updates/source/dungeonmappilot-tests/run.cjs

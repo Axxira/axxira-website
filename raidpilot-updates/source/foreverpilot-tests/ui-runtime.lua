@@ -21,6 +21,9 @@ function methods:ClearAllPoints() self.anchor=nil;self.x=nil;self.y=nil end
 function methods:SetFont(name,size,flags) self.font=name;self.fontSize=size;self.flags=flags end
 function methods:SetText(text) self.text=text end
 function methods:SetAutoFocus(value) self.autoFocus=value end
+function methods:SetMultiLine(value) self.multiLine=value end
+function methods:SetMaxLetters(value) self.maxLetters=value end
+function methods:GetText() return self.text or "" end
 function methods:SetFontObject(value) self.fontObject=value end
 function methods:SetFocus() self.focused=true end
 function methods:ClearFocus() self.focused=false end
