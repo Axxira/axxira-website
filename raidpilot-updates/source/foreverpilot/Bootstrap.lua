@@ -1,8 +1,8 @@
 -- ForeverPilot Brain. GPL-3.0-or-later. Uses Ding's public data APIs.
-local B = { version = "1.12.12", modules = {}, dirty = true }
+local B = { version = "1.12.13", modules = {}, dirty = true }
 _G.ForeverPilotLeveling = B
--- Subscription distribution; companion supplies ForeverPilotAccess after server verification.
--- No billing is performed inside WoW. No licence is stored in the main saved variables.
+-- Signed receipt imported in the addon; legacy companion access remains compatible.
+-- No billing or Internet requests inside WoW; only the signed receipt is saved.
 B.distribution = "raidpilot-test"
 B.subscriptionURL = "https://foreverpilot-subscriptions.tyronixstudio.workers.dev/#account-title"
 -- Rasterize at the requested size. SetTextHeight scales an existing font and
@@ -14,6 +14,8 @@ end
 -- Missing, malformed or expired entitlements deny Premium features.
 function B.HasPremium(feature)
     if B.distribution == "raidpilot-test" then return true end
+    local imported=B.Access and B.Access:Current()
+    if imported then return feature=="class" and imported.classGuidance==true or feature~="class" and imported.fastXP==true end
     local access = B.Public(_G.ForeverPilotAccess)
     if type(access) ~= "table" then return false end
     local expiry = B.Public(access.expires)

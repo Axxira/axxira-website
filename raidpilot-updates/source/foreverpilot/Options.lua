@@ -166,8 +166,15 @@ function O:Render()
             B.T("Zone Explorer gratuit : quêtes recensées, zone par zone."))
     end
     self.accessTitle:SetText(free and B.T("Édition RaidPilot : tout est gratuit") or active and B.T("ForeverPilot Premium actif") or B.T("Zone Explorer gratuit actif · FastXP rapide en abonnement"))
-    self.accessDetails:SetText(free and B.T("Toutes les fonctions sont incluses dans ton édition de test. Aucun abonnement ni connexion ne sont nécessaires.") or active and B.T("Ton accès Pro existant est reconnu. Aucun nouvel abonnement ni paiement n'est nécessaire. Le compagnon Windows continue de vérifier tes renouvellements.") or B.T("Zone Explorer reste actif gratuitement. Déjà abonné ? Réutilise ta clé actuelle dans ForeverPilot Companion et recharge WoW pour retrouver le mode Pro. Aucun nouvel achat nécessaire. Pour un nouvel abonnement, utilise le portail ci-dessous."))
+    self.accessDetails:SetText(free and B.T("Toutes les fonctions sont incluses dans ton édition de test. Aucun abonnement ni connexion ne sont nécessaires.") or active and B.T("Après chaque renouvellement payé, récupère un nouveau code sur le portail. Ton accès déjà payé reste reconnu.") or B.T("Active Pro directement ici, sans programme à installer. Paie sur le portail, copie le code d’activation, puis colle-le ci-dessous."))
     self.accessLink:SetShown(not free);self.copyLink:SetShown(not free)
+    if self.accessCode then
+        self.accessCode:SetShown(not free);self.accessCodeLabel:SetShown(not free);self.activateCode:SetShown(not free)
+        self.activateCode:Paint(false,not combat and B.Access~=nil)
+        local imported=B.Access and B.Access:Current()
+        self.accessResult:SetText(self.accessMessage or (imported and string.format(B.T("Valable jusqu’au %s · renouveler le code dans le portail"),date("%Y-%m-%d",imported.expires))) or "")
+        self.accessResult:SetShown(not free)
+    end
     self:SyncPremiumButton()
 end
 function O:MaybeWelcome()
@@ -281,13 +288,27 @@ function O:Create()
         B.Recovery:Reset();B.Planner.current=nil;B.Guard(B.Update);self:Render()
     end)
     p=self.pages.subscription
-    self.accessTitle=text(p,16,20,132,480,50)
-    self.accessDetails=text(p,12,20,198,480,148,"",true)
-    self.accessLink=CreateFrame("EditBox",nil,p,"InputBoxTemplate");self.accessLink:SetPoint("TOPLEFT",p,"TOPLEFT",25,-365);self.accessLink:SetSize(470,30)
+    self.accessTitle=text(p,16,20,124,480,44)
+    self.accessDetails=text(p,12,20,174,480,68,"",true)
+    self.accessLink=CreateFrame("EditBox",nil,p,"InputBoxTemplate");self.accessLink:SetPoint("TOPLEFT",p,"TOPLEFT",25,-250);self.accessLink:SetSize(470,28)
     self.accessLink:SetAutoFocus(false);self.accessLink:SetFontObject(ChatFontNormal);self.accessLink:SetText(B.subscriptionURL)
     self.accessLink:SetScript("OnEscapePressed",function(box) box:ClearFocus() end)
-    self.copyLink=button(p,B.T("Sélectionner le lien (Ctrl+C)"),20,410,480,function() self.accessLink:SetText(B.subscriptionURL);self.accessLink:SetFocus();self.accessLink:HighlightText() end)
-    text(p,11,20,465,480,45,B.T("Les outils HDV et layers restent accessibles. Ding fournit le guide de base."),true)
+    self.copyLink=button(p,B.T("1. Ouvrir le portail : sélectionner le lien"),20,286,480,function() self.accessLink:SetText(B.subscriptionURL);self.accessLink:SetFocus();self.accessLink:HighlightText() end)
+    self.accessCodeLabel=text(p,12,20,330,480,20,B.T("2. Colle ton code d’activation"))
+    self.accessCode=CreateFrame("EditBox",nil,p,"InputBoxTemplate")
+    self.accessCode:SetPoint("TOPLEFT",p,"TOPLEFT",25,-360);self.accessCode:SetSize(470,32)
+    self.accessCode:SetAutoFocus(false);self.accessCode:SetFontObject(ChatFontNormal)
+    self.accessCode:SetMultiLine(false);self.accessCode:SetMaxLetters(2048)
+    self.accessCode:SetScript("OnEscapePressed",function(box) box:ClearFocus() end)
+    self.activateCode=button(p,B.T("Activer Pro"),20,410,480,function()
+        if not B.Access then return end
+        local ok,reason=B.Access:Import(self.accessCode:GetText())
+        local messages={expired="Code expiré. Récupère le code de ta période payée sur le portail.",combat="Attends la fin du combat pour activer Pro.",older="Ton code actuel reste valable plus longtemps. Il est conservé."}
+        self.accessMessage=B.T(ok and "Code reconnu. Pro est actif." or messages[reason] or "Code non reconnu. Copie le code complet commençant par FPA1, pas ta clé personnelle.")
+        if ok then self.accessCode:SetText("");self.accessCode:ClearFocus() end
+        self:Render()
+    end)
+    self.accessResult=text(p,11,20,450,480,48,"",true)
     text(f,10,20,526,480,16,"ForeverPilot "..B.version.."  ·  "..B.LanguageLabel(B.language),true)
     if UISpecialFrames then table.insert(UISpecialFrames,"ForeverPilotOptionsFrame") end
     for _,event in ipairs({"PLAYER_REGEN_ENABLED","PLAYER_REGEN_DISABLED","PLAYER_TALENT_UPDATE","PLAYER_LEVEL_UP"}) do pcall(f.RegisterEvent,f,event) end

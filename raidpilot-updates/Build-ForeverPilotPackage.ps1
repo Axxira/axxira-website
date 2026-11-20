@@ -72,12 +72,12 @@ function PackageBytes($entry){
  }elseif($entry.Name -eq 'ForeverPilot_Leveling/README.md'){
   $s=[Text.Encoding]::UTF8.GetString($bytes)
   $oldHeading="# FastXP $version — RaidPilot (édition de test gratuite)"
-  $oldIntroduction="Cette distribution du launcher RaidPilot comprend toutes les fonctions FastXP de test, sans abonnement. La distribution publique CurseForge reste séparée et continue d’utiliser le compagnon d’abonnement existant."
+  $oldIntroduction="Cette distribution du launcher RaidPilot comprend toutes les fonctions FastXP de test, sans abonnement. La distribution publique CurseForge active Pro avec un code signé à coller dans l’addon, sans compagnon Windows."
   if(-not $s.Contains($oldHeading) -or -not $s.Contains($oldIntroduction)){
    throw 'Subscriber package README header or introduction does not match the source version'
   }
   $s=$s.Replace($oldHeading,"# ForeversPilot FastXP $version — édition publique Free + Pro")
-  $s=$s.Replace($oldIntroduction,'Cette distribution publique regroupe les modes Free et Pro dans le même addon. Le mode Free fonctionne sans abonnement; le mode Pro se déverrouille avec le compagnon Windows et une licence active. Tarif mensuel FastXP : 6,99 $ CAD. Les abonnés conservent leurs droits sans migration de compte ni dossier en double.')
+  $s=$s.Replace($oldIntroduction,'Cette distribution publique regroupe les modes Free et Pro dans le même addon. Le mode Free fonctionne sans abonnement; le mode Pro se déverrouille avec un code signé à coller dans Options → Abonnement, sans compagnon Windows. Tarif mensuel FastXP : 6,99 $ CAD. Les abonnés conservent leurs droits sans migration de compte ni dossier en double.')
   $s=$s.Replace('Cette alpha fournit','Cette édition fournit').Replace('This alpha supplies','This edition supplies')
   $bytes=[Text.Encoding]::UTF8.GetBytes($s)
  }

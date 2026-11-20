@@ -11,7 +11,7 @@ function connected(env) {
 }
 export function configured(env) {
   return connected(env) && env.BILLING_ENABLED==='true' &&
-    (env.PAYPAL_ENV==='sandbox'||env.LIVE_VERIFIED==='true'&&!!companionURL(env));
+    (env.PAYPAL_ENV==='sandbox'||env.LIVE_VERIFIED==='true'&&(env.ADDON_ACCESS_ENABLED==='true'||!!companionURL(env)));
 }
 async function body(request) {
   if (!request.headers.get('content-type')?.startsWith('application/json')) throw new ServiceError('JSON_REQUIRED',415);
@@ -60,6 +60,18 @@ async function license(row,env,now) {
   const input=b64(enc.encode(JSON.stringify({alg:'RS256',typ:'JWT',kid:jwk.kid||'fp-v1'})))+'.'+b64(enc.encode(JSON.stringify(claims)));
   return {token:input+'.'+b64(new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',key,enc.encode(input)))),expiresAt:exp};
 }
+async function addonLicense(row,env,now) {
+  if(env.ADDON_ACCESS_ENABLED!=='true')throw new ServiceError('SERVICE_NOT_READY');
+  if(row.paid_until<=now||!['ACTIVE','CANCELLED','EXPIRED'].includes(row.status))throw new ServiceError('NO_ACTIVE_ACCESS',403);
+  const jwk=JSON.parse(env.SIGNING_JWK),issued=Math.floor(now/1000);
+  const expires=Math.floor(Math.min(row.paid_until,now+32*86400000)/1000);
+  const fields=[jwk.kid||'fp-v1',env.PAYPAL_ENV,env.PUBLIC_ORIGIN,row.id,String(issued),String(expires),'fast_xp,class_guidance'];
+  if(fields.some(v=>typeof v!=='string'||v.includes('|')||v.length>180))throw new ServiceError('CONFIGURATION');
+  const input='FPA1.'+b64(enc.encode(fields.join('|')));
+  const key=await crypto.subtle.importKey('jwk',jwk,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
+  const signature=new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',key,enc.encode(input)));
+  return {code:input+'.'+b64(signature),expiresAt:expires,environment:env.PAYPAL_ENV};
+}
 async function webhook(request,env,provider,now) {
   const event=await body(request);
   if (!event.id || typeof event.id!=='string' || event.id.length>128 || !await provider.verifyWebhook(request,event)) throw new ServiceError('INVALID_SIGNATURE',401);
@@ -102,7 +114,7 @@ export async function handle(request,env,{provider,now=Date.now()}={}) {
       try { await (provider||new PayPal(env)).validatePlan();priceVerified=true; }
       catch { /* Reject stale provider prices or provider unavailability. */ }
     }
-    return json({ready:serverReady&&priceVerified,companionReady:!!companionURL(env),
+    return json({ready:serverReady&&priceVerified,companionReady:!!companionURL(env),addonReady:env.ADDON_ACCESS_ENABLED==='true',
       environment:env.PAYPAL_ENV||'sandbox',price:priceVerified?MONTHLY_PRICE_CAD:null,
       currency:'CAD',interval:'MONTH'});
   }
@@ -167,6 +179,10 @@ export async function handle(request,env,{provider,now=Date.now()}={}) {
   }
   if (path==='/api/license' && request.method==='POST') {
     row=await reconcile(row,env,provider,now);return json(await license(row,env,now));
+  }
+  if (path==='/api/addon-license' && request.method==='POST') {
+    if(env.ADDON_ACCESS_ENABLED!=='true')throw new ServiceError('SERVICE_NOT_READY');
+    row=await reconcile(row,env,provider,now);return json(await addonLicense(row,env,now));
   }
   if (path==='/api/cancel' && request.method==='POST') {
     const data=await body(request);if (data.confirm!==true) throw new ServiceError('CONFIRM_REQUIRED',400);

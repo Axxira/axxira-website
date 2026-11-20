@@ -31,6 +31,37 @@ test('live billing cannot start without explicit validation; missing secrets fai
   const {env}=setup();assert.equal(configured(env),true);env.PAYPAL_ENV='live';assert.equal(configured(env),false);env.LIVE_VERIFIED='true';assert.equal(configured(env),false);env.COMPANION_URL='https://github.com/Axxira/axxira-website/releases/download/test/ForeverPilot-Companion-v1.0.0-Windows-x64.zip';assert.equal(configured(env),true);delete env.SIGNING_JWK;assert.equal(configured(env),false);
 });
 test('calendar months clamp month end and retain UTC time',()=>assert.equal(new Date(monthAfter(Date.parse('2027-01-31T14:15:00Z'))).toISOString(),'2027-02-28T14:15:00.000Z'));
+test('addon-only live service does not require a companion URL',()=>{
+ const x=setup();Object.assign(x.env,{PAYPAL_ENV:'live',LIVE_VERIFIED:'true',ADDON_ACCESS_ENABLED:'true'});
+ assert.equal(configured(x.env),true);x.env.LIVE_VERIFIED='false';assert.equal(configured(x.env),false);
+});
+test('addon code is signed for the paid period; renewal and refund are checked online',async()=>{
+ const x=setup();x.env.ADDON_ACCESS_ENABLED='true';await x.enroll();
+ const receipt=await(await x.request('/api/addon-license','POST')).json();
+ const [format,payload,signature]=receipt.code.split('.');assert.equal(format,'FPA1');
+ assert.ok(verify('RSA-SHA256',Buffer.from(format+'.'+payload),createPublicKey(pair.privateKey),Buffer.from(signature,'base64url')));
+ const fields=Buffer.from(payload,'base64url').toString().split('|');
+ assert.equal(fields[1],'sandbox');assert.equal(fields[2],origin);assert.equal(fields[3],x.sub.custom_id);
+ assert.equal(+fields[5],Date.parse('2026-12-08T15:00:00Z')/1000);
+ assert.equal(fields[6],'fast_xp,class_guidance');assert.equal(receipt.expiresAt,+fields[5]);
+ await x.request('/api/cancel','POST',{confirm:true});
+ assert.equal((await(await x.request('/api/addon-license','POST')).json()).expiresAt,receipt.expiresAt);
+ await x.request('/api/webhook','POST',{id:'ADDONREF',event_type:'PAYMENT.SALE.REFUNDED',resource:{sale_id:'SALE1'}});
+ await assert.rejects(x.request('/api/addon-license','POST'),/NO_ACTIVE_ACCESS/);
+});
+test('addon code rejects unpaid, suspended, expired, unauthenticated and mismatched accounts',async()=>{
+ for(const variant of ['pending','unpaid','suspended','expired','mismatch','disabled']){
+  const x=setup();x.env.ADDON_ACCESS_ENABLED='true';await x.enroll();
+  if(variant==='pending')x.sub.status='APPROVAL_PENDING';
+  if(variant==='unpaid')x.setSales([]);
+  if(variant==='suspended')x.sub.status='SUSPENDED';
+  if(variant==='expired')x.setSales([{...sale,time:'2026-09-01T00:00:00Z'}]);
+  if(variant==='mismatch')x.sub.custom_id='another-account';
+  if(variant==='disabled')x.env.ADDON_ACCESS_ENABLED='false';
+  await assert.rejects(x.request('/api/addon-license','POST'),/NO_ACTIVE_ACCESS|SUBSCRIPTION_MISMATCH|SERVICE_NOT_READY/);
+ }
+ const x=setup();x.env.ADDON_ACCESS_ENABLED='true';await assert.rejects(x.request('/api/addon-license','POST'),/SIGN_IN_REQUIRED/);
+});
 
 test('new-checkout maintenance does not block existing access, cancellation or verified webhooks',async()=>{
   const x=setup();await x.enroll();x.env.BILLING_ENABLED='false';

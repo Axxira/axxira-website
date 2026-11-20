@@ -3,7 +3,7 @@
 ## Title: ForeversPilot |cff48D7E8FastXp|r
 ## Notes: Dynamic quest planning, live validation, recovery, batching and arrow-first guidance. GPLv3.
 ## Author: ForeverPilot Project
-## Version: 1.12.12
+## Version: 1.12.13
 ## Dependencies: Ding, ForeverPilot_Engine
 ## X-FastXP-Channel: private-beta
 ## X-FastXP-Engine: bundled-0.3.7
@@ -28,6 +28,8 @@ QuestFirstLocale.lua
 SpeedRouteLocale.lua
 MapRouteLocale.lua
 SpeedMetricsLocale.lua
+AccessLocale.lua
+Access.lua
 Knowledge.lua
 State.lua
 Graph.lua

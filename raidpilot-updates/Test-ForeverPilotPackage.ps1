@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $z=[IO.Compression.ZipFile]::OpenRead($ZipPath)
 try{
  $entries=@($z.Entries)
- if($entries.Count -ne 669){throw "Unexpected package file count: $($entries.Count)"}
+ if($entries.Count -ne 671){throw "Unexpected package file count: $($entries.Count)"}
  $names=@($entries|ForEach-Object{$_.FullName})
  if(@($names|Group-Object|Where-Object{$_.Count -ne 1}).Count){throw 'Duplicate ZIP entry names'}
  if(@($names|Where-Object{$_ -match '(^/|\\|(^|/)\.\.?(/|$)|//|^[A-Za-z]:)'}).Count){throw 'Unsafe or nonportable ZIP paths'}
@@ -28,14 +28,14 @@ try{
     throw 'Public ZIP was not converted to unified Free/Pro distribution'
  }
  $readme=ReadText "$main/README.md"
- if(-not $readme.Contains('# ForeversPilot FastXP 1.12.12') -or
+ if(-not $readme.Contains('# ForeversPilot FastXP 1.12.13') -or
     -not $readme.Contains('Free + Pro') -or
     -not $readme.Contains('6,99 $ CAD') -or
     $readme.Contains('Cette alpha fournit')){
     throw 'Public ZIP metadata is still labeled as a test build'
  }
  $toc=ReadText "$main/$main.toc"
- if(-not $toc.Contains('## Version: 1.12.12')){throw 'Incorrect main TOC version'}
+ if(-not $toc.Contains('## Version: 1.12.13')){throw 'Incorrect main TOC version'}
  if(-not $toc.Contains('## X-FastXP-Channel: public-stable') -or
     $toc.Contains('## X-FastXP-Channel: private-beta')){
     throw 'Published main TOC still claims to be a private beta'
