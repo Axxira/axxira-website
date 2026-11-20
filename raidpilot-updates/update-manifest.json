@@ -1,29 +1,39 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-16T11:40:55.2414057+00:00",
+  "publishedAt": "2026-11-20T14:33:42.0510337+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.44-94be7064a765/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "4FA4DAF3BA4ABEF341FBB37F47F7B014085422F9B6F80D5A3A4C1A93D61621DA",
-    "sizeBytes": 234574474,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-3e15eec955c9/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "E8D239CE44B34AA3F418B5DA7F651B10736B4AE6E6F65BFE25263E591B60CAAA",
+    "sizeBytes": 234574473,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.44-94be7064a765/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "64EA20A189BEA2BA3229F87716D82AFD4DB9123BDAF3DE8F66C512F384CBB405",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-3e15eec955c9/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "AAEB0C5F2CCF58CDD80C2A39696398B486F2E346DFD73BA72537245948B55092",
     "sizeBytes": 58342774,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
-    "version": "0.2.44",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.44-94be7064a765/RaidPilot-Launcher-v0.2.44-Windows-x64.zip",
-    "sha256": "207BBC797A8609F4C2C9168B2A750D9E43F9906346F5AE2830A76DEDDF735C24",
-    "sizeBytes": 417199273,
-    "releaseNotes": "Bouton Pro compact sous la flèche, sans masquer Objets ni Options. L'édition publique sans accès affiche VERSION PRO / GO PRO avec une lueur rouge douce, fixe en combat. Le clic ouvre l'abonnement existant. Les abonnés voient PRO actif; le launcher RaidPilot reste entièrement gratuit avec PRO inclus. Aucun changement de prix, de licence, de progression ou de paiement. Les 28 composants internes accompagnent le paquet. Vérifications automatisées FR/EN et des deux éditions; rendu en jeu à confirmer."
+    "version": "0.2.45",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-3e15eec955c9/RaidPilot-Launcher-v0.2.45-Windows-x64.zip",
+    "sha256": "BCEC6E17D6969596F0BF76AA8C40EECBD31675A5B78D1A5FA66F0A5340EDC5BC",
+    "sizeBytes": 417204854,
+    "releaseNotes": "Pro public s’active avec un code signé à coller dans Options → Abonnement. Paiement et récupération du code dans le navigateur; renouvellement du code après chaque mensualité payée. Le code expire à la fin de la période payée. Les accès existants restent compatibles. RaidPilot conserve toutes les fonctions gratuitement, sans abonnement ni code. Français/anglais et tests simulés; rendu en jeu à vérifier. Fermer WoW pour charger les deux nouveaux fichiers."
   },
   "releaseHistory": [
+    {
+      "component": "launcher",
+      "version": "0.2.45",
+      "raidPilotVersion": "0.16.0.1",
+      "beaconVersion": "0.3.10",
+      "launcherVersion": "0.2.45",
+      "date": "2026-11-20",
+      "summary": "FastXP 1.12.13 : activation Pro dans l’addon, sans compagnon",
+      "details": "Pro public s’active avec un code signé à coller dans Options → Abonnement. Paiement et récupération du code dans le navigateur; renouvellement du code après chaque mensualité payée. Le code expire à la fin de la période payée. Les accès existants restent compatibles. RaidPilot conserve toutes les fonctions gratuitement, sans abonnement ni code. Français/anglais et tests simulés; rendu en jeu à vérifier. Fermer WoW pour charger les deux nouveaux fichiers."
+    },
     {
       "component": "launcher",
       "version": "0.2.44",
@@ -253,16 +263,6 @@
       "date": "2026-11-08",
       "summary": "ForeverPilot 1.6.1 : verdicts simples, profil druide et pièces",
       "details": "Simplifie le survol des objets et la liste des équipements : Upgrade OUI ou NON, puis gains et pertes de stats. Le profil de comparaison reste visible; les points de score, le rappel de case et le prix marchand en double sont retirés. Les données incomplètes et les effets ou restrictions non évalués gardent la mention À VÉRIFIER. Le calcul du conseil est inchangé. Les prix HDV utilisent les petites icônes natives or, argent et cuivre, avec repli compatible. Prix par unité et par pile, âge, résultats partiels, objets liés et variantes restent correctement distingués. Aucun achat, vente ou équipement automatique. Après installation, recharger l'interface hors combat avec /reload. Corrige aussi le mauvais profil druide par défaut : Auto suit les points de talents dominants, avec Farouche pour le combat farouche, Équilibre pour les sorts et Restauration pour les soins. Si les talents sont absents, à égalité ou illisibles, le conseil demande un profil au lieu de choisir Polyvalent. Un profil manuel reste prioritaire. Le cas Scout Ranger's Belt vers Jackseed Belt est testé : NON pour Farouche malgré les 3 points d'Intelligence gagnés."
-    },
-    {
-      "component": "launcher",
-      "version": "0.2.21",
-      "raidPilotVersion": "0.16.0.1",
-      "beaconVersion": "0.3.10",
-      "launcherVersion": "0.2.21",
-      "date": "2026-11-07",
-      "summary": "ForeverPilot 1.6.0 : classe, maîtres de vol et ChangeLayer",
-      "details": "Les quêtes de classe de Ding passent en priorité dans la flèche, avec leurs prérequis et les restrictions de race et de niveau. Les chaînes de classe Forever utilisent aussi les liens explicites du guide lorsque la base est incomplète; les offres réelles du PNJ restent prioritaires. Les quêtes indisponibles, trop difficiles ou mises de côté ne bloquent pas le guidage. À proximité d'un nouveau village, une halte courte propose le maître de vol allié ou neutre encore non confirmé. Ouvrir sa carte confirme le trajet et reprend les quêtes; aucun vol automatique. Le panneau conserve sa taille. Le bouton Changer de layer utilise maintenant ChangeLayer, sans exiger ForeverPilot chez les volontaires. Le launcher télécharge ChangeLayer intact depuis CurseForge, avec contrôle SHA-256 et sauvegarde. Demande dans Général en anglais. Redémarrer complètement WoW via Battle.net après installation, puis activer Ding, ForeverPilot_Leveling et ChangeLayer. Ding reste inclus; le bridge et les réglages personnels sont préservés."
     }
   ]
 }
