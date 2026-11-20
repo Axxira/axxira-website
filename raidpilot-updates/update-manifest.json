@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-11-20T23:20:37.6010727+00:00",
+  "publishedAt": "2026-11-20T23:26:24.0510131+00:00",
   "raidPilot": {
     "version": "0.16.0.1",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-461dd05a320e/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
-    "sha256": "714E24AA4F07F96D11BF2C68182B5CEBCC464AF2D30E8F925B5305A9F63625CA",
-    "sizeBytes": 234640700,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-3ff713672912/RaidPilot-Overlay-v0.16.0.1-Windows-x64.zip",
+    "sha256": "0E4AA214DB732CFB786875686111C4393FEB10CC348EA579DA24EFD9DA549D30",
+    "sizeBytes": 234640702,
     "releaseNotes": "RaidPilot 0.16.0.1 reste inchangé dans cette publication."
   },
   "beacon": {
     "version": "0.3.10",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-461dd05a320e/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
-    "sha256": "6830B2ADBC57499B21A7E69930B2BC5784C5AFC3521096B4B544A0CB1794B5B3",
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-3ff713672912/RaidPilot-Beacon-v0.3.10-Windows-x64.zip",
+    "sha256": "DEAF284F7C99C1D1CFA024C609DD55877B131088513705590937B2B732B44B19",
     "sizeBytes": 58409647,
     "releaseNotes": "Beacon 0.3.10 reste inchangé dans cette publication."
   },
   "launcher": {
     "version": "0.2.45",
-    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-461dd05a320e/RaidPilot-Launcher-v0.2.45-Windows-x64.zip",
-    "sha256": "5ADD3A3018FB0CDE3E64BD964C67BC88270C00EF9B73CB500E2EB92AE511D9D5",
-    "sizeBytes": 417404873,
+    "url": "https://github.com/Axxira/axxira-website/releases/download/raidpilot-stable-rp0.16.0.1-b0.3.10-l0.2.45-3ff713672912/RaidPilot-Launcher-v0.2.45-Windows-x64.zip",
+    "sha256": "BBD780A6B1FE585160EB686B9B6E1C0C88A03EED9C230DBB6EBFAD6154F0342A",
+    "sizeBytes": 417404875,
     "releaseNotes": "Pro public s’active avec un code signé à coller dans Options → Abonnement. Paiement et récupération du code dans le navigateur; renouvellement du code après chaque mensualité payée. Le code expire à la fin de la période payée. Les accès existants restent compatibles. RaidPilot conserve toutes les fonctions gratuitement, sans abonnement ni code. Français/anglais et tests simulés; rendu en jeu à vérifier. Fermer WoW pour charger les deux nouveaux fichiers."
   },
   "releaseHistory": [
